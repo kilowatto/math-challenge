@@ -4,9 +4,9 @@
 > cuenta de Cloudflare lleva el prefijo `math-challenge-` para distinguirlo de
 > los de IOS y de IMP, que viven en la misma cuenta.
 >
-> **Estado: NINGUNO DE ESTOS OBJETOS EXISTE TODAVÍA.** Esta es la lista de lo que
-> se va a crear, no de lo que está creado. Conforme se creen, se anota aquí el ID
-> real y la fecha, según la regla de `CLAUDE.md` § Cloudflare.
+> **Estado: 1 de 27 objetos creado.** El resto de esta lista es lo que se va a
+> crear, no lo que está creado. Conforme se creen, se anota el ID real y la fecha
+> en la bitácora de abajo, según la regla de `CLAUDE.md` § Cloudflare.
 >
 > Bilingüe (EN/ES) porque la columna de propósito la lee tanto quien opera la
 > cuenta como quien escribe el código.
@@ -77,10 +77,32 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 
 | Fecha | Objeto | ID real | Quién | Nota |
 |-------|--------|---------|-------|------|
-| — | — | — | — | *(vacío: nada creado todavía)* |
+| 2026-07-31 | `math-challenge-db` (D1) | `25276cac-2d48-4771-87c1-f58bc8722b4e` | Esteban | Región **WNAM**. Migraciones 0001 y 0002 aplicadas en local y remoto; 10 tablas. Binding `DB`, no el `math_challenge_db` que sugiere wrangler |
 
 > **Regla:** quien crea un recurso de Cloudflare escribe su renglón aquí en el
 > mismo PR (`CLAUDE.md` § Cloudflare).
+
+### Lo que quedó decidido sin decidirse: la jurisdicción
+
+`math-challenge-db` se creó en **WNAM** (Norteamérica oeste). Eso importa más de
+lo que parece: `mc-25` documenta que D1 tiene ajuste de jurisdicción por base de
+datos desde noviembre de 2025, y que —igual que en R2— **se fija al crear y no se
+puede cambiar después**.
+
+Es decir, esta base **no puede convertirse en una base de jurisdicción europea**.
+Si en algún momento hay que fijar residencia de datos para menores de la UE o del
+Reino Unido —que es la implicación 11 de `mc-25`—, hace falta una **segunda base
+con jurisdicción `eu`**, y la decisión de a cuál va cada familia se toma **en el
+momento del registro**, no después.
+
+No es un error: para el MVP, con el mercado inicial en LatAm y EE.UU., WNAM es lo
+correcto. Pero es una puerta que se cerró al crear el objeto, y conviene que esté
+escrito antes de que alguien la busque y no la encuentre.
+
+**Pendiente asociado:** `mc-25` señala que la historia de residencia de Workers KV
+**no se pudo confirmar**; hay que verificarla directamente con Cloudflare antes de
+guardar datos personales de menores de la UE o el Reino Unido en `SESSION_KV` o
+`CONFIG_KV`.
 
 ## Riesgo conocido
 

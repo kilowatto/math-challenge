@@ -28,11 +28,13 @@
     }
   ],
 
+  // Binding "DB", no "math_challenge_db" como sugiere wrangler al crear:
+  // infrastructure.md fija los bindings en UPPER_SNAKE_CASE y corto.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "math-challenge-db",
-      "database_id": "PENDIENTE-crear-con-wrangler-d1-create",
+      "database_id": "25276cac-2d48-4771-87c1-f58bc8722b4e",
       "migrations_dir": "migrations"
     }
   ],

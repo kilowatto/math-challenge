@@ -661,6 +661,155 @@ direcciones. Volumen trivial: una llamada por prenda creada, no por intento.
 
 ---
 
+## D-030 — Protocolos: RPC nativo y HTTP/3, nada de gRPC · 2026-07-31
+
+**Decisión:** el transporte interno es el **RPC nativo de JavaScript de Workers
+sobre Service Bindings**, y hacia el cliente **HTTP/3 sobre QUIC con 0-RTT**.
+**No se usa gRPC ni gRPC-Web.**
+
+**El dueño pidió gRPC explícitamente; la investigación lo descartó por tres
+hechos independientes, cada uno suficiente** (`mc-47` §1):
+
+1. **Workers no puede hacer llamadas gRPC salientes** — el runtime no soporta
+   streaming bidireccional HTTP/2 (issue abierto en `cloudflare/workerd`).
+2. **El navegador no habla gRPC.** gRPC-Web implementa otro protocolo, cae a
+   HTTP/1.1 —"lo cual cancela algunas de las ventajas de usar gRPC"— y no
+   soporta streaming de cliente ni bidireccional.
+3. **Los trailers de HTTP**, que gRPC necesita para el estado, tienen soporte
+   limitado en el proxy de borde de Cloudflare, documentado por Cloudflare mismo.
+
+**Y lo que queda es mejor, no un consuelo.** El RPC de Workers **no tiene
+sobrecarga ni latencia añadida**: el Worker llamado "normalmente ni siquiera
+cruza una red, y suele correr en el mismo hilo que quien lo llama". Un RPC que no
+cruza la red no puede ser superado por uno que sí, por eficiente que sea su
+serialización.
+
+**Consecuencia para el discurso público:** adoptar gRPC aquí sería adoptar la
+generación anterior con más trabajo. Lo que está a la vanguardia **en esta
+plataforma** es RPC nativo + HTTP/3, y eso es lo que se presume, con datos.
+
+**Presupuesto de rendimiento, que es la parte que sí cuesta trabajo:**
+
+- **INP ≤ 150 ms**, no 200. El 43% de la web falla el umbral flojo, y este es un
+  juego de alta frecuencia de interacción — el perfil exacto donde INP se rompe.
+- **LCP ≤ 2.5 s, CLS ≤ 0.1.**
+- **Medición con datos de campo desde el día uno**, no con Lighthouse: "un 100
+  perfecto en laboratorio no significa nada si el usuario real en 3G sufre".
+- **AVIF con respaldo WebP** (25-50% menos peso) y `fetchpriority="high"` en la
+  imagen de LCP.
+
+**Investigación relacionada:** `mc-47-stack-protocols-performance.md`,
+`mc-32-cloudflare-architecture.md`, `mc-33-pwa-first-reality.md`.
+
+---
+
+## D-031 — Interfaz adaptativa por plataforma · 2026-07-31
+
+**Decisión del dueño:** la interfaz **cambia de personalidad según la
+plataforma**: Material 3 con color dinámico en Android, Human Interface
+Guidelines en iOS y macOS, controles del sistema en Windows — incluyendo
+tipografía del sistema, barras de navegación y pestañas nativas, modales propios
+y los gestos que cada plataforma espera.
+
+**Lo que esto cuesta, dicho de frente:** aproximadamente **el doble** en
+componentes, diseño y pruebas frente a una interfaz única. No es un costo de
+investigación sino de ingeniería sostenida, y se paga en cada función nueva, no
+una sola vez.
+
+**Lo que compra:** que no se sienta web, que es donde más se nota en iOS y donde
+`mc-22` documenta que los adolescentes abandonan sin diagnosticar el problema —
+"no se culpan a sí mismos, te culpan a ti".
+
+Las restricciones duras por plataforma no cambian y siguen en `mc-33`: en iOS la
+instalación es manual y el push la exige; en Android no hay reja de instalación;
+macOS Safari 17+ tiene "Añadir al Dock"; Windows tiene la integración de
+escritorio más completa.
+
+**Investigación relacionada:** `mc-47` §6, `mc-33`, `mc-20`, `mc-21`, `mc-22`,
+`mc-23`.
+
+---
+
+## D-032 — La flota de 35 auditores · 2026-07-31
+
+**Decisión del dueño:** el despliegue lleva auditores adversariales, sin miedo a
+que sean muchos. Son **35**, en dos clases:
+
+**Deterministas (12), en cada commit:** presupuesto de bundle · Core Web Vitals
+con los umbrales de D-030 · axe-core · contraste · blancos táctiles por banda
+(24/44/88 px) · completitud de las siete llaves de idioma · validación de JSON-LD
+· reciprocidad de `hreflang` · escaneo de secretos · prefijo `math-challenge-` ·
+seguridad de migraciones · presupuesto de precaché offline.
+
+**Adversariales con LLM (23), en cada PR, instruidos para encontrar la violación
+y no para aprobar:** líneas rojas · privacidad COPPA/GDPR-K · anti-humillación ·
+anti-trampa · patrones oscuros · pedagogía · rigor matemático · rigor científico
+· canon de Larry · rachas y tiempo de pantalla · kinder · PWA iOS · PWA Android ·
+PWA-first/offline · rendimiento en red lenta · UX por banda de edad · **y uno por
+locale**: `en`, `es-MX`, `es-ES`, `fr-FR`, `pt-BR`, `pt-PT`, `de-DE`.
+
+**Las dos reglas sin las cuales la flota estorba en vez de servir:**
+
+1. **Cada auditor cita la decisión o el documento que hace cumplir.** Un auditor
+   que no puede señalar una decisión de `decisions.md` o un hallazgo de
+   `research/` está opinando, y su veredicto no bloquea.
+2. **Anular a un auditor exige escribir por qué**, y esa razón queda en el
+   historial.
+
+**Qué bloquea:** solo los deterministas bloquean por defecto. Los adversariales
+bloquean únicamente cuando citan una línea roja o una decisión explícita; el
+resto reporta sin detener el PR.
+
+**Riesgo conocido:** 23 llamadas de LLM por PR tienen costo y tasa de falsos
+positivos. Si la flota se vuelve ruido, la gente aprende a rodearla en silencio,
+que es peor que no tenerla.
+
+**Investigación relacionada:** `mc-47` §7.
+
+---
+
+## D-033 — El sitio abierto: la investigación es la estrategia · 2026-07-31
+
+**Decisión del dueño:** se publica un sitio abierto que explica qué es Math
+Challenge, los niveles y el propósito, con **las 45 investigaciones completas —
+incluidas las que contradicen al producto**.
+
+**Por qué esto no es transparencia sino estrategia:** tras la actualización de
+marzo de 2026, la investigación original se volvió de los activos de contenido de
+mayor valor que una organización puede producir, y las páginas con señales
+fuertes de E-E-A-T tienen **2.3× más probabilidad de ser citadas en AI
+Overviews** (`mc-48`). Hay 152,000 palabras con fuentes numeradas, limitaciones
+declaradas y afirmaciones marcadas `[unverified]`. Publicar los pasajes donde la
+evidencia contradice al propio producto es la definición operativa de
+Trustworthiness, y prácticamente ningún competidor lo hace (`mc-14`).
+
+**Atribución, en dos partes verificables:** **Math Challenge es un proyecto de
+Ignia, y corre sobre Cloudflare.** Decir que el stack lo provee Ignia sería
+desmentible con una consulta de DNS, y el lector de la página de arquitectura es
+exactamente quien la haría. Las dos afirmaciones separadas resisten escrutinio, y
+la página de arquitectura se vuelve contenido técnico citable.
+
+**Requisitos técnicos del sitio:** siete locales con `hreflang` recíproco más
+`x-default`; JSON-LD con `inLanguage` por versión y estructura idéntica entre
+idiomas; el esquema **debe coincidir con lo visible en la página** o Google puede
+ignorarlo por completo; `es-MX` y `es-ES` son dos páginas distintas donde haya
+notación matemática, no una con dos etiquetas; y WCAG 2.2 AA como requisito de
+publicación, que además de obligación legal en la UE es señal de Trustworthiness.
+
+**La voz del sitio sale de [`por-que-existe.md`](por-que-existe.md)**, levantada
+en entrevista con el dueño. Es la única fuente de *Experience* del sitio: la
+investigación no la puede producir.
+
+**Lo que esta decisión prohíbe:** reclamar resultados de aprendizaje antes de
+tener el estudio propio (plan maestro §14), y presumir infraestructura que no es.
+En un sitio que presume rigor, una sola afirmación sin sustento cuesta más que en
+uno que no lo presume.
+
+**Investigación relacionada:** `mc-48-public-site-seo.md`, `mc-38`, `mc-34`,
+`mc-14`.
+
+---
+
 ## Tensiones abiertas que el dueño debe resolver
 
 Estas salieron de la investigación. Cuatro ya se cerraron con decisiones; se

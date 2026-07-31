@@ -1,11 +1,11 @@
 # Math Challenge — Índice de investigación / Research index
 
-> 45 investigaciones hechas el **2026-07-31** por agentes independientes, cada uno
+> 47 investigaciones hechas el **2026-07-31** por agentes independientes, cada uno
 > con instrucción explícita de **no inventar citas** y de marcar como *unverified*
-> lo que no pudiera confirmar contra una fuente primaria. Total ≈ 152,000 palabras.
+> lo que no pudiera confirmar contra una fuente primaria. Total ≈ 157,000 palabras.
 >
-> Las mc-45 y mc-46 se agregaron después de la ola original, al planear el
-> onboarding y los clubs; llevan la misma fecha porque el proyecto entero se
+> Las mc-45 a mc-48 se agregaron después de la ola original, al planear el
+> onboarding, los clubs, el stack y el sitio abierto; llevan la misma fecha porque el proyecto entero se
 > investigó ese día.
 >
 > **Cómo leer esto.** Cada documento trae `Resumen ejecutivo (ES)` y
@@ -93,13 +93,17 @@
 | 41 | [Monetización y precios](2026-07-31-mc-41-monetization-pricing.md) | Precios reales de la competencia, métodos de pago por mercado, IVA y derecho de desistimiento |
 | 45 | [Onboarding, registro y activación](2026-07-31-mc-45-onboarding-activation.md) | ⭐ Cuánto cuesta cada campo de registro, y por qué NN/g desaconseja el carrusel de bienvenida **por nombre** |
 | 46 | [Clubs, retos de grupo y prendas](2026-07-31-mc-46-clubs-social-challenges.md) | ⭐⭐ Los tres elementos del juego ilegal y cómo se elimina uno; el *Group Goal* de Strava; cómo tener apuestas sin perdedor |
+| 47 | [Stack, protocolos y rendimiento real](2026-07-31-mc-47-stack-protocols-performance.md) | ⭐⭐ **Por qué gRPC no entra**: Workers no puede hacer gRPC saliente y el navegador no lo habla. HTTP/3 en redes con pérdida; INP es la que se falla |
+| 48 | [El sitio abierto y la estrategia orgánica](2026-07-31-mc-48-public-site-seo.md) | ⭐⭐ La investigación original es el activo que Google premia desde marzo 2026; E-E-A-T, JSON-LD multilingüe y `hreflang` en siete locales |
 
 ---
 
 ## Documentos relacionados fuera de esta carpeta
 
-- [`../decisions.md`](../decisions.md) — las 29 decisiones del dueño (D-001 …
-  D-029), con fecha, y las dos tensiones que siguen abiertas.
+- [`../decisions.md`](../decisions.md) — las 33 decisiones del dueño (D-001 …
+  D-033), con fecha, y las dos tensiones que siguen abiertas.
+- [`../por-que-existe.md`](../por-que-existe.md) — la historia del dueño, fuente
+  de la voz del sitio público.
 - [`../master-plan.md`](../master-plan.md) — el plan integral, en 15 secciones.
 - [`../infrastructure.md`](../infrastructure.md) — los 27 objetos
   `math-challenge-*` de Cloudflare.

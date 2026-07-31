@@ -37,7 +37,8 @@ investigación y el plan:
 | [`docs/master-plan.md`](docs/master-plan.md) | El plan integral, en 15 secciones |
 | [`docs/decisions.md`](docs/decisions.md) | Las decisiones del dueño, con fecha y evidencia |
 | [`docs/infrastructure.md`](docs/infrastructure.md) | Los 27 objetos `math-challenge-*` de Cloudflare |
-| [`docs/research/`](docs/research/README.md) | 45 investigaciones, ~152,000 palabras |
+| [`docs/research/`](docs/research/README.md) | 47 investigaciones, ~157,000 palabras |
+| [`docs/por-que-existe.md`](docs/por-que-existe.md) | Por qué existe el proyecto, en palabras del dueño |
 | [`CLAUDE.md`](CLAUDE.md) | Reglas del proyecto: líneas rojas, commits, contenido |
 
 ### Principios que no se negocian

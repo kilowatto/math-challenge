@@ -2,8 +2,8 @@
 
 > **math.kilowatto.com** · Plan maestro · 2026-07-31
 >
-> Construido sobre 45 investigaciones (~152,000 palabras) en
-> [`research/`](research/README.md) y 29 decisiones del dueño en
+> Construido sobre 47 investigaciones (~157,000 palabras) en
+> [`research/`](research/README.md) y 33 decisiones del dueño en
 > [`decisions.md`](decisions.md). Cada afirmación de este plan que suene a hecho
 > viene de una de esas dos fuentes; donde es criterio nuestro, lo dice.
 >
@@ -530,6 +530,7 @@ señala como el punto de falla (`mc-18`).
 
 ## Referencias
 
-- [`decisions.md`](decisions.md) — las 29 decisiones del dueño, con fecha
+- [`decisions.md`](decisions.md) — las 33 decisiones del dueño, con fecha
 - [`infrastructure.md`](infrastructure.md) — los 27 objetos `math-challenge-*`
-- [`research/README.md`](research/README.md) — índice de las 45 investigaciones
+- [`research/README.md`](research/README.md) — índice de las 47 investigaciones
+- [`por-que-existe.md`](por-que-existe.md) — la historia del dueño, voz del sitio

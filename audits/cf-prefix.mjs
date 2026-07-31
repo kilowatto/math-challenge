@@ -52,6 +52,26 @@ function stripJsonc(src) {
   return out.replace(/,(\s*[}\]])/g, "$1");
 }
 
+// El inventario canónico de nombres vive en infrastructure.md, no en
+// wrangler.jsonc — porque hay objetos cuyo NOMBRE nunca aparece en la config:
+// un KV namespace solo declara `binding` e `id`, y su título vive únicamente en
+// Cloudflare. Sin este cruce, el auditor era ciego a exactamente esos.
+const INVENTORY = "docs/infrastructure.md";
+
+function inventoryNames() {
+  const names = [];
+  try {
+    for (const line of readFileSync(INVENTORY, "utf8").split("\n")) {
+      // Renglones de la tabla de inventario: | `nombre` | tipo | ...
+      const m = line.match(/^\|\s*`([a-z0-9-]+)`\s*\|/i);
+      if (m) names.push(m[1]);
+    }
+  } catch {
+    return null;
+  }
+  return names;
+}
+
 const problems = [];
 let config;
 
@@ -68,6 +88,20 @@ for (const [label, extract] of NAMED_FIELDS) {
     checked++;
     if (!value.startsWith(PREFIX)) {
       problems.push(`${label}: "${value}" no empieza con "${PREFIX}"`);
+    }
+  }
+}
+
+// Cruce con el inventario: todo objeto listado en infrastructure.md lleva
+// prefijo, aunque su nombre nunca llegue a wrangler.jsonc.
+const inventory = inventoryNames();
+if (inventory === null) {
+  problems.push(`no se pudo leer ${INVENTORY} — es el inventario canónico de nombres`);
+} else {
+  for (const name of inventory) {
+    checked++;
+    if (!name.startsWith(PREFIX)) {
+      problems.push(`${INVENTORY}: "${name}" no empieza con "${PREFIX}"`);
     }
   }
 }

@@ -95,11 +95,17 @@ decimal, símbolo de división, formato de la división larga). Ver
 
 **Decisión del dueño:** **~2,500 retos** para arrancar el MVP.
 
-**Pendiente de resolver con la investigación:** qué proporción se genera desde
-plantillas parametrizadas, qué proporción se escribe a mano, y qué proporción se
-redacta con asistencia de LLM y revisión humana — y cómo se reparten esos 2,500
-entre las bandas de nivel. Ver `mc-40-item-bank-content-operations.md` y
-`mc-36-problem-design-item-formats.md`.
+**Resuelto después:** el reparto entre bandas lo cerró **D-009** — los 2,500 son
+**todos de kinder**, no repartidos por la escalera. La mezcla de origen la cerró
+`mc-40`: ~40% plantillas paramétricas, ~29% redactado con IA y revisado por
+humano, ~31% escrito a mano; en kinder la proporción de plantilla sube a ~70%
+porque contar patos del 1 al 20 es una plantilla, no veinte ítems. Ver
+`mc-40-item-bank-content-operations.md` y `mc-36-problem-design-item-formats.md`.
+
+**Ojo con la unidad:** los 2,500 de esta decisión son **retos jugables**,
+compuestos a partir de ~400 **ítems** de kinder (D-018). El plan de 2,500
+*ítems* de `mc-40`, con sus ~1,053 días-persona, cubre todas las bandas de N1 a
+N12 — es otro número, para otro alcance.
 
 ---
 
@@ -135,19 +141,30 @@ la ruta crítica.
 
 ## D-010 — Motor de puntuación · 2026-07-31
 
-**Decisión:** una sola fórmula para las seis bandas —
+> **REVISADA el 2026-07-31 — ver [D-024](#d-024--regla-de-puntuación-de-kinder--2026-07-31).**
+> Kinder queda fuera de esta fórmula, y las edades de esta tabla se corrigieron
+> para coincidir con la escalera de temas de D-017.
+
+**Decisión:** una sola fórmula de primaria en adelante —
 `score = a · (d − RT) · (2·acc − 1)` (regla High-Speed High-Stakes de Math
 Garden, equivalente al modelo IRT 2PL). Jr y Pro no son un caso especial: son la
 misma fórmula con `d` más corto y `a` más alto.
 
 | Banda | `d` (seg) | Peso velocidad | Reloj visible | Anti-trampa |
 |-------|-----------|----------------|---------------|-------------|
-| KINDER 4-7 | — | 0.0 | no | tier 0 |
-| PRIMARIA 8-11 | 60 | 0.3 | opcional | tier 1-2 |
+| KINDER 4-6 | — | — (regla aparte, D-024) | no | tier 0 |
+| PRIMARIA 7-11 | 60 | 0.3 | opcional | tier 1-2 |
 | SECUNDARIA 12-17 | 45 | 0.5 | sí | tier 3 |
-| ADULTO | 40 | 0.6 | sí | tier 3 |
+| SERIO (adulto) | 40 | 0.6 | sí | tier 3 |
 | JR (olimpiada) | 30 | 0.8 | sí | tier 4 |
 | PRO (matemático) | 20 | 1.0 | sí | tier 5 |
+
+**Corrección de bandas:** la versión original de esta tabla decía "KINDER 4-7" y
+"PRIMARIA 8-11", en contradicción con D-017 (KINDER 4-6, PRIMARIA 7-11) y con
+D-016 (límite de pantalla, 4-6 / 7-11). Un niño de 7 años caía en dos bandas
+distintas según qué tabla se leyera. Manda D-017: **7 años es PRIMARIA en todo el
+producto**. También se renombró ADULTO a SERIO para coincidir con el nombre del
+tema visual en D-017.
 
 **Por qué funciona sin excepciones:** `(2·acc − 1)` vale −1 al fallar, así que
 fallar rápido resta más que fallar lento. El castigo a adivinar está en la
@@ -349,26 +366,16 @@ en educación $44.99; una prueba de 17-32 días convierte 1.7× mejor que una de
 **Lo que esto cuesta, dicho con claridad:** el contenido de kinder **no se puede
 traducir**. En alemán el 21 se dice "einundzwanzig" (uno-y-veinte) y en francés
 el 90 es "quatre-vingt-dix" (cuatro-veintes-diez); esa estructura cambia cómo un
-niño aprende a contar y en qué orden. Se necesitan **cinco autores nativos con
-criterio didáctico de kinder**, no cinco traductores. Además: México es el único
-país hispano con **punto** decimal, y Portugal usa escala larga mientras Brasil
-usa escala corta — `pt-PT` y `pt-BR` son dos locales, no uno. Ver `mc-34`.
+niño aprende a contar y en qué orden. Se necesitan **autores nativos con criterio
+didáctico de kinder**, no traductores.
 
----
-
-## Tensiones abiertas que el dueño debe resolver
-
-Estas salieron de la investigación y **no** están decididas. Se listan aquí para
-que ninguna se pierda entre 40 documentos.
-
-| # | Tensión | Dónde está documentada |
-|---|---------|------------------------|
-| T-1 | "Gamificación lo más adictiva posible" vs. la evidencia de daño y la exposición regulatoria con menores en UE/RU/EUA | `mc-17-ethical-gamification-dark-patterns.md`, `mc-10-math-anxiety-mindset-timing.md` |
-| T-2 | Puntos por velocidad vs. la evidencia de que el cronómetro es el origen medible de la ansiedad matemática en niños chicos | `mc-10`, `mc-04-cognitive-load-worked-examples.md`, `mc-06-early-numeracy-kinder.md` |
-| T-3 | Telemetría conductual rica (escribe y borra) vs. "ultra-privacidad para menores" y las reglas de perfilado de menores en la UE | `mc-30-behavioral-telemetry-process-data.md`, `mc-25-child-privacy-law.md` |
-| T-4 | Tablero público global vs. minimización de datos de menores | `mc-25`, `mc-18` |
-| T-5 | Modo maestro: quién verifica que un adulto que abre un "salón" es un maestro real | `mc-28-teacher-classroom-mode.md` |
-| T-6 | Nivel PhD: qué se puede calificar automáticamente de verdad y qué no | `mc-12-advanced-proof-olympiad-phd.md` |
+**Son siete autores, no cinco** (corregido 2026-07-31). Cinco idiomas, siete
+locales: `en`, `es-MX`, `es-ES`, `fr-FR`, `pt-BR`, `pt-PT`, `de-DE`. Los pares
+que comparten idioma no comparten contenido: México es el único país hispano con
+**punto** decimal, Portugal usa escala larga y Brasil corta, y la división larga
+se dibuja distinto en México (anglosajona) que en Brasil y España (europea).
+`pt-PT` y `pt-BR` son dos locales, no uno — y `es-MX` y `es-ES` también. Ver
+`mc-34`.
 
 ---
 
@@ -402,3 +409,98 @@ de un repositorio que no es suyo.
 **Lo que se gana:** cero superposición de locks, cero worktrees ajenos, cero
 riesgo de commitear en la rama equivocada, y un historial que cuenta la historia
 de un solo producto.
+
+---
+
+## D-024 — Regla de puntuación de kinder · 2026-07-31
+
+**Decisión:** kinder **no** usa la regla High-Speed High-Stakes. Usa una regla
+propia, de solo precisión:
+
+```
+score = valor_del_ítem · acc
+```
+
+Sin tiempo permitido, sin resta al fallar, sin reloj visible ni invisible.
+
+**Por qué, y no es pedagogía sino aritmética:** D-010 declaraba "una sola fórmula
+para las seis bandas" con peso de velocidad `0.0` en kinder. Pero
+`score = a · (d − RT) · (2·acc − 1)` con `a = 0` da **cero para toda respuesta**,
+correcta o incorrecta. No es que kinder puntúe sin cronometrar: es que kinder no
+puntúa. Y kinder es la única banda con contenido en el MVP (D-009), así que el
+hueco no era teórico — bloqueaba F2.
+
+**Lo que esto cuesta, dicho de frente:** se pierde la elegancia de "una fórmula
+para todas las bandas", que era un argumento de venta del diseño. A cambio se
+gana que la banda que de verdad vamos a construir tenga una regla que funciona.
+La afirmación correcta ahora es "una fórmula de primaria a Pro, y una regla
+aparte para kinder".
+
+**Consecuencia para el tablero:** un niño de kinder acumula puntos por dificultad
+del ítem, no por velocidad — que es exactamente lo que `mc-10` y `mc-06`
+recomiendan para esa edad, y lo que la línea roja del cronómetro ya exigía.
+
+**Investigación relacionada:** `mc-13-its-knowledge-tracing-elo.md` (pregunta
+abierta #2 planteaba este caso exacto: si HSHS aplica siquiera a 4-6 años),
+`mc-10-math-anxiety-mindset-timing.md`, `mc-06-early-numeracy-kinder.md`.
+
+---
+
+## D-025 — El tablero global ordena por puntos, no por θ · 2026-07-31
+
+**Decisión:** el tablero global se ordena por puntos acumulados, con el valor del
+ítem escalado por dificultad (`10 × 1.6^(nivel−1)`, D-010). **No** se ordena por
+habilidad estimada.
+
+**Esta decisión contradice la investigación, y se toma con eso a la vista.**
+`mc-18` recomienda explícitamente ordenar por θ (la habilidad latente de TRI) y
+advierte que sumar puntos premia a quien resuelve muchos ejercicios fáciles
+rápido; `mc-44` refuerza que θ es lo que permite comparar a un niño de 6 años
+sumando con un adulto en topología, porque ambos se estiman contra ítems
+calibrados por separado.
+
+**Por qué elegimos puntos de todas formas:**
+
+1. **θ no existe en v1.** Requiere un banco calibrado con 200-400 respuestas por
+   ítem (`mc-44`). El día del lanzamiento tenemos cero. Ordenar por θ significaría
+   ordenar por una estimación sin datos, o retrasar F6 detrás de F3.
+2. **Un niño de 8 años no puede leer un rating.** "Tienes 1,847 puntos" se
+   entiende; "tu θ es 0.42" no, y traducirlo a percentil reintroduce la
+   comparación explícita que `mc-18` justamente señala como dañina abajo del
+   tablero.
+3. **El escalado `1.6^(nivel−1)` mitiga el problema concreto que `mc-18`
+   describe.** Un problema de nivel 8 vale ~268 puntos y 30 sumas de nivel 1
+   valen ~300: quedan comparables a propósito, así que la estrategia de "mil
+   sumas triviales" no domina.
+
+**Lo que NO resuelve, dicho de frente:** el punto 3 mitiga, no elimina. Con
+tiempo infinito, el volumen sigue ganándole a la dificultad. `mc-18` tiene razón
+en el fondo; estamos comprando legibilidad y tiempo de entrega a cambio de
+justicia en la cola larga del tablero.
+
+**Condición de revisión:** cuando el banco tenga ≥200 respuestas por ítem en las
+bandas activas, se reevalúa migrar el tablero global a θ, con los puntos
+quedándose como la métrica visible para las bandas de niño. Hasta entonces, esta
+decisión se sostiene.
+
+**Investigación que la respalda:** `mc-13` (Elo/Math Garden, actualización O(1)
+sin calibración previa).
+**Investigación que la contradice:** `mc-18-leaderboards-competition.md` §6,
+`mc-44-adaptive-placement-cat.md`.
+
+---
+
+## Tensiones abiertas que el dueño debe resolver
+
+Estas salieron de la investigación. Cuatro ya se cerraron con decisiones; se
+dejan listadas con su resolución para que no se vuelvan a discutir, y para que
+las dos que siguen abiertas no se pierdan entre 43 documentos.
+
+| # | Tensión | Estado | Dónde está documentada |
+|---|---------|--------|------------------------|
+| T-1 | "Gamificación lo más adictiva posible" vs. la evidencia de daño y la exposición regulatoria con menores en UE/RU/EUA | **Cerrada** por D-014: lista negra explícita de mecánicas, ninguna con exposición regulatoria | `mc-17`, `mc-10` |
+| T-2 | Puntos por velocidad vs. la evidencia de que el cronómetro es el origen medible de la ansiedad matemática en niños chicos | **Cerrada** por D-018 (el reloj depende del tipo de reto, no de la edad) y D-024 (kinder no se cronometra en absoluto) | `mc-10`, `mc-04`, `mc-06` |
+| T-3 | Telemetría conductual rica (escribe y borra) vs. "ultra-privacidad para menores" y las reglas de perfilado de menores en la UE | **Cerrada** por D-020 y la línea roja #8: se guardan señales derivadas, nunca flujos crudos de teclas, y borrar jamás penaliza | `mc-30`, `mc-25` |
+| T-4 | Tablero público global vs. minimización de datos de menores | **Cerrada** por D-003: alias generados, sin nombre real, sin foto, sin ciudad | `mc-25`, `mc-18` |
+| T-5 | Modo maestro: quién verifica que un adulto que abre un "salón" es un maestro real | **Abierta.** D-011 propone un stack de mitigación y dice explícitamente que no es garantía | `mc-28-teacher-classroom-mode.md` |
+| T-6 | Nivel PhD: qué se puede calificar automáticamente de verdad y qué no | **Abierta.** No bloquea el MVP (solo kinder), pero define si el modo Pro es viable | `mc-12-advanced-proof-olympiad-phd.md` |

@@ -2,7 +2,7 @@
 
 > 43 investigaciones hechas el **2026-07-31** por agentes independientes, cada uno
 > con instrucción explícita de **no inventar citas** y de marcar como *unverified*
-> lo que no pudiera confirmar contra una fuente primaria. Total ≈ 143,000 palabras.
+> lo que no pudiera confirmar contra una fuente primaria. Total ≈ 145,000 palabras.
 >
 > **Cómo leer esto.** Cada documento trae `Resumen ejecutivo (ES)` y
 > `Executive summary (EN)` arriba, hallazgos con citas numeradas en medio, y una
@@ -92,8 +92,11 @@
 
 ## Documentos relacionados fuera de esta carpeta
 
-- [`../decisions.md`](../decisions.md) — decisiones del dueño (D-001 … D-008) y las
-  tensiones abiertas.
+- [`../decisions.md`](../decisions.md) — las 25 decisiones del dueño (D-001 …
+  D-025), con fecha, y las dos tensiones que siguen abiertas.
+- [`../master-plan.md`](../master-plan.md) — el plan integral, en 15 secciones.
+- [`../infrastructure.md`](../infrastructure.md) — los 27 objetos
+  `math-challenge-*` de Cloudflare.
 
 ## Numeración
 

@@ -2,8 +2,8 @@
 
 > **math.kilowatto.com** · Plan maestro · 2026-07-31
 >
-> Construido sobre 43 investigaciones (~143,000 palabras) en
-> [`research/`](research/README.md) y 22 decisiones del dueño en
+> Construido sobre 43 investigaciones (~145,000 palabras) en
+> [`research/`](research/README.md) y 25 decisiones del dueño en
 > [`decisions.md`](decisions.md). Cada afirmación de este plan que suene a hecho
 > viene de una de esas dos fuentes; donde es criterio nuestro, lo dice.
 >
@@ -12,7 +12,8 @@
 > Cloudflare. A parent registers and creates child profiles; an adaptive
 > placement test sets difficulty while age sets the visual theme. Challenges are
 > composed from an item bank and scored by a validated accuracy-and-speed rule
-> whose speed weight is zero for young children. Larry, Ignia's existing orange
+> from primary school up, with an accuracy-only rule for kindergarten. Larry,
+> Ignia's existing orange
 > rhino, becomes the tutor. The MVP ships the **entire platform** with **only
 > kindergarten content**; each subsequent release adds one grade band.
 
@@ -50,8 +51,9 @@ que sepa **qué** error cometiste y no solo que fallaste.
 
 ### 3.1 Stack
 
-**Astro + islas React sobre Cloudflare Workers**, igual que `apps/portal` y
-`apps/partners` de este monorepo. HTML estático para lo público (tableros,
+**Astro + islas React sobre Cloudflare Workers**, el mismo stack que `apps/portal`
+y `apps/partners` en `ignia-object-storage` — convención heredada, no código
+compartido (D-023). HTML estático para lo público (tableros,
 marketing, SEO en cinco idiomas) e islas React solo para el motor de reto. La
 razón no es la convención: es que buena parte del mercado objetivo en LatAm juega
 en Android de gama baja, y el bundle importa.
@@ -125,8 +127,9 @@ desempeño al día siguiente (`mc-05`).
 
 ### 4.3 Puntuación
 
-Una sola fórmula para las seis bandas, la regla High-Speed High-Stakes validada
-con millones de niños y matemáticamente equivalente al modelo IRT 2PL:
+**Dos reglas, no una.** De primaria en adelante rige la regla High-Speed
+High-Stakes, validada con millones de niños y matemáticamente equivalente al
+modelo IRT 2PL:
 
 ```
 score = a · (d − RT) · (2·acc − 1)
@@ -137,19 +140,40 @@ resta más que fallar lento**. El castigo a adivinar está en la fórmula, no en
 regla aparte. `d` es el tiempo permitido y `a` el peso — Jr y Pro no son un caso
 especial, son la misma fórmula con `d` corto y `a` alto.
 
-| Banda | `d` | Peso velocidad | Reloj | Anti-trampa |
-|-------|-----|----------------|-------|-------------|
-| KINDER 4-7 | — | 0.0 | no | tier 0 |
-| PRIMARIA 8-11 | 60 s | 0.3 | opcional | tier 1-2 |
-| SECUNDARIA 12-17 | 45 s | 0.5 | sí | tier 3 |
-| ADULTO | 40 s | 0.6 | sí | tier 3 |
-| JR (olimpiada) | 30 s | 0.8 | sí | tier 4 |
-| PRO (matemático) | 20 s | 1.0 | sí | tier 5 |
+**Kinder tiene su propia regla, y decirlo de frente es más honesto que fingir que
+la fórmula es universal:**
+
+```
+score = valor_del_ítem · acc
+```
+
+Sin tiempo, sin resta al fallar. La razón es aritmética antes que pedagógica: con
+`a = 0` la regla HSHS colapsa a cero para toda respuesta, correcta o no — no
+"puntúa sin cronómetro", **no puntúa nada**. Y es la banda que el MVP entero va a
+ejercitar. Ver [D-024](decisions.md#d-024--regla-de-puntuación-de-kinder--2026-07-31).
+
+| Banda | Regla | `d` | Peso velocidad | Reloj | Anti-trampa |
+|-------|-------|-----|----------------|-------|-------------|
+| KINDER 4-6 | precisión | — | — | no | tier 0 |
+| PRIMARIA 7-11 | HSHS | 60 s | 0.3 | opcional | tier 1-2 |
+| SECUNDARIA 12-17 | HSHS | 45 s | 0.5 | sí | tier 3 |
+| SERIO (adulto) | HSHS | 40 s | 0.6 | sí | tier 3 |
+| JR (olimpiada) | HSHS | 30 s | 0.8 | sí | tier 4 |
+| PRO (matemático) | HSHS | 20 s | 1.0 | sí | tier 5 |
+
+Las edades de esta tabla son **las mismas** que las de la escalera de temas
+(§4.1) y las del límite de pantalla (§7). Un niño de 7 años es PRIMARIA en las
+tres, sin excepción.
 
 **Valor del ítem por dificultad:** `10 × 1.6^(nivel−1)`. Un problema de nivel 8
 vale ~268 puntos y 30 sumas de nivel 1 valen ~300. Quedan comparables a
 propósito, para que el primer lugar mundial no sea quien hace mil sumas triviales
 rápido.
+
+Esto **se aparta de lo que recomienda la investigación**: `mc-18` y `mc-44` piden
+ordenar el tablero global por habilidad estimada (θ, estilo TRI), no por puntos
+acumulados. Elegimos el valor-por-dificultad a sabiendas, y el porqué está
+escrito en [D-025](decisions.md#d-025--el-tablero-global-ordena-por-puntos-no-por-θ--2026-07-31).
 
 ### 4.4 Ubicación adaptativa
 
@@ -176,7 +200,8 @@ Tres seguidas en el momento no prueban nada durable.
 Larry no es un chatbot nuevo: es el mismo rinoceronte naranja de Ignia, con su
 canon intacto — coach honesto, humor solo sobre sí mismo, "¡Ya vas!" únicamente
 al aceptar una tarea. La investigación `mc-37` documenta con `archivo:línea` lo
-que ya existe en este repo y lo que hay que cambiar.
+que existe hoy en `ignia-object-storage` y lo que hay que cambiar. Ese código
+**no está a la mano desde aquí**: se reimplementa, no se importa (D-023).
 
 **Lo que cambia para un tutor de niños:**
 
@@ -184,8 +209,8 @@ que ya existe en este repo y lo que hay que cambiar.
 2. Cinco idiomas en vez de dos.
 3. **En kinder la voz es la interfaz** — el niño no lee, Larry habla.
 4. Larry **nunca calcula**: recibe el veredicto ya calculado y solo lo explica.
-   Es el patrón que ya usa `larry/contador/explain.ts` en este repo, y es lo que
-   evita que el tutor se equivoque en matemáticas.
+   Es el patrón de `src/larry/contador/explain.ts` en `ignia-object-storage`, y
+   es lo que evita que el tutor se equivoque en matemáticas.
 
 **Arquitectura híbrida:** explicación pregenerada y revisada al cerrar el reto
 (instantánea, gratis, offline, sin alucinación). La API de Claude entra solo
@@ -375,8 +400,14 @@ complejo. El arte se reusa entre los cinco idiomas: **la Sabana no habla**.
 Decisión del dueño, con su costo dicho de frente: **el contenido de kinder no se
 puede traducir.** En alemán el 21 es "einundzwanzig" (uno-y-veinte) y en francés
 el 90 es "quatre-vingt-dix" (cuatro-veintes-diez); esa estructura cambia el orden
-en que un niño puede aprender a contar. Se necesitan **cinco autores nativos con
-criterio didáctico**, no cinco traductores.
+en que un niño puede aprender a contar. Se necesitan autores nativos con criterio
+didáctico, no traductores.
+
+**Son siete autores, no cinco.** Cinco idiomas, pero siete locales — y los pares
+que comparten idioma no comparten contenido matemático: `es-MX` usa punto decimal
+y `es-ES` coma; `pt-BR` dibuja la división larga a la europea y `es-MX` a la
+anglosajona; Portugal usa escala larga y Brasil corta. No son revisiones
+cosméticas sobre un original, son autorías separadas (`mc-34`).
 
 Trampas de notación ya documentadas (`mc-34`), que la arquitectura de árbol
 estructurado resuelve pero la autoría no:
@@ -450,7 +481,7 @@ Cada fase termina con algo que se puede usar, no con un documento.
 | **F8 · Maestro** | Salón, código, aprobación del padre, tablero del salón, bitácora | F1, F6 |
 | **F9 · Cierre** | Anti-trampa tier 0-1, accesibilidad WCAG 2.2 AA, revisión legal, offline completo | todas |
 
-**F4 es la ruta crítica**, no la ingeniería. Cinco autores nativos produciendo y
+**F4 es la ruta crítica**, no la ingeniería. Siete autores nativos produciendo y
 revisando 400 ítems y curando 2,500 retos es más trabajo que el motor que los
 sirve. La investigación estima ~1,053 días-persona para el banco completo de
 2,500 ítems de todas las bandas; kinder es una fracción, pero no una fracción
@@ -499,6 +530,6 @@ señala como el punto de falla (`mc-18`).
 
 ## Referencias
 
-- [`decisions.md`](decisions.md) — las 22 decisiones del dueño, con fecha
+- [`decisions.md`](decisions.md) — las 25 decisiones del dueño, con fecha
 - [`infrastructure.md`](infrastructure.md) — los 27 objetos `math-challenge-*`
 - [`research/README.md`](research/README.md) — índice de las 43 investigaciones

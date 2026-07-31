@@ -97,6 +97,20 @@ const jsonLd = {
     <meta property="og:locale" content={locale.replace("-", "_")} />
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    {/* Registro del service worker. Va tras `load` para no competir con el
+        primer render — en Android de gama baja, registrar durante el parseo
+        roba hilo principal justo cuando INP se está midiendo (mc-47 §4). */}
+    <script is:inline>
+      if ("serviceWorker" in navigator) {
+        addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch(() => {
+            /* Sin service worker el sitio funciona igual: es mejora, no
+               requisito. Chrome ya no lo exige para instalabilidad (mc-33). */
+          });
+        });
+      }
+    </script>
   </head>
 
   <body>

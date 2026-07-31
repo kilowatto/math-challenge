@@ -72,6 +72,27 @@ function inventoryNames() {
   return names;
 }
 
+// Bindings declarados en el inventario, última columna: | ... | `BINDING` |
+// Wrangler propone bindings derivados del nombre del objeto
+// (math_challenge_session_kv) cuando lo crea desde la CLI, y los escribe solo
+// en la config. Si nadie los corrige, la config y el inventario se separan en
+// silencio — que es lo que este cruce impide.
+function inventoryBindings() {
+  const bindings = new Set();
+  try {
+    for (const line of readFileSync(INVENTORY, "utf8").split("\n")) {
+      if (!/^\|\s*`math-challenge-/.test(line)) continue;
+      const cols = line.split("|");
+      const last = cols[cols.length - 2]?.trim() ?? "";
+      const m = last.match(/^`([A-Z][A-Z0-9_]*)`$/);
+      if (m) bindings.add(m[1]);
+    }
+  } catch {
+    return null;
+  }
+  return bindings;
+}
+
 const problems = [];
 let config;
 
@@ -102,6 +123,35 @@ if (inventory === null) {
     checked++;
     if (!name.startsWith(PREFIX)) {
       problems.push(`${INVENTORY}: "${name}" no empieza con "${PREFIX}"`);
+    }
+  }
+}
+
+// Cruce de bindings: los de wrangler.jsonc deben existir en el inventario.
+// `ASSETS` es del runtime de Static Assets, no un objeto de la cuenta.
+const RUNTIME_BINDINGS = new Set(["ASSETS"]);
+const declared = inventoryBindings();
+
+if (declared === null) {
+  problems.push(`no se pudieron leer los bindings de ${INVENTORY}`);
+} else {
+  const inConfig = [
+    ...(config.d1_databases ?? []),
+    ...(config.kv_namespaces ?? []),
+    ...(config.r2_buckets ?? []),
+    ...(config.analytics_engine_datasets ?? []),
+    ...(config.queues?.producers ?? []),
+    ...(config.vectorize ?? []),
+  ].map((b) => b.binding).filter(Boolean);
+
+  for (const b of inConfig) {
+    checked++;
+    if (RUNTIME_BINDINGS.has(b)) continue;
+    if (!declared.has(b)) {
+      problems.push(
+        `wrangler.jsonc: binding "${b}" no está en el inventario de ${INVENTORY}` +
+        (/^math_challenge_/.test(b) ? " — parece el binding que wrangler propone al crear; usa el documentado" : ""),
+      );
     }
   }
 }

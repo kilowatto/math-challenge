@@ -3,7 +3,8 @@
 
   // Regla de CLAUDE.md § Cloudflare: TODO objeto lleva prefijo
   // `math-challenge-`, sin excepción, ni en pruebas (ahí se sufija: -dev).
-  // El auditor `audits/cf-prefix.mjs` lo hace cumplir en CI.
+  // El auditor `audits/cf-prefix.mjs` lo hace cumplir en CI, cruzando contra
+  // el inventario de docs/infrastructure.md.
   "name": "math-challenge-web",
   "main": "apps/web/dist/_worker.js/index.js",
   "compatibility_date": "2026-07-01",
@@ -28,8 +29,11 @@
     }
   ],
 
-  // Binding "DB", no "math_challenge_db" como sugiere wrangler al crear:
-  // infrastructure.md fija los bindings en UPPER_SNAKE_CASE y corto.
+  // NOTA SOBRE BINDINGS: wrangler propone al crear un objeto un binding
+  // derivado del nombre (math_challenge_session_kv). No se usa. Los bindings
+  // los fija docs/infrastructure.md en UPPER_SNAKE_CASE corto, y el auditor
+  // cf-prefix verifica que no se separen.
+
   "d1_databases": [
     {
       "binding": "DB",
@@ -40,16 +44,42 @@
   ],
 
   "kv_namespaces": [
-    // Sesiones cortas. No van a D1 a propósito.
-    { "binding": "SESSION_KV", "id": "PENDIENTE" },
+    // Tokens de sesión de corta vida. No van a D1 a propósito.
+    // ADVERTENCIA: mc-25 NO pudo confirmar la residencia de datos de Workers
+    // KV. Hasta verificarlo con Cloudflare, aquí solo van tokens efímeros —
+    // nunca datos personales de un menor de la UE o el Reino Unido.
+    {
+      "binding": "SESSION_KV",
+      "id": "c7157f96cd7d478ca8bd0190ef396239"
+    },
     // Feature flags y caché del catálogo de contenido.
-    { "binding": "CONFIG_KV", "id": "PENDIENTE" }
+    {
+      "binding": "CONFIG_KV",
+      "id": "76bfad78247544bbb8fbd447a06ad933"
+    }
+  ],
+
+  "r2_buckets": [
+    // Arte de la Sabana, imágenes y audio de los ítems.
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "math-challenge-media"
+    },
+    // Archivo frío de intentos vencidos y exportaciones COPPA/GDPR.
+    {
+      "binding": "EXPORTS_BUCKET",
+      "bucket_name": "math-challenge-exports"
+    }
   ],
 
   // Telemetría por intento. NO va a D1: D1 topa en 10 GB por base y sería la
-  // primera pared que golpeamos (mc-32, riesgo #1).
+  // primera pared que golpeamos (mc-32, riesgo #1). El dataset no se crea con
+  // comando: aparece la primera vez que un Worker le escribe.
   "analytics_engine_datasets": [
-    { "binding": "ATTEMPTS_AE", "dataset": "math-challenge-attempts-ae" }
+    {
+      "binding": "ATTEMPTS_AE",
+      "dataset": "math-challenge-attempts-ae"
+    }
   ],
 
   "vars": {
@@ -59,13 +89,12 @@
     "DEFAULT_LOCALE": "en"
   }
 
-  // Pendientes de fases posteriores, deliberadamente ausentes aquí para que
-  // wrangler no falle contra objetos que no existen todavía:
+  // Pendientes de fases posteriores, deliberadamente ausentes para que wrangler
+  // no falle contra objetos que no existen todavía:
   //   F4  math-challenge-learner-do      (modelo adaptativo por niño)
   //   F7  math-challenge-league-do       (liga de ~30, WebSocket)
   //   F9  math-challenge-classroom-do    (salón y club de papás)
   //   F6  math-challenge-tutor-gateway   (AI Gateway delante de Claude)
-  //   F5  math-challenge-media           (R2: arte de la Sabana)
   //
   // Quien cree cualquiera de ellos escribe su renglón en la bitácora de
   // docs/infrastructure.md EN EL MISMO PR (CLAUDE.md § Cloudflare).

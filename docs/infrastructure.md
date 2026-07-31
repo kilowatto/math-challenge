@@ -4,7 +4,7 @@
 > cuenta de Cloudflare lleva el prefijo `math-challenge-` para distinguirlo de
 > los de IOS y de IMP, que viven en la misma cuenta.
 >
-> **Estado: 1 de 27 objetos creado.** El resto de esta lista es lo que se va a
+> **Estado: 5 de 27 objetos creados.** El resto de esta lista es lo que se va a
 > crear, no lo que está creado. Conforme se creen, se anota el ID real y la fecha
 > en la bitácora de abajo, según la regla de `CLAUDE.md` § Cloudflare.
 >
@@ -78,6 +78,10 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 | Fecha | Objeto | ID real | Quién | Nota |
 |-------|--------|---------|-------|------|
 | 2026-07-31 | `math-challenge-db` (D1) | `25276cac-2d48-4771-87c1-f58bc8722b4e` | Esteban | Región **WNAM**. Migraciones 0001 y 0002 aplicadas en local y remoto; 10 tablas. Binding `DB`, no el `math_challenge_db` que sugiere wrangler |
+| 2026-07-31 | `math-challenge-session-kv` (KV) | `c7157f96cd7d478ca8bd0190ef396239` | Esteban | Binding `SESSION_KV`. **Solo tokens efímeros** hasta verificar residencia de KV con Cloudflare |
+| 2026-07-31 | `math-challenge-config-kv` (KV) | `76bfad78247544bbb8fbd447a06ad933` | Esteban | Binding `CONFIG_KV` |
+| 2026-07-31 | `math-challenge-media` (R2) | *(el nombre es el id)* | Esteban | Binding `MEDIA_BUCKET`. Arte de la Sabana, imágenes y audio |
+| 2026-07-31 | `math-challenge-exports` (R2) | *(el nombre es el id)* | Esteban | Binding `EXPORTS_BUCKET`. Archivo frío y exportaciones COPPA/GDPR |
 
 > **Regla:** quien crea un recurso de Cloudflare escribe su renglón aquí en el
 > mismo PR (`CLAUDE.md` § Cloudflare).

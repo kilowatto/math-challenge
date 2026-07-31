@@ -1,0 +1,70 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Regla de CLAUDE.md § Cloudflare: TODO objeto lleva prefijo
+  // `math-challenge-`, sin excepción, ni en pruebas (ahí se sufija: -dev).
+  // El auditor `audits/cf-prefix.mjs` lo hace cumplir en CI.
+  "name": "math-challenge-web",
+  "main": "apps/web/dist/_worker.js/index.js",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": "apps/web/dist",
+    "binding": "ASSETS"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // D-033: mismo host. El sitio abierto vive en la raíz y la app en rutas
+  // autenticadas, para que la autoridad de dominio se concentre en un solo
+  // lugar en vez de repartirse (mc-48).
+  "routes": [
+    {
+      "pattern": "math.kilowatto.com",
+      "custom_domain": true
+    }
+  ],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "math-challenge-db",
+      "database_id": "PENDIENTE-crear-con-wrangler-d1-create",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "kv_namespaces": [
+    // Sesiones cortas. No van a D1 a propósito.
+    { "binding": "SESSION_KV", "id": "PENDIENTE" },
+    // Feature flags y caché del catálogo de contenido.
+    { "binding": "CONFIG_KV", "id": "PENDIENTE" }
+  ],
+
+  // Telemetría por intento. NO va a D1: D1 topa en 10 GB por base y sería la
+  // primera pared que golpeamos (mc-32, riesgo #1).
+  "analytics_engine_datasets": [
+    { "binding": "ATTEMPTS_AE", "dataset": "math-challenge-attempts-ae" }
+  ],
+
+  "vars": {
+    // Los siete locales. No cinco: es-MX y es-ES no comparten separador
+    // decimal, pt-BR y pt-PT no comparten escala numérica (mc-34, D-022).
+    "SUPPORTED_LOCALES": "en,es-MX,es-ES,fr-FR,pt-BR,pt-PT,de-DE",
+    "DEFAULT_LOCALE": "en"
+  }
+
+  // Pendientes de fases posteriores, deliberadamente ausentes aquí para que
+  // wrangler no falle contra objetos que no existen todavía:
+  //   F4  math-challenge-learner-do      (modelo adaptativo por niño)
+  //   F7  math-challenge-league-do       (liga de ~30, WebSocket)
+  //   F9  math-challenge-classroom-do    (salón y club de papás)
+  //   F6  math-challenge-tutor-gateway   (AI Gateway delante de Claude)
+  //   F5  math-challenge-media           (R2: arte de la Sabana)
+  //
+  // Quien cree cualquiera de ellos escribe su renglón en la bitácora de
+  // docs/infrastructure.md EN EL MISMO PR (CLAUDE.md § Cloudflare).
+}

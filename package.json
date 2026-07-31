@@ -1,0 +1,27 @@
+{
+  "name": "math-challenge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.14.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @math-challenge/web dev",
+    "build": "pnpm --filter @math-challenge/web build",
+    "typecheck": "pnpm -r typecheck",
+    "audit:all": "node audits/run.mjs",
+    "audit:prefix": "node audits/cf-prefix.mjs",
+    "audit:secrets": "node audits/secrets.mjs",
+    "audit:i18n": "node audits/i18n-complete.mjs",
+    "audit:migrations": "node audits/migrations.mjs",
+    "audit:bundle": "node audits/bundle-budget.mjs",
+    "db:migrate:local": "wrangler d1 migrations apply math-challenge-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply math-challenge-db --remote"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "wrangler": "^4.100.0"
+  }
+}

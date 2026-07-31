@@ -740,13 +740,24 @@ escritorio más completa.
 ## D-032 — La flota de 35 auditores · 2026-07-31
 
 **Decisión del dueño:** el despliegue lleva auditores adversariales, sin miedo a
-que sean muchos. Son **35**, en dos clases:
+que sean muchos. Son **38**, en dos clases:
 
-**Deterministas (12), en cada commit:** presupuesto de bundle · Core Web Vitals
+**Deterministas (15), en cada commit:** presupuesto de bundle · Core Web Vitals
 con los umbrales de D-030 · axe-core · contraste · blancos táctiles por banda
-(24/44/88 px) · completitud de las siete llaves de idioma · validación de JSON-LD
-· reciprocidad de `hreflang` · escaneo de secretos · prefijo `math-challenge-` ·
-seguridad de migraciones · presupuesto de precaché offline.
+(24/44/88 px) · completitud de los **siete locales** · validación de JSON-LD ·
+reciprocidad de `hreflang` · escaneo de secretos · prefijo `math-challenge-` ·
+seguridad de migraciones · presupuesto de precaché offline · **ningún campo de
+texto libre en tablas de niño** · **ninguna tabla por intento en D1** · **paleta
+Ignia, formatos de imagen y llaves de Recraft/Google**.
+
+> **Eran 12 al decidirse; son 15 al implementarse (F0).** Los tres que se
+> agregaron no son adorno: `child-free-text` hace cumplir la línea roja #3 en el
+> esquema —donde Roblox demuestra que la moderación no alcanza (`mc-46` §4)—,
+> `no-attempts-in-d1` vigila el único límite de la arquitectura que se alcanza
+> por error de diseño y no por crecimiento (`mc-32` riesgo #1), y `brand-image`
+> nació al descubrir que el naranja de Ignia no pasa el contraste de texto
+> normal (`docs/guia-de-estilo.md`). El total sube de 35 a 38. Cuando el código
+> encuentra un auditor que faltaba, manda el código.
 
 **Adversariales con LLM (23), en cada PR, instruidos para encontrar la violación
 y no para aprobar:** líneas rojas · privacidad COPPA/GDPR-K · anti-humillación ·

@@ -128,5 +128,21 @@ El banco de ítems es producto, no datos de prueba:
 ## Imágenes
 
 **Recraft** es la herramienta oficial para generar arte (mantiene la continuidad
-del avatar de Larry, que se generó ahí). **Gemini** para las piezas complejas de
-interfaz. Las llaves viven en `.env` local y nunca se commitean.
+del avatar de Larry, que se generó ahí). **Gemini / Nano Banana** para las piezas
+complejas de interfaz.
+
+**Las llaves nunca se commitean.** Se capturan con `./scripts/set-keys.sh`, que
+las lee sin eco para que no toquen el historial del shell, y viven en `.env`
+local o en `wrangler secret put`. Una llave que se pega en un chat, un commit o
+la línea de comandos **está quemada: se rota, no se borra** — un secreto
+commiteado sigue en el historial de git para siempre.
+
+**Formato: AVIF con respaldo WebP**, salvo los íconos de instalación del
+manifest. Da 25-50% menos peso, y el mercado objetivo es Android de gama baja
+(`mc-47` §5).
+
+La paleta y la tipografía están en [`docs/guia-de-estilo.md`](docs/guia-de-estilo.md).
+El dato que sorprende a todos la primera vez: **el naranja de Ignia (`#F36B1C`),
+que es el color de Larry, da 3.03:1 sobre blanco y no alcanza para texto
+normal** — solo títulos grandes, botones y gráficos. `audits/brand-image.mjs` lo
+verifica en cada commit.

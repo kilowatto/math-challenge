@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# esbuild y workerd compilan binarios nativos: wrangler no corre sin ellos.
+# Se aprueban explícitamente en vez de con --no-strict-peer-dependencies, para
+# que agregar un tercero sea una decisión visible en el diff y no un descuido.
+allowBuilds:
+  esbuild: true
+  workerd: true

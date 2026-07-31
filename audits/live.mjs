@@ -56,6 +56,42 @@ const altSvc = headers.get("alt-svc") ?? "";
 if (altSvc.includes("h3")) ok.push(`HTTP/3 anunciado (${altSvc.split(";")[0]})`);
 else problems.push("sin alt-svc con h3: HTTP/3 no está activo en la zona");
 
+// 4b. 0-RTT (D-030). No hay cabecera que inspeccionar: la evidencia está en el
+// ticket de sesión de TLS 1.3. Si el servidor anuncia `Max Early Data: 0`, el
+// ajuste está apagado, por mucho que HTTP/3 sí esté.
+//
+// Se mide con openssl porque `fetch` no expone early data. Hay que dejar la
+// conexión abierta unos segundos: en TLS 1.3 el NewSessionTicket llega DESPUÉS
+// del handshake, y cerrar de inmediato deja el archivo de sesión vacío — que
+// fue exactamente cómo esta comprobación falló en silencio la primera vez.
+try {
+  const { execSync } = await import("node:child_process");
+  const host = new URL(ORIGIN).hostname;
+  const tmp = `/tmp/mc-0rtt-${process.pid}.pem`;
+  execSync(
+    `(printf 'GET / HTTP/1.1\\r\\nHost: ${host}\\r\\n\\r\\n'; sleep 4) | ` +
+      `openssl s_client -connect ${host}:443 -servername ${host} -tls1_3 -sess_out ${tmp} 2>/dev/null >/dev/null`,
+    { shell: "/bin/bash", timeout: 30000 },
+  );
+  const text = execSync(`openssl sess_id -in ${tmp} -text 2>/dev/null || true`, {
+    encoding: "utf8",
+    timeout: 15000,
+  });
+  execSync(`rm -f ${tmp}`);
+  const m = text.match(/Max Early Data:\s*(\d+)/i);
+  const maxEarly = m ? Number(m[1]) : null;
+  if (maxEarly && maxEarly > 0) {
+    ok.push(`0-RTT activo (max early data ${maxEarly})`);
+  } else {
+    problems.push(
+      "0-RTT APAGADO (max early data 0) — actívalo en el dashboard: " +
+        "Speed → Optimization → Protocol Optimization → 0-RTT Connection Resumption",
+    );
+  }
+} catch (err) {
+  problems.push(`0-RTT no se pudo medir: ${err.message}`);
+}
+
 // 5. El camino de RPC nativo está vivo (D-030): web → ingest → D1
 try {
   const health = await (await get("/api/health")).json();

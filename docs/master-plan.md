@@ -487,7 +487,7 @@ audiencia. Si sale ahora, la app aterriza sobre público ya formado.
 
 | Fase | Qué queda funcionando | Depende de |
 |------|----------------------|-----------|
-| **F0 · Cimientos y gates** | Worker en math.kilowatto.com, D1 con esquema, Astro con las **siete** rutas de locale, PWA instalable, HTTP/3 verificado, RPC nativo entre `web` e `ingest` probado en vivo, y los auditores deterministas **bloqueando en un gancho pre-commit** | — |
+| **F0 · Cimientos y gates** | Worker en math.kilowatto.com, D1 con esquema, Astro con las **siete** rutas de locale, PWA instalable, HTTP/3 **y 0-RTT** verificados, RPC nativo entre `web` e `ingest` probado en vivo, y los auditores deterministas **bloqueando en un gancho pre-commit** | — |
 | **F1 · La flota adversarial** | Los 23 auditores con LLM, cada uno con su carta y con la regla de citar la decisión que hace cumplir; anulación por escrito | F0 |
 | **F2 · Cuentas y onboarding** | Las tres puertas de registro de 2 campos, perfiles de hijo, entrada del niño con avatar + PIN de imágenes, verificación del maestro antes de crear salón, y las cinco marcas contextuales | F0 |
 | **F3 · Motor de reto** | Los 5 formatos táctiles, un reto de práctica de principio a fin, puntuación del lado del servidor con HSHS **y la regla de precisión de kinder** (D-024) | F2 |

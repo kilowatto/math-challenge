@@ -11,6 +11,7 @@
  *     Cloudflare (D-033)
  */
 import { LOCALES, DEFAULT_LOCALE, t, type Locale } from "../i18n";
+import "../styles/fonts.css";
 import "../styles/tokens.css";
 
 interface Props {
@@ -81,13 +82,16 @@ const jsonLd = {
     <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 
-    {/* Raleway. display=swap para que el texto sea legible antes de que cargue
-        la fuente — en 4G lento eso es la diferencia entre leer y esperar. */}
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    {/* Raleway autohospedada — ni una petición a un tercero. Ver
+        src/styles/fonts.css para el porqué (rendimiento y privacidad).
+        Se precarga solo el subconjunto latin: cubre el cuerpo en los siete
+        locales, y latin-ext llega después solo si la página tiene acentos. */}
     <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500&display=swap"
+      rel="preload"
+      href="/fonts/raleway-var-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
     />
 
     <meta property="og:type" content="website" />

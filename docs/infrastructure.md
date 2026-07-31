@@ -86,6 +86,24 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 > **Regla:** quien crea un recurso de Cloudflare escribe su renglón aquí en el
 > mismo PR (`CLAUDE.md` § Cloudflare).
 
+### Ajustes de zona (no son objetos, pero se rompen igual)
+
+Estos no aparecen en el inventario porque no son objetos de la cuenta, sino
+ajustes de la zona `kilowatto.com`. Se anotan porque nada en el repositorio los
+declara: si alguien los apaga, el código no se entera.
+
+| Ajuste | Estado | Evidencia | Fecha |
+|--------|--------|-----------|-------|
+| HTTP/2 | activo | — | 2026-07-31 |
+| HTTP/2 to Origin | activo | — | 2026-07-31 |
+| HTTP/3 (con QUIC) | activo | `alt-svc: h3=":443"` | 2026-07-31 |
+| **0-RTT Connection Resumption** | **activo** | ticket TLS 1.3 con `Max Early Data: 14336` | 2026-07-31 |
+| Enhanced HTTP/2 Prioritization | no disponible | requiere plan Pro; la zona es Free | — |
+
+`audits/live.mjs` verifica HTTP/3 y 0-RTT en cada corrida, así que un apagón
+accidental se detecta al desplegar en vez de meses después. Están en
+**Speed → Optimization → Protocol Optimization**.
+
 ### Lo que quedó decidido sin decidirse: la jurisdicción
 
 `math-challenge-db` se creó en **WNAM** (Norteamérica oeste). Eso importa más de

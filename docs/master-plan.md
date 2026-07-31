@@ -3,7 +3,7 @@
 > **math.kilowatto.com** · Plan maestro · 2026-07-31
 >
 > Construido sobre 47 investigaciones (~157,000 palabras) en
-> [`research/`](research/README.md) y 33 decisiones del dueño en
+> [`research/`](research/README.md) y 34 decisiones del dueño en
 > [`decisions.md`](decisions.md). Cada afirmación de este plan que suene a hecho
 > viene de una de esas dos fuentes; donde es criterio nuestro, lo dice.
 >
@@ -15,7 +15,8 @@
 > from primary school up, with an accuracy-only rule for kindergarten. Larry,
 > Ignia's existing orange
 > rhino, becomes the tutor. The MVP ships the **entire platform** with **only
-> kindergarten content**; each subsequent release adds one grade band.
+> kindergarten content**, plus a minimal adult strip (N8-N10) so adult clubs
+> have something to compete on; each subsequent release adds one grade band.
 
 ---
 
@@ -492,11 +493,12 @@ audiencia. Si sale ahora, la app aterriza sobre público ya formado.
 | **F3 · Motor de reto** | Los 5 formatos táctiles, un reto de práctica de principio a fin, puntuación del lado del servidor con HSHS **y la regla de precisión de kinder** (D-024) | F2 |
 | **F4 · Adaptativo** | Ubicación por tema, selección del siguiente ítem, repaso espaciado, modelo por niño en su Durable Object | F3 |
 | **F5 · Contenido kinder** | ~400 ítems × **7 locales**, 2,500 retos curados, 14 habilidades, arte de la Sabana | esquema de ítem (§9) · en paralelo con F3-F4 |
+| **F5b · Franja adulta** | ~150 ítems N8-N10, **autorados una vez y renderizados en 7 notaciones**. Sin Sabana, sin modo historia, sin curaduría por serie (D-034) | esquema de ítem (§9) · en paralelo con F5 |
 | **F6 · Larry Profe** | Explicación pregenerada al cerrar el reto + Claude en vivo con ruteo y tope de gasto, voz en los siete locales | F3, F5 |
 | **F7 · Juego** | XP, rachas con red, misiones, mapa, ligas de ~30, tablero con alias generados | F4 |
 | **F8 · Padres** | Panel con diagnóstico, límite de pantalla con corte suave, reportes, Stripe | F2 |
 | **F9 · Grupos infantiles** | Salón del maestro y club de papás sobre la misma tabla `grupo_infantil`: código, aprobación del padre, tablero, bitácora. Sin chat, en ninguna dirección (D-027) | F2, F7 |
-| **F10 · Clubs de adultos** | `club_adulto`, retos con ventana de tiempo, las tres formas de prenda, y Larry moderando el texto libre a prueba de fallos (D-028, D-029) | F2, F7 · **ver T-7** |
+| **F10 · Clubs de adultos** | `club_adulto`, retos con ventana de tiempo, las tres formas de prenda, y Larry moderando el texto libre a prueba de fallos (D-028, D-029) | F2, F7, **F5b** |
 | **F11 · Cierre** | Anti-trampa tier 0-1, accesibilidad auditada, revisión legal con abogado, offline completo, interfaz adaptativa terminada en las cuatro plataformas | todas |
 
 ### 13.3 Cuatro cosas que la tabla no dice sola
@@ -520,12 +522,21 @@ HIG en iOS y macOS, controles del sistema en Windows (D-031) se pagan en cada
 función de F2 a F10, no en un bloque al final. Aparece en F11 solo como
 verificación; el costo real está repartido.
 
-**F10 tiene un problema de contenido antes que de código.** D-009 fija que el MVP
-lleva la plataforma completa con **solo contenido de kinder**. Un club de adultos
-compitiendo en sumas de kinder no tiene sentido — es decir, la vía del adulto, que
-es el caso de uso del propio dueño ([`por-que-existe.md`](por-que-existe.md)),
-**no tiene contenido en el MVP**. Registrado como tensión abierta T-7 en
-[`decisions.md`](decisions.md).
+**F10 depende de F5b, y F5b existe por una razón concreta.** D-009 fijaba el MVP
+con solo contenido de kinder, y un club de adultos compitiendo en sumas de kinder
+no tiene sentido — la vía del adulto, que es el caso de uso del propio dueño
+([`por-que-existe.md`](por-que-existe.md)), se quedaba sin contenido. D-034
+enmienda D-009 y agrega una franja mínima de ~150 ítems en N8-N10.
+
+Lo que hace esa franja asequible no es su tamaño sino algo menos obvio: **el
+costo de los siete locales es un problema de kinder, no de adultos.** Lo que no
+se puede traducir son las palabras-número y las secuencias de conteo (`mc-34`);
+en N8-N10 lo único que cambia es la notación, y eso lo resuelve el
+almacenamiento del ítem como estructura (§9). La franja adulta **se autora una
+vez y se renderiza siete veces** — el primer lugar donde el proyecto cobra esa
+decisión de diseño. Con el costo contrario también dicho: `mc-40` muestra que la
+proporción de plantilla baja al subir de nivel (20-35% aquí contra ~70% en
+kinder), así que ítem por ítem el contenido adulto es más caro de producir.
 
 ---
 
@@ -540,7 +551,8 @@ buscado.
    `[unverified]` a propósito. Antes de lanzar con menores esto se revisa con
    abogado, en particular COPPA 2025 (cumplimiento exigible desde abril 2026), el
    Children's Code, y el estado real de la LFPDPPP tras la desaparición del INAI.
-3. **No incluye contenido arriba de kinder.** Las bandas N4 a N12 están
+3. **No incluye la escalera completa.** El MVP llega a kinder (N1-N3) más una
+   franja mínima en N8-N10 (D-034); las bandas N4 a N7 y N11-N12 están
    investigadas, no construidas.
 4. **No promete resultados de aprendizaje.** No podemos afirmar que la app enseña
    hasta medirlo con pre/post y retención diferida. Nunca citar "las 2 sigma de
@@ -570,7 +582,7 @@ señala como el punto de falla (`mc-18`).
 
 ## Referencias
 
-- [`decisions.md`](decisions.md) — las 33 decisiones del dueño, con fecha
+- [`decisions.md`](decisions.md) — las 34 decisiones del dueño, con fecha
 - [`infrastructure.md`](infrastructure.md) — los 27 objetos `math-challenge-*`
 - [`research/README.md`](research/README.md) — índice de las 47 investigaciones
 - [`por-que-existe.md`](por-que-existe.md) — la historia del dueño, voz del sitio

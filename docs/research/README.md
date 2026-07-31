@@ -100,8 +100,8 @@
 
 ## Documentos relacionados fuera de esta carpeta
 
-- [`../decisions.md`](../decisions.md) — las 33 decisiones del dueño (D-001 …
-  D-033), con fecha, y las dos tensiones que siguen abiertas.
+- [`../decisions.md`](../decisions.md) — las 34 decisiones del dueño (D-001 …
+  D-034), con fecha, y las dos tensiones que siguen abiertas.
 - [`../por-que-existe.md`](../por-que-existe.md) — la historia del dueño, fuente
   de la voz del sitio público.
 - [`../master-plan.md`](../master-plan.md) — el plan integral, en 15 secciones.

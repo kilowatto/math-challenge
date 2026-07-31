@@ -127,6 +127,11 @@ contenido.
 
 ## D-009 — Alcance del MVP · 2026-07-31
 
+> **ENMENDADA — ver [D-034](#d-034--franja-mínima-de-contenido-adulto-en-el-mvp--2026-07-31).**
+> El MVP lleva kinder completo **más una franja mínima de contenido adulto
+> (N8-N10)**, para que los clubs de adultos tengan de qué competir. El criterio
+> de "MVP terminado" sigue anclado en que kinder esté completo.
+
 **Decisión:** **plataforma completa, contenido de un solo grado.** El MVP incluye
 todo — cuentas familiares, ubicación adaptativa, ligas, tablero, Larry, modo
 maestro, límite de pantalla, PWA offline — pero **solo con contenido de kinder**.
@@ -812,6 +817,63 @@ uno que no lo presume.
 
 ---
 
+## D-034 — Franja mínima de contenido adulto en el MVP · 2026-07-31
+
+> **Enmienda [D-009](#d-009--alcance-del-mvp--2026-07-31).** Cierra la tensión T-7.
+
+**Decisión del dueño:** el MVP deja de ser estrictamente "contenido de un solo
+grado". Lleva **kinder completo más una franja mínima de contenido adulto
+(N8-N10)** — lo justo para que un club de adultos tenga de qué competir.
+
+**Por qué se rompe D-009 a propósito.** Los clubs de adultos (D-028) y su caso
+de uso están descritos en [`por-que-existe.md`](por-que-existe.md): un adulto a
+veinticinco años de haber estudiado matemáticas que quiere retar su propia mente.
+**Esa persona empezó el proyecto.** Con D-009 intacta, el producto lanzaría sin
+contenido para su propio dueño, y F10 quedaría construida sobre nada.
+
+**Lo que hace esto asequible, y no es obvio.** El costo de los siete locales que
+`mc-34` documenta es un problema **de kinder**, no de adultos: lo que no se puede
+traducir son las palabras-número ("einundzwanzig", "quatre-vingt-dix") y las
+secuencias de conteo, porque cambian el orden en que un niño aprende. En N8-N10
+eso ya no aplica. Lo que sí cambia es la **notación** — punto contra coma
+decimal, símbolo de división, formato de intervalo — y eso es exactamente lo que
+el almacenamiento del ítem como estructura y no como texto (§9, D-005) resuelve
+en el momento de renderizar.
+
+Es decir: **la franja adulta se autora una vez y se renderiza siete veces.** No
+son siete autorías. Es el primer lugar donde el proyecto cobra la decisión de
+guardar el ítem como árbol en vez de como texto.
+
+**Barandales para que la franja no crezca sola.** Sin estos, "mínima" se
+convierte en una segunda banda completa y F5 pierde el foco:
+
+- **~150 ítems**, no 400. Es una franja, no una banda.
+- **Sin modo historia y sin arte de la Sabana.** La Sabana es de kinder.
+- **Sin retos curados en serie.** Los 2,500 retos curados son de kinder; la
+  franja adulta compone retos del banco sin curaduría pedagógica por serie.
+- **Sin ubicación adaptativa propia** más allá de la que ya da F4.
+- **Una sola autoría, siete renders de notación** — nunca siete autorías.
+
+**Lo que cuesta, dicho de frente.** Abre un segundo frente de autoría sobre la
+ruta crítica, que ya era el cuello de botella. Y `mc-40` es claro en que la
+proporción de plantilla **baja** conforme sube el nivel: en esta franja ronda
+20-35%, contra ~70% en kinder. O sea, ítem por ítem, el contenido adulto es más
+caro de producir que el infantil, aunque haya muchos menos y no se multiplique
+por siete.
+
+**Lo que esta decisión NO cambia:** las bandas N4 a N7 y N11-N12 siguen fuera del
+MVP; la escalera completa sigue siendo trabajo de versiones posteriores; y el
+criterio de "MVP terminado" sigue anclado en que **kinder esté completo**, no en
+que la franja adulta lo esté.
+
+**Investigación relacionada:** `mc-34-i18n-math-notation.md` (por qué el problema
+de locales es de kinder), `mc-40-item-bank-content-operations.md` (proporción de
+plantilla por banda), `mc-39-eastern-drill-mental-math-traditions.md` y
+`mc-36-problem-design-item-formats.md` (formatos que sirven a un adulto),
+`mc-12-advanced-proof-olympiad-phd.md` (qué es calificable de verdad).
+
+---
+
 ## Tensiones abiertas que el dueño debe resolver
 
 Estas salieron de la investigación. Cuatro ya se cerraron con decisiones; se
@@ -825,5 +887,5 @@ las dos que siguen abiertas no se pierdan entre 43 documentos.
 | T-3 | Telemetría conductual rica (escribe y borra) vs. "ultra-privacidad para menores" y las reglas de perfilado de menores en la UE | **Cerrada** por D-020 y la línea roja #8: se guardan señales derivadas, nunca flujos crudos de teclas, y borrar jamás penaliza | `mc-30`, `mc-25` |
 | T-4 | Tablero público global vs. minimización de datos de menores | **Cerrada** por D-003: alias generados, sin nombre real, sin foto, sin ciudad | `mc-25`, `mc-18` |
 | T-5 | Quién verifica que un adulto que abre un salón o un club es quien dice ser | **Abierta, y ahora más ancha.** D-011 propone un stack de mitigación que no es garantía, y D-027 extiende el mismo problema a los clubs de papás. D-027 lo acota eliminando el contacto no supervisado, pero **no verifica al adulto** | `mc-28`, `mc-46` |
-| T-6 | Nivel PhD: qué se puede calificar automáticamente de verdad y qué no | **Abierta.** No bloquea el MVP (solo kinder), pero define si el modo Pro es viable | `mc-12-advanced-proof-olympiad-phd.md` |
-| T-7 | **La vía del adulto no tiene contenido en el MVP.** D-009 fija plataforma completa con solo contenido de kinder; un club de adultos compitiendo en sumas de kinder no tiene sentido | **Abierta, y bloquea F10.** Tres salidas posibles: F10 espera a las bandas N8-N10, el MVP incluye una franja mínima de contenido adulto, o los clubs de adultos arrancan con retos curados de otra fuente | D-009, D-028, `por-que-existe.md`, plan maestro §13.3 |
+| T-6 | Nivel PhD: qué se puede calificar automáticamente de verdad y qué no | **Abierta.** No bloquea el MVP, que llega hasta N10 (D-034), pero define si el modo Pro es viable | `mc-12-advanced-proof-olympiad-phd.md` |
+| T-7 | La vía del adulto no tenía contenido en el MVP, y un club de adultos compitiendo en sumas de kinder no tiene sentido | **Cerrada** por D-034: el MVP lleva kinder completo más una franja mínima de contenido adulto (N8-N10), con barandales para que no crezca | D-009, D-028, D-034, `por-que-existe.md` |

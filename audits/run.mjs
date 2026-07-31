@@ -19,11 +19,11 @@ const ACTIVE = [
   ["no-attempts-in-d1", "intentos fuera de D1",                              "mc-32 riesgo #1"],
   ["secrets",           "ningún secreto commiteado",                         "CLAUDE.md § Cloudflare"],
   ["brand-image",       "paleta Ignia, AVIF/WebP, llaves de imagen",         "guia-de-estilo.md, mc-38, mc-47"],
+  ["bundle-budget",     "peso gz por página, JS y CSS de cliente",           "D-030, mc-47 §4"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
 const PENDING = [
-  ["bundle-budget",     "presupuesto de bundle",                     "F0 · cuando exista build"],
   ["cwv-budget",        "INP ≤150ms, LCP ≤2.5s, CLS ≤0.1 en Android de gama baja/4G lento", "F0 · cuando haya despliegue"],
   ["axe-a11y",          "axe-core sin violaciones",                  "F2 · cuando haya interfaz"],
   ["contrast",          "contraste 4.5:1 texto, 3:1 gráficos",       "F2 · cuando haya interfaz"],

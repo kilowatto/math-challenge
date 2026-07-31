@@ -42,3 +42,7 @@ playwright-report/
 # Temporal
 tmp/
 .cache/
+
+# Build de Astro
+apps/web/dist/
+apps/web/.astro/

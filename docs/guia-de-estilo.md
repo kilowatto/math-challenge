@@ -61,6 +61,28 @@ oscuro-primero para la banda adulta/experta.
 
 La marca se ve mejor exactamente donde el producto ya quería ir.
 
+## Neutros derivados — los que no vienen del PDF
+
+**El PDF de Ignia no cubre tema oscuro.** Su gris más oscuro es `#434547`, que a
+9.63:1 sobre blanco es un texto excelente pero es demasiado claro para servir de
+fondo. Así que hubo que derivar cuatro neutros, y se declaran como derivados
+para que nadie los confunda con color de marca:
+
+| Token | Hex | Para qué | Verificación |
+|---|---|---|---|
+| `superficie-clara` | `#F7F7F8` | Superficie en tema claro | Texto `#434547` encima: **8.99:1** ✓ |
+| `fondo-oscuro` | `#16181A` | Fondo en tema oscuro | — |
+| `superficie-oscura` | `#1F2224` | Superficie en tema oscuro | 1.11:1 contra el fondo — separación, nunca texto |
+| `texto-oscuro` | `#ECEDEE` | Texto en tema oscuro | **15.19:1** ✓ |
+
+Sobre `#16181A`, la paleta de marca queda así: naranja Ignia **5.88:1** (aquí sí
+lleva texto normal), naranja claro **8.72:1**, gris 400 **7.29:1**.
+
+**Este bloque nació de que el auditor bloqueó un commit.** `brand-image.mjs`
+marcó cuatro hex fuera de paleta en `tokens.css` — eran estos. La respuesta
+correcta no era relajar el auditor sino declarar los colores y justificar su
+contraste, que es lo que está arriba.
+
 ---
 
 ## Tipografía

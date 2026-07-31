@@ -28,9 +28,14 @@ export default defineConfig({
   },
 
   build: {
-    // Un archivo por ruta en vez de directorio/index.html: menos redirecciones,
-    // que en 4G lento cuestan un viaje redondo completo (mc-47 §3).
-    format: "file",
+    // "directory" produce /en/index.html, que sirve en /en/ — la misma URL que
+    // declaran el canonical y los hreflang del layout.
+    //
+    // Con "file" generaba /en.html: el navegador llegaba igual, pero el
+    // canonical apuntaba a una URL distinta del archivo, y el ciclo de hreflang
+    // no cerraba. Ese es exactamente el fallo que hace que Google ignore el
+    // grupo de idiomas completo (mc-48 §3).
+    format: "directory",
   },
 
   vite: {

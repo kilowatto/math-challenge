@@ -1,0 +1,162 @@
+---
+/**
+ * Layout base del sitio abierto.
+ *
+ * Hace cumplir de S0:
+ *   · hreflang recíproco entre los 7 locales + x-default (mc-48 §3)
+ *   · JSON-LD con inLanguage por versión y estructura idéntica entre idiomas
+ *   · el esquema COINCIDE con lo visible en la página — si difiere, Google
+ *     puede ignorar todo el marcado (mc-48 §3, regla dura)
+ *   · atribución en dos mitades verificables: proyecto de Ignia, sobre
+ *     Cloudflare (D-033)
+ */
+import { LOCALES, DEFAULT_LOCALE, t, type Locale } from "../i18n";
+import "../styles/tokens.css";
+
+interface Props {
+  locale: Locale;
+  /** Se pasa explícito para que el JSON-LD no pueda desincronizarse del <title>. */
+  title: string;
+  description: string;
+}
+
+const { locale, title, description } = Astro.props;
+const m = t(locale);
+const site = "https://math.kilowatto.com";
+const canonical = `${site}/${locale}/`;
+
+// JSON-LD. `name` y `description` vienen de las MISMAS variables que renderiza
+// el <body>, no de constantes paralelas: es la única forma de que la regla de
+// coincidencia esquema-página no se rompa al editar una sola de las dos.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${site}/#website`,
+      url: site,
+      name: title,
+      description,
+      inLanguage: locale,
+      publisher: { "@id": `${site}/#organization` },
+    },
+    {
+      "@type": "Organization",
+      "@id": `${site}/#organization`,
+      name: "Ignia Cloud",
+      url: "https://ignia.cloud",
+      description: "Ignia Cloud — proveedor de nube. Math Challenge es un proyecto de Ignia.",
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${canonical}#webpage`,
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: locale,
+      isPartOf: { "@id": `${site}/#website` },
+    },
+  ],
+};
+---
+
+<!doctype html>
+<html lang={m.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    {/* hreflang recíproco: cada página apunta a TODAS, incluida a sí misma.
+        Sin la auto-referencia el ciclo no cierra y Google ignora el grupo. */}
+    {LOCALES.map((l) => (
+      <link rel="alternate" hreflang={l} href={`${site}/${l}/`} />
+    ))}
+    <link rel="alternate" hreflang="x-default" href={`${site}/${DEFAULT_LOCALE}/`} />
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#F36B1C" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    {/* Raleway. display=swap para que el texto sea legible antes de que cargue
+        la fuente — en 4G lento eso es la diferencia entre leer y esperar. */}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500&display=swap"
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={locale.replace("-", "_")} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+
+  <body>
+    <a class="skip" href="#main">{m.skipToContent}</a>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <footer>
+      <nav aria-label={m.languageLabel}>
+        <span class="muted">{m.languageLabel}:</span>
+        <ul>
+          {LOCALES.map((l) => (
+            <li>
+              {l === locale
+                ? <span aria-current="true">{t(l).localeName}</span>
+                : <a href={`/${l}/`} hreflang={l} lang={l}>{t(l).localeName}</a>}
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <p class="muted">{m.sponsor}</p>
+    </footer>
+
+    <style>
+      .skip {
+        position: absolute;
+        inset-inline-start: -9999px;
+        padding: 0.5rem 1rem;
+        background: var(--color-accent);
+        color: var(--color-on-accent);
+      }
+      .skip:focus { inset-inline-start: 0; z-index: 10; }
+
+      main { max-inline-size: 46rem; margin: 0 auto; padding: 3rem 1.25rem; }
+
+      footer {
+        max-inline-size: 46rem;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+        border-block-start: 1px solid var(--color-border);
+      }
+      footer ul {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+        padding: 0;
+        margin: 0.5rem 0 1.5rem;
+      }
+      /* WCAG 2.5.8: ningún blanco táctil por debajo de 24px. */
+      footer a, footer [aria-current] {
+        display: inline-flex;
+        align-items: center;
+        min-block-size: var(--tap-min);
+      }
+      footer [aria-current] { color: var(--color-text-muted); }
+
+      .muted { color: var(--color-text-muted); font-size: var(--text-xs); }
+    </style>
+  </body>
+</html>

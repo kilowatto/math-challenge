@@ -30,6 +30,16 @@ export const PALETTE = {
   "gris-400":        { hex: "#A4A6A8", rol: "grises" },
   "negro":           { hex: "#000000", rol: "grises" },
   "blanco":          { hex: "#FFFFFF", rol: "grises" },
+
+  // --- Neutros DERIVADOS: no están en el PDF de Ignia ---------------------
+  // El PDF no cubre tema oscuro, y su gris más oscuro (#434547) es demasiado
+  // claro para servir de fondo. Estos cuatro se derivaron aquí y se declaran
+  // como derivados para que nadie los confunda con color de marca.
+  // Justificación de contraste en docs/guia-de-estilo.md.
+  "superficie-clara": { hex: "#F7F7F8", rol: "derivado · superficie en tema claro" },
+  "fondo-oscuro":     { hex: "#16181A", rol: "derivado · fondo en tema oscuro" },
+  "superficie-oscura":{ hex: "#1F2224", rol: "derivado · superficie en tema oscuro" },
+  "texto-oscuro":     { hex: "#ECEDEE", rol: "derivado · texto en tema oscuro" },
 };
 
 const HEXES = new Set(Object.values(PALETTE).map((c) => c.hex.toUpperCase()));

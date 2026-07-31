@@ -1,0 +1,66 @@
+---
+import Base from "../../layouts/Base.astro";
+import { LOCALES, t, isLocale } from "../../i18n";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params;
+if (!isLocale(locale)) return Astro.redirect("/en/");
+const m = t(locale);
+---
+
+<Base locale={locale} title={`${m.title} — ${m.tagline}`} description={m.description}>
+  <h1>{m.title}</h1>
+  <p class="tagline">{m.tagline}</p>
+
+  <h2>{m.introHeading}</h2>
+  <p>{m.intro}</p>
+
+  <h2>{m.howHeading}</h2>
+  <p>{m.how}</p>
+
+  <h2>{m.principlesHeading}</h2>
+  <ul class="principles">
+    <li>{m.p1}</li>
+    <li>{m.p2}</li>
+    <li>{m.p3}</li>
+    <li>{m.p4}</li>
+    <li>{m.p5}</li>
+  </ul>
+
+  <h2>{m.researchHeading}</h2>
+  <p>{m.research}</p>
+
+  <h2>{m.statusHeading}</h2>
+  <p>{m.status}</p>
+</Base>
+
+<style>
+  /* El naranja de Ignia a 2.5rem: aquí sí, porque es texto grande (>=24px) y
+     el umbral aplicable es 3:1, que pasa con 3.03:1. En un párrafo sería una
+     violación de WCAG — por eso el token se llama --color-accent y no
+     --color-text (docs/guia-de-estilo.md). */
+  .tagline {
+    font-size: var(--text-lg);
+    color: var(--color-text-brand);
+    margin-block-end: 2.5rem;
+  }
+
+  h1 {
+    color: var(--color-accent);
+    font-weight: var(--weight-subtitle);
+  }
+
+  h2 {
+    margin-block-start: 2.5rem;
+    color: var(--color-text);
+  }
+
+  .principles {
+    padding-inline-start: 1.25rem;
+    max-inline-size: var(--measure);
+  }
+  .principles li { margin-block-end: 0.6rem; }
+</style>

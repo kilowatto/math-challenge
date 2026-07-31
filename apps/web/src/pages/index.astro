@@ -1,0 +1,43 @@
+---
+/**
+ * Raíz. Redirige al locale del navegador, o a en si no reconocemos ninguno.
+ *
+ * Se hace con <meta refresh> y no con un 301 porque el sitio es estático y no
+ * hay Worker en la ruta todavía. Cuando exista (S0), esto pasa a ser un 302
+ * server-side leyendo Accept-Language, que es más rápido y no parpadea.
+ *
+ * Nunca se sirve contenido en la raíz sin prefijo de locale: con
+ * prefixDefaultLocale activo, `/` sin idioma rompería el ciclo de hreflang.
+ */
+import { LOCALES, DEFAULT_LOCALE } from "../i18n";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Math Challenge</title>
+    <link rel="canonical" href={`https://math.kilowatto.com/${DEFAULT_LOCALE}/`} />
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content={`0; url=/${DEFAULT_LOCALE}/`} />
+    <script is:inline define:vars={{ LOCALES, DEFAULT_LOCALE }}>
+      // Coincidencia exacta primero (es-MX), luego por idioma base (es -> es-MX).
+      const pick = () => {
+        for (const tag of navigator.languages ?? [navigator.language]) {
+          if (LOCALES.includes(tag)) return tag;
+          const base = tag.split("-")[0];
+          const match = LOCALES.find((l) => l.split("-")[0] === base);
+          if (match) return match;
+        }
+        return DEFAULT_LOCALE;
+      };
+      location.replace(`/${pick()}/`);
+    </script>
+  </head>
+  <body>
+    <p>
+      <a href={`/${DEFAULT_LOCALE}/`}>Math Challenge</a>
+    </p>
+  </body>
+</html>

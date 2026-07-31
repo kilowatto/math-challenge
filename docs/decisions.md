@@ -742,13 +742,22 @@ escritorio más completa.
 **Decisión del dueño:** el despliegue lleva auditores adversariales, sin miedo a
 que sean muchos. Son **38**, en dos clases:
 
-**Deterministas (15), en cada commit:** presupuesto de bundle · Core Web Vitals
+**Deterministas (16), en cada commit, vía gancho `pre-commit`:** presupuesto de bundle · Core Web Vitals
 con los umbrales de D-030 · axe-core · contraste · blancos táctiles por banda
 (24/44/88 px) · completitud de los **siete locales** · validación de JSON-LD ·
 reciprocidad de `hreflang` · escaneo de secretos · prefijo `math-challenge-` ·
 seguridad de migraciones · presupuesto de precaché offline · **ningún campo de
 texto libre en tablas de niño** · **ninguna tabla por intento en D1** · **paleta
-Ignia, formatos de imagen y llaves de Recraft/Google**.
+Ignia, formatos de imagen y llaves de Recraft/Google** · **instalabilidad de la
+PWA**.
+
+> **Cómo se ejecutan, corregido en F0.** No hay CI. Los deterministas corren en
+> un gancho `pre-commit` (`.githooks/pre-commit`), que se activa una vez por
+> clon con `git config core.hooksPath .githooks`. Saltarlo exige `--no-verify`
+> **y** escribir la razón en el cuerpo del commit. La verificación de producción
+> vive aparte, en `audits/live.mjs`, y se corre a mano tras desplegar — mezclarla
+> con la flota haría que un commit fallara por una caída del sitio, que no es
+> culpa del commit.
 
 > **Eran 12 al decidirse; son 15 al implementarse (F0).** Los tres que se
 > agregaron no son adorno: `child-free-text` hace cumplir la línea roja #3 en el

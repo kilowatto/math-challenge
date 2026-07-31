@@ -1,0 +1,29 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+
+  // Prefijo obligatorio (CLAUDE.md § Cloudflare). El auditor cf-prefix lo cruza
+  // contra el inventario de docs/infrastructure.md.
+  "name": "math-challenge-ingest",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+
+  "observability": { "enabled": true },
+
+  // Sin `routes`: este Worker NO se expone a internet. Solo se alcanza por RPC
+  // desde math-challenge-web a través del service binding. Un Worker de ingesta
+  // con URL pública es una superficie de ataque que no necesitamos.
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "math-challenge-db",
+      "database_id": "25276cac-2d48-4771-87c1-f58bc8722b4e",
+      "migrations_dir": "../../migrations"
+    }
+  ],
+
+  // Los intentos crudos van aquí, no a D1 (mc-32 riesgo #1).
+  "analytics_engine_datasets": [
+    { "binding": "ATTEMPTS_AE", "dataset": "math-challenge-attempts-ae" }
+  ]
+}

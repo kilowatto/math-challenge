@@ -75,6 +75,17 @@
   // Telemetría por intento. NO va a D1: D1 topa en 10 GB por base y sería la
   // primera pared que golpeamos (mc-32, riesgo #1). El dataset no se crea con
   // comando: aparece la primera vez que un Worker le escribe.
+  // Service binding hacia math-challenge-ingest. Esto es el RPC nativo de
+  // D-030: el Worker llamado corre en el MISMO hilo del mismo servidor y la
+  // llamada normalmente ni siquiera cruza una red. Latencia añadida: cero.
+  "services": [
+    {
+      "binding": "INGEST",
+      "service": "math-challenge-ingest",
+      "entrypoint": "Ingest"
+    }
+  ],
+
   "analytics_engine_datasets": [
     {
       "binding": "ATTEMPTS_AE",

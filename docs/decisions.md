@@ -490,6 +490,177 @@ sin calibración previa).
 
 ---
 
+## D-026 — Registro de 2 campos y onboarding contextual · 2026-07-31
+
+**Decisión:** las tres puertas de entrada — adulto, papá, maestro — se registran
+con **correo y contraseña. Nada más.** Todo lo demás (perfil del hijo, banda de
+edad, límite de pantalla, salón, verificación del maestro) es configuración
+posterior, en pasos separados, saltables y con defaults sanos.
+
+**Por qué:** HubSpot midió formularios de 40,000 clientes y bajar de 4 campos a 3
+subió la conversión casi 50%; los benchmarks 2026 dan 23.1% con 3 campos y 11.4%
+con 7, con el despeñadero justo entre 5 y 7 (`mc-45`). Registrarse y configurarse
+son dos cosas, y juntarlas nos pondría en el peor tramo de esa curva.
+
+**Sin carrusel de bienvenida, en ninguna de las cinco entradas.** Nielsen Norman
+Group desaconseja el onboarding en general — *"eviten crear onboarding siempre
+que sea posible y gasten esos recursos en hacer la interfaz más usable"* — y
+desaconseja el carrusel de tarjetas **por nombre**: hace ver la interfaz más
+compleja de lo que es, y su investigación específica encontró que **no mejora el
+desempeño en la tarea** (`mc-45`).
+
+**En su lugar, cinco marcas contextuales**, cada una disparada cuando su función
+se vuelve accionable, no al abrir la app. Son las cinco cosas del producto que
+un usuario no puede inferir de la interfaz:
+
+1. La edad y la dificultad son ejes separados (D-002, D-017).
+2. El niño es un perfil, no un usuario (D-013).
+3. La ubicación no es un examen (D-002, `mc-44`).
+4. Los clubs y salones no tienen chat, y nunca lo van a tener (D-011, D-027).
+5. Las prendas no tienen perdedor (D-028).
+
+Cada marca se ve inequívocamente como anotación y no como control (`mc-45`), y se
+descarta permanentemente — reaparecer sería el patrón de *nagging* que la FTC
+nombra explícitamente (`mc-17`).
+
+**Investigación relacionada:** `mc-45-onboarding-activation.md`.
+
+---
+
+## D-027 — Clubs: dos sistemas separados, y ninguno con chat · 2026-07-31
+
+**Decisión:** existen dos contenedores sociales, **separados en la base de
+datos**, no una tabla con un campo `tipo`:
+
+- **`grupo_infantil`** — cubre el salón del maestro (D-011) y el club de papás,
+  con reglas de seguridad **idénticas**.
+- **`club_adulto`** — con retos y prendas (D-028), solo para adultos.
+
+**Por qué separados:** no es modelado, es modo de falla. Con una sola tabla, el
+día que alguien agregue texto libre, mensajes o imágenes a "los clubs", eso
+aterriza por defecto también sobre los niños, y la protección depende de que
+quien escriba ese código recuerde la regla. Con dos estructuras, agregar texto
+libre a los adultos **no puede** tocar a los niños aunque nadie recuerde nada.
+
+**Un papá abre club con la misma barra que un maestro** (D-011): correo y
+teléfono verificados, nombre real, y una insignia visible de "sin verificar"
+cuando no hay más. El papá de **cada** niño aprueba la entrada, viendo antes esa
+identidad.
+
+**Reglas de un `grupo_infantil`, sea de maestro o de papá:**
+
+- **Sin chat y sin mensajes directos, en ninguna dirección, nunca.**
+- El dueño ve **solo alias, puntos y racha**. Ni nombre real, ni edad exacta, ni
+  otros grupos del niño.
+- Se invita compartiendo código **con los papás**, nunca buscando niños.
+- Tope de tamaño menor que un salón, y límite de clubs por cuenta.
+- Botón de reporte permanente y bitácora completa, visible para el papá.
+
+**El estándar que estamos aproximando, y el que no podemos cumplir:** la
+salvaguarda en deportes juveniles exige verificación de antecedentes para
+*"cualquier voluntario con oportunidad de contacto no supervisado o uno a uno con
+menores"* (`mc-46`). No podemos correr esa verificación. Lo que sí podemos es
+eliminar la categoría entera: **sin contacto no supervisado, no hay canal que
+proteger.** Un club de papás es seguro precisamente porque es anémico — es un
+tablero compartido, no un espacio social. Cada vez que alguien pida agregarle
+chat, la respuesta ya está escrita aquí.
+
+Esto **no cierra T-5**. Lo acota: reduce la superficie, no verifica al adulto.
+
+**Investigación relacionada:** `mc-46-clubs-social-challenges.md`,
+`mc-28-teacher-classroom-mode.md`.
+
+---
+
+## D-028 — Prendas sin perdedor · 2026-07-31
+
+**Decisión del dueño:** los clubs de adultos tienen retos con prendas, y **la
+prenda nunca cae sobre una persona por haber quedado atrás.** Nunca hay
+humillación, en ninguna forma.
+
+Tres formas, las tres entran:
+
+- **A · Prenda colectiva.** El grupo se compromete junto contra una meta
+  compartida; se gana o no en grupo, sin tabla de posiciones.
+- **B · El ganador elige.** El primer lugar no recibe tributo: **decide** algo
+  para el grupo — el próximo reto, la meta, el lugar. El premio es agencia.
+- **C · Compromiso propio.** Cada quien se apuesta contra su propia meta, en
+  público.
+
+**Lo que hace que esto funcione no es una regla, es el esquema.** Ninguna de las
+tres formas tiene casilla de perdedor: en A el texto habla del grupo, en B lo
+escribe quien ganó sobre lo que sigue, en C solo se puede escribir sobre uno
+mismo. **No existe ningún campo que pregunte qué le pasa al último**, en ninguna
+pantalla ni en ninguna API. La humillación no está prohibida: no tiene dónde
+aterrizar.
+
+**Prohibido por diseño:** castigo al último, tributo entre miembros, y que la
+plataforma retenga, transfiera, arbitre o haga cumplir cualquier cosa de valor.
+
+**Posición legal, y de qué depende.** El juego ilegal exige tres elementos
+simultáneos — premio, azar y consideración — y basta eliminar uno (`mc-46`). Aquí
+el azar está ausente porque las matemáticas son destreza medible, y la
+consideración está ausente mientras la plataforma no cobre ni toque valor. Faltan
+dos de tres. **Esa posición depende enteramente de que la plataforma nunca toque
+valor**: el día que retenga $20 de cada participante, aparece la consideración y
+el análisis se invierte. Es investigación, no asesoría legal; se revisa con
+abogado antes de habilitar prendas en cualquier mercado.
+
+**Ningún menor entra jamás a un reto con prenda.** Los grupos infantiles tienen
+metas y celebraciones. Eso mantiene todo el análisis de juego lejos de los niños.
+
+**Precedente:** el modo *Group Goal* de Strava hace exactamente la forma A, y su
+documentación dice que **no tiene tabla de posiciones a propósito**, "así que
+terminas comparándote menos con los demás" (`mc-46`).
+
+**Investigación relacionada:** `mc-46-clubs-social-challenges.md`,
+`mc-18-leaderboards-competition.md`, `mc-19-habit-loops-push-notifications.md`.
+
+---
+
+## D-029 — Larry modera las prendas · 2026-07-31
+
+**Decisión del dueño:** los adultos escriben el texto de sus prendas libremente,
+y **Larry lo revisa antes de que la prenda exista**, con criterio de juego entre
+adultos: la broma pasa; el sexo, la violencia y lo denigrante no.
+
+**El criterio, en orden de precedencia:**
+
+1. **¿Señala a una persona?** Se rechaza, aunque venga en broma. Es la regla que
+   no admite matiz, porque sostiene D-028.
+2. **¿Hay sexo, violencia o denigración?** Se rechaza. Incluye lo que degrada por
+   apariencia, peso, origen o capacidad — el canon ya prohíbe que el humor de
+   Larry vaya sobre características de las personas, y aquí se extiende de lo que
+   Larry *dice* a lo que Larry *deja pasar*.
+3. **¿Es un juego entre adultos?** Si pasó 1 y 2, **pasa**. Larry no es censor de
+   buen gusto: "el que gana escoge el bar" no es asunto suyo.
+
+**Esto no rompe "Larry nunca calcula"** (D-004, D-015). Esa regla existe porque un
+tutor que recalcula matemáticas enseña error. Juzgar texto es otra tarea, y es de
+las que los modelos hacen bien. Lo que sí se hereda es que **es otra llamada**:
+prompt propio, bitácora propia, ruteo propio, sin relación con el endpoint del
+tutor.
+
+**A prueba de fallos:** si Larry no puede revisar, **la prenda no se publica**.
+Nunca hay texto sin revisar en producción. El modo de falla barato es un usuario
+molesto; el caro es una humillación publicada que el producto prometió impedir.
+
+**Tono:** Larry rechaza breve y en personaje, **sin sermón**. Un rechazo
+moralizante convierte al adulto en adversario del producto (`mc-11`).
+
+**Apelación:** Larry se va a equivocar y va a rebotar bromas legítimas. Toda
+prenda rechazada se manda a revisión humana con un toque. Sin eso, se siente como
+censura.
+
+**Ruteo:** Haiku 4.5 para el caso claro, escalada a Sonnet 5 en baja confianza —
+el matiz entre broma y denigración es donde un modelo chico falla en ambas
+direcciones. Volumen trivial: una llamada por prenda creada, no por intento.
+
+**Investigación relacionada:** `mc-46-clubs-social-challenges.md` §5,
+`mc-37-larry-profe-port.md`, `mc-11-feedback-formative-assessment.md`.
+
+---
+
 ## Tensiones abiertas que el dueño debe resolver
 
 Estas salieron de la investigación. Cuatro ya se cerraron con decisiones; se
@@ -502,5 +673,5 @@ las dos que siguen abiertas no se pierdan entre 43 documentos.
 | T-2 | Puntos por velocidad vs. la evidencia de que el cronómetro es el origen medible de la ansiedad matemática en niños chicos | **Cerrada** por D-018 (el reloj depende del tipo de reto, no de la edad) y D-024 (kinder no se cronometra en absoluto) | `mc-10`, `mc-04`, `mc-06` |
 | T-3 | Telemetría conductual rica (escribe y borra) vs. "ultra-privacidad para menores" y las reglas de perfilado de menores en la UE | **Cerrada** por D-020 y la línea roja #8: se guardan señales derivadas, nunca flujos crudos de teclas, y borrar jamás penaliza | `mc-30`, `mc-25` |
 | T-4 | Tablero público global vs. minimización de datos de menores | **Cerrada** por D-003: alias generados, sin nombre real, sin foto, sin ciudad | `mc-25`, `mc-18` |
-| T-5 | Modo maestro: quién verifica que un adulto que abre un "salón" es un maestro real | **Abierta.** D-011 propone un stack de mitigación y dice explícitamente que no es garantía | `mc-28-teacher-classroom-mode.md` |
+| T-5 | Quién verifica que un adulto que abre un salón o un club es quien dice ser | **Abierta, y ahora más ancha.** D-011 propone un stack de mitigación que no es garantía, y D-027 extiende el mismo problema a los clubs de papás. D-027 lo acota eliminando el contacto no supervisado, pero **no verifica al adulto** | `mc-28`, `mc-46` |
 | T-6 | Nivel PhD: qué se puede calificar automáticamente de verdad y qué no | **Abierta.** No bloquea el MVP (solo kinder), pero define si el modo Pro es viable | `mc-12-advanced-proof-olympiad-phd.md` |

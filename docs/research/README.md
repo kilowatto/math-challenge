@@ -1,8 +1,12 @@
 # Math Challenge — Índice de investigación / Research index
 
-> 43 investigaciones hechas el **2026-07-31** por agentes independientes, cada uno
+> 45 investigaciones hechas el **2026-07-31** por agentes independientes, cada uno
 > con instrucción explícita de **no inventar citas** y de marcar como *unverified*
-> lo que no pudiera confirmar contra una fuente primaria. Total ≈ 145,000 palabras.
+> lo que no pudiera confirmar contra una fuente primaria. Total ≈ 152,000 palabras.
+>
+> Las mc-45 y mc-46 se agregaron después de la ola original, al planear el
+> onboarding y los clubs; llevan la misma fecha porque el proyecto entero se
+> investigó ese día.
 >
 > **Cómo leer esto.** Cada documento trae `Resumen ejecutivo (ES)` y
 > `Executive summary (EN)` arriba, hallazgos con citas numeradas en medio, y una
@@ -87,13 +91,15 @@
 | 30 | [Telemetría conductual](2026-07-31-mc-30-behavioral-telemetry-process-data.md) | ⭐⭐ Corregir una respuesta **mejora** la calificación en 79% de los casos: penalizar el borrado es un error |
 | 31 | [Resistencia a solvers de IA](2026-07-31-mc-31-ai-solver-resistance.md) | ⭐ Qué formatos sobreviven a Photomath y a un modelo de frontera, y qué no se puede impedir |
 | 41 | [Monetización y precios](2026-07-31-mc-41-monetization-pricing.md) | Precios reales de la competencia, métodos de pago por mercado, IVA y derecho de desistimiento |
+| 45 | [Onboarding, registro y activación](2026-07-31-mc-45-onboarding-activation.md) | ⭐ Cuánto cuesta cada campo de registro, y por qué NN/g desaconseja el carrusel de bienvenida **por nombre** |
+| 46 | [Clubs, retos de grupo y prendas](2026-07-31-mc-46-clubs-social-challenges.md) | ⭐⭐ Los tres elementos del juego ilegal y cómo se elimina uno; el *Group Goal* de Strava; cómo tener apuestas sin perdedor |
 
 ---
 
 ## Documentos relacionados fuera de esta carpeta
 
-- [`../decisions.md`](../decisions.md) — las 25 decisiones del dueño (D-001 …
-  D-025), con fecha, y las dos tensiones que siguen abiertas.
+- [`../decisions.md`](../decisions.md) — las 29 decisiones del dueño (D-001 …
+  D-029), con fecha, y las dos tensiones que siguen abiertas.
 - [`../master-plan.md`](../master-plan.md) — el plan integral, en 15 secciones.
 - [`../infrastructure.md`](../infrastructure.md) — los 27 objetos
   `math-challenge-*` de Cloudflare.

@@ -34,7 +34,11 @@ const PENDING = [
   ["migration-safety",  "migraciones sin borrado destructivo",       "F2 · cuando haya más de una"],
 ];
 
-// --- Adversariales con LLM: F1 -------------------------------------------
+// --- Adversariales con LLM: construidos en F1 ----------------------------
+// Viven en audits/adversarial.mjs y NO corren aquí a propósito. Estos
+// deterministas cuestan milisegundos y bloquean cada commit; aquéllos cuestan
+// dinero y segundos. Bloquear cada commit con 23 llamadas de LLM es exactamente
+// cómo una flota se convierte en el ruido que D-032 teme.
 const ADVERSARIAL_COUNT = 23;
 
 console.log("Flota de auditores — D-032\n");
@@ -50,10 +54,16 @@ for (const [name, what, when] of PENDING) {
   console.log(`  ○ ${name.padEnd(18)} ${what}`);
   console.log(`    ${" ".repeat(18)} ${when}`);
 }
-console.log(`  ○ ${String(ADVERSARIAL_COUNT).padStart(2)} adversariales con LLM        F1`);
+
+console.log(`\n── flota adversarial (F1) ──`);
+console.log(`  ● ${ADVERSARIAL_COUNT} auditores con LLM, cada uno con su carta`);
+console.log(`    corre antes de abrir el PR:  node audits/adversarial.mjs`);
+console.log(`    sin gastar nada:             node audits/adversarial.mjs --seco`);
 
 const total = ACTIVE.length + PENDING.length + ADVERSARIAL_COUNT;
-console.log(`\n${ACTIVE.length} activos · ${PENDING.length + ADVERSARIAL_COUNT} esperando fase · ${total} planeados (D-032)`);
+console.log(
+  `\n${ACTIVE.length + ADVERSARIAL_COUNT} construidos · ${PENDING.length} esperando fase · ${total} planeados (D-032)`,
+);
 
 if (failed > 0) {
   console.error(`\n✗ ${failed} auditor(es) bloquearon.`);

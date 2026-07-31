@@ -65,6 +65,12 @@ Ignia (rinoceronte naranja, coach honesto, "¡Ya vas!"), en su encarnación
    para el rango medio, Opus para lo verdaderamente avanzado (cálculo tensorial,
    integrales dobles). La llave de API la provee el dueño.
 
+> **Enmendado por D-035 (2026-07-31).** El punto 2 ya no es "API de Claude":
+> **todo corre sobre Workers AI**, que es lo que Larry ya corre en IOS. Los
+> puntos 1 y 3 no cambian — el ruteo por complejidad sigue, con otros modelos.
+> El punto 1 (explicación pregenerada y revisada) gana peso: es lo que no
+> depende de ningún modelo, y es la salida si la banda Pro no pasa evaluación.
+
 **Restricciones heredadas del canon de Larry:** el humor nunca es sobre las
 características de las personas, solo sobre sí mismo; "¡Ya vas!" solo al aceptar
 una tarea, nunca como saludo; nunca condescendiente. **Regla nueva y dura para
@@ -248,9 +254,14 @@ explicaciones por tipo de error.
 
 | Banda | Modelo | Costo aprox. / 1k explicaciones |
 |-------|--------|--------------------------------|
-| Kinder–Primaria | Haiku 4.5 | ~$1 |
-| Secundaria / Adulto / Jr | Sonnet 5 | ~$6 |
-| Pro | Opus 5 | ~$19-60 |
+| Kinder–Primaria | ~~Haiku 4.5~~ → `gpt-oss-120b` (D-035) | ~~~$1~~ → ~$0.22 |
+| Secundaria / Adulto / Jr | ~~Sonnet 5~~ → `kimi-k2.6` (D-035) | ~~~$6~~ → ~$1.50 |
+| Pro | ~~Opus 5~~ → `kimi-k2.6` (D-035) | ~~~$19-60~~ → ~$1.50 |
+
+> **Enmendado por D-035.** Además del costo, dos razones: corre dentro del
+> Worker sin viaje externo, y `mc-37` había detectado que Haiku 4.5 exige un
+> prefijo de 4,096 tokens para cachear — el prompt de aritmética básica no
+> llega, así que la banda barata nunca cacheaba.
 
 En kinder **la voz es la interfaz**: el niño no lee, Larry habla.
 
@@ -659,9 +670,12 @@ moralizante convierte al adulto en adversario del producto (`mc-11`).
 prenda rechazada se manda a revisión humana con un toque. Sin eso, se siente como
 censura.
 
-**Ruteo:** Haiku 4.5 para el caso claro, escalada a Sonnet 5 en baja confianza —
-el matiz entre broma y denigración es donde un modelo chico falla en ambas
-direcciones. Volumen trivial: una llamada por prenda creada, no por intento.
+**Ruteo:** ~~Haiku 4.5~~ **`gpt-oss-120b`** para el caso claro, escalada a
+**`kimi-k2.6`** en baja confianza (D-035) — el matiz entre broma y denigración es donde un modelo
+chico falla en ambas direcciones. Volumen trivial: una llamada por prenda creada,
+no por intento. **La escalada se conserva a propósito:** con volumen trivial el
+ahorro de quitarla sería casi nulo, y el modo de falla caro es una humillación
+publicada contra la línea roja #7.
 
 **Investigación relacionada:** `mc-46-clubs-social-challenges.md` §5,
 `mc-37-larry-profe-port.md`, `mc-11-feedback-formative-assessment.md`.
@@ -791,6 +805,45 @@ resto reporta sin detener el PR.
 positivos. Si la flota se vuelve ruido, la gente aprende a rodearla en silencio,
 que es peor que no tenerla.
 
+> **Cómo quedaron las dos reglas al implementarse en F1.** Ambas dejaron de ser
+> prosa y pasaron a ser código que se puede ver fallar:
+>
+> - **Regla 1** vive en `audits/adversarial/citas.mjs`. Lee los encabezados
+>   reales de este archivo y los archivos reales de `docs/research/`, y descarta
+>   cualquier hallazgo que cite un id inexistente. Se le agregó una segunda
+>   mitad que la decisión no anticipaba: **un auditor solo puede invocar lo que
+>   su carta le autoriza**. Sin ese corte, los 23 podían citar cualquier
+>   decisión y la división de trabajo entre ellos era decorativa. Las cartas se
+>   validan al arrancar y en el gancho `pre-commit` — fue así como se detectó
+>   que la carta de pedagogía citaba `D-036`, que no existe.
+> - **Regla 2** vive en `audits/adversarial/ANULACIONES.md`, commiteado en el
+>   mismo PR que la necesita: así queda fechada, firmada y junto al cambio que
+>   la provocó. La huella de una anulación es `auditor · archivo · cita`, sin el
+>   texto del hallazgo, porque el modelo lo redacta distinto cada corrida y una
+>   huella variable dejaría de reconocer su propia anulación al día siguiente.
+>   La razón mínima son 20 caracteres: si valiera una vacía, la regla se
+>   cumpliría escribiendo un encabezado.
+>
+> **Dónde corren, corregido igual que los deterministas en F0.** No en el
+> gancho. `node audits/adversarial.mjs` se corre a mano antes de abrir el PR;
+> los deterministas cuestan milisegundos y los adversariales cuestan dinero, y
+> bloquear cada commit con 23 llamadas de LLM es exactamente el ruido que esta
+> misma decisión nombra como riesgo. El gancho sí verifica el **cableado** —las
+> 23 cartas y la clasificación—, que cuesta milisegundos.
+>
+> **Proveedor, cambiado por D-035.** Los 23 corren sobre Workers AI
+> (`kimi-k2.6` → `gpt-oss-120b`), no sobre Claude. Baja el costo ~5×, que es
+> justo el riesgo que esta decisión nombra. A cambio se pierde la imposición de
+> esquema en la capa de la herramienta —el JSON de Workers AI es best-effort— y
+> se repone con validación propia: un veredicto que no valida cuenta como
+> **auditor fallido, nunca como auditor limpio**.
+>
+> **Tres cosas que se agregaron y no estaban en la decisión:** cada carta declara
+> también **de qué es ciega**, porque sin eso los tres auditores de PWA
+> reportaban lo mismo; solo despiertan los auditores cuyo alcance toca el diff;
+> y `--seco` arma las 23 llamadas sin hacer ninguna y estima el costo, para que
+> el gasto se decida antes y no en la factura.
+
 **Investigación relacionada:** `mc-47` §7.
 
 ---
@@ -891,6 +944,164 @@ de locales es de kinder), `mc-40-item-bank-content-operations.md` (proporción d
 plantilla por banda), `mc-39-eastern-drill-mental-math-traditions.md` y
 `mc-36-problem-design-item-formats.md` (formatos que sirven a un adulto),
 `mc-12-advanced-proof-olympiad-phd.md` (qué es calificable de verdad).
+
+---
+
+## D-035 — Workers AI como proveedor de inferencia · 2026-07-31
+
+**Decisión del dueño:** la inferencia se mueve a **Workers AI**, con ruteo por
+dificultad entre modelos, en vez de ser Claude en todos los casos. Enmienda
+D-004, D-015, D-029 y D-032.
+
+> **Ampliada el mismo día, a petición del dueño: "solo vamos a trabajar con
+> Cloudflare, es una decisión tomada".** No queda ningún camino a la API de
+> Claude — ni en la flota, ni en la banda Pro de Larry, ni como escalada de
+> moderación. El paquete `@anthropic-ai/sdk` se desinstaló y la variable de
+> escape `MC_AUDIT_PROVEEDOR` se eliminó: dejarla habría sido una puerta trasera
+> a la dependencia que esta decisión quita a propósito. Lo que esto cuesta está
+> escrito abajo, en cada sección que lo pierde.
+
+**Por qué esto no es un experimento.** `mc-37` documenta con `archivo:línea` que
+**Larry ya corre hoy en IOS sobre Workers AI**: `@cf/moonshotai/kimi-k2.6` →
+`@cf/openai/gpt-oss-120b` → respuesta enlatada (`src/larry/chat.ts:40-41`). Y
+`mc-32` ya tenía Workers AI y Vectorize en la arquitectura. Esto alinea Math
+Challenge con lo que el dueño ya opera, no lo mete en terreno nuevo.
+
+**Verificado en la cuenta, no supuesto.** `npx wrangler ai models` sobre
+`Produccion Ignia y Desici` lista 61 modelos, entre ellos `kimi-k2.6`,
+`gpt-oss-120b`, `gpt-oss-20b` y `kimi-k2.7-code`.
+
+| | entrada $/M | cacheada $/M | salida $/M | contexto |
+|---|---|---|---|---|
+| `@cf/moonshotai/kimi-k2.6` | 0.95 | **0.16** | 4.00 | 262k |
+| `@cf/openai/gpt-oss-120b` | 0.35 | n/d | 0.75 | 128k |
+| `claude-opus-5` | 5.00 | 0.50 | 25.00 | 1M |
+| `claude-haiku-4-5` | 1.00 | 0.10 | 5.00 | 200k |
+
+### La flota adversarial (F1): los 23 a Workers AI
+
+`kimi-k2.6` primario, `gpt-oss-120b` de respaldo. Medido con `--seco`: dos
+auditores pasan de **$0.34 a $0.06**.
+
+**El asesor recomendó mixto —los de línea roja en Claude— y el dueño eligió
+todo.** Queda anotado porque D-032 nombra el ruido de la flota como su propio
+riesgo, y esta elección lo aumenta. La mitigación no es discutirla, es hacerla
+segura:
+
+- **Un veredicto que no valida cuenta como auditor fallido, jamás como auditor
+  limpio.** El corredor ya salía con código 1 ante un auditor que no pudo
+  correr; ahora eso incluye "el modelo no produjo JSON válido".
+- **Validación de esquema propia, con un reintento y luego bajada de modelo.**
+  Hace falta porque **el JSON Mode de Workers AI es best-effort**: su
+  documentación dice literal que *"Workers AI can't guarantee that the model
+  responds according to the requested JSON Schema"*. La API de Claude imponía el
+  esquema en la capa de la herramienta; eso se pierde y hay que reponerlo a mano.
+- **La regla 1 ya protegía contra esto de un lado.** Un modelo más débil que
+  invente `D-036` queda descartado mecánicamente. Lo que la regla 1 **no** cubre
+  es el falso negativo: el auditor que simplemente no ve la violación. Ese es el
+  costo real de esta decisión y no tiene mitigación técnica, solo medición.
+- **Control positivo en vez de comparación entre proveedores.** Al no haber
+  segundo proveedor, la forma de saber si la flota se degradó es plantarle una
+  violación conocida y comprobar que la caza. Se hizo al construirla: tres
+  violaciones deliberadas de `mc-33` en un archivo temporal; `pwa-ios` cazó las
+  tres, citó D-031 y `mc-33` correctamente, y clasificó bien qué bloquea y qué
+  reporta. **La flota no está ciega**, y eso está medido, no supuesto.
+
+**Contradicción de documentación, resuelta midiendo.** La página de modelo de
+`kimi-k2.6` declaraba "structured outputs"; la de JSON Mode decía best-effort y
+su lista **no incluía** ni kimi ni gpt-oss. **Se probó: ambos respetaron el
+esquema** por el endpoint compatible con OpenAI (`/ai/v1/chat/completions`).
+`kimi-k2.6` 8.9 s, `gpt-oss-120b` 1.1 s. La validación propia se queda de todos
+modos: lo medido es que funciona hoy, no que esté garantizado.
+
+**Tres cosas que solo aparecieron al correrlo de verdad:**
+
+1. **Son modelos de razonamiento.** El pensamiento va en `reasoning_content` y
+   consume el mismo `max_tokens` que la respuesta. Con presupuesto corto, la
+   respuesta llega **vacía** con `finish_reason: "length"` — que se leería como
+   "no devolvió JSON" y mandaría a reintentar con el mismo presupuesto, fallando
+   igual. El default subió a 24,000 y ese caso ahora se nombra por lo que es.
+2. **Faltaba timeout.** Sin él, un proveedor que no responde deja al corredor
+   esperando para siempre — y con un modelo que razona, "colgado" y "pensando"
+   se ven idénticos. Fue así como la primera corrida real pareció trabarse
+   cuando solo estaba pensando.
+3. **El costo estimado estaba a la mitad.** Suponía 1,200 tokens de salida por
+   auditor; la medición dio **7,560**, casi todo razonamiento, que se cobra
+   igual. Un auditor cuesta ~$0.05, no ~$0.02.
+
+### Larry: bandas bajas a Workers AI, banda Pro se queda
+
+Enmienda la tabla de D-015:
+
+| Banda | D-015 decía | Ahora |
+|---|---|---|
+| Kinder–Primaria | Haiku 4.5 | **`gpt-oss-120b`** |
+| Secundaria / Adulto / Jr | Sonnet 5 | **`kimi-k2.6`** |
+| Pro | Opus 5 | **`kimi-k2.6`** |
+
+**Lo que la banda Pro pierde, dicho de frente.** La versión anterior de esta
+decisión dejaba Opus 5 en Pro porque una explicación de cálculo tensorial
+incorrecta **enseña error**, y `mc-37` §3 marca eso como la diferencia entre lo
+que IOS puede permitirse y lo que este producto no. Con solo Cloudflare, el
+techo es `kimi-k2.6` — 1T de parámetros, frontier-scale, pero no es Opus 5 y
+nadie ha medido la diferencia en matemática avanzada.
+
+**Cómo se cubre en vez de con un modelo mejor:** la banda Pro es la última que
+el MVP toca (D-009: el MVP es kinder). Antes de que exista, hay tiempo de medir
+`kimi-k2.6` contra un banco de explicaciones avanzadas revisadas por humano.
+**Si no pasa, la salida no es volver a Claude —es no soltar la banda Pro con
+explicación en vivo—** y dejarla con explicación pregenerada y revisada, que es
+el punto 1 de D-004 y nunca dependió de ningún modelo.
+
+Dos razones que no son solo costo. Primera: corre **dentro** del Worker, sin
+viaje externo — con `mc-47` apuntando a Android de gama baja sobre 4G lento, la
+latencia importa tanto como el precio. Segunda: `mc-37` ya había detectado que
+**Haiku 4.5 exige un prefijo de 4,096 tokens para cachear** —el mínimo más alto
+de cualquier modelo actual— y el prompt de aritmética básica no llega, así que
+la banda barata nunca cacheaba. `kimi-k2.6` cachea desde mucho antes y su
+entrada cacheada cuesta $0.16/M.
+
+**La banda Pro no se toca.** Una explicación de cálculo tensorial incorrecta
+**enseña error**, y `mc-37` §3 marca eso como la diferencia entre lo que IOS
+puede permitirse y lo que este producto no.
+
+### Moderación de prendas (D-029): kimi con escalada a Claude
+
+**La escalada se conserva; cambia hacia dónde.** `gpt-oss-120b` resuelve el caso
+claro (1.1 s medidos) y en baja confianza escala a **`kimi-k2.6`**, que es el
+techo disponible. Se conserva por lo que D-029 ya decía — *"el matiz entre broma
+y denigración es donde un modelo chico falla en ambas direcciones"*— y porque el
+volumen es trivial: una llamada por prenda creada, no por intento.
+
+**Sigue siendo a prueba de fallos**, y eso es lo que no se negocia: si ninguno
+de los dos puede revisar, la prenda **no se publica**. El modo de falla barato
+es un usuario molesto; el caro es una humillación publicada contra la línea roja
+#7. Con un techo más bajo, la apelación a revisión humana que D-029 ya exigía
+deja de ser un detalle de cortesía y pasa a ser la red que sostiene la
+diferencia.
+
+### El RAG no era parte de esta disyuntiva
+
+`mc-32` ya planeaba `math-challenge-explanations-index` en Vectorize con
+embeddings `bge-m3` ($0.012/M). Los fragmentos recuperados se le pasan a
+cualquier modelo: **el RAG se tenía con Claude o con Workers AI por igual**. Se
+construye en su fase, cuando exista el banco de pistas que indexar.
+
+Sigue vigente el riesgo #9 de `mc-32`: **Vectorize se queda sobre contenido
+curado, nunca sobre embeddings por niño.** El borrado COPPA ya es un problema de
+cuatro sistemas (D1, DO, Analytics Engine, Vectorize).
+
+**Corrección de nomenclatura:** "GPT" en Workers AI es `gpt-oss`, los modelos de
+pesos abiertos de OpenAI. No es GPT-5.
+
+**Credenciales:** `CLOUDFLARE_API_TOKEN` (permiso Workers AI Read+Edit) y
+`CLOUDFLARE_ACCOUNT_ID`, capturados por `./scripts/set-keys.sh`. El ID de cuenta
+se deduce de `wrangler whoami` porque no es secreto y escribirlo a mano es una
+fuente de erratas silenciosas.
+
+**Investigación relacionada:** `mc-37` §5 (que documentaba el patrón inverso,
+"Claude-first, no Workers AI, per the owner's brief" — esta decisión lo revierte
+a propósito), `mc-32` §Workers AI y §Vectorize, `mc-47`.
 
 ---
 

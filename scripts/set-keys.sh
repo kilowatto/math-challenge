@@ -30,8 +30,25 @@ fi
 KEYS=(
   "RECRAFT_API_KEY|Arte de Larry y de la Sabana (herramienta oficial)|recraft.ai → Perfil → API"
   "GOOGLE_AI_API_KEY|Piezas complejas de interfaz (Gemini / Nano Banana)|aistudio.google.com → API keys"
-  "ANTHROPIC_API_KEY|Larry Profe: tutor y moderación de prendas|console.anthropic.com"
+  "CLOUDFLARE_API_TOKEN|Workers AI: toda la inferencia — flota adversarial y Larry (D-035)|dash.cloudflare.com → Manage Account → API Tokens (permiso: Workers AI Read+Edit)"
 )
+
+# --- El ID de cuenta no es secreto: se deduce, no se pide -------------------
+# Aparece en cada URL del dashboard. Pedirlo sin eco sería teatro de seguridad,
+# y escribirlo a mano es una fuente de erratas silenciosas.
+if ! grep -q "^CLOUDFLARE_ACCOUNT_ID=" "$ENV_FILE" 2>/dev/null; then
+  account_id="$(npx wrangler whoami 2>/dev/null | grep -oE '[0-9a-f]{32}' | head -1 || true)"
+  if [[ -n "$account_id" ]]; then
+    printf 'CLOUDFLARE_ACCOUNT_ID=%s\n' "$account_id" >> "$ENV_FILE"
+    echo "── CLOUDFLARE_ACCOUNT_ID"
+    echo "   ✓ deducido de wrangler: ${account_id:0:8}…"
+    echo
+  else
+    echo "── CLOUDFLARE_ACCOUNT_ID"
+    echo "   ✗ no se pudo deducir. Corre 'npx wrangler login' o añádelo a mano a .env"
+    echo
+  fi
+fi
 
 echo
 echo "Captura de llaves — no se muestran al escribir, no quedan en el historial."

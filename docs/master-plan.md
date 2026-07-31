@@ -3,7 +3,7 @@
 > **math.kilowatto.com** · Plan maestro · 2026-07-31
 >
 > Construido sobre 47 investigaciones (~157,000 palabras) en
-> [`research/`](research/README.md) y 34 decisiones del dueño en
+> [`research/`](research/README.md) y 35 decisiones del dueño en
 > [`decisions.md`](decisions.md). Cada afirmación de este plan que suene a hecho
 > viene de una de esas dos fuentes; donde es criterio nuestro, lo dice.
 >
@@ -73,8 +73,10 @@ nombre, tipo, propósito EN/ES y binding en
   consistente y baja latencia para elegir el siguiente ítem.
 - **KV guarda instantáneas del tablero**, jamás escrituras por intento — KV
   admite una escritura por segundo por llave.
-- **AI Gateway siempre delante de Claude**, para caché, tope de gasto por perfil
-  y ruteo de modelo.
+- **La inferencia corre entera sobre Workers AI** (`kimi-k2.6` → `gpt-oss-120b`),
+  sin proveedor externo (D-035). Corre dentro del Worker: sin viaje externo, que
+  es lo que importa en Android de gama baja sobre 4G lento. **AI Gateway va
+  delante**, para caché, tope de gasto por perfil y ruteo de modelo.
 
 Costo estimado del tablero: ~$0.50-1.00 USD por millón de intentos.
 
@@ -214,14 +216,22 @@ que existe hoy en `ignia-object-storage` y lo que hay que cambiar. Ese código
    es lo que evita que el tutor se equivoque en matemáticas.
 
 **Arquitectura híbrida:** explicación pregenerada y revisada al cerrar el reto
-(instantánea, gratis, offline, sin alucinación). La API de Claude entra solo
-cuando el niño pide más o comete un error no catalogado.
+(instantánea, gratis, offline, sin alucinación). **Workers AI** entra solo cuando
+el niño pide más o comete un error no catalogado (D-035) — dentro del Worker,
+sin viaje externo, que es lo que importa en Android de gama baja sobre 4G lento.
 
 | Banda | Modelo | ~Costo / 1k explicaciones |
 |-------|--------|---------------------------|
-| Kinder–Primaria | Haiku 4.5 | ~$1 |
-| Secundaria / Adulto / Jr | Sonnet 5 | ~$6 |
-| Pro | Opus 5 | ~$19-60 |
+| Kinder–Primaria | `@cf/openai/gpt-oss-120b` | ~$0.22 |
+| Secundaria / Adulto / Jr | `@cf/moonshotai/kimi-k2.6` | ~$1.50 |
+| Pro | `@cf/moonshotai/kimi-k2.6` | ~$1.50 |
+
+**La banda Pro tiene una condición, no solo un modelo.** Antes de soltarla con
+explicación en vivo hay que medir `kimi-k2.6` contra explicaciones avanzadas
+revisadas por humano. Si no pasa, la salida es dejar Pro con explicación
+pregenerada — el punto 1 de esta misma arquitectura, que nunca dependió de
+ningún modelo. Una explicación de cálculo tensorial incorrecta **enseña error**
+(`mc-37` §3).
 
 Tope de gasto por perfil y por día vía AI Gateway. Caché de explicaciones por
 tipo de error: la misma confusión no se paga mil veces.
@@ -488,13 +498,13 @@ audiencia. Si sale ahora, la app aterriza sobre público ya formado.
 | Fase | Qué queda funcionando | Depende de |
 |------|----------------------|-----------|
 | **F0 · Cimientos y gates** | Worker en math.kilowatto.com, D1 con esquema, Astro con las **siete** rutas de locale, PWA instalable, HTTP/3 **y 0-RTT** verificados, RPC nativo entre `web` e `ingest` probado en vivo, y los auditores deterministas **bloqueando en un gancho pre-commit** | — |
-| **F1 · La flota adversarial** | Los 23 auditores con LLM, cada uno con su carta y con la regla de citar la decisión que hace cumplir; anulación por escrito | F0 |
+| **F1 · La flota adversarial** ⚠️ | Los 23 auditores con LLM, cada uno con su carta y con la regla de citar la decisión que hace cumplir; anulación por escrito. Las dos reglas de D-032 son código verificable, no prosa: `audits/adversarial/citas.mjs` valida cada cita contra el repo real y `ANULACIONES.md` es el registro de anulaciones, commiteado. Corre a mano antes del PR — no en el gancho, porque 23 llamadas de LLM por commit son el ruido que D-032 teme. Sobre **Workers AI** por D-035, con validación de esquema propia porque su JSON es best-effort. Verificada con violaciones plantadas: `pwa-ios` cazó las tres y citó bien. **No cerrada:** falta correr los 23 completos —solo `pwa-ios` se ha ejercido— y ejercer una anulación de punta a punta | F0 |
 | **F2 · Cuentas y onboarding** | Las tres puertas de registro de 2 campos, perfiles de hijo, entrada del niño con avatar + PIN de imágenes, verificación del maestro antes de crear salón, y las cinco marcas contextuales | F0 |
 | **F3 · Motor de reto** | Los 5 formatos táctiles, un reto de práctica de principio a fin, puntuación del lado del servidor con HSHS **y la regla de precisión de kinder** (D-024) | F2 |
 | **F4 · Adaptativo** | Ubicación por tema, selección del siguiente ítem, repaso espaciado, modelo por niño en su Durable Object | F3 |
 | **F5 · Contenido kinder** | ~400 ítems × **7 locales**, 2,500 retos curados, 14 habilidades, arte de la Sabana | esquema de ítem (§9) · en paralelo con F3-F4 |
 | **F5b · Franja adulta** | ~150 ítems N8-N10, **autorados una vez y renderizados en 7 notaciones**. Sin Sabana, sin modo historia, sin curaduría por serie (D-034) | esquema de ítem (§9) · en paralelo con F5 |
-| **F6 · Larry Profe** | Explicación pregenerada al cerrar el reto + Claude en vivo con ruteo y tope de gasto, voz en los siete locales | F3, F5 |
+| **F6 · Larry Profe** | Explicación pregenerada al cerrar el reto + Workers AI en vivo con ruteo por banda y tope de gasto (D-035), voz en los siete locales | F3, F5 |
 | **F7 · Juego** | XP, rachas con red, misiones, mapa, ligas de ~30, tablero con alias generados | F4 |
 | **F8 · Padres** | Panel con diagnóstico, límite de pantalla con corte suave, reportes, Stripe | F2 |
 | **F9 · Grupos infantiles** | Salón del maestro y club de papás sobre la misma tabla `grupo_infantil`: código, aprobación del padre, tablero, bitácora. Sin chat, en ninguna dirección (D-027) | F2, F7 |

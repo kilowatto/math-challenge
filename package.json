@@ -12,6 +12,11 @@
     "build": "pnpm --filter @math-challenge/web build",
     "typecheck": "pnpm -r typecheck",
     "audit:all": "node audits/run.mjs",
+    "audit:adversarial": "node audits/adversarial.mjs",
+    "audit:adversarial:seco": "node audits/adversarial.mjs --seco",
+    "audit:cartas": "node audits/adversarial.mjs --cartas",
+    "audit:reglas": "node audits/adversarial/prueba.mjs",
+    "audit:sarif": "node audits/adversarial/validar-sarif.mjs",
     "audit:prefix": "node audits/cf-prefix.mjs",
     "audit:secrets": "node audits/secrets.mjs",
     "audit:i18n": "node audits/i18n-complete.mjs",
@@ -21,6 +26,9 @@
     "db:migrate:remote": "wrangler d1 migrations apply math-challenge-db --remote"
   },
   "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-draft-04": "^1.0.0",
+    "ajv-formats": "^3.0.1",
     "typescript": "^5.7.2",
     "wrangler": "^4.100.0"
   }

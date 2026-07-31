@@ -428,7 +428,8 @@ para las seis bandas" con peso de velocidad `0.0` en kinder. Pero
 `score = a · (d − RT) · (2·acc − 1)` con `a = 0` da **cero para toda respuesta**,
 correcta o incorrecta. No es que kinder puntúe sin cronometrar: es que kinder no
 puntúa. Y kinder es la única banda con contenido en el MVP (D-009), así que el
-hueco no era teórico — bloqueaba F2.
+hueco no era teórico — bloqueaba el motor de reto (F3 en la numeración vigente
+del plan maestro §13.2).
 
 **Lo que esto cuesta, dicho de frente:** se pierde la elegancia de "una fórmula
 para todas las bandas", que era un argumento de venta del diseño. A cambio se
@@ -463,7 +464,8 @@ calibrados por separado.
 
 1. **θ no existe en v1.** Requiere un banco calibrado con 200-400 respuestas por
    ítem (`mc-44`). El día del lanzamiento tenemos cero. Ordenar por θ significaría
-   ordenar por una estimación sin datos, o retrasar F6 detrás de F3.
+   ordenar por una estimación sin datos, o retrasar el tablero (F7) detrás del
+   adaptativo (F4), en la numeración vigente del plan maestro §13.2.
 2. **Un niño de 8 años no puede leer un rating.** "Tienes 1,847 puntos" se
    entiende; "tu θ es 0.42" no, y traducirlo a percentil reintroduce la
    comparación explícita que `mc-18` justamente señala como dañina abajo del
@@ -824,3 +826,4 @@ las dos que siguen abiertas no se pierdan entre 43 documentos.
 | T-4 | Tablero público global vs. minimización de datos de menores | **Cerrada** por D-003: alias generados, sin nombre real, sin foto, sin ciudad | `mc-25`, `mc-18` |
 | T-5 | Quién verifica que un adulto que abre un salón o un club es quien dice ser | **Abierta, y ahora más ancha.** D-011 propone un stack de mitigación que no es garantía, y D-027 extiende el mismo problema a los clubs de papás. D-027 lo acota eliminando el contacto no supervisado, pero **no verifica al adulto** | `mc-28`, `mc-46` |
 | T-6 | Nivel PhD: qué se puede calificar automáticamente de verdad y qué no | **Abierta.** No bloquea el MVP (solo kinder), pero define si el modo Pro es viable | `mc-12-advanced-proof-olympiad-phd.md` |
+| T-7 | **La vía del adulto no tiene contenido en el MVP.** D-009 fija plataforma completa con solo contenido de kinder; un club de adultos compitiendo en sumas de kinder no tiene sentido | **Abierta, y bloquea F10.** Tres salidas posibles: F10 espera a las bandas N8-N10, el MVP incluye una franja mínima de contenido adulto, o los clubs de adultos arrancan con retos curados de otra fuente | D-009, D-028, `por-que-existe.md`, plan maestro §13.3 |

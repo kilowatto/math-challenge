@@ -468,24 +468,64 @@ lista Brasil, lo cual es una puerta de decisión real antes de vender ahí.
 
 Cada fase termina con algo que se puede usar, no con un documento.
 
+**Son dos vías en paralelo, no una.** El sitio abierto no depende de una sola
+línea del producto — las 157,000 palabras de investigación ya existen — y su
+valor compone con el tiempo, porque la autoridad de dominio y las citas entrantes
+tardan meses (`mc-48`). Si el sitio sale cuando sale la app, llega con cero
+audiencia. Si sale ahora, la app aterriza sobre público ya formado.
+
+### 13.1 Vía B — el sitio abierto
+
 | Fase | Qué queda funcionando | Depende de |
 |------|----------------------|-----------|
-| **F0 · Cimientos** | Worker desplegado en math.kilowatto.com, D1 con esquema, Astro con las cinco rutas de idioma, PWA instalable | — |
-| **F1 · Cuentas** | Padre se registra, crea perfiles de hijo, el niño entra con avatar + PIN de imágenes | F0 |
-| **F2 · Motor de reto** | Los 5 formatos táctiles, un reto de práctica corre de principio a fin, puntuación del lado del servidor | F1 |
-| **F3 · Adaptativo** | Ubicación por tema, selección del siguiente ítem, repaso espaciado, modelo por niño en su DO | F2 |
-| **F4 · Contenido kinder** | 400 ítems × 5 idiomas, 2,500 retos curados, 14 habilidades, arte de la Sabana | F2 (en paralelo con F3) |
-| **F5 · Larry** | Explicación pregenerada + Claude en vivo con ruteo y tope de gasto, voz en cinco idiomas | F2, F4 |
-| **F6 · Juego** | XP, rachas, misiones, mapa, ligas de 30, tablero con alias | F3 |
-| **F7 · Padres** | Panel, límite de pantalla con corte suave, reportes, Stripe | F1 |
-| **F8 · Maestro** | Salón, código, aprobación del padre, tablero del salón, bitácora | F1, F6 |
-| **F9 · Cierre** | Anti-trampa tier 0-1, accesibilidad WCAG 2.2 AA, revisión legal, offline completo | todas |
+| **S0 · Cimientos del sitio** | Astro sobre Workers, 7 rutas de locale con `hreflang` recíproco y `x-default`, JSON-LD con `inLanguage` por versión, WCAG 2.2 AA, auditores de esquema y `hreflang` bloqueando en CI | — |
+| **S1 · El corpus** | Las 47 investigaciones publicadas e indexables, con fuentes, limitaciones y `[unverified]` visibles — incluidas las que contradicen al producto | S0 |
+| **S2 · La historia y el producto** | Página de origen desde [`por-que-existe.md`](por-que-existe.md), los niveles y el propósito explicados, la arquitectura técnica como contenido citable, atribución Ignia + Cloudflare | S0 |
 
-**F4 es la ruta crítica**, no la ingeniería. Siete autores nativos produciendo y
-revisando 400 ítems y curando 2,500 retos es más trabajo que el motor que los
-sirve. La investigación estima ~1,053 días-persona para el banco completo de
-2,500 ítems de todas las bandas; kinder es una fracción, pero no una fracción
-pequeña.
+### 13.2 Vía A — el producto
+
+| Fase | Qué queda funcionando | Depende de |
+|------|----------------------|-----------|
+| **F0 · Cimientos y gates** | Worker en math.kilowatto.com, D1 con esquema, Astro con las **siete** rutas de locale, PWA instalable, HTTP/3 y 0-RTT verificados, esqueleto de RPC nativo entre Workers, y **los 12 auditores deterministas bloqueando en CI** | — |
+| **F1 · La flota adversarial** | Los 23 auditores con LLM, cada uno con su carta y con la regla de citar la decisión que hace cumplir; anulación por escrito | F0 |
+| **F2 · Cuentas y onboarding** | Las tres puertas de registro de 2 campos, perfiles de hijo, entrada del niño con avatar + PIN de imágenes, verificación del maestro antes de crear salón, y las cinco marcas contextuales | F0 |
+| **F3 · Motor de reto** | Los 5 formatos táctiles, un reto de práctica de principio a fin, puntuación del lado del servidor con HSHS **y la regla de precisión de kinder** (D-024) | F2 |
+| **F4 · Adaptativo** | Ubicación por tema, selección del siguiente ítem, repaso espaciado, modelo por niño en su Durable Object | F3 |
+| **F5 · Contenido kinder** | ~400 ítems × **7 locales**, 2,500 retos curados, 14 habilidades, arte de la Sabana | esquema de ítem (§9) · en paralelo con F3-F4 |
+| **F6 · Larry Profe** | Explicación pregenerada al cerrar el reto + Claude en vivo con ruteo y tope de gasto, voz en los siete locales | F3, F5 |
+| **F7 · Juego** | XP, rachas con red, misiones, mapa, ligas de ~30, tablero con alias generados | F4 |
+| **F8 · Padres** | Panel con diagnóstico, límite de pantalla con corte suave, reportes, Stripe | F2 |
+| **F9 · Grupos infantiles** | Salón del maestro y club de papás sobre la misma tabla `grupo_infantil`: código, aprobación del padre, tablero, bitácora. Sin chat, en ninguna dirección (D-027) | F2, F7 |
+| **F10 · Clubs de adultos** | `club_adulto`, retos con ventana de tiempo, las tres formas de prenda, y Larry moderando el texto libre a prueba de fallos (D-028, D-029) | F2, F7 · **ver T-7** |
+| **F11 · Cierre** | Anti-trampa tier 0-1, accesibilidad auditada, revisión legal con abogado, offline completo, interfaz adaptativa terminada en las cuatro plataformas | todas |
+
+### 13.3 Cuatro cosas que la tabla no dice sola
+
+**F0 y F1 van primero por una razón, no por burocracia.** Construir 35 auditores
+después del código es reajustar; construirlos antes es que el código nazca
+cumpliendo. Es también lo único que convierte las ocho líneas rojas en algo que
+el sistema impone en vez de algo que alguien recuerda.
+
+**F5 sigue siendo la ruta crítica, y creció.** Son **siete** autores nativos, no
+cinco: `es-MX` y `es-ES` no comparten separador decimal ni formato de división
+larga, y `pt-BR` y `pt-PT` no comparten escala numérica (`mc-34`, D-022).
+Producir y revisar 400 ítems y curar 2,500 retos es más trabajo que el motor que
+los sirve — la investigación estima ~1,053 días-persona para el banco completo de
+todas las bandas, y kinder es una fracción, pero no una pequeña (`mc-40`). **F5
+no espera a F3**: el esquema de ítem ya está especificado en §9, así que la
+autoría puede arrancar en cuanto haya autores contratados.
+
+**La interfaz adaptativa no es una fase, es un impuesto.** Material 3 en Android,
+HIG en iOS y macOS, controles del sistema en Windows (D-031) se pagan en cada
+función de F2 a F10, no en un bloque al final. Aparece en F11 solo como
+verificación; el costo real está repartido.
+
+**F10 tiene un problema de contenido antes que de código.** D-009 fija que el MVP
+lleva la plataforma completa con **solo contenido de kinder**. Un club de adultos
+compitiendo en sumas de kinder no tiene sentido — es decir, la vía del adulto, que
+es el caso de uso del propio dueño ([`por-que-existe.md`](por-que-existe.md)),
+**no tiene contenido en el MVP**. Registrado como tensión abierta T-7 en
+[`decisions.md`](decisions.md).
 
 ---
 

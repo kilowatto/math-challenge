@@ -3,7 +3,8 @@
 
   // Regla de CLAUDE.md § Cloudflare: TODO objeto lleva prefijo
   // `math-challenge-`, sin excepción, ni en pruebas (ahí se sufija: -dev).
-  // El auditor `audits/cf-prefix.mjs` lo hace cumplir en CI, cruzando contra
+  // El auditor `audits/cf-prefix.mjs` lo hace cumplir en el gancho pre-commit,
+  // cruzando contra
   // el inventario de docs/infrastructure.md.
   "name": "math-challenge-web",
   "main": "apps/web/dist/_worker.js/index.js",

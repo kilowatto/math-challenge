@@ -479,7 +479,7 @@ audiencia. Si sale ahora, la app aterriza sobre público ya formado.
 
 | Fase | Qué queda funcionando | Depende de |
 |------|----------------------|-----------|
-| **S0 · Cimientos del sitio** | Astro sobre Workers, 7 rutas de locale con `hreflang` recíproco y `x-default`, JSON-LD con `inLanguage` por versión, WCAG 2.2 AA, auditores de esquema y `hreflang` bloqueando en CI | — |
+| **S0 · Cimientos del sitio** | Astro sobre Workers, 7 rutas de locale con `hreflang` recíproco y `x-default`, JSON-LD con `inLanguage` por versión, WCAG 2.2 AA, auditores de esquema y `hreflang` bloqueando en el gancho pre-commit | — |
 | **S1 · El corpus** | Las 47 investigaciones publicadas e indexables, con fuentes, limitaciones y `[unverified]` visibles — incluidas las que contradicen al producto | S0 |
 | **S2 · La historia y el producto** | Página de origen desde [`por-que-existe.md`](por-que-existe.md), los niveles y el propósito explicados, la arquitectura técnica como contenido citable, atribución Ignia + Cloudflare | S0 |
 

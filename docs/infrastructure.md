@@ -1,0 +1,91 @@
+# Math Challenge — Infraestructura Cloudflare
+
+> **Inventario canónico de objetos.** Todo objeto que Math Challenge crea en la
+> cuenta de Cloudflare lleva el prefijo `math-challenge-` para distinguirlo de
+> los de IOS y de IMP, que viven en la misma cuenta.
+>
+> **Estado: NINGUNO DE ESTOS OBJETOS EXISTE TODAVÍA.** Esta es la lista de lo que
+> se va a crear, no de lo que está creado. Conforme se creen, se anota aquí el ID
+> real y la fecha, según la regla de `AGENTS.md` §6.
+>
+> Bilingüe (EN/ES) porque la columna de propósito la lee tanto quien opera la
+> cuenta como quien escribe el código.
+>
+> **Origen:** derivado de `research/2026-07-31-mc-32-cloudflare-architecture.md`,
+> donde cada límite y cada precio está citado contra una página de documentación
+> de Cloudflare efectivamente descargada. Si necesitas el *porqué* de una
+> elección, está allá; aquí está el *qué*.
+
+## Regla de nombres
+
+```
+math-challenge-<qué-es>[-<tipo>]
+```
+
+Los bindings van en `UPPER_SNAKE_CASE`. El prefijo nunca se omite, ni siquiera en
+entornos de prueba — ahí se sufija: `math-challenge-db-dev`.
+
+## Decisiones estructurales que explican esta lista
+
+1. **Los intentos NO van a D1.** D1 topa en 10 GB por base y sería la primera
+   pared que golpeamos. Los millones de intentos crudos van a Analytics Engine.
+2. **Un Durable Object por liga y por salón**, no uno global. Cada liga tiene
+   ~30 miembros y su propio estado en vivo por WebSocket.
+3. **Un Durable Object por niño** para el modelo adaptativo, porque la selección
+   del siguiente ítem necesita estado consistente y de baja latencia.
+4. **KV guarda instantáneas del tablero**, nunca escrituras por intento — KV
+   admite una escritura por segundo por llave.
+5. **AI Gateway va delante de Claude siempre**, para caché, límite de gasto por
+   perfil y ruteo de modelo por banda de dificultad.
+
+## Inventario de objetos / Resource inventory
+
+Every object is prefixed `math-challenge-` as required. Binding names use `UPPER_SNAKE_CASE`.
+
+| Name | Type | Purpose (EN) | Propósito (ES) | Binding |
+|---|---|---|---|---|
+| `math-challenge-web` | Worker (Astro, Static Assets) | Public PWA frontend + BFF routes | Frontend PWA público + rutas BFF | n/a (entry Worker) |
+| `math-challenge-ingest` | Worker | Validates and ingests attempt submissions; writes telemetry, enqueues scoring | Valida e ingiere envíos de intentos; escribe telemetría, encola calificación | n/a |
+| `math-challenge-tutor` | Worker | Hosts "Larry" AI tutor; calls Claude via AI Gateway with RAG | Aloja al tutor de IA "Larry"; llama a Claude vía AI Gateway con RAG | n/a |
+| `math-challenge-leaderboard-cron` | Worker (Cron Trigger) | Triggers the periodic leaderboard rollup Workflow | Dispara el Workflow periódico de recálculo de leaderboard | n/a |
+| `math-challenge-db` | D1 database | System of record: users, children, classrooms, leagues, content metadata, consent | Registro maestro: usuarios, niños, salones, ligas, metadatos de contenido, consentimiento | `DB` |
+| `math-challenge-league-do` | Durable Object class (SQLite) | Live state + WebSocket broadcast for one league of ~30 | Estado en vivo + difusión WebSocket de una liga de ~30 | `LEAGUE_DO` |
+| `math-challenge-classroom-do` | Durable Object class (SQLite) | Live state for one classroom's roster and in-class standings | Estado en vivo del roster y clasificación de un salón | `CLASSROOM_DO` |
+| `math-challenge-learner-do` | Durable Object class (SQLite) | Per-child adaptive learner model (mastery estimates, item selection state) | Modelo de aprendizaje adaptativo por niño | `LEARNER_DO` |
+| `math-challenge-ratelimiter-do` | Durable Object class (SQLite) | Sharded rate limiting (login attempts, tutor calls, signup) | Limitación de tasa fragmentada (inicios de sesión, llamadas al tutor, registro) | `RATE_LIMITER_DO` |
+| `math-challenge-leaderboard-kv` | KV namespace | Precomputed global/grade-band leaderboard snapshots | Instantáneas precalculadas del leaderboard global/por-grado | `LEADERBOARD_KV` |
+| `math-challenge-config-kv` | KV namespace | Feature flags and content-catalog cache | Feature flags y caché del catálogo de contenido | `CONFIG_KV` |
+| `math-challenge-session-kv` | KV namespace | Short-lived auth/session tokens | Tokens de sesión/autenticación de corta duración | `SESSION_KV` |
+| `math-challenge-media` | R2 bucket | Item images, audio, illustrations | Imágenes, audio e ilustraciones de los reactivos | `MEDIA_BUCKET` |
+| `math-challenge-exports` | R2 bucket | Cold archive of aged-out attempts; COPPA/GDPR data-subject exports | Archivo frío de intentos vencidos; exportaciones para solicitudes COPPA/GDPR | `EXPORTS_BUCKET` |
+| `math-challenge-scoring-queue` | Queue | Async scoring + learner-model update jobs | Trabajos asíncronos de calificación y actualización del modelo de aprendizaje | `SCORING_QUEUE` |
+| `math-challenge-scoring-dlq` | Queue (dead-letter) | Failed scoring jobs after max retries | Trabajos de calificación fallidos tras reintentos máximos | `SCORING_DLQ` |
+| `math-challenge-ai-explain-queue` | Queue | Async AI-explanation generation requests | Solicitudes asíncronas de generación de explicaciones de IA | `AI_EXPLAIN_QUEUE` |
+| `math-challenge-ai-explain-dlq` | Queue (dead-letter) | Failed explanation jobs after max retries | Trabajos de explicación fallidos tras reintentos máximos | `AI_EXPLAIN_DLQ` |
+| `math-challenge-leaderboard-rollup-workflow` | Workflow | Periodic global/grade-band leaderboard computation | Cálculo periódico del leaderboard global/por-grado | `LEADERBOARD_WORKFLOW` |
+| `math-challenge-onboarding-workflow` | Workflow | Multi-step account + child-profile + consent setup | Configuración multi-paso de cuenta + perfil de niño + consentimiento | `ONBOARDING_WORKFLOW` |
+| `math-challenge-explanations-index` | Vectorize index | Multilingual RAG index over curated hints/explanations | Índice RAG multilingüe sobre pistas/explicaciones curadas | `EXPLANATIONS_INDEX` |
+| `math-challenge-tutor-gateway` | AI Gateway | Caching, rate limits, spend limits, model routing for Claude calls | Caché, límites de tasa, límites de gasto y enrutamiento de modelos para Claude | (gateway ID in `ANTHROPIC_BASE_URL`) |
+| `math-challenge-attempts-ae` | Analytics Engine dataset | Per-attempt telemetry (high-cardinality, high-volume) | Telemetría por intento (alta cardinalidad, alto volumen) | `ATTEMPTS_AE` |
+| `math-challenge-tutor-usage-ae` | Analytics Engine dataset | Tutor usage/cost telemetry (per-child, per-model) | Telemetría de uso/costo del tutor (por niño, por modelo) | `TUTOR_AE` |
+| `math-challenge-turnstile-signup` | Turnstile widget | Bot defense on signup/login forms | Defensa contra bots en formularios de registro/inicio de sesión | (site key/secret via env) |
+| `math-challenge-web-analytics` | Web Analytics site | Privacy-first RUM for the PWA | RUM respetuoso de la privacidad para la PWA | (JS snippet, no binding) |
+| `math-challenge-secrets` | Secrets Store | Holds `ANTHROPIC_API_KEY` and other third-party credentials | Contiene `ANTHROPIC_API_KEY` y otras credenciales de terceros | via `wrangler secret put` |
+
+
+## Bitácora de creación / Creation log
+
+| Fecha | Objeto | ID real | Quién | Nota |
+|-------|--------|---------|-------|------|
+| — | — | — | — | *(vacío: nada creado todavía)* |
+
+> **Regla:** nadie crea un recurso de Cloudflare sin el lock de infraestructura
+> en `AGENTS.md`, y quien lo crea escribe el renglón aquí en el mismo PR
+> (`AGENTS.md` §6).
+
+## Riesgo conocido
+
+El precio por escritura de Analytics Engine **no pudo confirmarse** contra la
+documentación actual de Cloudflare durante la investigación. Como todo el diseño
+de telemetría descansa en ese servicio, hay que confirmarlo antes de
+comprometerse — está registrado como riesgo #13 en `mc-32`.

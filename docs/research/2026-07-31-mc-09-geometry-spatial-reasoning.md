@@ -1,0 +1,112 @@
+# Geometry, Measurement, and Spatial Reasoning Across Ages
+
+> Math Challenge research — 2026-07-31 — topic 09
+
+## Resumen ejecutivo (ES)
+
+- El modelo de Van Hiele describe cinco niveles de pensamiento geométrico (visualización, análisis, deducción informal, deducción formal, rigor), **secuenciales y dependientes de la instrucción, no de la edad** [1][8].
+- El razonamiento espacial es entrenable: el meta-análisis de Uttal et al. (2013, 217 estudios) halló g=0.47 (g=0.61 en menores de 13), y el entrenamiento transfiere a tareas espaciales no entrenadas directamente [2][3].
+- La taxonomía 2×2 de Uttal (intrínseco/extrínseco × estático/dinámico) es el marco más citado para clasificar qué habilidad espacial entrena cada actividad; los meta-análisis más recientes confirman la correlación entre habilidad espacial y desempeño matemático en todas las edades [11][14].
+- Tangram y pattern blocks tienen linaje milenario chino; su valor pedagógico documentado es composición/descomposición de formas, congruencia, área y perímetro por manipulación directa [6][9].
+- El origami combina arte y matemática aplicada (geometría de plegado, teorema de Kawasaki) y se usa para visualización espacial en todos los niveles [9].
+- Los entornos de geometría dinámica (GeoGebra, Cabri) muestran efecto positivo consistente en comprensión y retención (hasta g≈0.96 en un meta-análisis de 29 estudios), aunque intervenciones cortas y clases pequeñas magnifican el efecto — posible "efecto Hawthorne" [5][7].
+- Cabri y software similar documentan la transición de estrategias visuales a geométricas, pero también el riesgo de que arrastrar y "ver que se cumple" sustituya la justificación matemática real [7].
+- La demostración en dos columnas domina la enseñanza en EE.UU. desde 1913; la escritura profesional usa forma narrativa, y cada formato tiene ventajas de legibilidad distintas según la longitud [8].
+- Ya existe investigación de arrastre táctil en tablet ("Geometric Constructer", secundaria italiana) mostrando que el dedo cambia el razonamiento respecto al mouse [12].
+- Existen alternativas accesibles maduras: apps multimodales para niños ciegos, displays hápticos programables y gráficos audio-táctiles con evidencia de mejora en memoria de trabajo espacial [13][15][16].
+- Para Math Challenge: mapear Van Hiele a bandas de grado, priorizar tareas de arrastre auto-calificables sobre demostración formal en edades tempranas, y diseñar cada tarea visual con alternativa audio-táctil desde el inicio.
+
+## Executive summary (EN)
+
+- Van Hiele's five levels of geometric thought (visualization, analysis, informal deduction, formal deduction, rigor) are **sequential and instruction-dependent, not age-dependent** [1][8].
+- Spatial reasoning is trainable: Uttal et al.'s (2013) meta-analysis of 217 studies found g=0.47 (g=0.61 for children under 13), transferring to untrained spatial tasks [2][3].
+- Uttal's intrinsic/extrinsic × static/dynamic 2×2 taxonomy is the most-cited frame for classifying which spatial skill an activity trains; more recent meta-analyses confirm spatial skill reliably correlates with math performance across ages [11][14].
+- Tangrams and pattern blocks have a millennia-old Chinese lineage; their documented value is shape composition/decomposition, congruence, area, and perimeter through direct manipulation [6][9].
+- Origami blends art and applied mathematics (fold geometry, Kawasaki's theorem) and is used for spatial visualization across education levels [9].
+- Dynamic geometry environments (GeoGebra, Cabri) show consistently positive effects on conceptual understanding and retention (up to g≈0.96 in a 29-study meta-analysis) — though short interventions and small classes inflate the effect, a possible Hawthorne effect [5][7].
+- Cabri-type software documents students shifting from visual to geometric strategies, but also the risk that dragging-and-seeing-it-hold substitutes for real mathematical justification [7].
+- Two-column proof has dominated US instruction since 1913; professional mathematical writing is narrative, and each format trades off differently by proof length [8].
+- Touchscreen-specific research already exists: the "Geometric Constructer" software (Italian secondary students) found finger-dragging changes geometric reasoning relative to mouse-dragging [12].
+- Mature accessible alternatives exist: multimodal apps for blind children, programmable tactile/haptic displays, and audio-tactile graphics with documented gains in spatial working memory [13][15][16].
+- For Math Challenge: map Van Hiele explicitly onto grade bands, prioritize auto-gradable drag tasks over formal proof at younger ages, and design an audio-tactile alternative for every visual task from day one.
+
+## Findings
+
+### 1. Van Hiele levels of geometric thought
+
+The van Hiele model, developed by Dutch educators Pierre and Dina van Hiele, describes five levels: **Level 0 (Visualization)** — shapes recognized by overall gestalt ("it looks like a house"), not by properties; **Level 1 (Analysis)** — properties are observed and listed ("a rectangle has four right angles") but relationships between properties aren't yet reasoned about; **Level 2 (Informal Deduction)** — students informally order properties and shape classes ("a square is a rectangle because…"); **Level 3 (Formal Deduction)** — students construct proofs from axioms and understand undefined terms, postulates, and theorems; **Level 4 (Rigor)** — students compare axiomatic systems abstractly, the level expected of college math majors [1][8].
+
+Two properties matter for design. The levels are strictly **sequential** — a learner cannot skip Level 1 to reason at Level 2 — but progression is driven by **instruction and experience, not chronological age**; a single classroom commonly contains students at two or more levels simultaneously [1][4]. Each level also has its own **language and symbol system**: a term correct at Level 2 ("all squares are rectangles") may be meaningless or false-sounding to a Level 0 thinker, so instruction mismatched to a learner's level talks past them regardless of content accuracy [4]. The van Hieles' own prescription is five phases per level transition — information, guided orientation, explicitation, free orientation, integration — built on active manipulation and discussion rather than lecture or memorization [1].
+
+### 2. Spatial reasoning training and transfer to math
+
+Uttal, Meadow, Tipton, Hand, Alden, Warren, and Newcombe's 2013 *Psychological Bulletin* meta-analysis aggregated 217 spatial-training studies and found a mean training effect (Hedges' g) of 0.47 versus control, rising to 0.61 for children under 13 — evidence childhood is a particularly malleable window for spatial skill [2][3]. Training effects were durable across delays and **transferred to spatial tasks never directly trained**, undercutting the idea that spatial training only produces narrow, task-specific gains [2].
+
+Uttal's companion contribution is a 2×2 taxonomy distinguishing **intrinsic** (within-object: shape, part-relationships) from **extrinsic** (between-object, frame-of-reference) skills, and **static** (fixed representation) from **dynamic** (mental rotation, folding, transformation) processes [11][14]. Validated via confirmatory factor analysis in kindergarten-through-sixth-grade samples, it is the standard way the field now specifies *which* spatial skill an activity trains, rather than treating "spatial ability" as one construct [14]. Newcombe and colleagues' later work — a *Psychonomic Bulletin & Review* meta-analysis and an *Educational Psychology Review* roadmap — confirms spatial skill reliably predicts math achievement from early childhood through adolescence, and that targeted spatial intervention can produce far transfer specifically to measurement and geometry performance in older students [3][11].
+
+### 3. Tangrams, pattern blocks, origami, and geometric puzzle traditions
+
+The tangram (七巧板, *qi qiao ban*, "seven boards of skill") traces to a lineage credited to the third-century Chinese mathematician Liu Hui, though the familiar seven-piece form (five triangles, one square, one rhomboid cut from a square) was popularized and published around 1800 [9]. Pattern blocks — six shapes (hexagon, trapezoid, triangle, square, two rhombi) — serve a related but distinct purpose: they emphasize relationships *between* shape types, while tangrams, with fewer and more constrained pieces, push harder on spatial awareness and constrained composition [6]. Both are documented tools for shape composition/decomposition, congruence, similarity, area, and perimeter through hands-on manipulation; research combining tangrams with dynamic software (e.g., The Geometer's Sketchpad) reports gains in visualization, graphical representation, and logical reasoning [6][9].
+
+Origami sits at the intersection of craft and applied mathematics: fold patterns encode geometric constraints (flat-foldability, Kawasaki's and Maekawa's theorems, developable-surface behavior), and origami-based design now supports engineering applications (deployable structures, space hardware) alongside its role as a spatial-visualization tool [9]. The shared throughline across the Chinese tangram and Japanese origami traditions is **transformation of a fixed set of pieces or a single sheet under geometric constraints** — exactly what a touchscreen can represent as a drag-and-snap or fold-and-check interaction.
+
+### 4. Dynamic geometry environments (GeoGebra, Cabri): evidence
+
+GeoGebra and Cabri let geometric objects be constructed and continuously deformed ("dragged") while preserving constructed relationships, so a student sees which properties are invariant. A 2021 meta-analysis of 29 Indonesian studies of GeoGebra-assisted learning found a large overall effect size (g≈0.96, equivalent to outperforming ~82% of a traditional-instruction comparison group), with no significant difference across junior high, senior high, or college level [5]. Moderators mattered: smaller classes (≤30) and one-device-per-student access produced bigger effects than shared computers, and interventions of four weeks or less outperformed longer ones — a pattern consistent with a novelty (Hawthorne) effect that should temper expectations of sustained gains from any single feature [5]. A separate eighth-grade study found GeoGebra improved conceptual understanding of linear equations/slope and, elsewhere, of trapezoid area, with better retention on delayed post-tests, not just immediate scores [5].
+
+Cabri-géomètre research (predating GeoGebra) established vocabulary still used today: dragging lets students move from "purely visual" pattern-matching to genuinely "geometrical" strategies grounded in properties, and construction tasks — where a figure must stay correct under drag — bridge informal justification toward formal proof [7]. The same literature raises a durable caution: dynamic software can encourage a **data-gathering mindset** where "I dragged it and it still looks true" substitutes for actual justification — precisely the gap formal proof exists to close [7]. Touch-specific follow-on research (the "Geometric Constructer" studies with Italian high-schoolers) shows *how* dragging is done — finger versus mouse — measurably changes the reasoning process, directly relevant to a phone/tablet-first product [12].
+
+### 5. Proof in school geometry: two-column vs. narrative
+
+The two-column proof format (statement | reason, side by side) was introduced in the second edition of Schultze and Sevenoak's *Geometry* textbook in 1913 and has anchored US geometry instruction since [8]. It forces an explicit, checkable justification for every step and makes the logical chain visually scannable — useful for a beginner and for automated grading, since each row is a discrete (statement, reason) pair validated independently. Narrative (paragraph) proof carries the same logic in flowing prose, is closer to how professional mathematicians actually write, and reads better for short proofs, but "can get hard to follow… since there's no visual separation between lines of reasoning" once a proof grows long [8]. Practical takeaway: two-column is more machine-checkable, while narrative is more human-natural and matches later professional practice — an argument for teaching two-column first and unlocking narrative once formal deduction (Van Hiele Level 3) is reached.
+
+### 6. Authoring and auto-grading geometry on a touchscreen
+
+Existing research and shipped products converge on a small set of item types that are pedagogically grounded and tractable to auto-grade on a phone or tablet: (a) **drag-to-construct** tasks, where a student drags vertices/segments and the grader checks invariants (parallelism, congruence, right angles) rather than pixel position, following the Cabri/GeoGebra paradigm [7][12]; (b) **angle estimation**, where a draggable protractor or rotatable ray is compared to a tolerance band around the target angle — existing online protractor tools already implement drag-to-measure UIs used for homework grading [12]; (c) **area decomposition on a grid**, counting whole/partial unit squares, which "Area Explorer"-style activities already auto-score by comparing a drawn/selected region against the target area within a tolerance [10]; (d) **symmetry tasks**, where children (even non-verbally) can pick the "odd one out" or complete a mirrored half, a paradigm validated with young children without requiring verbal description of the property [17]. All four map cleanly to touch gestures (tap, drag, pinch-rotate) and to objective, tolerance-based auto-grading rather than free-text or drawing-recognition, keeping grading deterministic and explainable to a parent or teacher.
+
+### 7. Accessible and inclusive alternatives
+
+A substantial body of applied HCI research targets exactly the population a "geometry on a touchscreen" design would otherwise exclude. Multimodal Android apps for blind children present geometric shapes via combined audio and vibration/touch feedback instead of vision [13]. Programmable tactile pin-array displays (e.g., DotView-class hardware and lab-built devices) improve spatial working memory in both blind and sighted children, suggesting the accessible modality has value beyond accommodation [15]. Audio-tactile graphics platforms report measurable learning-effectiveness gains for visually impaired learners when tactile graphics pair with synchronized audio description [16]. None of this hardware is realistic to require for a general PWA, but the underlying *design pattern* — pair every visual geometric relationship with a non-visual (audio description + coarse vibration) encoding of the same relationship — is directly portable to a phone's built-in vibration motor and screen-reader APIs, without specialized hardware.
+
+## Design implications for Math Challenge
+
+1. **Map Van Hiele levels to grade bands** as an internal content tag, not just a difficulty number: K–Grade 2 → Level 0 (visualization/naming); Grades 3–5 → Level 1 (property-spotting: sides, right angles, symmetry lines); Grades 6–8 → Level 2 (informal deduction, e.g. "why is every square a rectangle?"); Grades 9–10 → Level 3 (formal proof); Level 4 reserved for olympiad/PhD-track content [1][4].
+2. **Do not gate geometry purely by grade/age.** Since level depends on instruction, not age, diagnose a child's actual Van Hiele level via a short adaptive pre-check and place them there, decoupled from the default per-grade theme.
+3. **Prioritize four auto-gradable item types**, in order of build cost: (a) symmetry/odd-one-out taps (cheapest, works from pre-K), (b) grid-based area decomposition (tolerance-scored), (c) drag-to-construct with invariant checking (needs a small geometry-constraint engine), (d) draggable-protractor angle estimation with a tolerance band — all four have existing product or research precedent [10][12][17].
+4. **Grade drag-to-construct as invariant-checking, not pixel-matching**: store the target as geometric relationships (e.g., "these two segments stay parallel under any valid drag") and validate the final configuration against them, as GeoGebra/Cabri-style software does [7].
+5. **Defer two-column/narrative proof authoring to Grade 9+**, and ship two-column as the default scaffold (more machine-checkable, 100+ years of convention), unlocking narrative proof as an optional "in your own words" mode afterward — this also gives a clean EN/ES/FR/PT/DE seam, since two-column reason-codes ("SAS", "Alternate Interior Angles") are a small translated lookup table while narrative proof needs full-sentence translation [8].
+6. **Tag non-proof spatial items with Uttal's 2×2 taxonomy** (intrinsic/extrinsic × static/dynamic) so analytics can report which quadrant of spatial skill a child is weak in, instead of one opaque "spatial score" [11][14].
+7. **Ship tangram/pattern-block manipulatives as a standalone activity type**, not just an illustration — the research credits them specifically with area/perimeter/congruence learning, and a drag-and-snap tangram board auto-grades easily (silhouette match within tolerance) [6][9].
+8. **Add an origami/paper-folding mini-mode** for upper-elementary/middle-school spatial visualization, paired with the tangram unit as a China/Japan cultural pairing — doubles as translatable localization content rather than abstract drills [9].
+9. **Design an audio-tactile fallback for every visual geometry item from the start**: short audio description plus vibration cues (e.g., a buzz for "these sides are equal"), achievable with standard mobile vibration APIs and ARIA labeling, no specialized hardware needed [13][16].
+10. **Rotate drag-and-observe activities in short bursts (3–4 weeks)** rather than one static "geometry sandbox," since GeoGebra meta-analysis moderators show shorter interventions outperform longer ones on the same feature, plausibly a novelty effect [5].
+11. **Teach the "drag ≠ proof" gap explicitly** at Level 2/3: after a student verifies a conjecture by dragging, require a follow-up justification step before marking mastery, addressing the documented risk that dynamic software substitutes empirical confidence for proof [7].
+12. **Use tolerance bands, not exact-match, for all touch-based measurement items**, calibrated per age band (wider for younger children, tightening by Grade 6+), matching existing protractor/area-explorer tools [10][12].
+
+## Open questions for the project owner
+
+1. Should Van Hiele level be exposed to parents/teachers as a visible metric (like a reading level), or kept as an internal content-tagging system only?
+2. Is a lightweight geometric-constraint engine (to validate drag-to-construct invariants) worth building in-house, or should early releases restrict to simpler item types (symmetry, area-grid, angle-estimation) that don't need one?
+3. How much cultural/historical framing (tangram = China, origami = Japan) do we want in-app, given the bilingual/multilingual and "ultra-privacy for minors" constraints — is naming countries/traditions in a children's app something Legal/Trust needs to review?
+4. Should the accessible audio-tactile fallback be a toggle-on accessibility mode, or the default rendering path that a "visual skin" layers on top of (the latter is more robust but a larger upfront engineering commitment)?
+5. What's the acceptable false-positive/false-negative rate for tolerance-based auto-grading of angle/area tasks per grade band, and who owns setting those thresholds (content team vs. an auto-tuned per-item calibration)?
+
+## Sources
+
+1. [The van Hiele Levels of Geometric Understanding — Marguerite Mason](https://www.fe.infn.it/u/mandreot/SSIS/DidMateModuloII/vanHiele%20levels.pdf)
+2. [The Malleability of Spatial Skills: A Meta-Analysis of Training Studies — Uttal et al. 2013 (Northwestern PDF)](https://groups.psych.northwestern.edu/uttal/vittae/documents/ContentServer.pdf)
+3. [First demonstration of effective spatial training for near transfer to spatial performance and far transfer to mathematics skills at 8 years — PMC](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7379338/)
+4. [The van Hiele Levels of Geometric Thinking — Royster, U. Kentucky](https://ms.uky.edu/~droyster/courses/spring08/math6118/vanHeile.htm)
+5. [A meta-analysis of GeoGebra software decade of assisted mathematics learning — PMC8113830](https://pmc.ncbi.nlm.nih.gov/articles/PMC8113830/)
+6. [Pattern Blocks and Tangrams — Learning Trajectories](https://www.learningtrajectories.org/documents/1712762945261.pdf)
+7. [Justifying and Proving in the Cabri Environment — Technology, Knowledge and Learning (Springer)](https://link.springer.com/article/10.1023/A:1013357611987)
+8. [Rigor in Proofs — IM Certified Blog (two-column vs. narrative proof)](https://illustrativemathematics.blog/2019/03/24/rigor-in-proofs/)
+9. [The history and mystery of Tangram — The Conversation](https://theconversation.com/the-history-and-mystery-of-tangram-the-childrens-puzzle-game-that-harbours-a-mathematical-paradox-or-two-190529)
+10. [Interactivate: Area Explorer](https://appstate-math.github.io/interactivate/activities/AreaExplorer/)
+11. [Navigating Spatial Ability for Mathematics Education: a Review and Roadmap — Educational Psychology Review (Springer)](https://link.springer.com/article/10.1007/s10648-024-09935-5)
+12. [Moving from dragging to touchscreen: geometrical learning with geometric dynamic software — ResearchGate](https://www.researchgate.net/publication/269692448_Moving_from_dragging_to_touchscreen_geometrical_learning_with_geometric_dynamic_software)
+13. [Playing with Geometry: a Multimodal Android App for Blind Children — ACM Digital Library](https://dl.acm.org/doi/pdf/10.1145/2808435.2808458)
+14. [The latent structure of spatial skill: A test of the 2×2 typology — ScienceDirect](https://www.sciencedirect.com/science/article/abs/pii/S0010027718301951)
+15. [Improving spatial working memory in blind and sighted youngsters using programmable tactile displays — PMC6299321](https://pmc.ncbi.nlm.nih.gov/articles/PMC6299321/)
+16. [Accessible Tutoring Platform Using Audio-Tactile Graphics Adapted for Visually Impaired People — PMC9699313](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9699313/)
+17. [Exploring Gender Differences in a Symmetry Software Intervention for Young Children — Fairfield University](https://digitalcommons.fairfield.edu/education-contributions/5/)

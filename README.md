@@ -38,7 +38,7 @@ investigación y el plan:
 | [`docs/decisions.md`](docs/decisions.md) | Las decisiones del dueño, con fecha y evidencia |
 | [`docs/infrastructure.md`](docs/infrastructure.md) | Los 27 objetos `math-challenge-*` de Cloudflare |
 | [`docs/research/`](docs/research/README.md) | 43 investigaciones, ~143,000 palabras |
-| [`AGENTS.md`](AGENTS.md) | Reglas de coordinación entre agentes |
+| [`CLAUDE.md`](CLAUDE.md) | Reglas del proyecto: líneas rojas, commits, contenido |
 
 ### Principios que no se negocian
 

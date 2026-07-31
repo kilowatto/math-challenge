@@ -6,7 +6,7 @@
 >
 > **Estado: NINGUNO DE ESTOS OBJETOS EXISTE TODAVÍA.** Esta es la lista de lo que
 > se va a crear, no de lo que está creado. Conforme se creen, se anota aquí el ID
-> real y la fecha, según la regla de `AGENTS.md` §6.
+> real y la fecha, según la regla de `CLAUDE.md` § Cloudflare.
 >
 > Bilingüe (EN/ES) porque la columna de propósito la lee tanto quien opera la
 > cuenta como quien escribe el código.
@@ -79,9 +79,8 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 |-------|--------|---------|-------|------|
 | — | — | — | — | *(vacío: nada creado todavía)* |
 
-> **Regla:** nadie crea un recurso de Cloudflare sin el lock de infraestructura
-> en `AGENTS.md`, y quien lo crea escribe el renglón aquí en el mismo PR
-> (`AGENTS.md` §6).
+> **Regla:** quien crea un recurso de Cloudflare escribe su renglón aquí en el
+> mismo PR (`CLAUDE.md` § Cloudflare).
 
 ## Riesgo conocido
 

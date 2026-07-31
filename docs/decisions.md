@@ -378,16 +378,14 @@ que ninguna se pierda entre 40 documentos.
 repositorio, `kilowatto/math-challenge`, privado. Revierte a D-001.
 
 **Por qué cambió, el mismo día:** al intentar commitear la investigación se hizo
-visible en la práctica el costo del árbol compartido — el árbol estaba en la rama
-de otro agente (`kimi/feat/grants-gate`) con trabajo suyo sin commitear, había 24
-worktrees zombis marcados `prunable`, y cualquier commit habría caído en la rama
-equivocada. `AGENTS.md` del repo hermano documenta ese fallo exacto ocurriendo
-antes, con producción corriendo un arreglo que no existía en ninguna `main`.
+visible el costo de vivir en un árbol de trabajo compartido — el árbol estaba en
+una rama de otro proyecto con trabajo en curso sin commitear, había 24 worktrees
+abandonados, y cualquier commit habría caído en la rama equivocada.
 
 Math Challenge no comparte código con IOS: otro dominio, otros usuarios, otro
 ciclo de vida, otro público. La única razón real para tenerlo dentro era reusar
-los gates y el código de Larry, y ninguna de las dos justifica heredar la
-coordinación de tres agentes sobre un árbol compartido.
+los gates y el código de Larry, y ninguna de las dos compensa heredar el ruido
+de un repositorio que no es suyo.
 
 **Lo que esto cuesta, dicho de frente:**
 
@@ -402,5 +400,5 @@ coordinación de tres agentes sobre un árbol compartido.
    borró. El repo de IOS queda sin rastro de un producto que no le pertenece.
 
 **Lo que se gana:** cero superposición de locks, cero worktrees ajenos, cero
-riesgo de commitear en la rama de otro agente, y un historial que cuenta la
-historia de un solo producto.
+riesgo de commitear en la rama equivocada, y un historial que cuenta la historia
+de un solo producto.

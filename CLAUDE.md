@@ -87,6 +87,12 @@ avanzando en lo que la respuesta no bloquea mientras contesta.
 - **Documentación interna:** español o inglés, lo que sea más claro. La
   investigación está en inglés con resumen ejecutivo en español.
 
+**Para traducir el corpus de investigación, la especificación completa está en
+[`AGENTS.md`](AGENTS.md)**: dónde está cada archivo, qué falta, las diez reglas
+absolutas, la ficha de los siete locales, cómo se corre y cómo se verifica. Ese
+archivo es autosuficiente a propósito — lo lee un agente que no conoce el
+proyecto.
+
 **Advertencia propia de este producto:** el contenido matemático **no se traduce,
 se autora**. En alemán el 21 es "einundzwanzig" (uno-y-veinte) y en francés el 90
 es "quatre-vingt-dix"; México usa punto decimal y el resto del mundo hispano usa

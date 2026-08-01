@@ -70,7 +70,7 @@
  *     quedaría fuera de su propio perfil para siempre, que es la línea roja #4
  *     en su espíritu. Ver el bloque «Un perfil sin PIN todavía» más abajo, que
  *     es lo que se hace mientras esa pantalla no exista.
- *  2. **`DESTINO_TRAS_ENTRAR` apunta a la rejilla de caras**, que es de donde
+ *  2. **`destinoTrasEntrar(locale)` apunta a la rejilla de caras**, que es de donde
  *     vino el niño: hoy no hay casa del niño dentro de la aplicación, así que
  *     entrar con el PIN correcto lo devuelve al mismo sitio. No se arregla desde
  *     aquí —hace falta la ruta— y **no se arregla dejando pasar sin PIN a quien
@@ -84,8 +84,8 @@
  * que es otro criterio y otro archivo. Aquí se valida siempre contra el
  * dispositivo del hogar: un `p` de un niño de otra casa no pinta nada.
  */
-import "../../../styles/fonts.css";
-import "../../../styles/tokens.css";
+import "../../../../styles/fonts.css";
+import "../../../../styles/tokens.css";
 /**
  * La capa de banda, igual que en `app/kids/index.astro`.
  *
@@ -96,15 +96,15 @@ import "../../../styles/tokens.css";
  * del piso. Sin este import la pantalla del PIN y la rejilla de caras, que son
  * dos pasos del mismo gesto, se pintaban con dos escalas distintas.
  */
-import "../../../styles/bandas.css";
-import { t, isLocale, DEFAULT_LOCALE, type Locale } from "../../../i18n";
+import "../../../../styles/bandas.css";
+import { LOCALES, t, isLocale, DEFAULT_LOCALE, type Locale } from "../../../../i18n";
 import {
   COOKIE_HOGAR,
   COOKIE_NINO,
   abrirSesionNino,
   leerCookies,
   leerDispositivoDelHogar,
-} from "../../../lib/sesiones";
+} from "../../../../lib/sesiones";
 import {
   CASILLAS,
   LARGO_PIN,
@@ -113,9 +113,27 @@ import {
   pinesIguales,
   rejillaDe,
   type Dibujo,
-} from "../../../../../../packages/motor/src/pin-imagenes.ts";
+} from "../../../../../../../packages/motor/src/pin-imagenes.ts";
 
 export const prerender = false;
+
+/**
+ * ─── Por qué esta pantalla vive bajo `[locale]/` y no bajo `/app/` ──────────
+ *
+ * **MEDIDO:** cualquier página bajo `src/pages/app/` sin segmento de locale
+ * devuelve **404**, porque la configuración de i18n de Astro espera locale en
+ * toda ruta. La primera versión estaba en `/app/kids/` y el guardián de D-012
+ * funcionaba perfectamente —`Location: /app/signin`, `no-store`, `Vary: cookie`—
+ * **sobre un estado 404 que ningún navegador sigue**. La tablet sin marcar se
+ * quedaba en «no encontrado» en vez de ir a la puerta del adulto.
+ *
+ * Se comprobó contra `wrangler dev`: `/es-MX/app/perfil-nuevo/` daba 302 y
+ * `/app/kids/` y `/app/signin` daban 404, con el mismo código dentro.
+ *
+ * Y no lleva `getStaticPaths`: Astro lo IGNORA en páginas bajo demanda y avisa
+ * de ello. El locale sale de `Astro.params`, validado como en el resto del sitio.
+ */
+
 
 /**
  * Los bindings, tipados por LO QUE LOS RECIBE y no por el tipo global.
@@ -142,7 +160,8 @@ interface Env {
 }
 
 /** A dónde va el niño cuando entra. Su casa dentro de la aplicación. */
-const DESTINO_TRAS_ENTRAR = "/app/kids/";
+// Igual que en `index.astro`: función, porque `locale` nace más abajo.
+const destinoTrasEntrar = (l: string) => `/${l}/app/kids/`;
 
 /**
  * A dónde va quien no debería estar aquí.
@@ -283,7 +302,7 @@ if (!perfil.pin_hash) {
     { childProfileId: perfil.id, parentUserId: perfil.parent_user_id, creadaEn: Date.now() },
     cookies[COOKIE_NINO],
   );
-  return salidaHacia(DESTINO_TRAS_ENTRAR, { "set-cookie": cookie });
+  return salidaHacia(destinoTrasEntrar(locale), { "set-cookie": cookie });
 }
 
 /**
@@ -353,7 +372,7 @@ if (Astro.request.method === "POST") {
       );
       // 303 y no 302: obliga al navegador a hacer GET sobre el destino, así que
       // recargar la página siguiente no reenvía el PIN.
-      return salidaHacia(DESTINO_TRAS_ENTRAR, { "set-cookie": cookie });
+      return salidaHacia(destinoTrasEntrar(locale), { "set-cookie": cookie });
     }
 
     // Se vuelve a empezar sin penalización de ningún tipo: no se cuenta el

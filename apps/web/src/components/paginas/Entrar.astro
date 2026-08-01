@@ -1,0 +1,163 @@
+---
+/**
+ * `/{locale}/entrar/` — la puerta de vuelta. Criterio #112, D-038.
+ *
+ * ─── Existía un registro y no existía una entrada ──────────────────────────
+ *
+ * Se podía crear una cuenta y no volver a ella. Lo señaló el dueño mirando el
+ * sitio, no un auditor: ninguna comprobación del repositorio sabe que a un
+ * producto le falta una pantalla entera.
+ *
+ * ─── Dos campos, igual que el registro, y por la misma razón ───────────────
+ *
+ * Correo y contraseña. D-026 fija dos en el registro; aquí no hay decisión que
+ * tomar —son los dos que existen— pero el formulario se escribe igual para que
+ * la persona reconozca la pantalla.
+ *
+ * `autocomplete="current-password"` y no `new-password`: es lo que separa un
+ * inicio de sesión de un registro para el gestor de contraseñas del navegador,
+ * y ponerlo mal hace que ofrezca generar una nueva justo cuando alguien intenta
+ * usar la que ya tiene. También es lo que impide que
+ * `audits/signup-dos-campos.mjs` confunda esta pantalla con un registro.
+ *
+ * ─── Lo que NO tiene ───────────────────────────────────────────────────────
+ *
+ *  · **Ningún «recordar mi sesión».** La cookie `mc_s` dura 30 días siempre
+ *    (D-052). Una casilla que ofrece lo que ya pasa es una casilla que engaña.
+ *  · **Ningún «entrar como niño».** El niño no es un usuario (línea roja #2):
+ *    entra por `/app/kids`, en un dispositivo que el adulto marcó, tocando su
+ *    cara y su PIN de imágenes. Aquí no.
+ *  · **Ninguna pista de si el correo existe.** Ver el endpoint.
+ */
+import Base from "../../layouts/Base.astro";
+import { t, type Locale } from "../../i18n";
+import { ruta } from "../../i18n/rutas";
+import { idiomaWidget } from "../../lib/turnstile";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props as Props;
+const m = t(locale);
+
+// Pública por diseño, igual que en el registro: viaja en el HTML.
+const siteKey =
+  (import.meta.env.TURNSTILE_SITE_KEY as string | undefined) ??
+  (typeof process !== "undefined" ? process.env?.TURNSTILE_SITE_KEY : undefined) ??
+  "";
+---
+
+<Base locale={locale} seccion="entrar" title={m.signinFormTitle} description={m.signinFormLead}>
+  <article class="entrar">
+    <h1>{m.signinFormTitle}</h1>
+    <p class="lead">{m.signinFormLead}</p>
+
+    <form method="post" action="/api/entrar" id="form-entrar">
+      <div class="campo">
+        <label for="correo">{m.signupEmail}</label>
+        <input
+          type="email"
+          id="correo"
+          name="correo"
+          required
+          autocomplete="username"
+          inputmode="email"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <div class="campo">
+        <label for="clave">{m.signupPassword}</label>
+        <input
+          type="password"
+          id="clave"
+          name="clave"
+          required
+          autocomplete="current-password"
+        />
+      </div>
+
+      {siteKey && (
+        <>
+          <div
+            class="cf-turnstile"
+            data-sitekey={siteKey}
+            data-language={idiomaWidget(locale)}
+            data-theme="auto"
+            data-size="flexible"
+          />
+          <script is:inline async src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer />
+        </>
+      )}
+
+      <button type="submit">{m.signinFormCta}</button>
+    </form>
+
+    <p class="muted">
+      {m.signinNoAccount} <a href={ruta(locale, "registro-padre")}>{m.navSignup}</a>
+    </p>
+    <p class="muted">{m.signinChildNote}</p>
+  </article>
+
+  <style>
+    .entrar {
+      max-width: var(--measure);
+      margin-inline: auto;
+      padding-block: calc(var(--space) * 2);
+    }
+    h1 {
+      font-family: var(--font-marca);
+      font-weight: var(--weight-title);
+      font-size: var(--text-xl);
+      color: var(--color-text-brand);
+      margin-block-end: var(--space);
+    }
+    .lead {
+      font-family: var(--font-marca);
+      font-size: var(--text-lg);
+      line-height: var(--leading-body);
+      margin-block-end: calc(var(--space) * 2);
+    }
+    form { display: flex; flex-direction: column; gap: calc(var(--space) * 1.5); }
+    .campo { display: flex; flex-direction: column; gap: calc(var(--space) * 0.5); }
+    label {
+      font-family: var(--font-sistema);
+      font-weight: var(--weight-subtitle);
+      color: var(--color-text);
+    }
+    input {
+      font-family: var(--font-sistema);
+      /* 16px o más: por debajo, iOS Safari hace zoom al enfocar y saca el
+         formulario de la pantalla. */
+      font-size: var(--text-base);
+      min-height: var(--tap-primaria);
+      padding-inline: calc(var(--space) * 0.75);
+      color: var(--color-text);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+    }
+    input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    button {
+      font-family: var(--font-sistema);
+      font-size: var(--text-base);
+      font-weight: var(--weight-subtitle);
+      min-height: var(--tap-primaria);
+      color: var(--color-on-accent);
+      background: var(--color-accent);
+      border: 0;
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+    button:hover { background: var(--color-accent-hover); }
+    button:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+    .muted {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      line-height: var(--leading-body);
+      margin-block-start: var(--space);
+    }
+  </style>
+</Base>

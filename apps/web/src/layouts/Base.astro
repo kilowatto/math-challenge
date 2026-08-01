@@ -81,6 +81,7 @@ const NAV: Array<{ seccion: Seccion | null; label: string }> = [
  * el séptimo enlace de una fila que ya se parte en dos líneas en un móvil.
  */
 const REGISTRO: Seccion = "registro-padre";
+const ENTRAR: Seccion = "entrar";
 
 // JSON-LD. `name` y `description` vienen de las MISMAS variables que renderiza
 // el <body>, no de constantes paralelas: es la única forma de que la regla de
@@ -188,12 +189,27 @@ const jsonLd = {
               : <a href={item.seccion ? ruta(locale, item.seccion) : `/${locale}/`}>{item.label}</a>}
           </li>
         ))}
-        <li class="registro">
-          {seccion === REGISTRO
-            ? <span aria-current="page">{m.navSignup}</span>
-            : <a href={ruta(locale, REGISTRO)}>{m.navSignup}</a>}
-        </li>
       </ul>
+
+      {/*
+        Las dos acciones van en su PROPIA fila, no dentro de la lista de
+        secciones. Estaban dentro y en un teléfono el resultado era la barra
+        partida en dos líneas con el botón encajado al final de la segunda —
+        una barra de escritorio con el ancho reducido, no un diseño móvil.
+
+        Aquí son dos botones lado a lado que ocupan el ancho completo en un
+        teléfono y se encogen a su contenido a partir de 40rem. `master-plan`
+        §11 dice «PWA primero, móvil segundo, escritorio tercero», y el orden
+        importa: esta fila se diseña para el pulgar y después se deja crecer.
+      */}
+      <div class="acciones">
+        {seccion === ENTRAR
+          ? <span class="entrar" aria-current="page">{m.navSignin}</span>
+          : <a class="entrar" href={ruta(locale, ENTRAR)}>{m.navSignin}</a>}
+        {seccion === REGISTRO
+          ? <span class="registro" aria-current="page">{m.navSignup}</span>
+          : <a class="registro" href={ruta(locale, REGISTRO)}>{m.navSignup}</a>}
+      </div>
     </nav>
 
     <main id="main">
@@ -243,13 +259,68 @@ const jsonLd = {
         padding: 1.25rem 1.25rem 0;
         border-block-end: 1px solid var(--color-border);
       }
+      /* ─── Móvil primero, y esto se rehízo mirando un teléfono ──────────────
+         La versión anterior era `flex-wrap: wrap`: en un móvil las seis
+         secciones se partían en dos líneas y el botón de registro quedaba
+         encajado al final de la segunda. Se veía roto porque lo estaba.
+
+         Ahora las secciones son UNA fila que se desplaza en horizontal. No se
+         parte, no empuja nada, y el pulgar la recorre — que es como se navega
+         una app instalada. `overflow-x: auto` con `scroll-snap` para que no se
+         quede a media palabra. */
       nav.sitio ul {
         list-style: none;
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scroll-snap-type: inline mandatory;
         gap: 0 1.25rem;
         padding: 0;
         margin: 0;
+        /* La barra de desplazamiento nativa robaría alto en un móvil y no
+           aporta nada: la fila se ve cortada, que ya es la señal. */
+        scrollbar-width: none;
+      }
+      nav.sitio ul::-webkit-scrollbar { display: none; }
+      nav.sitio li { flex: 0 0 auto; scroll-snap-align: start; }
+
+      /* Las dos acciones: ancho completo en un teléfono, al contenido después. */
+      .acciones {
+        display: flex;
+        gap: 0.75rem;
+        padding-block: 0.75rem;
+      }
+      .acciones > * {
+        flex: 1 1 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-block-size: var(--tap-primaria);
+        padding-inline: 1rem;
+        border-radius: var(--radius);
+        text-decoration: none;
+        font-weight: var(--weight-subtitle);
+      }
+      .acciones .entrar {
+        color: var(--color-text);
+        border: 1px solid var(--color-border);
+      }
+      /* El naranja como FONDO con texto blanco da 3.03:1 — válido para un
+         control, nunca para texto normal sobre claro. */
+      .acciones .registro {
+        background: var(--color-accent);
+        color: var(--color-on-accent);
+      }
+      .acciones .registro:hover { background: var(--color-accent-hover); }
+      .acciones [aria-current] { opacity: 0.6; pointer-events: none; }
+
+      @media (min-width: 40rem) {
+        /* A partir de aquí caben en la misma línea que las secciones. */
+        nav.sitio { display: flex; align-items: center; gap: 1.25rem; }
+        nav.sitio ul { flex: 1 1 auto; }
+        .acciones { flex: 0 0 auto; padding-block: 0; }
+        .acciones > * { flex: 0 0 auto; }
       }
       /* WCAG 2.5.8: ningún blanco táctil por debajo de 24px. */
       nav.sitio a, nav.sitio [aria-current] {
@@ -289,30 +360,6 @@ const jsonLd = {
         align-items: center;
         min-block-size: var(--tap-min);
       }
-      /* El registro se separa del resto y pesa: es la acción principal, no el
-         séptimo enlace de una fila. `margin-inline-start: auto` lo empuja a la
-         derecha donde quepa, y en un móvil —donde la fila ya se parte— cae en su
-         propia línea sin necesitar una consulta de medios.
-
-         Blanco táctil de --tap-primaria (44px, HIG). El naranja como FONDO con
-         texto blanco da 3.03:1, que es válido para un control pero no para texto
-         normal, así que el peso sube a --weight-subtitle. */
-      nav.sitio .registro { margin-inline-start: auto; }
-      nav.sitio .registro a,
-      nav.sitio .registro span {
-        display: inline-flex;
-        align-items: center;
-        min-block-size: var(--tap-primaria);
-        padding-inline: calc(var(--space) * 1.25);
-        background: var(--color-accent);
-        color: var(--color-on-accent);
-        font-weight: var(--weight-subtitle);
-        border-radius: var(--radius);
-        text-decoration: none;
-      }
-      nav.sitio .registro a:hover { background: var(--color-accent-hover); }
-      nav.sitio .registro span { background: var(--color-text-muted); }
-
       footer [aria-current] { color: var(--color-text-muted); }
 
       .muted { color: var(--color-text-muted); font-size: var(--text-xs); }

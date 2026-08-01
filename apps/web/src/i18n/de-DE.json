@@ -108,5 +108,11 @@
   "pinDrawBalloon": "Luftballon",
   "pinDrawDrum": "Trommel",
   "pinDrawBell": "Glocke",
-  "navSignup": "Konto erstellen"
+  "navSignup": "Konto erstellen",
+  "navSignin": "Anmelden",
+  "signinFormTitle": "Anmelden",
+  "signinFormLead": "Das Konto gehört der erwachsenen Person. Kinder kommen auf ihrem eigenen Gerät hinein, indem sie ihr Gesicht antippen.",
+  "signinFormCta": "Anmelden",
+  "signinNoAccount": "Noch kein Konto?",
+  "signinChildNote": "Kinder melden sich hier nie an. Sie tippen ihr Gesicht auf einem Gerät an, das eine erwachsene Person als Gerät des Haushalts markiert hat."
 }

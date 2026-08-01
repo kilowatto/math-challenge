@@ -108,5 +108,11 @@
   "pinDrawBalloon": "Globo",
   "pinDrawDrum": "Tambor",
   "pinDrawBell": "Campana",
-  "navSignup": "Crear cuenta"
+  "navSignup": "Crear cuenta",
+  "navSignin": "Entrar",
+  "signinFormTitle": "Entrar",
+  "signinFormLead": "La cuenta es de la persona adulta. Los niños entran en su dispositivo, tocando su cara.",
+  "signinFormCta": "Entrar",
+  "signinNoAccount": "¿Todavía no tienes cuenta?",
+  "signinChildNote": "Los niños nunca entran por aquí. Tocan su cara en un dispositivo que una persona adulta marcó como de casa."
 }

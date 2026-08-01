@@ -19,7 +19,7 @@
 ## Executive summary (EN)
 
 - **Illegal gambling is defined, across virtually all US state law, by three elements — prize, chance, and consideration — and all three must be present** [1]. Removing one is sufficient. That is precisely the standard sweepstakes-industry strategy: eliminate at least one element [1].
-- **Chance is already absent here.** A math challenge is won on skill. The applicable framing is the skill‑contest one, where *«winners are not selected by chance but instead chosen with base on some measurable criteria»* [1].
+- **Chance is already absent here.** A math challenge is won on skill. The applicable framing is the skill‑contest one, where *«winners are not selected by chance but instead chosen based on some measurable criteria»* [1].
 - **Consideration is eliminated if the platform never touches anything of value.** Consideration means *«payment of money or something valuable to enter, or a requirement that a purchase must be made»* [1]. If Math Challenge charges nothing to enter, escrows nothing, transfers nothing, and enforces nothing, there is no consideration flowing to the platform.
 - **Prize can be minimized too:** intangible rewards such as *«bragging rights»* carry minimal monetary value and may not meet the legal threshold for a prize [1].
 - **Strava already shipped the loser‑free wager, and it works.** Its *Group Goal* mode lets a group chase a shared target and — per its own documentation — *«doesn't have a ranked leaderboard so you end up comparing yourself to others less»* [2][3]. It coexists with competitive challenges as an alternate mode, not a replacement.

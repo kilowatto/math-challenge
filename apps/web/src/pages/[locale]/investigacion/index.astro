@@ -1,0 +1,608 @@
+---
+/**
+ * /{locale}/investigacion/ — el índice del corpus de investigación (S1).
+ *
+ * Gobierno: D-033 (el sitio abierto: la investigación es la estrategia),
+ * D-022 (siete locales), D-036 (tipografía), D-039 (AGPL-3.0),
+ * `docs/planes/sitio-s0-s1-s2.md` §4 y `mc-48` §3.
+ *
+ * Es la página que más trabajo hace por el SEO del proyecto, y por eso es la
+ * que más fácil sería arruinar. Cuatro reglas la gobiernan:
+ *
+ *  1. **Ninguna cifra se escribe a mano, ni aquí ni en las traducciones.**
+ *     Los 47 documentos, las 157,235 palabras, las 17 marcas `[unverified]`,
+ *     los 801 enlaces y los 344 dominios se CUENTAN durante el build leyendo
+ *     `docs/research/`. El plan §4.9 lo pide con nombre y apellido, y la razón
+ *     está a la vista en los propios documentos de gobierno: `D-033` y `mc-48`
+ *     dicen "45 investigaciones" y "152,000 palabras"; el conteo real es otro.
+ *     En un sitio cuyo argumento es el rigor, publicar una cifra obsoleta sobre
+ *     el tamaño de la propia investigación es el error más caro posible.
+ *
+ *     Equivalencia comprobada el 2026-07-31 — cada constante de abajo sale del
+ *     mismo recorrido que estos comandos:
+ *
+ *       ls   docs/research/2026-07-31-mc-*.md | wc -l                     → 47
+ *       cat  docs/research/2026-07-31-mc-*.md | wc -w                     → 157235
+ *       grep -o "\[unverified\]" docs/research/2026-07-31-mc-*.md | wc -l → 17
+ *       grep -o "https\?://[^ )]*" docs/research/2026-07-31-mc-*.md | wc -l → 801
+ *
+ *     **Ojo con el glob.** `ls docs/research/*.md | wc -l` devuelve **48**,
+ *     porque incluye `README.md`, que es el índice y no una investigación. Este
+ *     archivo cuenta `2026-07-31-mc-*.md`, y la página lo dice en voz alta en
+ *     vez de dejar que dos comandos parecidos den dos respuestas distintas.
+ *
+ *  2. **Los títulos de las 47 no se traducen ni se escriben aquí.** Salen del
+ *     `# H1` de cada archivo, vía `src/lib/corpus.ts`, que es el único lector
+ *     del corpus del sitio y el mismo que compone las páginas por
+ *     investigación. Traducirlos rompería la comprobación que el lector
+ *     escéptico haría, y copiarlos crearía un segundo lugar donde el título
+ *     puede quedar viejo. Lo único traducido de cada estudio es su resumen de
+ *     una línea, en `i18n/paginas/investigacion.json`.
+ *
+ *  3. **El JSON-LD coincide con lo visible** (mc-48 §3, la regla dura: si
+ *     difiere, Google puede ignorar el marcado ENTERO). El `name` y la
+ *     `description` del `Dataset` se renderizan literalmente como el h2 y el
+ *     párrafo de la sección de la lista, y las migas del `BreadcrumbList` son
+ *     las migas de verdad de arriba.
+ *
+ *     **No lleva `ItemList` de las 47, y eso es una decisión.** Llevaba una, y
+ *     duplicaba los 47 títulos y las 47 URLs que el rastreador ya obtiene de
+ *     los enlaces visibles y de la `ScholarlyArticle` de cada página de
+ *     documento. Costaba 0.85 KB gz —medido, no estimado— sobre un
+ *     presupuesto de 12 KB por página que en de-DE se cumple por décimas
+ *     (`node audits/bundle-budget.mjs`). Pagar eso por marcado redundante en
+ *     el dispositivo de referencia de D-030, un Android de gama baja sobre 4G
+ *     lento, no sale a cuenta.
+ *
+ *  4. **Un documento que no salga en la lista rompe el build.** `parseIndex` de
+ *     `corpus.ts` ya obliga a que cada archivo tenga categoría en el README;
+ *     lo que se añade aquí es que la página los MUESTRE todos. Sin esa
+ *     comprobación, una categoría nueva en el README dejaría sus documentos
+ *     fuera y la página seguiría compilando con un total de 47 arriba y menos
+ *     de 47 renglones abajo — la peor combinación posible en la página que
+ *     vende que sus números cuadran. Es el auditor anti-deriva del plan §4.9,
+ *     puesto donde no se puede olvidar de correr.
+ *
+ * Cero peticiones a terceros: los dos enlaces a GitHub son navegación del
+ * usuario, no recursos que el navegador pida al cargar. Cero JavaScript de
+ * cliente — el plan §4.7 es explícito: "si S1 agrega un solo kilobyte de JS de
+ * cliente, algo se diseñó mal". Por eso tampoco hay buscador ni filtros, y la
+ * página lo dice en vez de disimularlo.
+ *
+ * Lo que esta página NO hace, dicho aquí para que no se lea como omisión:
+ *   · No publica el cuerpo de ninguna investigación: eso es `[slug].astro`,
+ *     que es de otro encargo. Los 47 títulos enlazan a esas páginas, y la
+ *     atribución del final enlaza a la carpeta en el repositorio.
+ *   · No traduce el corpus. Solo este índice está en los siete locales.
+ *   · No cita ninguna de las cifras de `mc-48` (2.3×, 40-70%, el estudio de
+ *     2,400 citas): el propio documento las declara sin confirmar contra fuente
+ *     primaria, y el plan §9.3 prohíbe publicarlas.
+ *
+ * Dependencia declarada: `src/lib/corpus.ts` y `[slug].astro` los escribió otro
+ * agente en este mismo PR. Esta página consume el primero y enlaza al segundo a
+ * propósito — la alternativa era un segundo parser y un segundo conteo, es
+ * decir dos números distintos para la misma cosa en el mismo sitio.
+ */
+import Base from "../../../layouts/Base.astro";
+import { LOCALES, MATH_CONVENTIONS, isLocale, type Locale } from "../../../i18n";
+import { loadCorpus, type CategoryKey } from "../../../lib/corpus";
+import copy from "../../../i18n/paginas/investigacion.json";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params;
+if (!isLocale(locale)) return Astro.redirect("/en/");
+
+const COPY = copy as unknown as Record<Locale, typeof copy.en>;
+const c = COPY[locale];
+
+const site = "https://math.kilowatto.com";
+const url = `${site}/${locale}/investigacion/`;
+
+/** Fecha del corpus y de la última relectura de estas cifras. */
+const VERIFICADO = "2026-07-31";
+
+/**
+ * Repositorio público, verificado el 2026-07-31 y no supuesto:
+ *   gh repo view kilowatto/math-challenge --json visibility,licenseInfo
+ *   → {"licenseInfo":{"key":"agpl-3.0",…},"visibility":"PUBLIC"}
+ */
+const REPO = "https://github.com/kilowatto/math-challenge";
+const CARPETA = `${REPO}/tree/main/docs/research`;
+/** URL SPDX de la AGPL-3.0 (D-039). Se declara porque `LICENSE` existe. */
+const LICENCIA = "https://www.gnu.org/licenses/agpl-3.0.html";
+
+// ---------------------------------------------------------------------------
+// El corpus. Dos lecturas, deliberadamente separadas:
+//
+//   · La ESTRUCTURA —qué documentos hay, cómo se titulan, en qué tema caen—
+//     sale de `src/lib/corpus.ts`, el único lector del sitio, el mismo que
+//     compone las páginas por investigación. Un segundo parser de Markdown
+//     aquí sería un segundo lugar donde el título de un documento puede quedar
+//     viejo, y el índice y la página del documento dirían cosas distintas.
+//
+//   · Las CIFRAS CRUDAS —cuánto texto, cuántos enlaces, cuántas marcas— se
+//     calculan sobre el .md tal cual, con exactamente la definición de los
+//     comandos que esta página publica más abajo. `wc -w` cuenta el archivo,
+//     no el texto sin marcado, y esta página promete que se reproduce con
+//     `wc -w`: contar otra cosa y llamarla igual sería el error que la página
+//     entera existe para no cometer.
+// ---------------------------------------------------------------------------
+
+const DOCS = loadCorpus();
+
+/**
+ * Los .md sin procesar, por el mismo camino que usa `corpus.ts`: sin `fs` y
+ * sin suponer desde qué directorio se lanzó el build.
+ */
+const CRUDOS = import.meta.glob("../../../../../../docs/research/2026-07-31-mc-*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+/**
+ * Todos los `.md` de la carpeta, incluido el índice: es lo que devuelve
+ * `ls docs/research/*.md | wc -l`. Se cuenta para poder explicar en la página
+ * por qué ese comando da otro número, en vez de dejar que dos comandos
+ * parecidos se desmientan entre sí delante del lector.
+ */
+const ARCHIVOS_MD = Object.keys(
+  import.meta.glob("../../../../../../docs/research/*.md", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }),
+).length;
+
+function crudo(file: string): string {
+  const clave = Object.keys(CRUDOS).find((p) => p.endsWith(`/${file}`));
+  if (!clave) {
+    throw new Error(
+      `investigacion/index.astro: corpus.ts entregó ${file} pero el glob de esta ` +
+        "página no lo encontró. Los dos leen docs/research/: si divergen, una de las " +
+        "dos listas está mintiendo y no se puede saber cuál.",
+    );
+  }
+  return CRUDOS[clave];
+}
+
+/**
+ * Los cuerpos escritos en español; los demás están en inglés, y los 47 abren
+ * con un resumen ejecutivo en los dos idiomas. Se declara en vez de detectarse
+ * porque adivinar el idioma de un texto técnico bilingüe es justo la clase de
+ * heurística que falla en silencio. Si alguno deja de existir, el bloque
+ * anti-deriva de más abajo rompe el build.
+ *
+ *   head -1 docs/research/2026-07-31-mc-4[5-8]-*.md
+ */
+const EN_ESPANOL = ["mc-45", "mc-46", "mc-47", "mc-48"];
+
+/** Cifras crudas por documento, con la definición de cada comando publicado. */
+const CIFRAS = DOCS.map((doc) => {
+  const texto = crudo(doc.file);
+  return {
+    id: doc.id,
+    // `wc -w` cuenta secuencias de no-espacio sobre el archivo. Se usa la clase
+    // POSIX y no `\s` para no contar distinto que el comando por un espacio
+    // Unicode que `wc` no considera separador.
+    palabras: texto.trim().split(/[ \t\n\r\f\v]+/).filter(Boolean).length,
+    // La cadena literal entre corchetes, que es lo que cuenta el grep publicado.
+    marcas: (texto.match(/\[unverified\]/g) ?? []).length,
+    // La palabra en cualquier forma, que es un número distinto y también real.
+    palabraSuelta: /unverified/i.test(texto),
+    // Mismo recorte que `grep -o "https\?://[^ )]*"`: para en espacio o en
+    // paréntesis, y no cruza de renglón.
+    enlaces: texto.match(/https?:\/\/[^ )\n]*/g) ?? [],
+  };
+});
+
+const TOTAL_DOCS = DOCS.length;
+const TOTAL_PALABRAS = CIFRAS.reduce((a, e) => a + e.palabras, 0);
+const TOTAL_MARCAS = CIFRAS.reduce((a, e) => a + e.marcas, 0);
+const DOCS_CON_MARCA = CIFRAS.filter((e) => e.marcas > 0).length;
+const DOCS_PALABRA = CIFRAS.filter((e) => e.palabraSuelta).length;
+const TOTAL_ENLACES = CIFRAS.reduce((a, e) => a + e.enlaces.length, 0);
+const TOTAL_DOMINIOS = new Set(
+  CIFRAS.flatMap((e) => e.enlaces.map((u) => u.replace(/^https?:\/\//, "").split("/")[0])),
+).size;
+const DOCS_ESPANOL = DOCS.filter((d) => EN_ESPANOL.includes(d.id)).length;
+const DOCS_INGLES = TOTAL_DOCS - DOCS_ESPANOL;
+
+/**
+ * La diferencia entre las dos definiciones de "palabra" que el sitio usa, y la
+ * razón por la que se publica en vez de esconderse.
+ *
+ * Esta página cuenta como `wc -w`: el archivo entero, marcado incluido. Las
+ * páginas por investigación cuentan `countWords(plain(raw))` de `corpus.ts`:
+ * el texto ya sin sintaxis de Markdown, que es lo correcto para decir "este
+ * documento son N palabras de lectura". Las dos son legítimas y no dan lo
+ * mismo, así que sumar los 47 números de las páginas no da el total de esta.
+ * La diferencia es pequeña y aparece dicha en la página: un lector que sume y
+ * encuentre un desajuste sin explicación tiene razón en desconfiar de todo lo
+ * demás.
+ */
+const PALABRAS_LIMPIAS = DOCS.reduce((a, d) => a + d.words, 0);
+const DIF_PALABRAS = TOTAL_PALABRAS - PALABRAS_LIMPIAS;
+
+/**
+ * Los cinco temas del índice `docs/research/README.md`, en orden de lectura.
+ *
+ * La clasificación NO se declara aquí: la produce `parseIndex` de `corpus.ts`
+ * leyendo el README, y ese parser tira excepción si un documento no aparece en
+ * ninguna sección con categoría. Lo único que vive aquí es qué etiqueta
+ * traducida le toca a cada categoría, y en qué orden salen.
+ */
+const CATEGORIAS: Array<{ clave: "cat1" | "cat2" | "cat3" | "cat4" | "cat5"; key: CategoryKey }> = [
+  { clave: "cat1", key: "pedagogia" },
+  { clave: "cat2", key: "producto" },
+  { clave: "cat3", key: "gamificacion" },
+  { clave: "cat4", key: "interfaz" },
+  { clave: "cat5", key: "plataforma" },
+];
+
+/**
+ * Anti-deriva (plan §4.9): el índice no puede callarse un documento.
+ *
+ * `parseIndex` ya obliga a que cada documento tenga categoría; lo que esto
+ * añade es que la página los MUESTRE todos. Sin esta comprobación, agregar una
+ * categoría nueva al README dejaría sus documentos fuera de la lista sin que
+ * nada fallara: la página seguiría compilando y publicando un total de 47
+ * arriba con menos de 47 renglones abajo, que es la peor combinación posible.
+ */
+const POR_TEMA = CATEGORIAS.map(({ clave, key }) => ({
+  titulo: c[clave],
+  estudios: DOCS.filter((d) => d.category === key).map((doc) => {
+    const llave = `s${doc.id.slice(3)}` as keyof typeof copy.en;
+    const resumen = c[llave];
+    if (typeof resumen !== "string" || resumen.length === 0) {
+      throw new Error(
+        `investigacion/index.astro: falta el resumen "${llave}" de ${doc.id} en el locale ` +
+          `${locale}. Los siete locales llevan las mismas llaves (D-022); escríbelo en ` +
+          "apps/web/src/i18n/paginas/investigacion.json antes de seguir.",
+      );
+    }
+    return { ...doc, resumen, href: `/${locale}/investigacion/${doc.slug}/` };
+  }),
+}));
+
+{
+  const mostrados = POR_TEMA.reduce((a, t) => a + t.estudios.length, 0);
+  const fantasma = EN_ESPANOL.filter((id) => !DOCS.some((d) => d.id === id)).sort();
+  const problemas = [
+    mostrados !== TOTAL_DOCS &&
+      `el corpus trae ${TOTAL_DOCS} documentos y la lista muestra ${mostrados}: hay una ` +
+        "categoría del README que CATEGORIAS no mapea",
+    fantasma.length > 0 && `declarados en español pero sin archivo: ${fantasma.join(", ")}`,
+  ].filter(Boolean);
+  if (problemas.length > 0) {
+    throw new Error(
+      `investigacion/index.astro — el índice y docs/research/ se separaron: ${problemas.join(" · ")}. ` +
+        "El build falla a propósito: un índice que se calla un documento es peor que no " +
+        "tener índice, y publicar un total que no cuadra con la lista de abajo destruye " +
+        "exactamente lo que esta página vende.",
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Formato de número POR LOCALE, de la misma tabla que va a formatear las
+// matemáticas del juego (mc-34, D-022). es-MX agrupa con coma, es-ES con punto
+// y fr-FR con espacio: la tesis del producto aplicada a su propia página.
+// ---------------------------------------------------------------------------
+const conv = MATH_CONVENTIONS[locale];
+const miles = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, conv.grouping);
+
+const VALORES: Record<string, string> = {
+  docs: String(TOTAL_DOCS),
+  palabras: miles(TOTAL_PALABRAS),
+  marcas: String(TOTAL_MARCAS),
+  docsConMarca: String(DOCS_CON_MARCA),
+  enlaces: miles(TOTAL_ENLACES),
+  dominios: String(TOTAL_DOMINIOS),
+  temas: String(CATEGORIAS.length),
+  difPalabras: String(DIF_PALABRAS),
+  conReadme: String(ARCHIVOS_MD),
+  docsEspanol: String(DOCS_ESPANOL),
+  docsIngles: String(DOCS_INGLES),
+  docsPalabra: String(DOCS_PALABRA),
+  fecha: VERIFICADO,
+};
+
+/** Un token desconocido se queda visible como `{token}`: se ve en la página y
+ *  se arregla, en vez de desaparecer y dejar una frase sin su número. */
+const f = (s: string) => s.replace(/\{(\w+)\}/g, (_m, k: string) => VALORES[k] ?? `{${k}}`);
+
+const h1 = f(c.h1);
+const lead = f(c.descripcion);
+const datasetNombre = c.datasetNombre;
+const datasetDescripcion = f(c.datasetDescripcion);
+
+/** Comandos que reproducen cada cifra de esta página. No se traducen. */
+const COMPROBACIONES = [
+  { que: f(c.check1), cmd: "ls docs/research/2026-07-31-mc-*.md | wc -l" },
+  { que: f(c.check2), cmd: "cat docs/research/2026-07-31-mc-*.md | wc -w" },
+  { que: f(c.check3), cmd: 'grep -o "\\[unverified\\]" docs/research/2026-07-31-mc-*.md | wc -l' },
+  { que: f(c.check4), cmd: 'grep -l "^## Sources" docs/research/2026-07-31-mc-*.md | wc -l' },
+  { que: f(c.check5), cmd: "gh repo view kilowatto/math-challenge --json licenseInfo" },
+];
+
+// ---------------------------------------------------------------------------
+// JSON-LD. Todo campo de texto legible por humano de este grafo se renderiza
+// más abajo, literalmente:
+//
+//   Dataset.name         → el <h2> de la sección de la lista
+//   Dataset.description  → el párrafo bajo ese <h2>
+//   ItemList[].name      → los 47 títulos visibles, y con la misma URL
+//   BreadcrumbList       → las migas visibles de arriba
+//
+// El nodo de ESTA página lo emite Base.astro (WebPage, con el <title> y la
+// <meta description>); aquí no se duplica. Ningún @id de este grafo apunta
+// fuera de él, para que `audits/jsonld-valid.mjs` los resuelva sin salir del
+// bloque.
+//
+// `inLanguage` NO se declara en el Dataset a propósito: el corpus no está en el
+// idioma de la ruta —está en inglés, con cuatro documentos en español— y
+// declarar `inLanguage: "de-DE"` sobre él sería una afirmación falsa legible
+// por máquina, en la página que existe para no hacer ninguna. El `inLanguage`
+// de la versión localizada lo declara el WebPage de Base.astro, que es de quien
+// mc-48 §3 lo pide.
+// ---------------------------------------------------------------------------
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Dataset",
+      "@id": `${url}#corpus`,
+      name: datasetNombre,
+      description: datasetDescripcion,
+      isAccessibleForFree: true,
+      datePublished: VERIFICADO,
+      dateModified: VERIFICADO,
+      // D-039: AGPL-3.0, con `LICENSE` en la raíz del repositorio. Se declara
+      // porque el archivo existe — comprobable con
+      // `gh repo view kilowatto/math-challenge --json licenseInfo`.
+      license: LICENCIA,
+      creator: { "@type": "Organization", name: "Ignia", url: "https://ignia.cloud" },
+      publisher: { "@type": "Organization", name: "Ignia", url: "https://ignia.cloud" },
+      keywords: [
+        "mathematics education",
+        "edtech research",
+        "child privacy",
+        "gamification",
+        "progressive web app",
+      ],
+      // El corpus entero, descargable, en el repositorio público. No es un
+      // formulario ni un muro: es la carpeta.
+      distribution: [
+        {
+          "@type": "DataDownload",
+          name: datasetNombre,
+          encodingFormat: "text/markdown",
+          contentUrl: CARPETA,
+        },
+      ],
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${url}#miga`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: c.migaInicio, item: `${site}/${locale}/` },
+        { "@type": "ListItem", position: 2, name: c.migaAqui, item: url },
+      ],
+    },
+  ],
+};
+---
+
+<Base
+  locale={locale}
+  path="investigacion/"
+  title={c.tituloPagina}
+  description={lead}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <nav class="migas" aria-label={c.migaAqui}>
+    <a href={`/${locale}/`}>{c.migaInicio}</a>
+    <span aria-hidden="true">›</span>
+    <span aria-current="page">{c.migaAqui}</span>
+  </nav>
+
+  <h1>{h1}</h1>
+  <p class="lead">{lead}</p>
+  <p class="meta">
+    {c.verificado}: <time datetime={VERIFICADO}>{VERIFICADO}</time>
+  </p>
+
+  <h2>{c.cifrasTitulo}</h2>
+  <dl class="cifras">
+    <div><dt>{c.cifraDocs}</dt><dd>{VALORES.docs}</dd></div>
+    <div><dt>{c.cifraPalabras}</dt><dd>{VALORES.palabras}</dd></div>
+    <div><dt>{c.cifraEnlaces}</dt><dd>{VALORES.enlaces}</dd></div>
+    <div><dt>{c.cifraDominios}</dt><dd>{VALORES.dominios}</dd></div>
+    <div><dt>{c.cifraMarcas}</dt><dd>{VALORES.marcas}</dd></div>
+    <div><dt>{c.cifraTemas}</dt><dd>{VALORES.temas}</dd></div>
+  </dl>
+  <p class="salvedad">{f(c.cifrasNota)} {f(c.readmeNota)}</p>
+
+  <h2>{c.comoTitulo}</h2>
+  <p>{f(c.comoTexto)}</p>
+
+  <h2>{c.idiomaTitulo}</h2>
+  <p>{f(c.idiomaTexto)}</p>
+
+  <h2>{c.contradiceTitulo}</h2>
+  <p>{c.contradiceIntro}</p>
+  <ul class="lista">
+    <li>{c.contradiceA}</li>
+    <li>{c.contradiceB}</li>
+    <li>{c.contradiceC}</li>
+    <li>{c.contradiceD}</li>
+  </ul>
+  <p>{c.contradiceCierre}</p>
+
+  <h2>{c.marcasTitulo}</h2>
+  <p>{f(c.marcasTexto)}</p>
+  <p class="salvedad">{c.marcasAviso}</p>
+
+  <h2>{c.metodoTitulo}</h2>
+  <p>{c.metodoTexto}</p>
+
+  <h2>{datasetNombre}</h2>
+  <p>{datasetDescripcion}</p>
+  <p class="meta">{c.listaNota}</p>
+
+  {POR_TEMA.map((tema) => (
+    <section class="tema">
+      <h3>{tema.titulo}</h3>
+      <ul class="estudios">
+        {tema.estudios.map((e) => (
+          <li>
+            <a href={e.href}><span class="id">{e.id}</span> {e.title}</a>
+            <p>{e.resumen}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+
+  <h2>{c.comprobarTitulo}</h2>
+  <p>{c.comprobarIntro}</p>
+  <dl class="comprobaciones">
+    {COMPROBACIONES.map((x) => (
+      <>
+        <dt>{x.que}</dt>
+        <dd><pre class="evidencia"><code>{x.cmd}</code></pre></dd>
+      </>
+    ))}
+  </dl>
+
+  <h2>{c.faltaTitulo}</h2>
+  <ul class="lista">
+    <li>{c.falta1}</li>
+    <li>{c.falta2}</li>
+    <li>{c.falta3}</li>
+  </ul>
+
+  <p class="atribucion">
+    {c.atribucion}{" "}
+    <a href={CARPETA} rel="noopener">{c.atribucionEnlace}</a>
+  </p>
+</Base>
+
+<style>
+  /* Migas: navegación, así que habla en la voz del sistema (D-036). */
+  .migas {
+    font-family: var(--font-sistema);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-end: 2rem;
+  }
+  /* WCAG 2.5.8: 24px de blanco táctil también aquí. */
+  .migas a { display: inline-flex; align-items: center; min-block-size: var(--tap-min); }
+
+  /* El naranja de Ignia a tamaño de h1: aquí sí, porque es texto grande y el
+     umbral aplicable es 3:1, que pasa con 3.03:1. En un párrafo sería una
+     violación de WCAG — por eso el token se llama --color-accent y no
+     --color-text (docs/guia-de-estilo.md). */
+  h1 { color: var(--color-accent); font-weight: var(--weight-subtitle); }
+
+  .lead {
+    font-size: var(--text-lg);
+    color: var(--color-text-brand); /* azul: 5.67:1, sí pasa texto normal */
+    margin-block-end: 1rem;
+  }
+
+  .meta { color: var(--color-text-muted); font-size: var(--text-xs); }
+
+  h2 { margin-block-start: 2.75rem; color: var(--color-text); }
+  h3 { margin-block-start: 2rem; color: var(--color-text); font-size: var(--text-lg); }
+
+  .lista { padding-inline-start: 1.25rem; max-inline-size: var(--measure); }
+  .lista li { margin-block-end: 0.6rem; }
+
+  /* Las cifras: una rejilla que no necesita tabla ni JavaScript. Los números
+     van en Raleway como el resto del cuerpo (D-036: el cuerpo es de la marca);
+     la etiqueta es texto, no un control. */
+  .cifras {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 1rem;
+    padding: 0;
+  }
+  .cifras div {
+    border-inline-start: 3px solid var(--color-accent);
+    padding-inline-start: 0.75rem;
+  }
+  .cifras dt { color: var(--color-text-muted); font-size: var(--text-xs); }
+  .cifras dd { margin: 0.15rem 0 0; font-size: var(--text-lg); }
+
+  /* Las salvedades no se esconden en un acordeón gris: son la mitad del valor
+     de esta página (mc-48 §1). Se marcan, se leen a tamaño de cuerpo. */
+  .salvedad {
+    background: var(--color-surface);
+    border-inline-start: 3px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.9rem 1rem;
+    max-inline-size: var(--measure);
+  }
+
+  .tema { margin-block-start: 1rem; }
+
+  .estudios { list-style: none; padding: 0; margin: 1rem 0 0; max-inline-size: var(--measure); }
+  .estudios li { margin-block-end: 1.25rem; }
+  /* WCAG 2.5.8: el enlace del título es el blanco táctil de cada renglón. */
+  .estudios a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    min-block-size: var(--tap-min);
+    font-weight: var(--weight-subtitle);
+  }
+  .estudios p { margin: 0.15rem 0 0; color: var(--color-text-muted); font-size: var(--text-xs); }
+  /* El id es una etiqueta, no prosa: voz del sistema y monoespaciado visual. */
+  .id {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: var(--text-xs);
+    letter-spacing: normal;
+    color: var(--color-text-muted);
+  }
+
+  /* Salida literal de un comando. Monoespaciada del sistema: no es prosa (que
+     va en Raleway) ni un control (que va en la voz del sistema), es evidencia
+     que tiene que poder copiarse carácter por carácter. */
+  .evidencia {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    letter-spacing: normal;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    /* El cuerpo de la página nunca se desplaza en horizontal: el bloque ancho
+       se desplaza dentro de sí mismo. */
+    overflow-x: auto;
+    max-inline-size: 100%;
+  }
+  .evidencia code { white-space: pre; }
+
+  .comprobaciones { max-inline-size: var(--measure); margin: 0; }
+  .comprobaciones dt { margin-block-start: 1.25rem; color: var(--color-text-muted); font-size: var(--text-xs); }
+  .comprobaciones dd { margin: 0.4rem 0 0; }
+
+  .atribucion {
+    margin-block-start: 3rem;
+    padding-block-start: 1.5rem;
+    border-block-start: 1px solid var(--color-border);
+    max-inline-size: var(--measure);
+  }
+</style>

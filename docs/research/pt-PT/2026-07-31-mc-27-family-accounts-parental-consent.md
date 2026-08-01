@@ -1,0 +1,124 @@
+# Arquitetura de contas familiares e UX do consentimento — como o fazem os melhores produtos
+
+> Math Challenge research — 2026-07-31 — topic 27
+
+## Resumo executivo (ES)
+
+O padrão dominante não é “a criança regista‑se”: é “o adulto cria uma conta e adiciona perfis de crianças sob o seu próprio consentimento”, com um início de sessão infantil deliberadamente leve (PIN, imagem ou tocar num avatar num dispositivo já vinculado) para que uma criança de 6–10 anos entre sem ler. Apple, Google e Microsoft utilizam **contas infantis reais** dentro de um grupo familiar, com gasto, tempo de ecrã e conteúdo controlados pelo pai, e uma transição aos 13 anos (idade de consentimento digital nos EUA) e outra na maioridade legal. Streaming (Netflix, Disney+) e alguns jogos (Nintendo) utilizam **perfis**, não contas: mais leve, sem identidade própria da criança. Produtos de educação (Prodigy, Google Classroom) acrescentam um terceiro ator, o professor, que cria uma turma e vincula estudantes por código, com o consentimento de cada pai capturado separadamente ou delegado à escola (exceção FERPA).
+
+Para o consentimento parental verificável (VPC), a FTC mantém há mais de uma década uma lista de métodos aceites ao abrigo do COPPA (formulário assinado, cobrança a cartão, chamada a linha gratuita, videoconferência, ID governamental com correspondência facial — aprovado em 2015), e aprovou individualmente métodos de estimativa facial de idade (PRIVO/Yoti, 2023) através do processo 16 CFR 312.12. **Não se pôde verificar com fonte primária nesta sessão** se a atualização da Regra COPPA de janeiro de 2025 acrescentou novos métodos diretamente ao texto — as páginas de ftc.gov bloquearam o acesso automatizado; confirmar antes de citar como facto legal.
+
+Para o Math Challenge, o design já decidido coincide com o padrão Apple/Google/Microsoft mais o padrão de turma do Google Classroom. Recomendação: perfis de crianças (não contas OAuth próprias) com PIN de 4 dígitos + avatar para tablets partilhadas, código de turma de 6 caracteres para convidar, e um painel de aprovação do lado do pai (nunca do lado da criança) para qualquer ingresso em turma.
+
+## Resumo executivo (EN)
+
+The dominant pattern is not “the child signs up” — it is “an adult creates an account and adds child profiles under their own consent,” with a deliberately lightweight child sign‑in (PIN, picture, or tapping an avatar on an already‑bound device) so a 6–10‑year‑old can get in without reading. Apple, Google, and Microsoft use **real child accounts** inside a family group, with spending, screen‑time, and content controlled by the parent, transitioning at 13 (COPPA’s US digital‑consent age) and again at legal majority. Streaming (Netflix, Disney+) and some games (Nintendo) use **profiles**, not accounts — lighter, but with no durable child identity. Education products (Prodigy, Google Classroom) add a third actor, the teacher, who creates a class and links students by code, with each parent's consent captured separately or delegated to the school (FERPA exception).
+
+For verifiable parental consent (VPC), the FTC has maintained an accepted‑methods list under COPPA for over a decade (signed form, credit‑card charge, toll‑free call, video conference, government‑ID + facial match — approved 2015), and has individually approved facial‑age‑estimation methods (PRIVO/Yoti, 2023) via the 16 CFR 312.12 process. **Whether the January 2025 final COPPA Rule amendments added new methods directly to the rule text could not be confirmed against a primary source this session** — ftc.gov blocked automated fetches; verify before citing as legal fact.
+
+For Math Challenge, the already‑decided design matches the Apple/Google/Microsoft pattern plus Google Classroom’s classroom pattern. Recommendation: child profiles (not independent OAuth accounts) with a 4‑digit PIN + avatar for shared tablets, a 6‑character class code for invites, and a parent‑side (never child‑side) approval panel for any classroom join.
+
+## Constatações
+
+### Apple: Family Sharing, Child Accounts, Ask to Buy, Declared Age Range API
+
+Um organizador (pai/mãe, 18 +, próprio Apple ID) designa membros da família, incluindo crianças. As compras de um membro‑criança passam por **Ask to Buy**: compras na App Store/iTunes/Books, compras dentro da aplicação e upgrades de armazenamento iCloud geram um pedido que o organizador aprova ou recusa antes de ser concluído [1]. As contas de criança são criadas e geridas dentro do grupo familiar do organizador, nunca auto‑registadas.
+
+A mais recente **Declared Age Range API** (iOS/iPadOS/macOS 26, pré‑via na WWDC 2025) permite que uma aplicação leia uma *categoria* de idade preservadora da privacidade (menos de 13 / 13–17 / 18+) em vez de uma data de nascimento. A idade é definida uma única vez, na criação da conta ou via Screen Time/Family Sharing, e as aplicações a leem através de uma API Swift sem ver a data de nascimento subjacente [2][3]. É lançada juntamente com um mecanismo de **Significant Change (PermissionKit)** para novo consentimento quando o conjunto de funcionalidades de uma aplicação muda, e com Notificações de Servidor quando um pai revoga o consentimento. A Apple apresenta isto como ferramenta de conformidade para as leis de garantia de idade de 2025–2026 (Texas, Louisiana, Utah, Brasil, Austrália, Singapura) — um sinal de idade independente de jurisdição, não um método VPC em si.
+
+### Google Family Link
+
+Um pai/mãe (18 +) cria uma Conta Google para uma criança menor de 13 anos (ou da idade de consentimento local) através do Family Link, no mesmo país da criança [4]. A conta é marcada como supervisionada: o pai/mãe aprova/bloqueia instalações e compras no Play, define limites de tempo de ecrã e horários de dormir, filtra conteúdo maduro e vê a localização do dispositivo. O início de sessão é um início de sessão normal de Conta Google; num dispositivo partilhado, as contas de pai/mãe e criança coexistem e a criança muda de conta através do alternador de contas Android padrão. Os detalhes exatos da mecânica de “graduation” a partir dos 13 anos não puderam ser confirmados a partir de uma fonte primária obtida nesta sessão e devem ser verificados separadamente.
+
+### Microsoft Family Safety / Xbox / Minecraft
+
+Family Safety agrupa a Conta Microsoft de um pai/mãe com contas de crianças, oferecendo limites de tempo de ecrã, filtragem de conteúdo e resumos de atividade em Windows, Xbox e Android [5]. O Minecraft autentica‑se através do mesmo sistema de Conta Microsoft, pelo que a sua camada parental é o grupo familiar Xbox/Microsoft: a própria Conta Microsoft da criança inicia sessão, e as definições familiares controlam o acesso a multijogador/Realms, chat e classificações. O fluxo exato de criação e as mecânicas de transição aos 13 / 18 anos não foram recuperados a partir das páginas obtidas nesta sessão (apenas conteúdo de visão geral carregado) e devem ser re‑verificados antes de citar detalhes específicos.
+
+### Nintendo Switch parental controls
+
+Um pai/mãe (18 +) necessita de uma Conta Nintendo e associa a aplicação gratuita **Nintendo Switch Parental Controls** ao(s) console(s) da família [6]. Controlo: filtragem de jogos baseada na classificação ESRB, limites diários/nocturnos de tempo de jogo, restrição de mensagens/GameChat a contactos aprovados, exigência de aprovação para video‑chat com menores de 16 anos, bloqueio de partilha de capturas de ecrã nas redes sociais e limites de despesa na eShop. Trata‑se de restrição a nível de perfil do console, e não de uma identidade infantil separada com palavra‑passe protegida — não é necessária uma conta separada para jogar; um PIN de pai/mãe ultrapassa as restrições no console partilhado.
+
+### Netflix and Disney+ kids profiles
+
+Ambas utilizam **perfis dentro de uma única conta familiar paga**, não contas infantis separadas. O perfil Kids da Netflix oculta conteúdo acima de uma classificação de maturidade configurável e pode ser protegido por um PIN numérico de Bloqueio de Perfil; a Disney+ oferece um Modo Junior semelhante mais um PIN de perfil. Este é o padrão mais leve encontrado: nenhuma identidade infantil persiste fora da conta familiar, nada a migrar aos 13 / 18 anos, e a fronteira de “consentimento” é a fronteira de compra da família, não a fronteira de recolha de dados de um menor — nem a Netflix nem a Disney+ são operadores COPPA a recolher PII de menores para criar uma conta, razão pela qual os perfis são suficientes. (As páginas de apoio não foram obtidas nesta sessão devido a bloqueio de bots; são funcionalidades bem estabelecidas e estáveis, não resumidas a partir de uma fonte ao vivo — verifique a cópia exata da UI se necessário.)
+
+### Roblox parental controls and age verification
+
+O Roblox requer uma conta para jogar (o modo convidado foi removido em 2017); desde uma revisão de novembro 2024, um pai/mãe pode criar uma **conta de pai separada e vinculada** que controla tempo de ecrã, mensagens privadas e definições de comunicação. Desde dezembro 2025 (primeiros mercados) / janeiro 2026 (global), o Roblox exige **verificação de idade para qualquer comunicação dentro da plataforma**, via fornecedor Persona: upload de documento de identidade governamental ou vídeo de estimativa de idade facial, com correção manual se a estimativa estiver errada; os utilizadores verificados são agrupados em faixas etárias (por exemplo, um utilizador de 12 anos pode enviar mensagens apenas a idades entre 9 e 15) [7]. Este é um exemplo vivo e atual de estimativa facial de idade implementada a escala de consumo para controlar a comunicação em vez da criação de conta — relevante caso o Math Challenge venha a considerar funcionalidades de chat/social.
+
+### Khan Academy, Duolingo, Prodigy
+
+Khan Academy Kids (idades 2–7) é uma aplicação gratuita separada; a Khan Academy propriamente dita usa um modelo de treinador‑estudante onde um professor cria uma turma e um fluxo separado permite que um pai/mãe veja o progresso — os detalhes exatos de início de sessão da criança não puderam ser confirmados a partir de uma fonte ao vivo nesta sessão. O Duolingo ABC (2020, pré‑leitores, sem anúncios/IAP) está totalmente separado do produto principal; o Super Duolingo Family Plan agrega subscrições familiares, mas os detalhes exatos de ligação pai‑criança não foram verificados a partir de uma fonte primária e devem ser confirmados diretamente antes de usar como referência de design.
+
+O Prodigy separa a **conta de jogo da criança** (geralmente criada através da escola para uso em sala de aula) de uma **conta de pai** que o pai/mãe cria independentemente e vincula à criança, desbloqueando um painel de Membros: relatórios de progresso em tempo real e mensais, definição de metas, recompensas no jogo e folhas de exercício imprimíveis [8]. Este é o análogo mais próximo existente ao modo professor do Math Challenge: a identidade da criança na sala de aula existe primeiro, e um pai depois anexa a sua própria conta para monitorizar e autorizar, em vez de criar a criança desde o início.
+
+### Verifiable parental consent (VPC) under COPPA
+
+A FTC certificou programas de porto‑seguro cujos membros desenham o seu próprio fluxo VPC aprovado: TrustArc, ESRB, CARU, PRIVO, Samet Privacy/kidSAFE, iKeepSafe (Aristotle Inc. retirou‑se em agosto 2021) [9]. Fora do porto‑seguro, o COPPA §312.12 permite que qualquer operador solicite aprovação de um método novel — o processo que a PRIVO usou em 2023 para obter aprovação de um método de estimativa facial de idade (baseado na tecnologia Yoti) como ferramenta de verificação de consentimento. Métodos base enumerados: um formulário assinado (correio/fax/scan), uma transação monetária (cobrança de cartão), um número gratuito com pessoal treinado, uma videoconferência com pessoal treinado e verificação de ID governamental cruzada com foto ao vivo — este último, “face match to verified photo ID” (FMVPI), foi ele próprio aprovado pela FTC em 19 de novembro 2015 [9][10]. **Nota de verificação**: as alterações finais da Regra COPPA de janeiro 2025 (relatadas como efetivas em junho 2025) são amplamente descritas como a adição de novos métodos enumerados e o reforço do consentimento de divulgação a terceiros, mas as páginas de regra/comunicado de imprensa da ftc.gov retornaram 403/404 a uma captura automática nesta sessão — apenas contexto, confirmar antes de confiar.
+
+### Age-assurance vendors: k‑ID and Yoti
+
+k‑ID é uma plataforma de conformidade: **AgeKit** (classificação de idade grosseira gratuita), **AgeKit+** (verificação de alta garantia via estimativa facial, verificações de ID ou credenciais reutilizáveis), **Family Connect** (portal de consentimento parental com aprovação a nível de portfólio em títulos clientes, alegando taxas de conclusão até 96 %), **AgeKey** (credencial de idade reutilizável entre plataformas) e **neimo** (rastreio regulatório) — alegando cobertura em mais de 200 jurisdições, incluindo COPPA, GDPR Artigo 8, o UK Age‑Appropriate Design Code/Online Safety Act, a lei australiana para menores de 16 anos e equivalentes no Brasil/Índia [11]. O produto de estimativa facial de idade da Yoti não pôde ser obtido diretamente nesta sessão (403) — as alegações de precisão e certificações devem ser verificadas diretamente em yoti.com antes de citar números.
+
+### Classroom‑join patterns
+
+Google Classroom: cada turma tem um **código de turma** gerado automaticamente, reapresentável nas Definições; um estudante junta‑se ao iniciar sessão em classroom.google.com e inserir o código [12]. O Workspace‑for‑Education tem limites por turma (50 professores, 1.000 membros) via Grupos Google; contas pessoais enfrentam limites de atividade, e convites entre domínios são restritos a menos que um código/link partilhável seja usado. O Clever é uma camada de **roster/SSO, não de consentimento**: importa dados de turma de um SIS escolar e fornece um único início de sessão entre ferramentas ed‑tech; a responsabilidade de consentimento recai sobre a escola (geralmente a exceção “school official” do FERPA, permitindo que a escola autorize um fornecedor em seu nome) ou sobre o próprio fornecedor com o seu fluxo COPPA. O Kahoot usa um **PIN de jogo**: o anfitrião precisa de registo, mas para entrar num jogo ao vivo basta o PIN, sem conta — o padrão de adesão de fricção mais leve encontrado, construído para participação anónima e efémera sem identidade persistente ou estado de consentimento.
+
+## Tabela comparativa de mecanismos de consentimento
+
+| Método | Atrito (pai/mãe) | Custo por consentimento | Aceite por | Recomendação |
+|---|---|---|---|---|
+| Formulário assinado (correio/fax/scan) | Alto, lento | Baixo $, alta sobrecarga operacional | FTC enumerated [9] | Não — demasiado lento para integração |
+| Microcobrança com cartão de crédito/débito | Médio — requer um cartão | Taxa do processador + risco de fraude | FTC enumerated [9] | Só se a MC cobrar por uma subscrição |
+| Número gratuito, pessoal treinado | Alto — necessidade de pessoal | Alto (custo laboral) | FTC enumerated [9] | Não — inviável em escala PWA |
+| Videoconferência, pessoal treinado | Alto — agendamento | Alto (custo laboral) | FTC enumerated [9] | Não |
+| Identificação governamental + correspondência de foto ao vivo (FMVPI) | Médio-alto | Vendor fee (unverified) | FTC-approved 2015 [9][10] | Não — desproporcional para uma aplicação de matemática |
+| Estimativa de idade facial (Yoti/k-ID/PRIVO) | Baixo-médio, segundos | Vendor fee (unverified) | FTC-approved via §312.12 (2023) [9][11] | Desnecessário para “é este um pai/mãe”; relevante apenas para futura filtragem por chat/faixa etária |
+| Email + clique | Baixo | Quase zero | Lower COPPA bar (internal use only) | Boa camada base combinada com restrição apenas para pais |
+| Criação de conta controlada por pai/mãe, sem auto‑registo da criança | Baixo para o pai/mãe, zero para a criança | Quase zero | Sidesteps VPC — consent trigger is collecting PII *from a child*, which never happens here | **Padrão principal recomendado** — corresponde a Apple/Google/Microsoft/Prodigy |
+| Credencial de idade reutilizável (k-ID AgeKey, Faixa Etária Declarada da Apple) | Muito baixo após a primeira verificação | Amortizado | Emerging; not itself a VPC method | Monitorizar, não necessário no MVP |
+
+## Implicações de design para o Math Challenge
+
+1. **Três entidades**: `Parent` (credenciais, email verificado), `ChildProfile` (pertence a exatamente um pai/mãe, sem credenciais independentes por defeito), `Teacher` (credenciais, cria `Classroom`). Um `Classroom` contém muitas referências a `ChildProfile`, cada uma com o seu próprio registo de autorização por pai/mãe — espelha a identidade infantil centrada na turma da Prodigy mais a anexação da conta dos pais [8], e o fluxo de adesão por código do Google Classroom [12].
+2. **Nenhum auto‑registo de criança, nunca** — corresponde ao design decidido e ao da Apple/Google/Microsoft [1][4][5]. Como a criança nunca fornece PII de forma independente, isto situa‑se na linha “criação controlada por pai/mãe” acima, não numa cerimónia completa de VPC da COPPA por criança.
+3. **Início de sessão da criança num tablet partilhado, menos de 5 segundos, sem leitura**: grelha de avatares (ícone/cor escolhido pelos pais) + teclado numérico PIN de 4 dígitos, sem teclado — ecoa o PIN‑override da Nintendo [6] e o Profile Lock da Netflix, dimensionado para pré‑leitores; mais rápido e mais independente de dispositivo que QR ou biometria.
+4. **Atalho de “último perfil” ligado ao dispositivo**: num dispositivo pessoal, lembrar o último perfil usado e ir diretamente para “tocar para continuar”, recorrendo à grelha de avatares apenas quando é detetado um segundo perfil — mantém o caso comum de uma criança por tablet a ~1 toque.
+5. **PIN do pai/mãe, separado dos PINs das crianças**, para aceder às definições da conta, adicionar/remover crianças, ou aprovar a adesão a uma turma — mesma forma que o PIN de substituição da Nintendo [6] e o Profile Lock da Netflix, aplicado para proteger apenas ações dos pais.
+6. **Convites do professor por código de turma, não por pesquisa de email**: um código de 6 caracteres (evitando 0/O, 1/I) apresentado como texto/ligação/QR — espelha o Google Classroom [12] e o PIN da Kahoot, mas ao contrário da sessão efémera da Kahoot, deve persistir e ser condicionado à aprovação dos pais.
+7. **A adesão à turma é um aperto de mão de dois passos**: (a) o pai/mãe adiciona o código a partir do seu próprio painel, nunca do dispositivo da criança; (b) o estado passa a pendente ou ativo conforme o modelo de confiança; (c) o pai/mãe mantém sempre o controlo “Remover da turma”, satisfazendo “qualquer pai pode retirar a sua criança a qualquer momento”.
+8. **Modelar autorização como uma tabela de associação, não como um booleano**: `ClassroomMembership(child_profile_id, classroom_id, parent_id, status: pending|approved|revoked, approved_at, revoked_at)` — trilha de auditoria livre caso surja disputa de consentimento.
+9. **Lógica de faixa etária baseada na idade declarada pelos pais, não numa data de nascimento inserida pela criança**: armazenar `birth_year_month` em `ChildProfile`, inserido uma única vez pelos pais; derivar “< 13”/“13+” apenas no servidor — ecoa a filosofia da Apple de Faixa Etária Declarada que expõe uma categoria, não uma data [2][3].
+10. **Aos 13 anos**: não é uma barreira rígida para uma aplicação que recolhe PII mínima, mas definir um evento (`child_profile.crossed_13`) que deixa de tratar o perfil como “criança” para quaisquer práticas futuras relevantes à COPPA (chat, análises de marketing) e, opcionalmente, oferece ao pai/mãe um prompt de conversão de conta. Modelar a conversão como iniciada pelos pais, não automática — o padrão de graduação ao atingir a idade de consentimento da Google/Microsoft existe [4][5], mas os mecanismos exatos não foram confirmados independentemente nesta sessão, pelo que não se devem copiar cegamente.
+11. **Aos 18 anos (ou maioridade local)**: oferecer um fluxo explícito “converter para conta independente” que requer que o utilizador agora adulto defina as suas próprias credenciais, após o que o perfil se desliga e o pai/mãe perde a visibilidade por defeito — forma geral corresponde às saídas de grupos familiares da Apple/Google/Microsoft, embora nenhuma fonte desta sessão tenha dado um mecanismo preciso; validar contra a documentação atual antes de implementar.
+12. **Não desenvolver estimativa de idade facial ou consentimento com identificação governamental para o MVP**. O design decidido já coloca todos os dados da criança por detrás de uma conta de pai/mãe registada, pelo que a exposição assemelha‑se mais a “email + criação controlada por pai/mãe” do que a um operador da COPPA a recolher PII de uma criança não supervisionada. Rever apenas se uma funcionalidade futura permitir que a criança forneça PII a um terceiro (por exemplo, um leaderboard público com nome real) ou inicie a criação de conta sem supervisão.
+13. **Reservar o caminho §312.12/safe‑harbor apenas se o consultor determinar que o VPC completo da COPPA se aplica** — Netflix, Disney+ e Nintendo utilizam perfis em vez de contas especificamente para evitar ser um “operador que recolhe PII de uma criança”; o modelo de criação de perfil por pais do Math Challenge deve visar a mesma forma legal.
+14. **A gestão Clever/ClassLink é Fase 2+, não MVP**: resolve importação em massa de SIS e SSO, relevante apenas quando o Math Challenge tiver clientes institucionais/distritais; o modelo de código de turma (item 6) basta para arrancar, correspondendo ao modo como a Kahoot e o Google Classroom funcionam antes de existir qualquer integração SIS.
+
+## Questões abertas para o proprietário do projeto
+
+1. O “PIN do pai/mãe para sair do Modo Criança” deve ser partilhado entre todas as crianças do pai/mãe, ou por criança?
+2. A adesão à turma deve exigir também a confirmação do professor (aperto de mão bilateral), ou a aprovação do pai/mãe é suficiente?
+3. Aos 13 anos, o Math Challenge deve solicitar proactivamente a conversão da conta, ou deixar indefinido até que o utilizador/pai/mãe a inicie?
+4. Alguma funcionalidade planeada (chat, leaderboard com nome real, conteúdo gerado pelo utilizador) pode elevar o nível COPPA/VPC além da “criação de perfil controlada por pai/mãe” — isso altera se os itens 12–13 se mantêm?
+5. Os tablets de turma partilhados devem suportar várias crianças através da grelha de avatar+PIN, ou assume‑se um tablet por criança no lançamento inicial?
+
+## Fontes
+
+1. Apple Support — Visão geral do Family Sharing: https://support.apple.com/en-us/105121
+2. Apple Developer — Documentação da Faixa Etária Declarada: https://developer.apple.com/documentation/declaredagerange
+3. Apple Developer — Suporte/FAQ de garantia de idade: https://developer.apple.com/support/age-assurance
+4. Google Support — Family Link, configurar a conta de uma criança: https://support.google.com/families/answer/7101025
+5. Microsoft — Visão geral do produto Family Safety: https://www.microsoft.com/en-us/microsoft-365/family-safety
+6. Nintendo — Controlo Parental do Switch: https://www.nintendo.com/us/switch/parental-controls/
+7. Wikipedia — Roblox (história da verificação de idade e controlos parentais, lançamento Nov 2024 / Dez 2025–Jan 2026, fornecedor Persona): https://en.wikipedia.org/wiki/Roblox
+8. Prodigy — Página de destino para pais (Membros/painel de controlo dos pais): https://webflow.prodigygame.com/main-en/parents
+9. FTC — Cumprir a COPPA: Perguntas Frequentes (programas safe-harbor, métodos VPC enumerados): https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions
+10. Wikipedia — Children's Online Privacy Protection Act (aprovação FMVPI 19 de nov de 2015; estado legislativo da COPPA 2.0): https://en.wikipedia.org/wiki/Children%27s_Online_Privacy_Protection_Act
+11. k-ID — Visão geral da empresa/produto (AgeKit, AgeKit+, Family Connect, AgeKey, neimo): https://www.k-id.com/
+12. Google Support — Entrar numa turma com código de turma: https://support.google.com/edu/classroom/answer/6020282
+13. Wikipedia — Clever (empresa): https://en.wikipedia.org/wiki/Clever_(company)
+14. Wikipedia — Kahoot! (PIN de jogo, registo de anfitrião vs. jogador): https://en.wikipedia.org/wiki/Kahoot!
+15. Wikipedia — Family Sharing (Apple) referência cruzada: https://en.wikipedia.org/wiki/Family_Sharing
+
+**Verification note**: several official vendor pages (ftc.gov press releases/legal-library, xbox.com support, yoti.com, help.netflix.com, help.disneyplus.com, Roblox's parental-controls help center) returned HTTP 403/404 to automated fetch this session (bot-blocking or stale paths). Claims sourced only from Wikipedia or general knowledge are flagged inline as such and should be re-verified against the primary vendor/regulator page before being used for legal or compliance decisions.

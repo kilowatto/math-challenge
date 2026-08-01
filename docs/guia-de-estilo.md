@@ -210,3 +210,53 @@ Lo que **todavía no** verifica, y toca a las fases que lo habilitan: que el
 naranja no se use para texto chico en una pantalla real (F2, junto con
 `contrast` y `axe-a11y`), y que los pesos de Raleway respeten la excepción de
 kinder (F2).
+
+---
+
+## iPad — primera clase, no un teléfono ancho (D-041)
+
+El iPad y el teléfono se diseñan por separado. Lo que sigue es la tabla que
+`audits/ipad-usabilidad.mjs` hace cumplir.
+
+### Orientación
+
+| | Regla |
+|---|---|
+| Horizontal | Donde vive la experiencia buena. Dos columnas, manipulables grandes, el teclado numérico al alcance del pulgar |
+| Vertical | **Funciona con dignidad.** Una columna, sin scroll horizontal, sin contenido cortado |
+| Bloqueo | **Nunca.** En iPad es imposible —Apple ignora el `orientation` del manifest— y en Android sería una violación de WCAG 2.2 AA 1.3.4 |
+
+### Anchos que hay que aguantar
+
+No son resoluciones de dispositivo: son los anchos que la multitarea produce, y
+es donde se rompe un diseño pensado solo a pantalla completa.
+
+| Contexto | Ancho aproximado |
+|---|---|
+| Split View a un tercio | 320–375 px |
+| Split View a la mitad | 507–512 px |
+| Split View a dos tercios | 694–795 px |
+| Pantalla completa vertical | 744–1032 px |
+| Pantalla completa horizontal | 1024–1366 px |
+
+**Ninguna regla CSS puede exigir un ancho mínimo mayor que el tercio.** Un
+`min-width: 400px` en un contenedor rompe la multitarea en silencio.
+
+### Entrada — cuatro a la vez, no una
+
+Un iPad con Magic Keyboard es un equipo de escritorio; el mismo iPad en las manos
+de un niño de cinco años es táctil. Los dos son el mismo día.
+
+| Entrada | Regla |
+|---|---|
+| Dedo | 44 px (HIG) · **88 px en kinder** (`mc-20`), también aquí: hay sitio de sobra |
+| Trackpad y ratón | Los estados de *hover* **nunca esconden función**. Lo que solo aparece al pasar el cursor, con el dedo no existe |
+| Teclado físico | Navegación completa por tabulador, con **foco visible** (WCAG 2.1.1 y 2.4.7). El orden de tabulación sigue el orden visual |
+| Apple Pencil | Nada depende de un gesto que el Pencil no hace: ni pellizcar, ni deslizar con dos dedos, ni mantener pulsado |
+
+### Áreas seguras
+
+Se respetan `env(safe-area-inset-*)` en los cuatro lados. El indicador de inicio
+se come el borde inferior en horizontal, que es justo donde un diseño de teléfono
+suele poner la barra de acciones.
+

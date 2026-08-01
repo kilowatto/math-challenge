@@ -301,7 +301,24 @@ export const juzgar = ({ porMetrica, porBanda }) => {
   // Va a `notas` y no a `lineas` a propósito: `lineas` cuenta vitales dentro de
   // presupuesto y ese conteo se imprime como "N de 3". Meter aquí una nota que
   // no es una vital haría que el resumen dijera "4 de 3".
-  if (filasDeNino === 0 && (porBanda?.length ?? 0) > 0) {
+  if ((porBanda?.length ?? 0) === 0) {
+    // El fallo que este auditor NO puede tener.
+    //
+    // Con la consulta de métricas llena y la de bandas vacía, la caza de KINDER
+    // de arriba no se ejecuta ni una vez y el auditor salía en VERDE — sin
+    // siquiera decir que no había mirado. Es el bug de `git ls-files` de
+    // audits/secrets.mjs otra vez, y aquí es peor: el trabajo de este escáner es
+    // detectar que se está midiendo a un niño.
+    //
+    // Se dispara si alguien reordena los blobs de /api/rum, si blob2 se vacía, o
+    // si la segunda consulta devuelve vacío mientras la primera funciona.
+    problemas.push(
+      `no se pudo revisar NINGUNA banda: la consulta de bandas devolvió cero filas ` +
+        `mientras la de métricas devolvió ${porMetrica?.length ?? 0}. ` +
+        `No es que no haya mediciones de niño — es que no se miró. ` +
+        `Revisa que /api/rum siga escribiendo la banda en blob2.`,
+    );
+  } else if (filasDeNino === 0) {
     notas.push(`ninguna medición de banda de niño en ${DIAS} días (D-037)`);
   }
 
@@ -560,8 +577,15 @@ if (process.argv.includes("--autoprueba")) {
     // reporta como inactivo y no bloquea el commit. Cualquier OTRO error sí
     // bloquea: falla cerrado, porque un auditor que no pudo medir y calla es
     // indistinguible de uno que midió y aprobó.
+    // El `10000` va anclado al CÓDIGO, no suelto contra el mensaje.
+    //
+    // Antes casaba en cualquier parte del texto, así que un error real de
+    // Analytics Engine —{"code":1003,"message":"result set exceeded 10000
+    // rows"}— se reportaba como "el token no tiene permisos" y salía con 0. Se
+    // tragaba el error Y mentía sobre la causa, que es peor que solo tragárselo.
     const esPermiso =
-      /Authentication error|not authorized|10000|Unauthorized/i.test(fallo) ||
+      /\bcode["\s:]*10000\b/i.test(fallo) ||
+      /Authentication error|not authorized|Unauthorized|Account Analytics/i.test(fallo) ||
       [401, 403].includes(metricas.estado ?? bandas.estado);
     if (esPermiso) {
       inactivo("el token no tiene Account → Account Analytics → Read", [

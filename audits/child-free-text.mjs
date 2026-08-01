@@ -49,12 +49,28 @@ for (const file of files) {
   const sql = readFileSync(join(MIGRATIONS, file), "utf8");
 
   for (const table of CHILD_TABLES) {
-    const re = new RegExp(`CREATE\\s+TABLE\\s+${table}\\s*\\(([\\s\\S]*?)\\n\\);`, "i");
-    const match = sql.match(re);
-    if (!match) continue;
+    // Dos formas de que aparezca una columna, y durante mucho tiempo solo se
+    // miraba una. Una columna metida con `ALTER TABLE child_profiles ADD COLUMN
+    // nota TEXT` era **invisible** para este auditor: pasaba en verde con texto
+    // libre en una tabla de niño, que es la línea roja #3. Lo levantó un agente
+    // detallando F2, y F2 es justo la primera fase con una tercera migración
+    // tocando tablas de niño — el hueco dejaba de ser teórico esta semana.
+    const bloques = [];
+
+    const creado = sql.match(new RegExp(`CREATE\\s+TABLE\\s+${table}\\s*\\(([\\s\\S]*?)\\n\\);`, "i"));
+    if (creado) bloques.push(creado[1]);
+
+    // Cada ALTER es una línea suelta, no un bloque entre paréntesis.
+    for (const m of sql.matchAll(
+      new RegExp(`ALTER\\s+TABLE\\s+${table}\\s+ADD\\s+(?:COLUMN\\s+)?([^;]+);`, "gi"),
+    )) {
+      bloques.push(m[1]);
+    }
+
+    if (bloques.length === 0) continue;
     checkedTables++;
 
-    for (const rawLine of match[1].split("\n")) {
+    for (const rawLine of bloques.join("\n").split("\n")) {
       const line = rawLine.replace(/--.*$/, "").trim();
       if (!line || /^(PRIMARY|FOREIGN|UNIQUE|CHECK|CONSTRAINT)\b/i.test(line)) continue;
 

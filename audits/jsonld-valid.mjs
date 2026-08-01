@@ -149,7 +149,18 @@ function palabrasDeContenido(texto) {
   return [...new Set(normalizar(texto).split(/[^\p{L}\p{N}']+/u).filter((p) => p.length > 3))];
 }
 
-const atributo = (html, re) => (html.match(re) ?? [])[1] ?? null;
+// Prefiere el grupo nombrado `valor` cuando existe.
+//
+// El patrón de atributos abría con ["'] y cerraba con ["'] sin recordar cuál
+// había usado, así que el apóstrofo de "l'âge" en francés terminaba la captura a
+// media frase y el auditor fallaba sobre su propio bug, no sobre el sitio. Al
+// arreglarlo con retrorreferencia el contenido se movió de grupo, y contar
+// paréntesis para saber cuál leer es exactamente cómo se rompe la próxima vez.
+const atributo = (html, re) => {
+  const m = html.match(re);
+  if (!m) return null;
+  return m.groups?.valor ?? m[1] ?? null;
+};
 
 // Un nodo se nombra por su tipo cuando lo tiene: "#1[0] WebSite" le dice a
 // quien lee el fallo dónde mirar, y "#1[0]" a secas no le dice nada.
@@ -216,7 +227,7 @@ for (const archivo of todas) {
 
   // Una página noindex no entra al índice, así que no necesita datos
   // estructurados. La raíz del sitio es exactamente eso: un redirector a /en/.
-  const robots = atributo(html, /<meta\s+name=["']robots["']\s+content=["']([^"']*)["']/i);
+  const robots = atributo(html, /<meta\s+name=["']robots["']\s+content=(?<q>["'])(?<valor>(?:(?!\k<q>).)*)\k<q>/i);
   if (robots && /noindex/i.test(robots)) {
     saltadas++;
     continue;
@@ -235,7 +246,7 @@ for (const archivo of todas) {
   }
 
   const titulo = (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) ?? [])[1] ?? null;
-  const metaDesc = atributo(html, /<meta\s+name=["']description["']\s+content=["']([^"']*)["']/i);
+  const metaDesc = atributo(html, /<meta\s+name=["']description["']\s+content=(?<q>["'])(?<valor>(?:(?!\k<q>).)*)\k<q>/i);
   const visible = textoVisible(html);
   if (visible.length === 0) {
     problemas.push(`${rel}: el <body> no dejó texto visible. Sin él no se puede comprobar la regla de coincidencia.`);

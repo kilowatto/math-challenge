@@ -53,8 +53,8 @@ const url = `${site}/${locale}/arquitectura/`;
 const VERIFICADO = "2026-07-31";
 
 /**
- * node audits/bundle-budget.mjs   (2026-07-31, tras cablear la navegación de S2)
- *   ✓ bundle-budget — 36 página(s), la más pesada 7.7 KB gz
+ * node audits/bundle-budget.mjs   (2026-07-31, tras añadir la sección de Ignia)
+ *   ✓ bundle-budget — 36 página(s), la más pesada 9.5 KB gz
  *     · JS de cliente 2.6 KB gz · CSS 1.5 KB gz (gz = como viaja)
  *
  * La más pesada del sitio es, hoy, esta misma página en de-DE y fr-FR: es la
@@ -65,11 +65,23 @@ const VERIFICADO = "2026-07-31";
  * auditor y actualiza estos tres valores antes de commitear: publicar un peso
  * viejo en la página que presume de medirlo todo es el error más caro posible.
  *
- * Ya pasó una vez: la navegación de cinco enlaces que Base.astro añadió a las
- * 36 páginas movió la más pesada de 7.6 a 7.7 y el CSS de 1.4 a 1.5. Cero
- * JavaScript nuevo — la navegación son cinco <a>, no un componente.
+ * Ya pasó dos veces: la navegación de cinco enlaces que Base.astro añadió a las
+ * 36 páginas movió la más pesada de 7.6 a 7.7 y el CSS de 1.4 a 1.5; y la
+ * sección de Ignia de más abajo la movió de 7.7 a 9.5 (de-DE, el idioma que más
+ * se alarga). Cero JavaScript nuevo en las dos: son <p> y un <a>.
+ *
+ * ⚠ SI OTRA SECCIÓN ENTRA A ESTA PÁGINA, ESTE 9.5 VUELVE A QUEDAR VIEJO. Se
+ * vuelve a correr el auditor y se actualiza aquí, en el último PR que toque la
+ * página, no en el primero.
+ *
+ *   node -e 'const fs=require("fs"),z=require("zlib"),p=require("path");const o=[];
+ *   (function w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=p.join(d,e.name);
+ *   if(e.isDirectory()){if(e.name==="_worker.js")continue;w(f)}else if(e.name.endsWith(".html"))
+ *   o.push([f,z.gzipSync(fs.readFileSync(f)).length/1024])}})("apps/web/dist");
+ *   o.sort((a,b)=>b[1]-a[1]);console.log(o[0][0],o[0][1].toFixed(1))'
+ *   → apps/web/dist/de-DE/arquitectura/index.html 9.5
  */
-const PESO = { pagina: 7.7, js: 2.6, css: 1.5 };
+const PESO = { pagina: 9.5, js: 2.6, css: 1.5 };
 
 /** audits/bundle-budget.mjs, constante BUDGET. Viene de D-030 y mc-47 §4. */
 const PRESUPUESTO = { html: 12, js: 60 };
@@ -102,6 +114,30 @@ const EVIDENCIA = [
   'alt-svc: h3=":443"; ma=86400',
   "TLS 1.3 · Max Early Data: 14336",
 ];
+
+/**
+ * Quién opera y quién provee: la única mitad que un extraño puede consultar.
+ *
+ *   dig +short NS math.kilowatto.com     (2026-07-31, salida literal abajo)
+ *
+ * Se publica el comando JUNTO con su salida porque es lo que sostiene "Cloudflare
+ * provee": los nameservers del dominio contestan por sí solos y no hace falta
+ * creernos nada. La otra mitad —que Ignia opera la cuenta— NO tiene consulta
+ * pública que la respalde, y la página lo dice en vez de disimularlo.
+ *
+ * ⚠ Si algún día la zona cambia de nameservers, esta salida deja de reproducirse:
+ * vuelve a correr el comando y pega lo que conteste. Publicar una salida vieja
+ * en la página que presume de comprobarlo todo es el peor error posible aquí.
+ */
+const EVIDENCIA_DNS = [
+  "dig +short NS math.kilowatto.com",
+  "alberto.ns.cloudflare.com.",
+  "colette.ns.cloudflare.com.",
+];
+
+/** Sitio de Ignia. Enlace externo normal: ni logo remoto ni script — cero
+ *  peticiones a terceros, que es lo que esta misma página afirma más arriba. */
+const IGNIA_URL = "https://ignia.cloud";
 
 /** Comandos que reproducen lo que esta página afirma. */
 const COMPROBACIONES = [
@@ -213,6 +249,16 @@ const f = (s: string) => s.replace(/\{(\w+)\}/g, (_m, k: string) => VALORES[k] ?
 //
 // Ningún `@id` de este grafo apunta fuera de él, para que el auditor
 // `jsonld-valid` de S0 pueda resolverlos sin salir del bloque.
+//
+// POR QUÉ NO SE AÑADIÓ `sponsor` NI `provider` con la sección de Ignia. El
+// grafo ya declara `publisher` = Ignia, y "Ignia" aparece visible dos veces
+// (la sección de abajo y la atribución del final), así que la regla dura se
+// cumple. Un `sponsor` con el mismo nombre y la misma URL sería el mismo hecho
+// dicho dos veces en máquina. Y `provider` = Cloudflare NO se puso a propósito:
+// en schema.org describe a quien presta el servicio que el documento describe,
+// y este documento no es un servicio de Cloudflare — es un artículo nuestro
+// sobre lo que corre encima. Afirmar de más en el marcado es el mismo pecado
+// que afirmar de más en el texto, con el agravante de que nadie lo ve.
 // ---------------------------------------------------------------------------
 const jsonLd = {
   "@context": "https://schema.org",
@@ -329,6 +375,24 @@ const jsonLd = {
     <li>{c.pending4}</li>
   </ul>
 
+  {/* Ignia opera; Cloudflare provee. Dos afirmaciones, dos párrafos, separadas
+      a propósito (D-033, mc-48 §6). Lo que esta sección NO dice —que Ignia sea
+      partner de Cloudflare— es tan deliberado como lo que sí dice: no hay nivel
+      de partner comprobable ni directorio público donde mirarlo, y una
+      afirmación así, en la página cuyo lema es "y cómo comprobarlo", se lleva
+      por delante la credibilidad de todo lo demás. */}
+  <h2>{c.igniaHeading}</h2>
+  <p>{c.igniaBody}</p>
+  <p>{c.igniaProvides}</p>
+  <p class="meta">{c.igniaEvidence}</p>
+  <pre class="evidencia"><code>{EVIDENCIA_DNS.join("\n")}</code></pre>
+  <p>{c.igniaCheckable}</p>
+  <p class="salvedad">{c.igniaHonest}</p>
+  <p class="ignia-enlace">
+    {c.igniaLinkIntro}{" "}
+    <a href={IGNIA_URL} rel="noopener">{c.igniaLinkLabel}</a>
+  </p>
+
   <h2>{c.checkHeading}</h2>
   <dl class="comprobaciones">
     {COMPROBACIONES.map((x) => (
@@ -443,6 +507,11 @@ const jsonLd = {
   }
   .fuentes li { margin-block-end: 0.6rem; }
   .fuentes a { display: inline-flex; align-items: center; min-block-size: var(--tap-min); }
+
+  /* El enlace a ignia.cloud es el único de esta sección: se le da el mismo
+     blanco táctil de 24px que WCAG 2.5.8 exige en el resto de la página. */
+  .ignia-enlace { max-inline-size: var(--measure); }
+  .ignia-enlace a { display: inline-flex; align-items: center; min-block-size: var(--tap-min); }
 
   .atribucion {
     margin-block-start: 3rem;

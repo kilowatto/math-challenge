@@ -21,6 +21,7 @@ const ACTIVE = [
   ["brand-image",       "paleta Ignia, AVIF/WebP, llaves de imagen",         "guia-de-estilo.md, mc-38, mc-47"],
   ["bundle-budget",     "peso gz por página, JS y CSS de cliente",           "D-030, mc-47 §4"],
   ["telemetria-infantil","ninguna telemetría en superficies de niño",         "D-037, línea roja #2"],
+  ["ipad-usabilidad",   "orientación libre, Split View, foco y hover en iPad", "D-041, WCAG 2.2 AA"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

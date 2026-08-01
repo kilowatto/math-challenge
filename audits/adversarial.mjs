@@ -12,6 +12,7 @@
 //   node audits/adversarial.mjs --seco           arma todo y NO llama al modelo
 //   node audits/adversarial.mjs --simular        pipeline completo con veredictos falsos
 //   node audits/adversarial.mjs --todos          los 23 aunque no les toque — al cerrar fase
+//   node audits/adversarial.mjs --rutas apps/web/  acota el diff a esas rutas
 //   node audits/adversarial.mjs --cartas         valida las 23 cartas y sale
 //
 // Va aparte del gancho pre-commit a propósito. Los deterministas de
@@ -75,9 +76,24 @@ const simular = tiene("--simular");
 // diff?" sino "¿esta fase entera aguanta a la flota entera?", y ahí un auditor
 // dormido es un área sin revisar que nadie declaró.
 const todos = tiene("--todos");
+// `--rutas a/,b/` acota el diff a lo que empiece por esas rutas.
+//
+// La flota audita un diff, no un directorio, y eso es lo correcto en el día a
+// día. Pero al cerrar UNA fase la pregunta es "¿esta parte aguanta?", no "¿toda
+// la rama aguanta?" — y sin acotar, auditar el sitio arrastra los auditores, las
+// migraciones y las decisiones, que ni son de esa fase ni le sirven a nadie.
+//
+// Se combina con --todos: acotado en QUÉ se mira, exhaustivo en QUIÉN mira.
+const rutas = (valorDe("--rutas") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const preparado = tiene("--preparado");
 const filtro = valorDe("--solo")?.split(",").map((s) => s.trim()).filter(Boolean) ?? null;
-const refExplicita = argv.find((a) => !a.startsWith("--") && a !== valorDe("--solo")) ?? null;
+// Las banderas que llevan valor: su valor NO es una referencia de git. Se
+// listan una vez en vez de excluirlas de una en una — así añadir una bandera
+// nueva no rompe el detector de referencia en silencio, que es justo lo que
+// pasó al añadir --rutas.
+const CON_VALOR = ["--solo", "--rutas"];
+const valoresDeBandera = new Set(CON_VALOR.map(valorDe).filter(Boolean));
+const refExplicita = argv.find((a) => !a.startsWith("--") && !valoresDeBandera.has(a)) ?? null;
 
 // ------------------------------------------------- 1. validar las 23 cartas
 // Antes de gastar una sola llamada: una carta que cite un documento inventado
@@ -152,7 +168,17 @@ const nuevos = preparado
   ? []
   : git("ls-files", "--others", "--exclude-standard").split("\n").map((s) => s.trim()).filter(Boolean);
 
-const todosLosTocados = [...rastreados, ...nuevos];
+let todosLosTocados = [...rastreados, ...nuevos];
+if (rutas.length) {
+  const antes = todosLosTocados.length;
+  todosLosTocados = todosLosTocados.filter((a) => rutas.some((r) => a.startsWith(r)));
+  if (todosLosTocados.length === 0) {
+    console.error(`✗ --rutas ${rutas.join(",")} no coincide con ningún archivo del diff.`);
+    console.error(`  De ${antes} archivo(s) cambiados, ninguno empieza por esas rutas.`);
+    console.error(`  Auditar cero archivos y salir en verde sería mentir sobre lo revisado.`);
+    process.exit(1);
+  }
+}
 const ignorados = todosLosTocados.filter((a) => IGNORADOS.some((re) => re.test(a)));
 const archivosCambiados = todosLosTocados.filter((a) => !IGNORADOS.some((re) => re.test(a)));
 
@@ -199,6 +225,7 @@ const dormidos = CARTAS.length - plan.length;
 console.log("Flota adversarial — D-032, F1\n");
 console.log(`  modo      ${modo}${rama ? ` (${rama})` : ""}${base ? ` · base ${base}` : ""}`);
 if (todos) console.log(`  modo      TODOS los 23 forzados (cierre de fase)`);
+if (rutas.length) console.log(`  acotado   ${rutas.join(", ")}`);
 console.log(
   `  cambio    ${archivosCambiados.length} archivo(s) revisables` +
     `${ignorados.length ? ` · ${ignorados.length} binario(s)/lockfile(s) excluidos` : ""}`,

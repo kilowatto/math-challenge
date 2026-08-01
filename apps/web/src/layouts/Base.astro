@@ -1,4 +1,5 @@
 ---
+import Rum from "../components/Rum.astro";
 /**
  * Layout base del sitio abierto.
  *
@@ -54,6 +55,7 @@ const NAV = [
   { path: "", label: m.navHome },
   { path: "origen/", label: m.navOrigin },
   { path: "niveles/", label: m.navLevels },
+  { path: "investigacion/", label: m.navResearch },
   { path: "arquitectura/", label: m.navArchitecture },
   { path: "codigo-abierto/", label: m.navOpen },
 ];
@@ -256,5 +258,9 @@ const jsonLd = {
 
       .muted { color: var(--color-text-muted); font-size: var(--text-xs); }
     </style>
+      <!-- Core Web Vitals de campo (D-037). Superficie PÚBLICA: banda "PUBLICO".
+         JAMÁS se incluye en pantallas de niño; audits/telemetria-infantil.mjs
+         bloquea el commit si aparece ahí. -->
+    <Rum banda="PUBLICO" locale={locale} />
   </body>
 </html>

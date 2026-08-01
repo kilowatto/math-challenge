@@ -1,11 +1,11 @@
-# Ethical gamification, intrinsic motivation, and dark patterns aimed at children: the counterweight to "as addictive as possible"
+# Gamificación ética, motivación intrínseca y patrones oscuros dirigidos a niños: el contrapeso a "tan adictivo como sea posible"
 
-> Math Challenge research — 2026-07-31 — topic 17
+> Investigación Math Challenge — 2026-07-31 — tema 17
 
 ## Resumen ejecutivo (ES)
 
 - La Teoría de la Autodeterminación (Deci & Ryan) sostiene que la motivación duradera depende de tres necesidades: autonomía, competencia y relación; los juegos exitosos la satisfacen y, por ello, captan la atención sin necesidad de manipulación [3][4][6].
-- El meta‑análisis de Deci, Koestner y Ryan (1999, 128 estudios) encontró que las recompensas contingentes al desempeño, a la finalización y a la mera participación reducen la motivación intrínseca de «elección libre» (d = -0,28 a -0,40), y el efecto es **más grave en niños que en estudiantes universitarios** [1][2]. Cameron y Pierce (1994) discreparon con un meta‑análisis propio que halló efectos mucho más pequeños y, a veces, positivos; el debate se resolvió parcialmente: las recompensas informativas o de competencia no dañan la motivación, mientras que las que resultan controladoras sí lo hacen [1][5].
+- El meta‑análisis de Deci, Koestner y Ryan (1999, 128 estudios) encontró que las recompensas contingentes al rendimiento, a la finalización y a la mera participación reducen la motivación intrínseca de «elección libre» (d = -0,28 a -0,40), y el efecto es **más grave en niños que en estudiantes universitarios** [1][2]. Cameron y Pierce (1994) discreparon con un meta‑análisis propio que halló efectos mucho más pequeños y, a veces, positivos; el debate se resolvió parcialmente: las recompensas informativas o de competencia no dañan la motivación, mientras que las que resultan controladoras sí lo hacen [1][5].
 - La FTC documenta con detalle patrones oscuros dirigidos a menores: botones de compra disfrazados de jugabilidad, monedas virtuales que ocultan el coste real, personajes de confianza que presionan al niño y cobros sin el consentimiento del titular de la cuenta — casos reales incluyen cargos de Amazon de hasta 99,99 $ realizados por menores sin intervención del adulto [8].
 - Las cajas de botín (loot boxes) fueron declaradas ilegales bajo la ley de juego en Bélgica y los Países Bajos (2018); el Parlamento del Reino Unido (2019) recomendó restringir su venta a menores y aplicar clasificaciones PEGI de juego de azar [11].
 - La UE tiene dos instrumentos relevantes: la Digital Services Act (DSA), que ya investigó a TikTok por el «efecto adictivo» de TikTok Lite para menores (retirado tras la investigación) y multó a X/Twitter por diseño engañoso; y la próxima Digital Fairness Act, en consulta pública hasta octubre de 2025, centrada explícitamente en «diseño adictivo» y patrones oscuros [9][10].

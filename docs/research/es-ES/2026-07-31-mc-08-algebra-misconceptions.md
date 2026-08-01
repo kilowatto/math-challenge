@@ -1,6 +1,6 @@
-# Algebra Learning Ages 12–17: The Arithmetic-to-Algebra Transition, Equals-Sign Misconceptions, Error Taxonomies, and Procedural Flexibility
+# Aprendizaje de álgebra edades 12–17: La transición de aritmética a álgebra, conceptos erróneos del signo igual, taxonomías de errores y flexibilidad procedimental
 
-> Math Challenge research — 2026-07-31 — topic 08
+> Investigación Math Challenge — 2026-07-31 — tema 08
 
 ## Resumen ejecutivo (ES)
 
@@ -16,17 +16,16 @@
 - Existen instrumentos diagnósticos validados (CSMS/Küchemann‑Hart, pruebas de opción múltiple sobre variables con alfa de Cronbach ~0,77) que Math Challenge puede adaptar como banco de ítems diagnósticos, no solo como ejercicios de práctica [15][16].
 
 ## Executive summary (EN)
-
-- The equals sign is the most heavily documented conceptual trap: most students enter algebra with an **operational** reading ("gives the answer") rather than a **relational** one ("is the same as"), and that reading directly predicts failure on equations like `4x + 10 = 70` [1][2].
-- Equal-sign knowledge at second grade predicts fourth-grade algebra competence — this is plantable years before formal algebra instruction [3].
-- Küchemann (1978) documented that students treat letters in progressive stages: as an ignored **object/label**, as a **specific unknown**, and only later as a **generalized number** or **varying quantity** — the shift from "letter = object" to "letter = number" is the core of the transition [10][11].
-- The student–professor "reversal error" (Clement, Lochhead & Monk, 1981) — writing `6S = P` instead of `S = 6P` — persists in 40–60% of students at every level, including college, and resists ordinary instruction [8].
-- Booth, Barbieri, Eyer & Paré-Blagoev (2014) catalogued six conceptual error categories in Algebra I (variable, negative sign, equality/inequality, operation, mathematical property, fraction) from 565 real students; negative-sign errors were the most persistent and predicted worse standardized-test performance [4].
-- "Buggy rules" are not random: they are coherent, mis-generalized procedures — e.g., distributing to only the first term of a binomial, or treating `-2x` as `2x` when isolating a variable [4][5][6].
-- Jon Star (Harvard) showed that explicitly comparing multiple solution methods (rather than teaching them sequentially) produces larger gains in conceptual knowledge, procedural knowledge, and flexibility than sequential instruction [12][13].
-- The IES/What Works Clearinghouse practice guide (2015) offers three evidence-based recommendations: use solved problems (including incorrect ones) for analysis, teach students to read structure in algebraic representations, and teach students to choose intentionally among alternative strategies [14].
-- "Symbol sense" (Arcavi, 1994) is the meta-skill of knowing when to use algebra, when to abandon it for a more intuitive route, and how to read an expression as a meaningful object rather than a manipulation sequence [9].
-- Validated diagnostic instruments exist (CSMS/Küchemann-Hart, multiple-choice variable-misconception tests with Cronbach's alpha ≈ 0,77) that Math Challenge can adapt as a diagnostic item bank, not just as practice exercises [15][16].
+- El signo de igualdad es la trampa conceptual más documentada: la mayoría de los estudiantes entran en álgebra con una lectura **operacional** («gives the answer») en lugar de una **relacional** («is the same as»), y esa lectura predice directamente el fracaso en ecuaciones como `4x + 10 = 70` [1][2].  
+- El conocimiento del signo de igualdad en segundo curso predice la competencia algebraica de cuarto curso — esto es plantable años antes de la instrucción formal de álgebra [3].  
+- Küchemann (1978) documentó que los estudiantes tratan las letras en etapas progresivas: como un **object/label** ignorado, como un **specific unknown**, y solo más tarde como un **generalized number** o **varying quantity** — el paso de «letter = object» a «letter = number» es el núcleo de la transición [10][11].  
+- El «error de inversión» estudiante–profesor (Clement, Lochhead & Monk, 1981) — escribir `6S = P` en lugar de `S = 6P` — persiste en el 40–60 % de los estudiantes en todos los niveles, incluida la universidad, y resiste la instrucción ordinaria [8].  
+- Booth, Barbieri, Eyer & Paré‑Blagoev (2014) catalogaron seis categorías de error conceptual en Álgebra I (variable, signo negativo, igualdad/inequidad, operación, propiedad matemática, fracción) a partir de 565 estudiantes reales; los errores de signo negativo fueron los más persistentes y predijeron un peor rendimiento en pruebas estandarizadas [4].  
+- Las «Buggy rules» no son aleatorias: son procedimientos coherentes, pero mal generalizados — por ejemplo, distribuir solo al primer término de un binomio, o tratar `-2x` como `2x` al aislar una variable [4][5][6].  
+- Jon Star (Harvard) mostró que comparar explícitamente múltiples métodos de solución (en lugar de enseñarlos secuencialmente) produce mayores ganancias en conocimiento conceptual, conocimiento procedimental y flexibilidad que la instrucción secuencial [12][13].  
+- La guía práctica IES/What Works Clearinghouse (2015) ofrece tres recomendaciones basadas en evidencia: usar problemas resueltos (incluidos los incorrectos) para el análisis, enseñar a los estudiantes a leer la estructura en representaciones algebraicas y enseñar a los estudiantes a elegir intencionalmente entre estrategias alternativas [14].  
+- El «Symbol sense» (Arcavi, 1994) es la meta‑habilidad de saber cuándo usar álgebra, cuándo abandonarla por una ruta más intuitiva y cómo leer una expresión como un objeto significativo en lugar de una secuencia de manipulaciones [9].  
+- Existen instrumentos diagnósticos validados (CSMS/Küchemann‑Hart, pruebas de opción múltiple de concepciones erróneas de variables con alfa de Cronbach ≈ 0,77) que Math Challenge puede adaptar como banco de ítems diagnósticos, no solo como ejercicios de práctica [15][16].
 
 ## Resultados
 

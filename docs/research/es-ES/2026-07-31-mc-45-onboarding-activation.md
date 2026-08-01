@@ -1,6 +1,6 @@
 # Onboarding, registro y activación: cuántos campos, y por qué los tours casi nunca sirven
 
-> Math Challenge research — 2026-07-31 — topic 45
+> Investigación Math Challenge — 2026-07-31 — tema 45
 
 ## Resumen ejecutivo (ES)
 

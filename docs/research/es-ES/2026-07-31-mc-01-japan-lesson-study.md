@@ -1,6 +1,6 @@
-# Japanese Mathematics Education: Lesson Study, Structured Problem Solving, Bansho, Neriage, and Soroban/Anzan
+# Educación matemática japonesa: Lesson Study, Resolución estructurada de problemas, Bansho, Neriage y Soroban/Anzan
 
-> Math Challenge research — 2026-07-31 — topic 01
+> Investigación Math Challenge — 2026-07-31 — tema 01
 
 ## Resumen ejecutivo (ES)
 

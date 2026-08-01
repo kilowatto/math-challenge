@@ -1,6 +1,6 @@
 # El sitio abierto: por qué publicar la investigación *es* la estrategia orgánica
 
-> Math Challenge research — 2026-07-31 — topic 48
+> Investigación Math Challenge — 2026-07-31 — tema 48
 
 ## Resumen ejecutivo (ES)
 
@@ -16,16 +16,15 @@
 - Implicación central: el sitio no es marketing con investigación adjunta. **La investigación es el sitio**, y la accesibilidad WCAG 2.2 AA (`mc-38`) no es solo obligación legal en la UE desde junio de 2025 sino señal directa de Trustworthiness.
 
 ## Executive summary (EN)
-
-- **The finding that changes the plan:** after the March 2026 update, *"original research and documented case studies have become some of the highest-value content assets an organization can produce"* [1].
-- **AI citations amplify it:** a Wellows study of 2.400 AI Overview citations found pages with strong E-E-A-T signals are **2,3× more likely to be cited** [1].
-- **The cost of lacking it is real:** hundreds of sites lost **40-70 % of organic traffic overnight** in recent core updates; those that survived and grew had invested deeply in E-E-A-T [1].
-- **E-E-A-T is four distinct things** — Experience (firsthand involvement), Expertise, Authoritativeness, Trustworthiness [1][2]. The first **E** was added in December 2022 [2].
-- Math Challenge has 152.000 words of original research **with cited sources, declared limitations, and `[unverified]` flags** — covering Expertise and Trustworthiness in a way almost nobody in edtech does.
-- **What cannot be bought or researched is Experience**: the firsthand story of why the project exists.
-- **JSON-LD is Google's preferred format**, structured-data content **must be translated per language version** with the schema intact, and each localized version declares `inLanguage` [3][4][5].
-- **Schema does not replace `hreflang`** — it complements it [3][4]. **Hard rule:** schema content **must match what is visible on the page**, or Google may ignore the markup entirely [5].
-- Core implication: the research *is* the site, and WCAG 2.2 AA accessibility is a Trustworthiness signal, not only an EU legal obligation.
+- **El hallazgo que cambia el plan:** después de la actualización de marzo de 2026, «original research and documented case studies have become some of the highest-value content assets an organization can produce» [1].
+- **Las citas de IA lo amplifican:** un estudio de Wellows de 2.400 citas de AI Overview encontró que las páginas con señales fuertes de E‑E‑A‑T son **2,3× más propensas a ser citadas** [1].
+- **El coste de carecer de ello es real:** cientos de sitios perdieron **40-70 % del tráfico orgánico de la noche a la mañana** en las recientes actualizaciones principales; los que sobrevivieron y crecieron habían invertido profundamente en E‑E‑A‑T [1].
+- **E‑E‑A‑T son cuatro cosas distintas** — Experiencia (implicación directa), Pericia, Autoridad, Fiabilidad [1][2]. La primera **E** se añadió en diciembre de 2022 [2].
+- Math Challenge tiene 152.000 palabras de investigación original **con fuentes citadas, limitaciones declaradas y marcas `[unverified]`** — cubriendo Pericia y Fiabilidad de una forma que casi nadie en edtech hace.
+- **Lo que no se puede comprar ni investigar es la Experiencia**: la historia directa de por qué existe el proyecto.
+- **JSON‑LD es el formato preferido de Google**, el contenido de datos estructurados **debe traducirse por versión de idioma** con el esquema intacto, y cada versión localizada declara `inLanguage` [3][4][5].
+- **El esquema no sustituye a `hreflang`** — lo complementa [3][4]. **Regla estricta:** el contenido del esquema **debe coincidir con lo que es visible en la página**, o Google podría ignorar el marcado por completo [5].
+- Implicación principal: la investigación *es* el sitio, y la accesibilidad WCAG 2.2 AA es una señal de Fiabilidad, no solo una obligación legal de la UE.
 
 ## Findings
 

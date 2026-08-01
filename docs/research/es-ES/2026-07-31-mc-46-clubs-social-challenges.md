@@ -1,6 +1,6 @@
 # Clubs, retos de grupo y prendas: cómo tener apuestas sin perdedor y sin exposición regulatoria
 
-> Math Challenge research — 2026-07-31 — topic 46
+> Investigación Math Challenge — 2026-07-31 — tema 46
 
 ## Resumen ejecutivo (ES)
 
@@ -17,17 +17,16 @@
 - Conclusión de diseño: **dos sistemas separados en la capa de datos** — `grupo_infantil` (aula + club de padres, reglas idénticas) y `club_adulto` (con retos y prendas) — para que una función añadida a «los clubes» no pueda aparecer por descuido sobre menores.
 
 ## Executive summary (EN)
-
-- **Illegal gambling is defined, across virtually all US state law, by three elements — prize, chance, and consideration — and all three must be present** [1]. Removing one is sufficient. That is precisely the standard sweepstakes-industry strategy: eliminate at least one element [1].
-- **Chance is already absent here.** A math challenge is won on skill. The applicable framing is the skill‑contest one, where *«winners are not selected by chance but instead chosen based on some measurable criteria»* [1].
-- **Consideration is eliminated if the platform never touches anything of value.** Consideration means *«payment of money or something valuable to enter, or a requirement that a purchase must be made»* [1]. If Math Challenge charges nothing to enter, escrows nothing, transfers nothing, and enforces nothing, there is no consideration flowing to the platform.
-- **Prize can be minimized too:** intangible rewards such as *«bragging rights»* carry minimal monetary value and may not meet the legal threshold for a prize [1].
-- **Strava already shipped the loser‑free wager, and it works.** Its *Group Goal* mode lets a group chase a shared target and — per its own documentation — *«doesn't have a ranked leaderboard so you end up comparing yourself to others less»* [2][3]. It coexists with competitive challenges as an alternate mode, not a replacement.
-- **The real youth‑sports safeguarding standard** requires background checks for *«any volunteer with the opportunity for unsupervised or one‑on‑one contact with minors»*, plus a named safeguarding contact known to everyone [4][5]. The load‑bearing word is **unsupervised**.
-- We cannot run background checks, but we can **design so no unsupervised contact exists**: no chat, no private channel, club owner sees only alias and points, and each child's own parent approves the join.
-- **No minor is ever in a challenge with stakes.** That keeps the entire gambling analysis away from children, where the regulatory exposure documented in `mc-17` would be severe.
-- **Larry moderates the stake text before it exists**, with adult‑game judgment: the joke passes; sex, violence, and degradation do not — and nothing that singles out a person does. It is a separate call from the tutor's, with its own prompt, audit log, and fail‑closed behavior.
-- Design conclusion: **two separate systems at the data layer** — `grupo_infantil` and `club_adulto` — so a feature added to "clubs" cannot land on children by accident.
+- **El azar ya está ausente aquí.** Un reto matemático se gana por habilidad. El encuadre aplicable es el de concurso de habilidades, donde *«winners are not selected by chance but instead chosen based on some measurable criteria»* [1].
+- **La consideración se elimina si la plataforma nunca toca nada de valor.** Consideración significa *«payment of money or something valuable to enter, or a requirement that a purchase must be made»* [1]. Si Math Challenge no cobra nada por participar, no retiene fondos, no transfiere nada y no impone nada, no hay consideración que fluya hacia la plataforma.
+- **El premio también puede minimizarse:** recompensas intangibles como *«bragging rights»* tienen un valor monetario mínimo y pueden no alcanzar el umbral legal para considerarse un premio [1].
+- **Strava ya ha lanzado la apuesta sin perdedores, y funciona.** Su modo *Group Goal* permite a un grupo perseguir un objetivo compartido y — según su propia documentación — *«doesn't have a ranked leaderboard so you end up comparing yourself to others less»* [2][3]. Coexiste con los retos competitivos como un modo alternativo, no como sustituto.
+- **La norma real de protección en deportes juveniles** exige comprobaciones de antecedentes para *«any volunteer with the opportunity for unsupervised or one‑on‑one contact with minors»*, además de un contacto de protección designado conocido por todos [4][5]. La palabra clave es **unsupervised**.
+- No podemos realizar comprobaciones de antecedentes, pero podemos **diseñar de modo que no exista contacto unsupervised**: sin chat, sin canal privado, el propietario del club solo ve alias y puntos, y cada padre del menor aprueba la incorporación.
+- **Ningún menor participa nunca en un reto con apuestas.** Eso mantiene todo el análisis de juego alejado de los niños, donde la exposición regulatoria documentada en `mc-17` sería grave.
+- **Larry modera el texto de la apuesta antes de que exista**, con juicio de juego adulto: el chiste pasa; el sexo, la violencia y la degradación no, y nada que señale a una persona. Es una llamada separada de la del tutor, con su propio prompt, registro de auditoría y comportamiento de cierre seguro.
+- **El juego ilegal se define, en prácticamente toda la legislación estatal de EE. UU., por tres elementos — premio, azar y consideración — y los tres deben estar presentes** [1]. Eliminar uno basta. Esa es precisamente la estrategia estándar de la industria de sorteos: eliminar al menos un elemento [1].
+- Conclusión de diseño: **dos sistemas separados en la capa de datos** — `grupo_infantil` y `club_adulto` — de modo que una función añadida a "clubs" no pueda llegar a los niños por accidente.
 
 ## Findings
 
@@ -160,7 +159,7 @@ La razón no es de modelado sino de modo de falla. Con una sola tabla, el día q
 2. ¿El catálogo de prendas arranca vacío con texto libre desde el día uno, o se siembra con ejemplos curados que muestren el tono esperado? Sembrarlo es la forma barata de comunicar la norma sin prohibirla.  
 3. ¿La aceptación explícita de la prenda (implicación 5) es por reto o una sola vez por club? Por reto es más seguro y más molesto.  
 4. ¿Los retos de club de adultos afectan el tablero global, o viven aislados en el club? Si afectan, hay que revisar el control de exposición de ítems de `mc-29`.  
-5. ¿Quién atiende la cola de apelaciones y reportes (implicaciones 9 y 11), y con qué tiempo de respuesta comprometido? Es la misma persona para las dos colas o son dos.  
+5. ¿Quién atiende la cola de apelaciones e informes (implicaciones 9 y 11), y con qué tiempo de respuesta comprometido? Es la misma persona para las dos colas o son dos.  
 6. Cuando Larry rechaza una prenda, ¿le dice al autor **cuál** de las tres reglas rompió, o solo que no pasó? Decirlo ayuda a corregir; también enseña a esquivar el filtro.  
 7. ¿El prompt de moderación de Larry se autoriza por idioma o se traduce? Lo denigrante es fuertemente cultural — lo que en México es una broma entre amigos en Alemania puede no serlo, y al revés.  
 6. ¿Se permite que un club infantil mezcle hijos de varias familias que **no** se conocen entre sí, o se limita a familias que ya tienen un vínculo previo? Es la diferencia entre un riesgo acotado y uno abierto.

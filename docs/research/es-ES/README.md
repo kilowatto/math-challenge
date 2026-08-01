@@ -1,4 +1,4 @@
-# Desafío Matemático — Índice de investigación / Índice de investigación
+# Math Challenge — Índice de investigación / Research index
 
 > 47 investigaciones hechas el **2026-07-31** por agentes independientes, cada uno con instrucción explícita de **no inventar citas** y de marcar como *unverified* lo que no pudiera confirmar contra una fuente primaria. Total ≈ 157.000 palabras.
 >
@@ -14,7 +14,7 @@
 
 | # | Documento | De qué sirve |
 |---|-----------|--------------|
-| 01 | [Japón: lesson study, bansho, neriage, soroban](2026-07-31-mc-01-japan-lesson-study.md) | La estructura de 4 fases de una clase japonesa; el estudio TIMSS en video con los números duros; qué dice la evidencia real del ábaco |
+| 01 | [Japón: lesson study, bansho, neriage, soroban](2026-07-31-mc-01-japan-lesson-study.md) | La estructura de 4 fases de una clase japonesa; el estudio TIMSS en vídeo con los números duros; qué dice la evidencia real del ábaco |
 | 02 | [China: enseñanza con variación y maestría](2026-07-31-mc-02-china-variation-mastery.md) | ⭐ Cómo generar **series** de ejercicios con variación sistemática en vez de números al azar. Cambia la unidad de autoría |
 | 03 | [Singapur: CPA y modelo de barras](2026-07-31-mc-03-singapore-cpa-bar-models.md) | El widget de barras táctil y cómo concreto→pictórico→abstracto mapea a niveles de dificultad |
 | 04 | [Carga cognitiva y ejemplos resueltos](2026-07-31-mc-04-cognitive-load-worked-examples.md) | ⭐ Cuándo mostrar la solución vs. hacer que resuelva; cómo desvanecer el andamiaje solo |
@@ -33,7 +33,7 @@
 
 | # | Documento | De qué sirve |
 |---|-----------|--------------|
-| 13 | [Modelo del alumno: BKT, DKT, Elo de Math Garden](2026-07-31-mc-13-its-knowledge-tracing-elo.md) | ⭐⭐ La fórmula que combina precisión **y** tiempo en un solo puntaje, ya validada. Es la respuesta al "puntos por velocidad" |
+| 13 | [Modelo del alumno: BKT, DKT, Elo de Math Garden](2026-07-31-mc-13-its-knowledge-tracing-elo.md) | ⭐⭐ La fórmula que combina precisión **y** tiempo en un solo puntuación, ya validada. Es la respuesta al "puntos por velocidad" |
 | 14 | [Khan, Brilliant, Kumon, IXL, Prodigy, ST Math…](2026-07-31-mc-14-competitive-products.md) | ⭐ Qué copiar, qué evitar, y dónde está el hueco de mercado |
 | 15 | [Escaleras de grado internacionales](2026-07-31-mc-15-international-grade-ladders.md) | ⭐ Propuesta de escalera interna de 11 bandas, neutral al país, con nombres en 5 idiomas |
 | 36 | [Diseño de retos y formatos de ítem](2026-07-31-mc-36-problem-design-item-formats.md) | ⭐ Catálogo de 20 formatos con "¿resiste un solver?" y orden de construcción del MVP |
@@ -62,8 +62,6 @@
 | 23 | [Adulto / universidad / experto](2026-07-31-mc-23-ui-adult-expert.md) | ⭐ KaTeX vs MathJax vs MathLive con licencias y accesibilidad; entrada de matemáticas por dispositivo |
 | 38 | [Accesibilidad y diferencias de aprendizaje](2026-07-31-mc-38-accessibility-learning-differences.md) | ⭐ Cómo un juego cronometrado puede cumplir WCAG 2.2 (la excepción textual); modo discalculia |
 | 34 | [i18n de la notación matemática](2026-07-31-mc-34-i18n-math-notation.md) | ⭐⭐ México usa **punto** decimal y el resto del mundo hispano **coma**; la división larga se dibuja de 4 formas distintas |
-
-## Design implications
 
 ## Plataforma, seguridad y negocio
 

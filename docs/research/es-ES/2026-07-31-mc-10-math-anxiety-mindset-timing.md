@@ -1,6 +1,6 @@
-# Math anxiety, timed testing, growth mindset, and productive struggle: what the evidence actually supports
+# Ansiedad matemática, pruebas cronometradas, mentalidad de crecimiento y esfuerzo productivo: lo que la evidencia realmente respalda
 
-> Math Challenge research — 2026-07-31 — topic 10
+> Investigación Math Challenge — 2026-07-31 — tema 10
 
 ## Resumen ejecutivo (ES)
 

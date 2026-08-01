@@ -1,5 +1,5 @@
-# Cognitive Load Theory and Worked Examples in Mathematics
-> Math Challenge research — 2026-07-31 — topic 04
+# Teoría de la carga cognitiva y ejemplos trabajados en matemáticas
+> Investigación Math Challenge — 2026-07-31 — tema 04
 
 ## Resumen ejecutivo (ES)
 
@@ -16,18 +16,17 @@
 - Recomendación: mostrar ejemplo resuelto a quien no conoce el patrón, desvanecer pasos al acertar, y no cronometrar hasta que el patrón esté consolidado.
 
 ## Executive summary (EN)
-
-- Cognitive Load Theory (CLT, John Sweller, UNSW): working memory is severely limited, long-term memory (schemas) is effectively unlimited; instruction should minimize extraneous load and protect germane (schema-building) load [1][13].
-- **Worked-example effect**: for novices, studying a worked example teaches more, faster, with fewer errors, than solving the same problem unaided (Sweller & Cooper, 1985) [1][2].
-- **Expertise reversal effect** (Kalyuga): as competence grows, the same scaffolding becomes redundant and can actively **harm** learning [3][4].
-- The fix is **fading** (Renkl): gradually moving from full example → one blank step → independent problem [5][6].
-- **Self-explanation prompts** (Chi) amplify the effect; combined with fading they produce medium-large gains on near **and** far transfer at no extra time cost (Atkinson, Renkl & Merrill, 2003) [6][14].
-- **Split-attention** and **redundancy** are design failures: separating diagram from text, or repeating information across two channels, wastes working memory [7].
-- **Goal-free effect**: "find as many values as you can" instead of "solve for X" lowers means-ends search load [8].
-- CLT has real foundational problems: no validated measure of cognitive load exists (mostly single-item effort scales), and the theory has been through multiple replication crises [9].
-- Time pressure is **not neutral**: for roughly a third of learners (Ashcraft), timed testing is itself the origin of math anxiety, which consumes working memory like a secondary task [11][12].
-- Core implication: **speed-based scoring is not free** — while a concept is new, speed mostly measures prior automaticity, not understanding.
-- Design recommendation: full worked example for unfamiliar patterns, fade as the learner succeeds, and hold off timing until the pattern is consolidated.
+- Teoría de la carga cognitiva (CLT, John Sweller, UNSW): la memoria de trabajo está severamente limitada, la memoria a largo plazo (esquemas) es efectivamente ilimitada; la instrucción debe minimizar la carga extrínseca y proteger la carga germinal (de construcción de esquemas) [1][13].
+- **Efecto del ejemplo resuelto**: para los principiantes, estudiar un ejemplo resuelto enseña más, más rápido y con menos errores que resolver el mismo problema sin ayuda (Sweller & Cooper, 1985) [1][2].
+- **Efecto de reversión de la pericia** (Kalyuga): a medida que la competencia crece, el mismo andamiaje se vuelve redundante y puede dañar activamente el aprendizaje [3][4].
+- La solución es el **desvanecimiento** (Renkl): pasar gradualmente de un ejemplo completo → un paso en blanco → problema independiente [5][6].
+- **Indicaciones de autoexplicación** (Chi) amplifican el efecto; combinadas con el desvanecimiento generan ganancias de tamaño medio‑alto en la transferencia cercana **y** lejana sin coste de tiempo adicional (Atkinson, Renkl & Merrill, 2003) [6][14].
+- **Atención dividida** y **redundancia** son fallos de diseño: separar el diagrama del texto, o repetir la información en dos canales, desperdicia la memoria de trabajo [7].
+- **Efecto sin objetivo**: «find as many values as you can» en lugar de «solve for X» reduce la carga de búsqueda de medios‑fines [8].
+- La CLT tiene problemas fundacionales reales: no existe una medida validada de la carga cognitiva (principalmente escalas de esfuerzo de un solo ítem), y la teoría ha atravesado múltiples crisis de replicación [9].
+- La presión temporal **no es neutral**: para aproximadamente un tercio de los estudiantes (Ashcraft), las pruebas cronometradas son en sí mismas el origen de la ansiedad matemática, que consume la memoria de trabajo como una tarea secundaria [11][12].
+- Implicación central: **la puntuación basada en la velocidad no es gratuita** — mientras un concepto es nuevo, la velocidad mide mayormente la automaticidad previa, no la comprensión.
+- Recomendación de diseño: ejemplo resuelto completo para patrones desconocidos, desvanecer a medida que el estudiante progresa, y posponer la cronometración hasta que el patrón esté consolidado.
 
 ## Findings
 

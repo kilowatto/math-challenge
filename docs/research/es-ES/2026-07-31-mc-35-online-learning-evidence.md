@@ -1,6 +1,6 @@
-# What the research actually says about teaching over the internet
+# Lo que la investigación realmente dice sobre la enseñanza por internet
 
-> Math Challenge research — 2026-07-31 — topic 35
+> Investigación Math Challenge — 2026-07-31 — tema 35
 
 ## Resumen ejecutivo (ES)
 
@@ -9,10 +9,11 @@ La evidencia es más modesta de lo que sugiere el discurso habitual de «el apre
 Los datos de vídeo de edX (Guo et al., 2014) muestran que la atención mediana se estanca en **6 minutos como máximo**, y que los vídeos tutoriales reciben solo **2–3 minutos** de atención real sin importar su duración [2]. El «efecto de hacer» (Koedinger et al.) muestra que practicar aporta aproximadamente **6 veces** el beneficio de leer o ver [6]. La cifra de Bloom de «2 sigma» (1984) proviene de un estudio pequeño y no replicado; el meta‑análisis moderno de tutoría (Nickow, Oreopoulos & Quan, 2020) encuentra un efecto agrupado de solo **0,37 DE** [3][4]. Los datos de pérdida de aprendizaje por COVID muestran que matemáticas se perdió más que lectura (−0,20 a −0,27 DE frente a −0,09 a −0,18 DE), con brechas de equidad que crecieron otros 0,10–0,20 DE [12] — advertencia concreta sobre instrucción remota no supervisada en matemáticas para niños. Ninguna cifra respalda marketing agresivo; todas respaldan un diseño centrado en hacer, no en mirar.
 
 ## Executive summary (EN)
+La evidencia es más modesta de lo que sugiere el habitual discurso «online learning works». El meta‑análisis del Departamento de Educación de EE. UU. (Means et al., 2010) encontró que la instrucción puramente online es estadísticamente **equivalente** a la presencial (+0,05, no significativo); la verdadera ventaja aparece sólo en la instrucción **blended** (+0,35) y **instructor‑directed** (+0,39) — no en el aprendizaje online independiente y autodirigido (+0,05, no significativo) [1]. Advertencia directa para una aplicación autodidacta: el medio online por sí solo no produce el efecto; la estructura y la retroalimentación sí lo hacen.
 
-The evidence is more modest than the usual "online learning works" pitch suggests. The US Department of Education meta‑analysis (Means et al., 2010) found purely online instruction statistically **equivalent** to face‑to‑face (+0,05, not significant); the real advantage shows up only in **blended** (+0,35) and **instructor‑directed** (+0,39) instruction — not in independent, self‑directed online learning (+0,05, not significant) [1]. Direct warning for a self‑paced app: the online medium alone does not produce the effect; structure and feedback do.
+Los datos de vídeo de edX (Guo et al., 2014) muestran que la participación mediana se estabiliza en **6 minutos como máximo**, y los vídeos tutoriales obtienen sólo **2–3 minutos** de atención real, sea cual sea su duración [2]. El «doer effect» (Koedinger et al.) muestra que la práctica aporta aproximadamente **6 veces** el beneficio de aprendizaje de la lectura o la visualización [6]. La afirmación de Bloom del «2 sigma» (1984) proviene de un estudio pequeño y nunca replicado; la meta‑análisis moderna de tutoría (Nickow, Oreopoulos & Quan, 2020) encuentra un efecto combinado de sólo **0,37 SD** [3][4].
 
-edX video data (Guo et al., 2014) shows median engagement plateaus at **6 minutes at most**, and tutorial videos get only **2–3 minutes** of real attention regardless of length [2]. The "doer effect" (Koedinger et al.) shows practice carries roughly **6x** the learning benefit of reading or watching [6]. Bloom's "2 sigma" claim (1984) comes from a small, never‑replicated study; the modern tutoring meta‑analysis (Nickow, Oreopoulos & Quan, 2020) finds a pooled effect of just **0,37 SD** [3][4]. COVID‑era data shows math losses exceeded reading losses (−0,20 to −0,27 SD vs. −0,09 to −0,18 SD), with equity gaps widening another 0,10–0,20 SD [12] — a concrete warning about unsupervised remote instruction in math for children. None of these numbers support aggressive marketing claims; all support a design centered on doing, not watching.
+Los datos de la era COVID muestran que las pérdidas en matemáticas superaron a las de lectura (−0,20 a −0,27 SD frente a −0,09 a −0,18 SD), con brechas de equidad ampliándose en otros 0,10–0,20 SD [12] — una advertencia concreta sobre la instrucción remota no supervisada en matemáticas para niños. Ninguno de estos números respalda afirmaciones de marketing agresivas; todos respaldan un diseño centrado en la práctica, no en la observación.
 
 ## Findings
 
@@ -83,7 +84,7 @@ Kuhfeld, Soland & Lewis analizaron a 5,4 millones de estudiantes estadounidenses
 | Pérdida de rendimiento en matemáticas, otoño 2021 vs. otoño 2019 (3.º‑8.º) | −0,20 a −0,27 DE | Kuhfeld, Soland & Lewis 2022 [12] | Alta — cuantifica el riesgo de instrucción remota de matemáticas sin supervisión |
 | Pérdida de rendimiento en lectura, mismo periodo | −0,09 a −0,18 DE | Kuhfeld, Soland & Lewis 2022 [12] | Media — las matemáticas son la materia más frágil, nuestra materia |
 | Ampliación de la brecha de rendimiento basada en la pobreza, mismo periodo | +0,10 a +0,20 DE más amplia | Kuhfeld, Soland & Lewis 2022 [12] | Alta — riesgo de equidad de la entrega solo autodirigida |
-| Espectadores de Sesame Street, nivel de logro acorde al curso en la adolescencia | +14 puntos porcentuales | Kearney & Levine 2019 [10] | Media — resultado a largo plazo de contenido liderado por personajes, requiere años de rigor curricular para obtenerlo |
+| Espectadores de Sesame Street, nivel de logro acorde con el curso en la adolescencia | +14 puntos porcentuales | Kearney & Levine 2019 [10] | Media — resultado a largo plazo de contenido liderado por personajes, requiere años de rigor curricular para obtenerlo |
 
 ## Implicaciones de diseño
 

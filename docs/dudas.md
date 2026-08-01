@@ -381,3 +381,43 @@ ven idénticas.
 **Por qué no la decidí solo:** tocar el auditor que vigila el borrado de datos de
 menores para permitir un borrado de datos de menores es exactamente el tipo de
 cambio que CLAUDE.md manda no hacer sin preguntar.
+
+## Interfaz · El espaciado de dislexia: 0.12em o 0.012em, y en qué sentido · 2026-08-01
+
+**El hecho, medido.** `docs/guia-de-estilo.md` § Dislexia cita `mc-21` con estos
+parámetros: interlineado 1.5×, **espaciado entre letras 0.12em**, **entre
+palabras 0.16em**, línea de 45-100 caracteres, alineado a la izquierda.
+`mc-21:164-165` los dice igual.
+
+El código dice otra cosa:
+
+    apps/web/src/styles/tokens.css:81   --leading-body: 1.6        ✓ cumple (≥1.5)
+    apps/web/src/styles/tokens.css:85   --tracking-readable: 0.012em   ← DIEZ VECES MENOS
+    apps/web/src/styles/tokens.css:86   --measure: 68ch            ✓ dentro de 45-100
+    (no existe ningún token de word-spacing)
+
+**Por qué no lo cambié solo.** Porque las dos lecturas posibles llevan a
+implementaciones distintas, y elegir mal es peor que preguntar:
+
+1. **Aplicar.** `mc-21` los presenta como parámetros de tipografía amable con la
+   dislexia, citando su fuente [8]. Bajo esta lectura el token es un error de
+   coma decimal y hay que subirlo a `0.12em` y añadir `word-spacing: 0.16em`.
+   Cuesta: el texto se ve notablemente más suelto en todo el sitio.
+2. **Tolerar.** Esas tres cifras exactas —0.12em, 0.16em, 1.5×— son las de
+   **WCAG 2.1 SC 1.4.12 «Text Spacing»**, que NO pide aplicarlas: pide que el
+   contenido **no se rompa** cuando la persona usuaria las aplique. Bajo esta
+   lectura el token de 0.012em es una decisión estética legítima y lo que falta
+   es una **prueba** de que la maquetación aguanta el espaciado del usuario.
+
+La coincidencia exacta de las tres cifras con 1.4.12 hace pensar que la lectura 2
+es la correcta y que el resumen de `mc-21` las trasladó como si fueran valores a
+poner. Pero `mc-21` cita una fuente propia, así que no es seguro.
+
+**Lo que recomiendo:** hacer las dos. La tolerancia es obligatoria bajo WCAG 2.2
+AA —que F2 exige— pase lo que pase, así que esa prueba se escribe igual. Y si
+además se decide aplicar, es cambiar dos tokens.
+
+**Lo que asumí para no detenerme:** nada. El token sigue en 0.012em y ninguna
+pantalla de F2 depende de esto para funcionar. Pero `audits/contrast.mjs`,
+`axe-a11y` y `touch-targets` están en PENDING esperando que haya interfaz — ya la
+hay— y cuando se activen, esta pregunta hay que tenerla contestada.

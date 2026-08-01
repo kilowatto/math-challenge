@@ -50,29 +50,75 @@ export const PARAMETROS: Record<Exclude<Banda, "KINDER">, { d: number; a: number
  * tablero, ni la de moler ejercicios fáciles ni la de intentar solo los difíciles
  * (mc-13, mc-18).
  */
+export const NIVEL_MAXIMO = 12;
+
 export function valorDelItem(nivel: number): number {
-  if (!Number.isInteger(nivel) || nivel < 1 || nivel > 10) {
-    throw new RangeError(`nivel fuera de la escalera de D-017: ${nivel} (se esperaba 1..10)`);
+  if (!Number.isInteger(nivel) || nivel < 1 || nivel > NIVEL_MAXIMO) {
+    throw new RangeError(
+      `nivel fuera de la escalera de D-017: ${nivel} (se esperaba 1..${NIVEL_MAXIMO})`,
+    );
   }
   return 10 * Math.pow(1.6, nivel - 1);
 }
 
-export interface Intento {
-  banda: Banda;
-  /** 1 a 10, la escalera de D-017. */
+/**
+ * Qué niveles cubre cada banda, según D-017.
+ *
+ * **Los rangos se traslapan a propósito**: un niño de 7 años puede estar en N3
+ * igual que uno de 6. La banda es el TEMA VISUAL, el nivel es la dificultad, y
+ * D-017 los mueve por separado para que las fracciones —que se introducen entre
+ * los 6 y los 9 años según el país (`mc-15`)— no obliguen a llamar «tercero de
+ * primaria» a un nivel.
+ *
+ * `audits/tabla-bandas.mjs` cruza esta constante contra la tabla de D-010 y la de
+ * D-017 en `docs/decisions.md`, con el mismo patrón que `citas.mjs`: la fuente es
+ * el documento, y el código tiene que coincidir. Existe porque esa tabla YA se
+ * desincronizó una vez — un niño de 7 años caía en dos bandas distintas según
+ * qué documento se leyera.
+ */
+export const NIVELES_POR_BANDA: Record<Banda, { min: number; max: number }> = {
+  KINDER:     { min: 1,  max: 3 },
+  PRIMARIA:   { min: 3,  max: 6 },
+  SECUNDARIA: { min: 6,  max: 8 },
+  SERIO:      { min: 8,  max: 10 },
+  JR:         { min: 11, max: 12 },
+  PRO:        { min: 11, max: 12 },
+};
+
+/**
+ * Un intento. **Son dos tipos, no uno con un campo opcional.**
+ *
+ * Esa es la parte importante y no es preferencia de estilo. Con
+ * `rtMs?: number` en un solo tipo, escribir
+ *
+ *     calificar({ banda: "KINDER", nivel: 1, acc: 1, rtMs: 5000 })
+ *
+ * compila perfectamente y falla en tiempo de ejecución — o peor, no falla:
+ * alguien "optimiza" la función un martes, quita la guarda porque parece
+ * defensiva, y el tiempo entra al puntaje de kinder sin que ninguna prueba de
+ * tipos se entere.
+ *
+ * Con la unión, esa línea **no compila**: `IntentoKinder` no tiene `rtMs`. La
+ * regla de D-024 y D-045 deja de depender de que alguien recuerde por qué había
+ * un `throw` ahí.
+ */
+export interface IntentoKinder {
+  banda: "KINDER";
+  /** 1 a 12, la escalera de D-017. Kinder vive en N1–N3. */
   nivel: number;
   /** 1 o 0. Nunca un parcial: D-048 hace que varias respuestas valgan 1, no 0.5. */
   acc: 0 | 1;
-  /**
-   * Milisegundos entre que el servidor sirvió el ítem y recibió la respuesta.
-   *
-   * **Opcional, y su ausencia es el contrato con kinder.** Para KINDER esta
-   * propiedad no debe venir: si viene, se lanza. No es paranoia — es la única
-   * forma de que "el puntaje de kinder no ve el tiempo" sea comprobable en vez
-   * de ser una promesa en un comentario (D-024, D-045).
-   */
-  rtMs?: number;
 }
+
+export interface IntentoCronometrado {
+  banda: Exclude<Banda, "KINDER">;
+  nivel: number;
+  acc: 0 | 1;
+  /** Milisegundos entre que el servidor sirvió el ítem y recibió la respuesta. */
+  rtMs: number;
+}
+
+export type Intento = IntentoKinder | IntentoCronometrado;
 
 export interface Veredicto {
   puntos: number;
@@ -94,7 +140,7 @@ export interface Veredicto {
  * alguien pueda olvidar de portar.
  */
 export function calificar(intento: Intento): Veredicto {
-  const { banda, nivel, acc } = intento;
+  const { nivel, acc } = intento;
 
   if (acc !== 0 && acc !== 1) {
     throw new TypeError(`acc es 1 o 0, nunca un parcial: recibido ${acc} (D-010, D-048)`);
@@ -102,11 +148,11 @@ export function calificar(intento: Intento): Veredicto {
 
   const valor = valorDelItem(nivel);
 
-  if (banda === "KINDER") {
-    // La firma lo permite, así que hay que rechazarlo aquí. Un `rtMs` que llega
-    // a kinder y se ignora en silencio es indistinguible de uno que se usa: el
-    // día que alguien "optimice" esta función, lo usaría.
-    if (intento.rtMs !== undefined) {
+  if (intento.banda === "KINDER") {
+    // La unión ya impide escribirlo en TypeScript. Esta guarda es para quien
+    // llegue desde JavaScript sin tipos —un worker, una prueba, un JSON de la
+    // cola offline— porque ahí el compilador no está mirando.
+    if ("rtMs" in intento) {
       throw new TypeError(
         "el puntaje de kinder no recibe tiempo (D-024, D-045). Medirlo está permitido " +
           "y guardarlo también; lo que no puede es llegar hasta aquí.",
@@ -119,12 +165,12 @@ export function calificar(intento: Intento): Veredicto {
     };
   }
 
-  const { d, a } = PARAMETROS[banda];
+  const { d, a } = PARAMETROS[intento.banda];
 
   if (intento.rtMs === undefined) {
     throw new TypeError(
-      `la banda ${banda} puntúa con tiempo y no llegó rtMs. El servidor lo mide con dos ` +
-        "sellos suyos; si falta, no se inventa un valor por omisión — se falla.",
+      `la banda ${intento.banda} puntúa con tiempo y no llegó rtMs. El servidor lo mide con ` +
+        "dos sellos suyos; si falta, no se inventa un valor por omisión — se falla.",
     );
   }
   if (!Number.isFinite(intento.rtMs) || intento.rtMs < 0) {

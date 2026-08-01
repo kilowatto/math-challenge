@@ -13,7 +13,10 @@
 //
 // Se corre desde el gancho vía audits/run.mjs, no a mano.
 
-import { calificar, valorDelItem, PARAMETROS, pareceImposible, PISO_MS } from "./puntuacion.ts";
+import {
+  calificar, valorDelItem, PARAMETROS, pareceImposible, PISO_MS,
+  NIVEL_MAXIMO, NIVELES_POR_BANDA,
+} from "./puntuacion.ts";
 
 let fallos = 0;
 let corridos = 0;
@@ -49,14 +52,14 @@ const lanza = (fn, fragmento) => {
 console.log("\n== motor de puntuación — D-010 y D-024 ==\n");
 
 // --- El valor del ítem ------------------------------------------------------
-caso("el valor del ítem es 10 × 1.6^(nivel−1) (D-010)", () => {
-  igual(valorDelItem(1), 10, "nivel 1");
-  igual(valorDelItem(2), 16, "nivel 2");
-});
-
-caso("un ítem de nivel 8 vale ~268 puntos, como dice D-010", () => {
-  const v = valorDelItem(8);
-  if (v < 260 || v > 276) throw new Error(`nivel 8 dio ${v.toFixed(1)}, D-010 dice ~268`);
+caso("los vectores de D-010: N1=10, N2=16, N8=268, N9=429, N12=1759", () => {
+  // Los cinco que el criterio de F3 escribe con nombre y apellido. Redondeados
+  // como los escribe el criterio; la fórmula da decimales.
+  igual(valorDelItem(1), 10, "N1");
+  igual(valorDelItem(2), 16, "N2");
+  igual(Math.round(valorDelItem(8)), 268, "N8");
+  igual(Math.round(valorDelItem(9)), 429, "N9");
+  igual(Math.round(valorDelItem(12)), 1759, "N12");
 });
 
 caso("un nivel 8 vale como ~30 sumas de nivel 1 — ninguna estrategia domina", () => {
@@ -64,10 +67,35 @@ caso("un nivel 8 vale como ~30 sumas de nivel 1 — ninguna estrategia domina", 
   if (razon < 25 || razon > 32) throw new Error(`razón ${razon.toFixed(1)}, D-010 dice ~30`);
 });
 
-caso("fuera de la escalera 1..10 de D-017, lanza", () => {
+caso("la escalera de D-017 son DOCE niveles, no diez", () => {
+  // Este caso empezó afirmando 1..10 y estaba mal: rechazaba N11 y N12, que son
+  // exactamente los de PRO según D-017. El criterio de F3 lo cazó al listar
+  // N12 = 1,759 como vector. La prueba codificaba el error, no la decisión.
+  if (NIVEL_MAXIMO !== 12) throw new Error(`NIVEL_MAXIMO es ${NIVEL_MAXIMO}, D-017 dice 12`);
+  valorDelItem(11);
+  valorDelItem(12);
   lanza(() => valorDelItem(0), "escalera");
-  lanza(() => valorDelItem(11), "escalera");
+  lanza(() => valorDelItem(13), "escalera");
   lanza(() => valorDelItem(2.5), "escalera");
+});
+
+caso("cada banda cubre los niveles que le da D-017, y se traslapan a propósito", () => {
+  const esperado = {
+    KINDER: [1, 3], PRIMARIA: [3, 6], SECUNDARIA: [6, 8],
+    SERIO: [8, 10], JR: [11, 12], PRO: [11, 12],
+  };
+  for (const [banda, [min, max]] of Object.entries(esperado)) {
+    const r = NIVELES_POR_BANDA[banda];
+    if (r.min !== min || r.max !== max) {
+      throw new Error(`${banda}: N${r.min}–N${r.max}, D-017 dice N${min}–N${max}`);
+    }
+  }
+  // El traslape es la decisión, no un descuido: un niño de 7 años puede estar
+  // en N3 igual que uno de 6, porque la banda es el tema visual y el nivel la
+  // dificultad, y D-017 los mueve por separado.
+  if (NIVELES_POR_BANDA.KINDER.max !== NIVELES_POR_BANDA.PRIMARIA.min) {
+    throw new Error("KINDER y PRIMARIA dejaron de traslaparse en N3");
+  }
 });
 
 // --- Kinder: solo precisión (D-024) ----------------------------------------

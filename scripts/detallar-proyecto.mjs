@@ -887,6 +887,41 @@ como bloqueante y tiene razón: son incompatibles.
 curar la franja adulta como series igual que F5, o **enmendar D-018
 explícitamente** — no dejar la renuncia escondida en el plan como si fuera una
 característica neutral de costo.
+
+### Criterios de aceptación
+- [ ] **La contradicción de la serie, resuelta por escrito y con fecha.** El plan
+  dice "sin curaduría por serie" y D-018 dice que la serie es la unidad de diseño;
+  son incompatibles y \`pedagogia\` lo marcó bloqueante. Se cierra **o** curando la
+  franja como series igual que F5, **o** enmendando D-018 con su razón — nunca
+  dejando la renuncia escondida en el plan como si fuera un ahorro neutral. Es
+  decisión del dueño, no de quien implementa, y **bloquea todo lo demás de F5b**
+- [ ] **~150 ítems N8-N10, y un auditor que impida que crezca.** D-034 dice "es
+  una franja, no una banda". Sin algo que lo mida, "mínima" se convierte en una
+  segunda banda completa y F5 pierde el foco: el auditor falla por encima de 200
+  y el número queda escrito, no supuesto
+- [ ] **Una sola autoría, siete renders de notación — nunca siete autorías.** Es
+  el criterio que hace asequible la franja (D-034) y **el primer lugar donde el
+  proyecto cobra** haber guardado el ítem como estructura y no como texto. Se
+  comprueba: cada ítem adulto tiene UNA \`enunciado.clave\` y sus números se
+  renderizan con \`MATH_CONVENTIONS\` en los 7 — punto contra coma decimal,
+  \`:\` contra \`÷\`, y el formato de intervalo. Un ítem con texto por locale
+  bloquea
+- [ ] **Sin Sabana, sin modo historia, sin serie curada** (barandales de D-034).
+  Un auditor falla si un ítem de N8-N10 referencia un lugar de la Sabana, usa el
+  reto \`HISTORIA\` o entra en una serie curada. La Sabana es de kinder
+- [ ] **Sin ubicación adaptativa propia** más allá de la que da F4. La franja usa
+  el mismo motor; no se le escribe uno "para adultos"
+- [ ] **La proporción de plantilla se MIDE, no se supone.** \`mc-40\` documenta que
+  baja conforme sube el nivel: lo que en kinder es ~40% paramétrico, en N8-N10
+  ronda mucho menos. Se cuenta cuántos ítems salieron de plantilla y cuántos a
+  mano, y el número se publica — si la plantilla no da de sí, el costo de autoría
+  real aparece antes de comprometer la fecha
+- [ ] **Todo ítem pasa \`validarItem\`**: errores con causa nombrada, propósito de
+  los cinco de Swan, variación con sus tres campos. Los mismos que kinder — un
+  adulto también merece que Larry sepa QUÉ error cometió
+- [ ] **El MVP no depende de esto.** D-034 lo dice: "MVP terminado" sigue anclado
+  en que kinder esté completo. Un criterio de F5b que bloquee el lanzamiento es
+  una violación de la propia decisión que creó la fase
 `),
   "F6": D(`
 **Vía:** Producto · **Depende de:** F3, F5

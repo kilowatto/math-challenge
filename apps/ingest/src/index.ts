@@ -15,6 +15,7 @@
  */
 
 import { WorkerEntrypoint } from "cloudflare:workers";
+import { calificar, pareceImposible, type Veredicto } from "../../../packages/motor/src/puntuacion";
 
 interface Env {
   DB: D1Database;
@@ -28,6 +29,8 @@ export interface AttemptInput {
   skillId: string;
   /** 1 o 0. La regla de kinder es `valor · acc`, sin tiempo (D-024). */
   correct: 0 | 1;
+  /** 1 a 10, la escalera de D-017. Fija el valor del ítem: 10 × 1.6^(nivel−1). */
+  level: number;
   /** Milisegundos medidos EN EL SERVIDOR, nunca reportados por el cliente. */
   responseTimeMs: number;
   themeBand: "KINDER" | "PRIMARIA" | "SECUNDARIA" | "SERIO" | "JR" | "PRO";
@@ -55,18 +58,64 @@ export class Ingest extends WorkerEntrypoint<Env> {
   }
 
   /**
-   * F3 implementará esto de verdad. Se deja declarado y lanzando para que la
-   * forma del contrato quede fijada desde F0 y nadie invente otra.
+   * Registra un intento y devuelve el veredicto. F3.
    *
-   * Cuando se implemente, tres reglas que ya están decididas:
-   *   · El servidor cronometra y califica. Un puntaje calculado en el cliente y
-   *     sincronizado después es el vector de trampa más obvio (mc-33 impl. 7).
-   *   · El intento crudo va a ATTEMPTS_AE, jamás a D1 (mc-32 riesgo #1).
-   *   · Kinder usa `valor_del_ítem · acc`, sin tiempo. La regla HSHS con a=0
-   *     da cero para toda respuesta (D-024).
+   * Tres reglas que ya estaban decididas antes de escribir una línea:
+   *
+   *   · **El servidor califica.** Aquí no entra ningún puntaje: entra la
+   *     respuesta y el tiempo que el servidor midió. Un puntaje calculado en el
+   *     cliente y sincronizado después es el vector de trampa más obvio que
+   *     tiene un producto con tablero (mc-33 impl. 7, D-025).
+   *   · **El intento crudo va a ATTEMPTS_AE, jamás a D1.** Una fila por intento
+   *     en D1 es el único límite de esta arquitectura que se alcanza por error
+   *     de diseño y no por crecimiento (mc-32 riesgo #1). `audits/no-attempts-in-d1.mjs`
+   *     bloquea el commit si aparece una tabla por intento.
+   *   · **Kinder no ve el tiempo.** `calificar()` lanza si le llega, así que la
+   *     regla no depende de que nadie se despiste aquí (D-024, D-045).
    */
-  async recordAttempt(_input: AttemptInput): Promise<never> {
-    throw new Error("recordAttempt se implementa en F3 (motor de reto)");
+  async recordAttempt(input: AttemptInput): Promise<Veredicto & { imposible: boolean }> {
+    // Kinder no puede recibir tiempo. Se corta ANTES de llamar al motor para que
+    // el error diga de dónde vino, en vez de salir del módulo puro sin contexto.
+    const esKinder = input.themeBand === "KINDER";
+
+    const veredicto = calificar(
+      esKinder
+        ? { banda: input.themeBand, nivel: input.level, acc: input.correct }
+        : {
+            banda: input.themeBand,
+            nivel: input.level,
+            acc: input.correct,
+            rtMs: input.responseTimeMs,
+          },
+    );
+
+    // El piso de tiempo es SOLO bitácora (mc-29 impl. 3). No resta, no bloquea y
+    // no le dice nada al niño — la línea roja #7 es explícita en que Larry no
+    // avergüenza. Se guarda para que alguien pueda mirar patrones después.
+    const imposible = esKinder ? false : pareceImposible(input.responseTimeMs);
+
+    this.env.ATTEMPTS_AE.writeDataPoint({
+      // Los índices son por lo que se agrupa. El perfil del niño NO va aquí: es
+      // el campo de mayor cardinalidad y el que convierte una métrica en un
+      // perfilamiento de menor (D-020, mc-25).
+      indexes: [input.skillId],
+      blobs: [
+        input.itemId,
+        input.skillId,
+        input.themeBand,
+        input.locale,
+        veredicto.regla,
+        imposible ? "piso" : "",
+      ],
+      doubles: [
+        input.correct,
+        esKinder ? 0 : input.responseTimeMs,
+        veredicto.puntos,
+        input.level,
+      ],
+    });
+
+    return { ...veredicto, imposible };
   }
 
   /** Sin ruta pública: cualquier petición directa se rechaza. */

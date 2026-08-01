@@ -77,6 +77,26 @@ for (const [name, what, enforces] of ACTIVE) {
   if (r.status !== 0) failed++;
 }
 
+// --- Casos del motor de puntuación (F3) ----------------------------------
+//
+// No es un auditor: es la prueba de la fórmula de D-010 y D-024. Corre aquí
+// porque el fallo que previene es del mismo tipo que el que previenen los
+// auditores — un signo invertido en `(2·acc − 1)` no rompe nada, produce un
+// tablero injusto que nadie nota hasta que un niño pregunta por qué su hermano
+// tiene más puntos con menos aciertos.
+//
+// `--experimental-strip-types` porque el motor es TypeScript y la prueba es
+// JavaScript: se ejecuta el MISMO archivo que se despliega, no una copia
+// compilada que podría diferir.
+{
+  const r = spawnSync(
+    "node",
+    ["--experimental-strip-types", "--no-warnings", "packages/motor/src/puntuacion.prueba.mjs"],
+    { stdio: "inherit" },
+  );
+  if (r.status !== 0) failed++;
+}
+
 console.log(`\n── pendientes de fase ──`);
 for (const [name, what, when] of PENDING) {
   console.log(`  ○ ${name.padEnd(18)} ${what}`);

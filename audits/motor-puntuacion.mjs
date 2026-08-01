@@ -36,7 +36,10 @@ const fuentes = archivos(/\.(ts|tsx|js|jsx|mjs)$/).filter((f) => SOLO_PRODUCTO.t
 const problemas = [];
 const notas = [];
 
-const motores = fuentes.filter((f) => ES_EL_MOTOR.test(f));
+// El archivo de casos no es un motor aunque se llame `puntuacion.prueba.mjs`.
+// Contarlo hacía que el auditor informara "2 módulos de puntuación" cuando hay
+// uno, que es justo la cifra que este auditor existe para vigilar.
+const motores = fuentes.filter((f) => ES_EL_MOTOR.test(f) && !/\.prueba\./.test(f));
 const calculan = [];
 
 for (const archivo of fuentes) {

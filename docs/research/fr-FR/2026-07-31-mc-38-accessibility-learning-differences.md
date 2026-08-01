@@ -17,7 +17,7 @@ Math Challenge combines speed-scored gameplay, symbolic math rendering, ages 4�
 
 MathML Core is a W3C Candidate Recommendation Snapshot (24 June 2025) whose own text says the `alttext` attribute has no defined observable behavior [3] — MathML Core standardizes rendering, not accessible semantics, which instead comes from MathJax's accessibility extensions built on the Speech Rule Engine [11], plus screen readers with math support (JAWS 16+, VoiceOver) [12]. Dyscalculia affects 3–6% of people [4], has no consensus diagnostic criterion, and its best-evidenced interventions — concrete manipulatives, computerized number-line training, adaptive drills — are close to what Math Challenge already builds [4]. Evidence for dyslexia-specific fonts is weak-to-negative; the British Dyslexia Association recommends ordinary sans-serif fonts instead [5]. Legally, the EU European Accessibility Act has applied since 28 June 2025 to consumer products/services including e-commerce [7], EN 301 549 (embedding WCAG 2.1 in full) is its technical backbone [9], and the 2024 US ADA Title II rule requires WCAG 2.1 AA for state/local government sites and apps — including public schools — by 2027/2028 [6], which will surface in school-district procurement even though it does not bind Math Challenge directly.
 
-## Findings
+## Constatations
 
 ### 1. WCAG 2.2 : les nouveaux critères qui frappent le plus fort ici
 

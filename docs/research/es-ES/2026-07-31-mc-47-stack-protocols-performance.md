@@ -5,8 +5,8 @@
 ## Resumen ejecutivo (ES)
 
 - **gRPC no es viable aquí, y no por falta de ganas.** Workers y Durable Objects **no pueden hacer llamadas gRPC salientes** porque el runtime no soporta streaming bidireccional HTTP/2; hay una incidencia abierta en `cloudflare/workerd` pidiéndolo [1].
-- **Y el navegador tampoco habla gRPC.** El cliente web implementa un protocolo distinto al gRPC nativo: los navegadores no exponen las funciones de HTTP/2 que gRPC necesita, así que gRPC-Web usa HTTP/1.1 — «lo cual cancela algunas de las ventajas de usar gRPC» — y **no soporta llamadas con streaming de cliente ni bidireccionales** [2][3].
-- **El RPC nativo de Workers gana por arquitectura, no por poco.** Con Service Bindings «no hay sobrecarga ni latencia añadida», y el Worker llamado «normalmente ni siquiera cruza una red, y suele ejecutarse en el mismo hilo que quien lo llama, reduciendo la latencia a cero» [4][5].
+- **Y el navegador tampoco habla gRPC.** El cliente web implementa un protocolo distinto al gRPC nativo: los navegadores no exponen las funciones de HTTP/2 que gRPC necesita, así que gRPC-Web usa HTTP/1.1 — *"which cancels out some of the advantages of using gRPC"* — y **no soporta llamadas con streaming de cliente ni bidireccionales** [2][3].
+- **El RPC nativo de Workers gana por arquitectura, no por poco.** Con Service Bindings *"there is zero overhead or added latency"*, y el Worker llamado *"usually does not even cross a network, and usually runs in the very same thread as the caller, reducing latency to zero"* [4][5].
 - **HTTP/3 sobre QUIC es un interruptor, no un proyecto.** Está disponible en todos los planes de Cloudflare y se activa desde la configuración de optimización de protocolo [6][7].
 - **El número que importa para redes malas:** en conexiones con 1‑3 % de pérdida de paquetes —el móvil real— HTTP/3 da **10‑30 % de mejora en tiempo de carga**, porque la recuperación de pérdida por stream evita que un solo paquete perdido atore la página entera [8].
 - Con **0‑RTT** para visitantes recurrentes el ahorro puede **superar los 300 ms**, suficiente para mover una página de «necesita mejorar» a «bueno» en Core Web Vitals [8].
@@ -17,16 +17,16 @@
 
 ## Executive summary (EN)
 
-- **gRPC no es viable aquí.** Workers y Durable Objects **no pueden realizar llamadas gRPC salientes** porque el runtime no dispone de streaming bidireccional HTTP/2; una incidencia abierta en `cloudflare/workerd` lo sigue [1].
-- **Los navegadores tampoco hablan gRPC.** El cliente web implementa un protocolo distinto al gRPC nativo: los navegadores no exponen las funciones HTTP/2 que gRPC necesita, por lo que gRPC-Web recurre a HTTP/1.1 — «lo que anula algunas de las ventajas de usar gRPC» — y **no admite streaming de cliente ni llamadas bidireccionales** [2][3].
-- **El RPC nativo de los Workers gana por arquitectura.** Con Service Bindings «no hay sobrecarga ni latencia añadida», y el llamado «normalmente ni siquiera cruza una red, y suele ejecutarse en el mismo hilo que quien lo llama, reduciendo la latencia a cero» [4][5].
-- **HTTP/3 sobre QUIC es un conmutador, no un proyecto** — disponible en todos los planes de Cloudflare [6][7].
-- **El número que importa para redes deficientes:** en conexiones con 1‑3 % de pérdida de paquetes, HTTP/3 ofrece **10‑30 % de mejora en la carga de la página**, porque la recuperación de pérdida por stream impide que un solo paquete perdido bloquee todo [8]. Con **0‑RTT**, el ahorro puede **superar los 300 ms** [8].
-- **INP es la que falla.** El 43 % de los sitios no supera el umbral de 200 ms; es la métrica más difícil de 2026 porque mide **todas** las interacciones [9].
-- **Google se basa en datos de campo, no de laboratorio** [9]. AVIF/WebP reducen los archivos entre un 25‑50 % [9].
-- Implicación principal: la vanguardia **en esta plataforma** es RPC nativo + HTTP/3 + un presupuesto estricto de INP — no gRPC.
+- **gRPC is not viable here.** Workers and Durable Objects **cannot make outbound gRPC calls** because the runtime lacks HTTP/2 bidirectional streaming; an open `cloudflare/workerd` issue tracks it [1].
+- **Browsers don't speak gRPC either.** The web client implements a different protocol from native gRPC: browsers don't expose the HTTP/2 features gRPC needs, so gRPC-Web falls back to HTTP/1.1 — *"which cancels out some of the advantages of using gRPC"* — and **does not support client-streaming or bidirectional calls** [2][3].
+- **Workers' native RPC wins on architecture.** With Service Bindings *"there is zero overhead or added latency"*, and the callee *"usually does not even cross a network, and usually runs in the very same thread as the caller, reducing latency to zero"* [4][5].
+- **HTTP/3 over QUIC is a toggle, not a project** — available on all Cloudflare plans [6][7].
+- **The number that matters for bad networks:** on 1-3% packet-loss connections, HTTP/3 delivers **10-30% page-load improvement**, because per-stream loss recovery stops one dropped packet from stalling everything [8]. With **0-RTT**, savings can **exceed 300 ms** [8].
+- **INP is the one that fails.** 43% of sites miss the 200 ms threshold; it is 2026's hardest vital because it measures **every** interaction [9].
+- **Google ranks on field data, not lab data** [9]. AVIF/WebP cut files 25-50% [9].
+- Core implication: the leading edge **on this platform** is native RPC + HTTP/3 + a hard INP budget — not gRPC.
 
-## Findings
+## Hallazgos
 
 ### 1. Por qué gRPC no entra
 
@@ -34,7 +34,7 @@ Tres hechos independientes, cada uno suficiente por sí solo.
 
 **Del lado del servidor.** El issue `cloudflare/workerd#6455` documenta que Workers y Durable Objects no pueden hacer llamadas gRPC salientes porque el runtime no soporta streaming bidireccional HTTP/2; el propio issue señala que incluso soportar solo gRPC unario —un POST HTTP/2 con cuerpo protobuf más trailers— desbloquearía la mayoría de los casos de uso, y todavía no existe [1].
 
-**Del lado del navegador.** Esto no es una limitación de Cloudflare sino del protocolo: la biblioteca cliente web *implementa un protocolo distinto al gRPC nativo* precisamente porque los navegadores no exponen las funciones de HTTP/2 que gRPC requiere [3]. En consecuencia gRPC-Web usa HTTP/1.1, *«lo cual cancela algunas de las ventajas de usar gRPC»*, y **el streaming de cliente y el bidireccional quedan fuera de alcance** [2].
+**Del lado del navegador.** Esto no es una limitación de Cloudflare sino del protocolo: la biblioteca cliente web *implementa un protocolo distinto al gRPC nativo* precisamente porque los navegadores no exponen las funciones de HTTP/2 que gRPC requiere [3]. En consecuencia gRPC-Web usa HTTP/1.1, *"which cancels out some of the advantages of using gRPC"*, y **el streaming de cliente y el bidireccional quedan fuera de alcance** [2].
 
 **Del lado de la infraestructura intermedia.** Cloudflare documenta en su propio blog que los trailers de HTTP —que gRPC necesita para el estado— *no estaban plenamente soportados* por su proxy de borde, y hay informes de cuerpos y trailers de gRPC siendo removidos a través de túneles incluso con TLS+ALPN+h2 en el origen [10][11].
 
@@ -42,7 +42,7 @@ Tres hechos independientes, cada uno suficiente por sí solo.
 
 ### 2. Lo que sí es la vanguardia en esta plataforma
 
-Cloudflare tiene RPC nativo de JavaScript sobre Service Bindings, diseñado para *«sentirse lo más parecido posible a llamar una función JavaScript dentro del mismo Worker»* [4]. Su característica de rendimiento no admite comparación con ninguna arquitectura de red: *«no hay sobrecarga ni latencia añadida. Por defecto, ambos Workers corren en el mismo hilo del mismo servidor de Cloudflare»*, y el RPC hacia otro Worker *«normalmente ni siquiera cruza una red»* [4][5].
+Cloudflare tiene RPC nativo de JavaScript sobre Service Bindings, diseñado para *«sentirse lo más parecido posible a llamar una función JavaScript dentro del mismo Worker»* [4]. Su característica de rendimiento no admite comparación con ninguna arquitectura de red: *«no hay sobrecarga ni latencia añadida. Por defecto, ambos Workers corren en el mismo hilo del mismo servidor de Cloudflare»*, y el RPC hacia otro Worker *"usually does not even cross a network"* [4][5].
 
 Un RPC que no cruza la red no puede ser superado por un RPC que sí la cruza, por eficiente que sea su serialización. Esa es toda la comparación.
 
@@ -97,7 +97,7 @@ Total: **35**.
 
 **Riesgo conocido, dicho de frente:** 23 auditores con LLM por PR tienen un **coste por PR** y una tasa de falsos positivos. La mitigación es que solo los deterministas bloquean por defecto, y los adversariales bloquean únicamente cuando citan una línea roja o una decisión explícita; el resto reporta sin bloquear.
 
-## Design implications
+## Implicaciones de diseño
 
 1. **Nada de gRPC ni gRPC‑Web.** RPC nativo de Workers sobre Service Bindings para todo lo interno (§1, §2).  
 2. **HTTP/3 verificado, no asumido**, incluyendo 0‑RTT para recurrentes; es configuración, y hay que confirmar que está activo antes de reclamarlo (§3).  
@@ -110,14 +110,14 @@ Total: **35**.
 9. **35 auditores, con las dos reglas de §7**: citar la decisión que hacen cumplir, y anulación por escrito.  
 10. **Solo los deterministas bloquean por defecto**; los adversariales bloquean solo al citar una línea roja o una decisión explícita (§7).
 
-## Open questions for the project owner
+## Preguntas abiertas para el dueño del proyecto
 
 1. ¿Qué se hace cuando un auditor adversarial y otro se contradicen — por ejemplo, rendimiento pidiendo menos JavaScript y accesibilidad pidiendo más lógica de foco? ¿Hay un orden de precedencia escrito?  
 2. ¿Los 23 auditores con LLM corren en cada PR o solo en los que tocan rutas sensibles? El **coste por PR** y el tiempo de espera cambian mucho.  
 3. ¿El presupuesto de INP de 150 ms se mide en qué dispositivo de referencia? `mc-33` propone un Android de gama media sobre 3G lento; hay que fijarlo o el presupuesto no es comprobable.  
 4. ¿La interfaz adaptativa incluye Windows y macOS desde el inicio, o solo móvil en v1?
 
-## Sources
+## Fuentes
 
 1. GitHub, `cloudflare/workerd` issue #6455 — "Support HTTP/2 bidirectional streaming (gRPC) in Workers/Durable Objects" — https://github.com/cloudflare/workerd/issues/6455  
 2. GitHub, `cloudflare/workerd` issue #3150 — "[Question] gRPC/gRPC-web (+streaming) support for Cloudflare Workers" — https://github.com/cloudflare/workerd/issues/3150  

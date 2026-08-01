@@ -69,7 +69,7 @@ Vorgeschlagene Bänder über der Oberstufe, jedes mit konkreten Themen und – e
 
 6. **Band U6 — Kombinatorik & Zahlentheorie (olympiadisch).** Themen: Schubfachprinzip, Invarianten, modulare Arithmetik, erzeugende Funktionen, extremale Kombinatorik — direkt modelliert nach Engels Taxonomie und AoPS/WOOT‑Struktur [8][10]. Automatische Bewertung: dieses Band passt am besten zum bestehenden Modell von Math Challenge — nahezu alle Aufgaben besitzen eine **einzige numerische oder geschlossene Endantwort**, exakt wie AMC/AIME/Putnam‑Stil Lückentexte, sodass keine neue Bewertungsmechanik über das bereits vorhandene Ladder‑System hinaus nötig ist.
 
-7. **Band G1 — Topologie.** Themen: metrische/topologische Räume, Kompaktheit, Zusammenhang, Stetigkeit, Grundlagen der Fundamentalgruppe. Automatische Bewertung: Multiple‑Choice („ist dieser Raum kompakt — Ja/Nein, wähle die überdeckende Menge, die scheitert“), Wahr/Falsch mit Auswahl einer Begründung (wähle die von vier Kandidaten gültige Begründung), da offene topologische Beweise ohne Formalisierung nicht mechanisch prüfbar sind.
+7. **Band G1 — Topologie.** Themen: metrische/topologische Räume, Kompaktheit, Zusammenhang, Stetigkeit, Grundlagen der Fundamentalgruppe. Automatische Bewertung: Multiple‑Choice („ist dieser Raum kompakt — Ja/Nein, wähle die überdeckende Menge, die scheitert“), Wahr/Falsch mit Auswahl einer Begründung (wähle die von 4 Kandidaten gültige Begründung), da offene topologische Beweise ohne Formalisierung nicht mechanisch prüfbar sind.
 
 8. **Band G2 — Maßtheorie & fortgeschrittene reelle Analysis.** Themen: σ‑Algebren, Lebesgue‑Maß, messbare Funktionen, L^p‑Räume, dominierter Konvergenzsatz. Automatische Bewertung: überwiegend numerisch (berechne ein Lebesgue‑Integral, bestimme, ob eine Funktion zu L^p gehört) plus Multiple‑Choice, welcher Konvergenzsatz auf ein gegebenes Szenario zutrifft — eine nahezu direkte Abbildung des Qualifikations‑Syllabus für reelle Analysis an der Harvard‑Universität [13].
 
@@ -84,3 +84,40 @@ Vorgeschlagene Bänder über der Oberstufe, jedes mit konkreten Themen und – e
 13. **Explizit nicht zulässig: freiformige, natürliche‑sprachliche Beweisbewertung durch KI als bewertete (nicht tutorielle) Mechanik.** Angesichts der ~52‑54 % blinden Bewertungs‑Übereinstimmung von IMO‑GradingBench mit menschlichen Juroren selbst bei Frontier‑Modellen 2025‑2026 [22] sollte Math Challenge **keine** Funktion bereitstellen, die studentisch geschriebene Prosa‑Beweise allein durch LLM‑Urteil mit Pass/Fail oder numerischer Punktzahl bewertet. Es ist jedoch angemessen, dass das bestehende „KI‑Tutor‑Feedback nach jeder Herausforderung“ qualitative, nicht‑bewertende Kommentare zu einem eingereichten Beweisskizze liefert (dies ist ein Coaching‑Feature, keine benotete Bewertung, sodass ein falsches oder übermütiges Urteil ein UX‑Qualitätsproblem, aber kein Integritätsproblem der Bewertung darstellt) — diese Unterscheidung (Feedback vs. Score) ist genau das, was die PhD‑Modus‑Bänder ehrlich darüber hält, was „automatisch bewertbar“ bedeutet.
 
 14. **Querschnitts‑Mechanismus: Übernahme von RefGraders Kernidee — immer gegen eine Referenz bewerten, nie blind — für jede KI‑unterstützte Bewertung im PhD‑Modus.** Da referenzbasierte agentische Bewertung nachweislich blindes Bewerten übertrifft [22][27], sollte jeder Ort, an dem der Tutor offenes Schließen evaluiert (nicht nur der oben genannte No‑Go‑Fall), stets die kanonische Lösung/Rubrik als Kontext erhalten und niemals ein Beweis ohne Referenz beurteilt werden.
+
+## Offene Fragen für den Projektinhaber
+
+1. Sollte der „PhD-Modus“ den Lean-geprüften Capstone-Track (Punkt 12) trotz seiner Erstellungskosten enthalten, oder ganz bei numerischen/Multiple-Choice-/Gegenbeispiel-Formaten bleiben?
+2. Ist eine reine Coaching-Durchsicht (nicht bewertet) von KI-Beweisskizzen für die oberen Bänder akzeptabel, oder muss jede Herausforderung eine harte Bestanden/Nicht-bestanden-Bewertung liefern?
+3. Sollten die Bandgrenzen strikt den MSC-Top-Level-Codes folgen (für ein Feature „nach MSC-Bereich durchsuchen“), oder um den Kern der PhD-Qualifikationsprüfung herum organisiert bleiben (der enger und pädagogisch üblicher ist)?
+4. Besteht Interesse daran, eine bestehende CAS-gestützte Engine zu lizenzieren/integrieren (STACKs Maxima-Pipeline ist Open-Source und Moodle-nativ), statt numerische/symbolische Äquivalenzprüfung von Grund auf neu zu bauen?
+
+## Quellen
+
+1. ERIC ED502664 — Inquiry Based Learning: A Modified Moore Method Approach — https://eric.ed.gov/?id=ED502664
+2. MAA Mathematical Communication — Moore Method & Inquiry-Based Learning — https://mathcomm.org/courses/modified-moore-method/
+3. Selden & Selden, "Validation of Proofs as a Type of Reading and Sense-Making," Tennessee Tech Math Dept Technical Report TR-2015-4 — https://www.tntech.edu/cas/pdf/math/techreports/TR-2015-4.pdf
+4. "Effective Proof Reading Strategies for Comprehending Mathematical Proofs," Intl. Journal of Research in Undergraduate Mathematics Education (Springer) — https://link.springer.com/article/10.1007/s40753-015-0011-0
+5. "Overcoming Students' Difficulties in Learning to Understand and Construct Proofs," ERIC ED518604 — https://files.eric.ed.gov/fulltext/ED518604.pdf
+6. "Mathematics students talking past each other: ... uniqueness quantification," ZDM Mathematics Education (Springer) — https://link.springer.com/article/10.1007/s11858-019-01099-9
+7. Pólyas Vierstufen-Problemlösungsmethode – Übersicht — https://www.henrikbachmann.com/uploads/7/7/6/3/77634444/polya4steps_numirai2021.pdf
+8. Art of Problem Solving — offizielle Website und WOOT — https://artofproblemsolving.com/ und https://artofproblemsolving.com/woot
+9. Putnam-Vorbereitung (Stanford) — https://web.stanford.edu/~cm5/putnam.html
+10. Arthur Engel, "Problem-Solving Strategies" (Springer) — Literaturangabe — https://www.abebooks.com/Problem-Solving-Strategies-Arthur-Engel-Springer-New/8836405588/bd
+11. Putnam and Polya Problem-Solving Seminars (Stanford) — http://math.stanford.edu/~vakil/putnam07/
+12. Putnam-Bewertungsskala / „Gap of Death“ — Think Academy Education Briefs — https://www.thethinkacademy.com/blog/edubriefs-what-is-the-putnam-competition-a-guide-for-k12-families/
+13. Harvard Mathematics Department — The Qualifying Exam Syllabus — https://www.math.harvard.edu/graduate/study-the-qualifying-exam/the-qualifying-exam-syllabus/
+14. TCU Practice for Math PhD Prelims — https://faculty.tcu.edu/richardson/Prelims/
+15. MSC2020 — offizielle Website — https://msc2020.org/
+16. Wikipedia — Mathematics Subject Classification — https://en.wikipedia.org/wiki/Mathematics_Subject_Classification
+17. STACK — About — https://stack-assessment.org/About/
+18. STACK question type — MoodleDocs — https://docs.moodle.org/502/en/STACK_question_type
+19. WeBWorK — Wikipedia — https://en.wikipedia.org/wiki/WeBWorK
+20. Natural Number Game (Imperial College London), GitHub — https://github.com/ImperialCollegeLondon/natural_number_game
+21. Learning Lean 4 (Lean-Community, inkl. Mathematics in Lean) — https://leanprover-community.github.io/learn.html
+22. IMO-GradingBench – Zusammenfassung — EmergentMind — https://www.emergentmind.com/topics/imo-gradingbench
+23. USAMO 2003 Recommended Marking Scheme (Evan Chen) — https://web.evanchen.cc/upload/usamo-2003-rubric.pdf
+24. MathArena — IMO Blogpost — https://matharena.ai/imo/
+25. SymPy-Dokumentation — Gotchas and Pitfalls (Ausdrucksgleichheit vs. Äquivalenz) — https://docs.sympy.org/latest/explanation/gotchas.html
+26. LeanTutor: Towards a Verified AI Mathematical Proof Tutor (arXiv 2506.08321) — https://arxiv.org/html/2506.08321v2
+27. RefGrader: Automated Grading of Mathematical Competition Proofs using Agentic Workflows (arXiv 2510.09021) — https://arxiv.org/pdf/2510.09021

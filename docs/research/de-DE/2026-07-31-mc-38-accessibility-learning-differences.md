@@ -4,24 +4,24 @@
 
 ## Zusammenfassung (ES)
 
-- WCAG 2,2 fügt Anforderungen hinzu, die ein taktiles, zeitgesteuertes und altersübergreifendes Spiel voll berühren: **2.5.8 Target Size (Minimum, AA)** verlangt Zielbereiche von ≥24×24 px CSS [1]; **2.5.7 Dragging Movements (AA)** verlangt eine nicht‑zieh‑Alternative [10]; **2.5.1 Pointer Gestures (A)** verlangt eine Ein‑Pointer‑Alternative für Mehrpunkt‑Gesten [8].
+- WCAG 2.2 fügt Anforderungen hinzu, die ein taktiles, zeitgesteuertes und altersübergreifendes Spiel voll berühren: **2.5.8 Target Size (Minimum, AA)** verlangt Zielbereiche von ≥24×24 px CSS [1]; **2.5.7 Dragging Movements (AA)** verlangt eine nicht‑zieh‑Alternative [10]; **2.5.1 Pointer Gestures (A)** verlangt eine Ein‑Pointer‑Alternative für Mehrpunkt‑Gesten [8].
 - Der zentrale Konflikt — Punktzahl nach Geschwindigkeit vs. **2.2.1 Timing Adjustable (A)** — wird folgendermaßen gelöst: die „Essential Exception“ deckt nur ein Zeitlimit ab, bei dem „eine Verlängerung die Aktivität ungültig machen würde“ [2]. Das rechtfertigt einen optionalen „Speed Challenge“-Modus, nicht den Standardmodus, weil eine vernünftige Alternative (ein Modus ohne Uhr) existiert.
 - MathML Core ist ein Candidate Recommendation Snapshot vom 24. Juni 2025 [3]; sein eigener Text besagt, dass `alttext` „kein beobachtbares Verhalten definiert“ — die barrierefreie Semantik von Formeln hängt von MathJax + Speech Rule Engine ab, nicht vom Kernstandard [3][11].
 - Dyskalkulie: 3–6 % der Bevölkerung [4], ohne konsensiertes Diagnosekriterium; beste Interventionen: konkrete Manipulative, computerisierte Zahlenstrahl‑Übungen (*The Number Race*, *Graphogame-math*) und adaptive Software (*Calcularis*, *Meister Cody*) [4].
 - Belege für spezielle Schriften bei Dyslexie (OpenDyslexic, Dyslexie) sind schwach bis negativ: Rello & Baeza‑Yates (2013) fanden keine Verbesserung der Lesegeschwindigkeit; eine Studie von 2016 zeigte eine Präferenz für Arial gegenüber „Dyslexie‑Schriften“; eine von 2023 ergab ästhetische Vorliebe, aber keinen Unterschied in den Ergebnissen [5].
-- Das Europäische Barrierefreiheitsgesetz verlangt die Einhaltung seit dem **28. Juni 2025**, einschließlich ausdrücklich des elektronischen Handels [7]; EN 301 549 (das die vollständige WCAG 2,1 integriert) ist seine technische Referenz [9]. Die US‑ADA‑Regel Titel II verlangt WCAG 2,1 AA für staatliche/kommunale Behörden — einschließlich öffentlicher Schulen — bis 2027/2028 [6].
+- Das Europäische Barrierefreiheitsgesetz verlangt die Einhaltung seit dem **28. Juni 2025**, einschließlich ausdrücklich des elektronischen Handels [7]; EN 301 549 (das die vollständige WCAG 2.1 integriert) ist seine technische Referenz [9]. Die US‑ADA‑Regel Titel II verlangt WCAG 2.1 AA für staatliche/kommunale Behörden — einschließlich öffentlicher Schulen — bis 2027/2028 [6].
 
 ## Zusammenfassung (EN)
 
-Math Challenge kombiniert ein nach Geschwindigkeit bewertetes Gameplay, symbolische mathematische Darstellung, Altersgruppen von 4 Jahren bis erwachsen, fünf Sprachen und Eingaben über Telefon/Tablet/Desktop — eine komplexere Barrierefreiheitslage als die meisten ein‑Ziel‑Apps. WCAG 2,2 fügt Kriterien hinzu, die direkt greifen: **2.5.8 Target Size (Minimum, AA)** verlangt Zielbereiche von ≥24×24 CSS‑px, mit vier engen Ausnahmen [1]; **2.5.7 Dragging Movements (AA)** verlangt eine nicht‑zieh‑Alternative für jede Zieh‑Mechanik [10]. Der tragende Konflikt ist **2.2.1 Timing Adjustable (A)** versus Geschwindigkeits‑Punktzahl; seine **Essential Exception** — „das Zeitlimit ist wesentlich und eine Verlängerung würde die Aktivität ungültig machen“ [2] — ist eng gefasst und deckt ein gamifiziertes Training nicht standardmäßig ab; die Lösung ist architektonisch (ein separater untimed‑Modus plus ein optionaler timed‑Modus), unten detailliert.
+Math Challenge kombiniert ein nach Geschwindigkeit bewertetes Gameplay, symbolische mathematische Darstellung, Altersgruppen von 4 Jahren bis erwachsen, fünf Sprachen und Eingaben über Telefon/Tablet/Desktop — eine komplexere Barrierefreiheitslage als die meisten ein‑Ziel‑Apps. WCAG 2.2 fügt Kriterien hinzu, die direkt greifen: **2.5.8 Target Size (Minimum, AA)** verlangt Zielbereiche von ≥24×24 CSS‑px, mit vier engen Ausnahmen [1]; **2.5.7 Dragging Movements (AA)** verlangt eine nicht‑zieh‑Alternative für jede Zieh‑Mechanik [10]. Der tragende Konflikt ist **2.2.1 Timing Adjustable (A)** versus Geschwindigkeits‑Punktzahl; seine **Essential Exception** — „das Zeitlimit ist wesentlich und eine Verlängerung würde die Aktivität ungültig machen“ [2] — ist eng gefasst und deckt ein gamifiziertes Training nicht standardmäßig ab; die Lösung ist architektonisch (ein separater untimed‑Modus plus ein optionaler timed‑Modus), unten detailliert.
 
-MathML Core ist ein W3C Candidate Recommendation Snapshot (24. Juni 2025), dessen eigener Text besagt, dass das Attribut `alttext` kein definiertes beobachtbares Verhalten hat [3] — MathML Core standardisiert die Darstellung, nicht die barrierefreie Semantik, die stattdessen aus den Barrierefreiheits‑Erweiterungen von MathJax, aufgebaut auf der Speech Rule Engine [11], sowie Screen‑Readern mit Mathematik‑Unterstützung (JAWS 16+, VoiceOver) [12] stammt. Dyskalkulie betrifft 3–6 % der Menschen [4], hat kein konsensiertes Diagnosekriterium, und die am besten belegten Interventionen — konkrete Manipulative, computerisiertes Zahlenstrahl‑Training, adaptive Übungen — entsprechen dem, was Math Challenge bereits bietet [4]. Evidenz für dyslexiespezifische Schriften ist schwach bis negativ; die British Dyslexia Association empfiehlt stattdessen gewöhnliche serifenlose Schriften [5]. Rechtlich gilt der EU European Accessibility Act seit dem 28. Juni 2025 für Verbraucherprodukte/Dienstleistungen einschließlich E‑Commerce [7]; EN 301 549 (das die vollständige WCAG 2,1 einbettet) ist sein technisches Rückgrat [9], und die US‑ADA‑Regel Title II von 2024 verlangt WCAG 2,1 AA für staatliche/kommunale Websites und Apps — einschließlich öffentlicher Schulen — bis 2027/2028 [6], was im Beschaffungsprozess von Schulbezirken auftauchen wird, obwohl es Math Challenge nicht direkt bindet.
+MathML Core ist ein W3C Candidate Recommendation Snapshot (24. Juni 2025), dessen eigener Text besagt, dass das Attribut `alttext` kein definiertes beobachtbares Verhalten hat [3] — MathML Core standardisiert die Darstellung, nicht die barrierefreie Semantik, die stattdessen aus den Barrierefreiheits‑Erweiterungen von MathJax, aufgebaut auf der Speech Rule Engine [11], sowie Screen‑Readern mit Mathematik‑Unterstützung (JAWS 16+, VoiceOver) [12] stammt. Dyskalkulie betrifft 3–6 % der Menschen [4], hat kein konsensiertes Diagnosekriterium, und die am besten belegten Interventionen — konkrete Manipulative, computerisiertes Zahlenstrahl‑Training, adaptive Übungen — entsprechen dem, was Math Challenge bereits bietet [4]. Evidenz für dyslexiespezifische Schriften ist schwach bis negativ; die British Dyslexia Association empfiehlt stattdessen gewöhnliche serifenlose Schriften [5]. Rechtlich gilt der EU European Accessibility Act seit dem 28. Juni 2025 für Verbraucherprodukte/Dienstleistungen einschließlich E‑Commerce [7]; EN 301 549 (das die vollständige WCAG 2.1 einbettet) ist sein technisches Rückgrat [9], und die US‑ADA‑Regel Title II von 2024 verlangt WCAG 2.1 AA für staatliche/kommunale Websites und Apps — einschließlich öffentlicher Schulen — bis 2027/2028 [6], was im Beschaffungsprozess von Schulbezirken auftauchen wird, obwohl es Math Challenge nicht direkt bindet.
 
 ## Ergebnisse
 
-### 1. WCAG 2,2: die neuen Kriterien, die hier am stärksten treffen
+### 1. WCAG 2.2: die neuen Kriterien, die hier am stärksten treffen
 
-WCAG 2,2 (Oktober 2023) fügte neun Success Criteria zu 2,1 hinzu. Am relevantesten für ein Touch‑First‑, Drag‑fähiges, zeitgesteuertes Mathematik‑Spiel:
+WCAG 2.2 (Oktober 2023) fügte neun Success Criteria zu 2,1 hinzu. Am relevantesten für ein Touch‑First‑, Drag‑fähiges, zeitgesteuertes Mathematik‑Spiel:
 
 - **2.5.8 Target Size (Minimum) — AA.** "The target for pointer input is at least 24 by 24 CSS pixels in size, except where: Equivalent... Inline... User Agent Control... Essential." [1] Eine Untergrenze, keine Obergrenze — die UI für Kinder unter 8 Jahren sollte deutlich darüber liegen.
 - **2.5.7 Dragging Movements — AA (new).** "Functionality that can be operated by dragging movements can also be operated by single pointer activations without dragging, unless dragging is essential." [10] Jede „Drag‑auf‑die‑Zahlenlinie“-Mechanik benötigt ein Tap‑to‑Place‑Äquivalent.
@@ -71,17 +71,17 @@ Rot‑Grün-Defizite (Protanopie, Deuteranopie) sind am häufigsten; Tritanopie 
 
 ### 11. Untertitel und Audio‑Alternativen
 
-Gesprochene Zahlen‑Eingabeaufforderungen, Tutorial‑Video und feierliche Audios benötigen synchronisierte Untertitel/Text‑Entsprechungen und einen stumm‑Schalter (der häufigste Anwendungsfall in Schulen und öffentlichen Einrichtungen) – Standard‑WCAG‑1.2.x‑Gebiet, im Vergleich zu den oben genannten schwierigeren Problemen relativ geringes Risiko.
+Gesprochene Zahlen‑Eingabeaufforderungen, Tutorial‑Video und feierliche Audios benötigen synchronisierte Untertitel/Text‑Entsprechungen und einen stumm‑Schalter (der häufigste Anwendungsfall in Schulen und öffentlichen Einrichtungen) – Standard-WCAG 1.2.x-Gebiet, im Vergleich zu den oben genannten schwierigeren Problemen relativ geringes Risiko.
 
 ### 12. Die rechtliche Ebene
 
 **EU European Accessibility Act (Directive 2019/882).** Verbindliche Einhaltung ab **28. Juni 2025**: „alle relevanten Produkte und Dienstleistungen, die auf dem EU‑Markt bereitgestellt werden, müssen nun den Barrierefreiheitsanforderungen entsprechen“ [7]. Der Anwendungsbereich schließt ausdrücklich persönliche Computergeräte, E‑Books und **E‑Commerce‑Dienste** [7] ein. Mikro‑Unternehmen (<10 Mitarbeiter, <€2 M Umsatz) sind ausgenommen [7]; die Konformität wird selbstzertifiziert, mit Strafen, die je nach Mitgliedstaat stark variieren [7]. **Wenn Math Challenge EU‑Abonnements verkauft, ist es plausibel als E‑Commerce‑Dienst im Anwendungsbereich** – die hier vorrangigste Rechtsfrage.
 
-**EN 301 549.** Der harmonisierte EU‑ICT‑Barrierefreiheitsstandard; v3.2.1 „enthält den vollständigen Text von WCAG 2,1“ [9] und ist die technische Referenz sowohl für die Web Accessibility Directive als auch für die EAA, erweitert über Websites hinaus auf mobile Apps und Telekom‑Dienste; Kanada hat ihn formell 2024 übernommen [9].
+**EN 301 549.** Der harmonisierte EU‑ICT‑Barrierefreiheitsstandard; v3.2.1 „enthält den vollständigen Text von WCAG 2.1“ [9] und ist die technische Referenz sowohl für die Web Accessibility Directive als auch für die EAA, erweitert über Websites hinaus auf mobile Apps und Telekom‑Dienste; Kanada hat ihn formell 2024 übernommen [9].
 
-**US ADA Title II (2024) / Section 508.** Verlangt von staatlichen/kommunalen Behörden – einschließlich öffentlicher Schulbezirke – die Einhaltung von **WCAG 2,1 AA** für Web‑/App‑Inhalte, Fristen **26. April 2027** (Einwohnerzahl ≥50 000) / **2028** (kleiner), mit fünf engen Inhaltsausnahmen [6]. Section 508 bindet zusätzlich die Beschaffung durch Bundesbehörden [21]. Math Challenge ist nicht direkt betroffen, aber Schulbezirks‑Käufer werden wahrscheinlich eine WCAG 2,1 AA‑Konformitätserklärung (VPAT) verlangen; die Umsetzung von WCAG 2,2 AA erfüllt beide Regime mit Spielraum.
+**US ADA Title II (2024) / Section 508.** Verlangt von staatlichen/kommunalen Behörden – einschließlich öffentlicher Schulbezirke – die Einhaltung von **WCAG 2.1 AA** für Web‑/App‑Inhalte, Fristen **26. April 2027** (Einwohnerzahl ≥50.000) / **2028** (kleiner), mit fünf engen Inhaltsausnahmen [6]. Section 508 bindet zusätzlich die Beschaffung durch Bundesbehörden [21]. Math Challenge ist nicht direkt betroffen, aber Schulbezirks‑Käufer werden wahrscheinlich eine WCAG 2.1 AA‑Konformitätserklärung (VPAT) verlangen; die Umsetzung von WCAG 2.2 AA erfüllt beide Regime mit Spielraum.
 
-## Konformitäts‑Checkliste – WCAG 2,2 AA‑Kriterien mit höchstem Risiko hier
+## Konformitäts‑Checkliste – WCAG 2.2 AA‑Kriterien mit höchstem Risiko hier
 
 | SC | Level | Risiko in Math Challenge | Design‑Regel |
 |---|---|---|---|
@@ -127,38 +127,38 @@ Keine der beiden sollte das alleinige Konformitätsargument für die Standard‑
 11. Vollständige Schalter‑/Tastatur‑Bedienbarkeit: sequentielle Fokusreihenfolge, sichtbarer, nicht verdeckter Fokusindikator, keine Interaktion, die Multi‑Touch oder präzise getimtes Tippen ohne Einzel‑Pointer‑Alternative erfordert [8].
 12. Untertitel/Text‑Entsprechung für jede gesprochene Eingabeaufforderung und jedes Anleitungsvideo; den gesamten Problemlösungs‑Loop standardmäßig stumm abschließbar machen.
 13. Den EU‑EAA bereits als verbindlich behandeln (Konformitätsdatum nach dem 28. Juni 2025), wenn an EU‑Verbraucher verkauft wird; jetzt eine VPAT‑ähnliche Selbstbewertung gegen EN 301 549 beauftragen [7][9].
-14. Intern WCAG 2,2 AA anstreben, ein striktes Superset, das die WCAG 2,1 AA‑Schwelle, die US‑Schulbezirke in der Beschaffung verlangen, bereits erfüllt [6].
+14. Intern WCAG 2.2 AA anstreben, ein striktes Superset, das die WCAG 2.1 AA‑Schwelle, die US‑Schulbezirke in der Beschaffung verlangen, bereits erfüllt [6].
 
 ## Offene Fragen für den Projektinhaber
 
 1. Verkauft Math Challenge heute physisch an Verbraucher in der EU oder innerhalb von 12 Monaten? Bestimmt, ob die EAA‑Konformität (seit dem 28. Juni 2025 fällig) bereits aktiv oder zukunftsgerichtet ist [7].
 2. Ist die öffentliche Bestenliste ein dauerhaftes Kernfeature oder lässt sie sich als optionaler Speed‑Challenge‑Modus umrahmen, wobei die Standard‑Uhr optional bleibt?
-3. Ist die Einführung in US‑Schulbezirken ein tatsächlicher Go‑to‑Market‑Kanal? Wenn ja, wird ein WCAG 2,1 AA‑VPAT zu einem Vertriebs‑Asset, nicht nur zur Konformität [6].
+3. Ist die Einführung in US‑Schulbezirken ein tatsächlicher Go‑to‑Market‑Kanal? Wenn ja, wird ein WCAG 2.1 AA‑VPAT zu einem Vertriebs‑Asset, nicht nur zur Konformität [6].
 4. Sollte Geometrie‑Inhalt nur auf strukturierte Texte/tastatur‑navigierbare Formen beschränkt werden, oder benötigt die ältere Zielgruppe wirklich interaktive Canvas/SVG‑Geometrie (was einen größeren Barrierefreiheits‑Aufwand erfordert)?
 5. Budget/Interesse an einer MathJax‑Klassen‑Barrierefreiheits‑Rendering‑Schicht (SRE‑basiertes Vorlesen) gegenüber einem leichteren Renderer wie reinem KaTeX mit schwächerer integrierter Tool‑Unterstützung?
 6. Den Reduce‑Motion/‑Sound‑Schalter beim Start ausliefern oder auf einen nachträglichen Barrierefreiheits‑Durchlauf verschieben, da er günstig, AAA‑nur und schützend für autistische/vestibuläre Nutzer ist [17][18]?
 
 ## Quellen
 
-1. W3C, WCAG 2,2, SC 2.5.8 Zielgröße (Minimum) — https://www.w3.org/TR/WCAG22/#target-size-minimum  
-2. W3C, WCAG 2,2, SC 2.2.1 Zeit einstellbar — https://www.w3.org/TR/WCAG22/#timing-adjustable  
+1. W3C, WCAG 2.2, SC 2.5.8 Zielgröße (Minimum) — https://www.w3.org/TR/WCAG22/#target-size-minimum  
+2. W3C, WCAG 2.2, SC 2.2.1 Zeit einstellbar — https://www.w3.org/TR/WCAG22/#timing-adjustable  
 3. W3C, MathML Core (Entwurf einer Kandidatenempfehlung, 24. Juni 2025) — https://www.w3.org/TR/mathml-core/  
 4. Wikipedia, "Dyscalculia" — https://en.wikipedia.org/wiki/Dyscalculia  
 5. Wikipedia, "OpenDyslexic" — https://en.wikipedia.org/wiki/OpenDyslexic  
 6. ADA.gov, "2024 Title II Regel für Barrierefreiheit von Web‑ und Mobilanwendungen" — https://www.ada.gov/resources/2024-03-08-web-rule/  
 7. Wikipedia, "European Accessibility Act" — https://en.wikipedia.org/wiki/European_Accessibility_Act  
-8. W3C, WCAG 2,2, SC 2.5.1 Zeigergesten / 2.5.2 Zeigercancelierung / 2.5.4 Bewegungsaktivierung — https://www.w3.org/TR/WCAG22/#pointer-gestures  
+8. W3C, WCAG 2.2, SC 2.5.1 Zeigergesten / 2.5.2 Zeigercancelierung / 2.5.4 Bewegungsaktivierung — https://www.w3.org/TR/WCAG22/#pointer-gestures  
 9. Wikipedia, "EN 301 549" — https://en.wikipedia.org/wiki/EN_301_549  
-10. W3C, WCAG 2,2, SC 2.5.7 Ziehbewegungen — https://www.w3.org/TR/WCAG22/#dragging-movements  
+10. W3C, WCAG 2.2, SC 2.5.7 Ziehbewegungen — https://www.w3.org/TR/WCAG22/#dragging-movements  
 11. MathJax Project, Übersicht über Barrierefreiheitsfunktionen — https://www.mathjax.org/#accessibility  
 12. Wikipedia, "MathML" (Unterstützung für Screenreader) — https://en.wikipedia.org/wiki/MathML  
-13. W3C, WCAG 2,2, SC 1.4.10 Umbruch — https://www.w3.org/TR/WCAG22/#reflow  
-14. W3C, WCAG 2,2, SC 1.4.1 Farbgebrauch — https://www.w3.org/TR/WCAG22/#use-of-color  
+13. W3C, WCAG 2.2, SC 1.4.10 Umbruch — https://www.w3.org/TR/WCAG22/#reflow  
+14. W3C, WCAG 2.2, SC 1.4.1 Farbgebrauch — https://www.w3.org/TR/WCAG22/#use-of-color  
 15. Wikipedia, "MathML" (Geschichte der Chromium-Implementierung) — https://en.wikipedia.org/wiki/MathML  
 16. W3C WAI, Übersicht über kognitive Barrierefreiheit — https://www.w3.org/WAI/cognitive/  
 17. MDN Web Docs, "prefers-reduced-motion" — https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion  
-18. W3C, WCAG 2,2, SC 2.3.3 Animation aus Interaktionen — https://www.w3.org/TR/WCAG22/#animation-from-interactions  
+18. W3C, WCAG 2.2, SC 2.3.3 Animation aus Interaktionen — https://www.w3.org/TR/WCAG22/#animation-from-interactions  
 19. Wikipedia, "Nemeth Braille" — https://en.wikipedia.org/wiki/Nemeth_Braille  
 20. WebAIM, "Visuelle Behinderungen: Farbenblindheit" — https://webaim.org/articles/visual/colorblind  
 21. Section508.gov, "Gesetze und Richtlinien" — https://www.section508.gov/manage/laws-and-policies/  
-22. W3C, WCAG 2,2 Schnellreferenz (neue Erfolgskriterien in 2,2) — https://www.w3.org/WAI/WCAG22/quickref/?versions=2.2
+22. W3C, WCAG 2.2 Schnellreferenz (neue Erfolgskriterien in 2,2) — https://www.w3.org/WAI/WCAG22/quickref/?versions=2.2

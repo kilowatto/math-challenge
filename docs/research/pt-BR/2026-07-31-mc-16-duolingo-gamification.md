@@ -106,7 +106,7 @@ Uma meta-análise de 2023 (*Educational Technology Research and Development*) co
 2. A severidade da quebra de sequência deve variar por faixa etária (mais branda para 4-7 anos) ou permanecer uma regra única para todas as idades?  
 3. As notificações push devem ficar desativadas por padrão em perfis geridos por crianças, exigindo opt-in apenas via conta de pai/mãe ou responsável?  
 4. Uma escada de liga semanal está no escopo para o lançamento, ou deve aguardar até que a base de usuários ativos por faixa etária/ano escolar seja grande o suficiente para coortes de matchmaking significativas?  
-5. O Math Challenge deve comprometer-se a re-medir métricas de engajamento a 60/90 dias desde o dia 1, dado o consenso da literatura de que resultados iniciais tendem a superestimar efeitos duradouros?  
+5. O Math Challenge deve comprometer-se a re-medir métricas de engajamento a 60/90 dias desde o primeiro dia, dado o consenso da literatura de que resultados iniciais tendem a superestimar efeitos duradouros?  
 
 ## Fontes
 

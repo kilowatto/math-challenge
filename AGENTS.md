@@ -1,10 +1,50 @@
-## Trabajo en curso — 2026-08-01
+## Estado real — 2026-08-01 (actualizado, no confiar en la tabla de §2 más abajo)
 
-**Sesión activa:** Claude Code (Sonnet 5), rama `content/traduccion-es-MX`, traduciendo
-`es-MX` directamente (Claude como traductor, no la cadena Workers AI de este
-archivo) vía agentes en paralelo, por instrucción directa del dueño en esta
-sesión. Si otra sesión ve esta nota y la rama sigue viva, hay traducción en
-curso — coordinar antes de tocar `docs/research/es-MX/`.
+**Los seis locales están 100% traducidos.** `node scripts/medir-traduccion.mjs`
+da 282/282 (47 × 6). La tabla de §2 y el «74 de 131» de §7 son de ANTES de la
+corrida del 2026-08-01 — quedan como registro histórico, no como estado
+actual. Reproduce con el comando de arriba antes de creer cualquier número de
+este archivo, incluido este.
+
+**Cómo se hizo, distinto de lo que dice §6 de aquí abajo:** no se usó
+`scripts/traducir-corpus.mjs` (la cadena Workers AI). Se tradujo con Claude
+directo — agentes en paralelo vía el `Agent`/`Workflow` de Claude Code, un
+lote de ~4 documentos por agente — por instrucción explícita del dueño en
+sesión, decisión que §5 más abajo ya deja anotada y confirmada. Si retomas la
+traducción de algo que falte, sigue este patrón, no el de §6.
+
+**Integridad:** `corpus-integridad.mjs` pasa en verde salvo un puñado de
+falsos positivos ya documentados y esperados por diseño (ver §5: la sección
+`## Executive summary (EN)` intacta, y en `mc-34` los ejemplos que citan a
+propósito la notación de OTRO locale). Conteo por locale del 2026-08-01:
+es-MX 1, es-ES 7, fr-FR 15, pt-BR 4, pt-PT 3, de-DE 8 archivos con hallazgo —
+todos revisados, ninguno es cifra fabricada real.
+
+**El sitio ya lee las traducciones — parcialmente.** `apps/web/src/lib/corpus.ts`
+tiene `LOCALES_TRADUCCION_VERIFICADA = ["es-MX", "es-ES", "fr-FR"]`:
+esos tres sirven el cuerpo traducido en `/{locale}/.../mc-NN.../`, verificado
+con `pnpm build` (141/141 páginas, cero regresión en los demás locales).
+`pt-BR`, `pt-PT` y `de-DE` se quedan en inglés a propósito: sus 47 archivos
+traducidos tienen encabezados `## Resumen ejecutivo`/`## Sources` inconsistentes
+entre sí (herencia de pasadas de traducción anteriores, antes de este archivo),
+y `trimBody()` falla fuerte por diseño — conectarlos sin antes normalizar
+tumbaría el build entero por un solo documento raro. Para ampliar la lista:
+normaliza encabezados en ese locale, confírmalo con el mismo barrido que usó
+esta sesión (`grep -h "^## " docs/research/<locale>/*.md`), y añade el locale
+a `LOCALES_TRADUCCION_VERIFICADA` + `SOURCES_IDS_POR_LOCALE`.
+
+**Pendiente, sin resolver:** `node audits/jsonld-valid.mjs` reporta
+`description del marcado no coincide con <meta name="description">` en ~15
+documentos de `en/research/` (bug preexistente en `firstSentence()`/`leadOf()`,
+ajeno a esta traducción) y ~8 casos NUEVOS por locale en es-MX/es-ES/fr-FR
+—mismo bug, disparado por puntuación/comillas del resumen ya traducido—.
+No se investigó a fondo. Si vas a comitear esto, correr ese auditor primero.
+
+**Nada de esto está comiteado.** La sesión que lo hizo terminó en la rama
+`tools/sincronizar-tablero` (compartida, cambiada por otra sesión en curso, no
+por esta). Varias sesiones de Claude Code corren en paralelo sobre este mismo
+repo — si vas a comitear, revisa `git status` primero: puede haber cambios de
+otra sesión mezclados en el working tree que no son tuyos ni de esta nota.
 
 ---
 
@@ -200,13 +240,21 @@ defecto conocido:
 > contenido está en español o alemán**. La etiqueta promete inglés y entrega otra
 > cosa.
 >
-> **Recomendación para quien retome:** deja el `## Executive summary (EN)` **en
-> inglés, sin tocar**. Un lector alemán que quiere comprobar una cifra contra la
-> fuente inglesa agradece tener el resumen original a mano. Traduce solo el
-> `## Resumen ejecutivo (ES)` al locale destino, y renómbralo al idioma que
-> corresponda.
+> **Decisión del dueño — confirmada el 2026-08-01.** Deja el `## Executive
+> summary (EN)` **en inglés, sin tocar, copia byte a byte**. Un lector alemán
+> que quiere comprobar una cifra contra la fuente inglesa agradece tener el
+> resumen original a mano. Traduce solo el `## Resumen ejecutivo (ES)` al
+> locale destino, y renómbralo al idioma que corresponda.
 >
-> Esta recomendación **no está confirmada por el dueño**. Si la sigues, anótalo.
+> **Consecuencia aceptada a propósito:** en los locales de decimal-coma
+> (es-ES, fr-FR, pt-BR, pt-PT, de-DE), `corpus-integridad.mjs` lee el archivo
+> **entero** bajo la convención del locale destino, así que números en formato
+> inglés dentro de esa sección intacta (`43.5`, `1,234`) casi siempre se
+> reportan como «número perdido» o «convención decimal rota». Es un falso
+> positivo estructural, verificado de forma independiente por decenas de
+> agentes en la corrida del 2026-08-01 en los seis locales. **No se repara
+> traduciendo la sección** — eso violaría esta misma decisión. Se acepta el
+> hallazgo del auditor como ruido conocido en esa sección específica.
 
 ---
 

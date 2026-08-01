@@ -5,6 +5,11 @@ import { ruta, segmento } from "../../../i18n/rutas";
 import {
   loadCorpus,
   loadBodies,
+  loadTranslatedRaw,
+  loadTranslatedBodies,
+  translatedSummaryBlocks,
+  SOURCES_IDS_POR_LOCALE,
+  RESUMEN_EN_IDS_POR_LOCALE,
   trimBody,
   linkCrossReferences,
   markUnverified,
@@ -14,6 +19,7 @@ import {
   FAQ_MIN_PAIRS,
   type ResearchDoc,
   type CategoryKey,
+  type SummaryBlock,
 } from "../../../lib/corpus";
 
 /**
@@ -54,6 +60,17 @@ import {
  *    partiría el `hreflang`— y cada una **declara en la página** en qué idioma
  *    está el cuerpo que está leyendo, con `inLanguage` diciendo la verdad.
  *
+ *    Desde el 2026-08-01 esto ya no significa "siempre inglés": `es-MX`,
+ *    `es-ES` y `fr-FR` tienen cuerpo traducido y auditado contra el original
+ *    (`LOCALES_TRADUCCION_VERIFICADA` en `corpus.ts`), y esta página lo usa
+ *    cuando existe, con `langNoticeTranslated` diciendo exactamente qué se
+ *    verificó (cifras, URLs, citas) y qué no (prosa revisada por un hablante
+ *    nativo — todavía pendiente, AGENTS.md §9). `pt-BR`, `pt-PT` y `de-DE`
+ *    siguen sirviendo el original en inglés: su traducción existe en el
+ *    repositorio pero su estructura de encabezados no es consistente entre
+ *    los 47 archivos, y esta página nunca muestra algo que no pudo verificar
+ *    de forma mecánica que coincide con la fuente.
+ *
  * Tipografía: D-036 — títulos y cuerpo en `--font-marca`, migas y controles en
  * `--font-sistema`. El naranja `#F36B1C` solo aparece en el `<h1>` (2.5rem, el
  * umbral aplicable es 3:1 y da 3.03:1) y como elemento gráfico.
@@ -65,6 +82,8 @@ import {
 
 const DOCS = loadCorpus();
 const BODIES = loadBodies();
+const TRANSLATED_RAW = loadTranslatedRaw();
+const TRANSLATED_BODIES = loadTranslatedBodies();
 
 /**
  * Las 329 URLs de artículo: 7 locales × 47 documentos, cada una bajo el
@@ -97,19 +116,84 @@ const url = `${site}${ruta(locale, "investigacion", doc.slug)}`;
 const hrefFor = (s: string) => ruta(locale, "investigacion", s);
 
 // ---------------------------------------------------------------------------
-// El idioma del documento, y cómo se dice sin mentir.
+// Cuerpo compilado por el pipeline de Markdown de Astro, recortado y enlazado.
 //
-// Los 47 documentos son originales en inglés y traen resumen ejecutivo también
-// en español. No hay versión francesa, portuguesa ni alemana, y no se va a
-// fabricar una: `mc-48` §3 y D-033 piden declarar el idioma, no simularlo.
-//
-// Consecuencia para el esquema: `inLanguage` del artículo dice "en" en los
-// siete locales, porque es la verdad. El `inLanguage` del `WebPage` lo pone
-// `Base.astro` con el locale de la ruta, que también es cierto: la navegación,
-// las migas y este aviso sí están en el idioma de la ruta.
+// Desde el 2026-08-01, `es-MX`, `es-ES` y `fr-FR` tienen el CUERPO completo
+// traducido y auditado (`audits/corpus-integridad.mjs`: cifras, URLs,
+// marcadores de cita y `[unverified]` verificados contra el original) — ver
+// `LOCALES_TRADUCCION_VERIFICADA` en `corpus.ts`. Los demás locales (`pt-BR`,
+// `pt-PT`, `de-DE`) siguen sin cuerpo verificable de forma consistente entre
+// sus 47 archivos y se publican en su idioma original, inglés, como antes.
 // ---------------------------------------------------------------------------
 
-const ARTICLE_LANG = "en";
+const bySlug = new Map(DOCS.map((d) => [d.id, d.slug] as const));
+const UNVERIFIED_ANCHOR = "verificacion";
+
+// `TRANSLATED_RAW` ya viene filtrado por el manifiesto del auditor: un documento
+// con hallazgo no está ahí. Así que la existencia de la entrada ES la
+// verificación — no hay una segunda lista que pueda desincronizarse.
+const translatedRaw: string | undefined = TRANSLATED_RAW[locale]?.[doc.file];
+const translatedBodyLoader = TRANSLATED_BODIES[locale]?.[doc.file];
+const hasTranslation = !!translatedRaw && !!translatedBodyLoader;
+
+/**
+ * El cuerpo traducido, con red de seguridad.
+ *
+ * `trimBody` depende de que el HTML compilado tenga los anclajes
+ * `#executive-summary-en` y `#sources`, que a su vez dependen de que el
+ * encabezado en el Markdown traducido coincida con lo que el barrido del
+ * 2026-08-01 verificó. Si un archivo puntual se sale de ese patrón —typo,
+ * variante de encabezado que el barrido no vio—, `trimBody` lanza. En vez de
+ * tumbar el build entero por un documento, se cae de vuelta al cuerpo en
+ * inglés para ESE documento y se sigue: es la misma filosofía de "documento
+ * sin traducción todavía es un estado válido" aplicada al cuerpo.
+ */
+let body: string;
+let bodyIsTranslated = false;
+if (hasTranslation && translatedBodyLoader) {
+  try {
+    const mod = await translatedBodyLoader();
+    const compiled = await mod.compiledContent();
+    body = trimBody(
+      compiled,
+      `${locale}/${doc.file}`,
+      SOURCES_IDS_POR_LOCALE[locale],
+      RESUMEN_EN_IDS_POR_LOCALE[locale],
+    );
+    bodyIsTranslated = true;
+  } catch {
+    const loader = BODIES[doc.file];
+    if (!loader) throw new Error(`investigacion: sin cuerpo compilado para ${doc.file}`);
+    const mod = await loader();
+    const compiled = await mod.compiledContent();
+    body = trimBody(compiled, doc.file);
+  }
+} else {
+  const loader = BODIES[doc.file];
+  if (!loader) throw new Error(`investigacion: sin cuerpo compilado para ${doc.file}`);
+  const mod = await loader();
+  const compiled = await mod.compiledContent();
+  body = trimBody(compiled, doc.file);
+}
+body = linkCrossReferences(body, bySlug, doc.id, hrefFor);
+
+// Si el cuerpo cayó de vuelta al inglés pese a haber traducción de resumen,
+// el aviso de idioma tiene que hablar de ESO, no de la traducción que no se
+// pudo usar — así que el resumen también cae de vuelta, para no mostrar un
+// resumen traducido sobre un cuerpo en inglés sin avisarlo.
+const effectiveHasTranslation = hasTranslation && bodyIsTranslated;
+
+// ---------------------------------------------------------------------------
+// El idioma del documento, y cómo se dice sin mentir.
+//
+// `mc-48` §3 y D-033 piden declarar el idioma, no simularlo: cuando hay
+// traducción verificada Y el cuerpo se pudo recortar, `inLanguage` dice el
+// locale real; cuando no la hay, sigue diciendo "en", porque eso es lo que
+// hay.
+// ---------------------------------------------------------------------------
+
+const ARTICLE_LANG = effectiveHasTranslation ? locale : "en";
+
 const SUMMARY_LANG: Record<Locale, "es" | "en"> = {
   "en": "en",
   "es-MX": "es",
@@ -120,7 +204,16 @@ const SUMMARY_LANG: Record<Locale, "es" | "en"> = {
   "de-DE": "en",
 };
 const summaryLang = SUMMARY_LANG[locale];
-const summary = doc.summary[summaryLang];
+
+// El resumen traducido gana sobre el resumen ES/EN genérico del original
+// cuando existe, su encabezado se pudo leer, Y el cuerpo también se tradujo
+// (ver `effectiveHasTranslation` arriba). `translatedSummaryBlocks` devuelve
+// `null` en vez de lanzar si el archivo no tiene el encabezado esperado — esa
+// es la señal para caer de vuelta al resumen del original.
+const translatedSummary: SummaryBlock[] | null = effectiveHasTranslation && translatedRaw
+  ? translatedSummaryBlocks(translatedRaw, locale)
+  : null;
+const summary = translatedSummary ?? doc.summary[summaryLang];
 const abstract = blocksText(summary);
 const lead = leadOf(summary);
 
@@ -158,21 +251,6 @@ const prev: ResearchDoc | undefined = DOCS[idx - 1];
 const next: ResearchDoc | undefined = DOCS[idx + 1];
 
 // ---------------------------------------------------------------------------
-// Cuerpo compilado por el pipeline de Markdown de Astro, recortado y enlazado.
-// ---------------------------------------------------------------------------
-
-const loader = BODIES[doc.file];
-if (!loader) throw new Error(`investigacion: sin cuerpo compilado para ${doc.file}`);
-const mod = await loader();
-const compiled = await mod.compiledContent();
-
-const bySlug = new Map(DOCS.map((d) => [d.id, d.slug] as const));
-const UNVERIFIED_ANCHOR = "verificacion";
-
-let body = trimBody(compiled, doc.file);
-body = linkCrossReferences(body, bySlug, doc.id, hrefFor);
-
-// ---------------------------------------------------------------------------
 // Textos de la página, en los siete locales.
 //
 // Van aquí y no en `src/i18n/paginas/` a propósito: ese directorio lo comparten
@@ -198,6 +276,11 @@ interface Copy {
   langNoticeSame: string;
   langNoticeSummaryEs: string;
   langNoticeOther: string;
+  /** Aviso cuando el cuerpo SÍ está traducido y auditado a este locale
+   *  (ver `LOCALES_TRADUCCION_VERIFICADA` en corpus.ts). Honesto sobre lo que
+   *  el auditor verificó (cifras, URLs, citas) y lo que no (prosa revisada
+   *  por un hablante nativo — AGENTS.md §9, todavía pendiente). */
+  langNoticeTranslated: string;
   verifyHeading: string;
   verifyNone: string;
   verifyCount: string;
@@ -282,6 +365,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     langNoticeSame: "This document was written in English. It is published here in full, unedited.",
     langNoticeSummaryEs: "This document was written in English; its executive summary also exists in Spanish, and that is the version shown above. The body below is the English original — it has not been translated, and no machine translation is offered in its place.",
     langNoticeOther: "This document has not been translated into the language of this page. It is published in its original language, English, in full. Showing you the real text is the point; a machine translation of a source-cited research document would not be citable.",
+    langNoticeTranslated: "This document was translated from the English original by Claude (Anthropic) and checked automatically against the source: every number, URL, citation marker and [unverified] flag matches. The prose itself has not yet been reviewed by a native-speaking human editor.",
     verifyHeading: "Verification status",
     verifyNone: "This document carries no [unverified] flag. Every claim in it is tied to a numbered source below.",
     verifyCount: "Claims in this document that the author could not confirm against a primary source, flagged in the text and repeated here:",
@@ -309,6 +393,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     langNoticeSame: "Este documento se escribió en inglés y se publica completo, sin editar.",
     langNoticeSummaryEs: "Este documento se escribió en inglés; su resumen ejecutivo también existe en español, y esa es la versión de arriba. El cuerpo de abajo es el original en inglés — no está traducido, y no se ofrece una traducción automática en su lugar.",
     langNoticeOther: "Este documento no está traducido al idioma de esta página. Se publica completo en su idioma original, inglés.",
+    langNoticeTranslated: "Este documento fue traducido del original en inglés por Claude (Anthropic) y verificado automáticamente contra la fuente: cada número, URL, marcador de cita y marca [unverified] coincide con el original. La prosa todavía no ha sido revisada por un hablante nativo humano.",
     verifyHeading: "Estado de verificación",
     verifyNone: "Este documento no lleva ninguna marca [unverified]. Cada afirmación está atada a una fuente numerada de abajo.",
     verifyCount: "Afirmaciones que el autor no pudo confirmar contra una fuente primaria, marcadas en el texto y repetidas aquí:",
@@ -336,6 +421,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     langNoticeSame: "Este documento se escribió en inglés y se publica completo, sin editar.",
     langNoticeSummaryEs: "Este documento se escribió en inglés; su resumen ejecutivo también existe en español, y esa es la versión de arriba. El cuerpo de abajo es el original en inglés — no está traducido, y no se ofrece una traducción automática en su lugar.",
     langNoticeOther: "Este documento no está traducido al idioma de esta página. Se publica completo en su idioma original, inglés.",
+    langNoticeTranslated: "Este documento fue traducido del original en inglés por Claude (Anthropic) y verificado automáticamente contra la fuente: cada número, URL, marcador de cita y marca [unverified] coincide con el original. La prosa todavía no ha sido revisada por un hablante nativo humano.",
     verifyHeading: "Estado de verificación",
     verifyNone: "Este documento no lleva ninguna marca [unverified]. Cada afirmación está atada a una fuente numerada de abajo.",
     verifyCount: "Afirmaciones que el autor no pudo confirmar contra una fuente primaria, marcadas en el texto y repetidas aquí:",
@@ -363,6 +449,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     langNoticeSame: "Ce document a été rédigé en anglais. Il est publié ici intégralement, sans modification.",
     langNoticeSummaryEs: "Ce document a été rédigé en anglais ; son résumé exécutif existe aussi en espagnol.",
     langNoticeOther: "Ce document n’est pas traduit dans la langue de cette page. Il est publié intégralement dans sa langue d’origine, l’anglais. Vous montrer le texte réel est le but : une traduction automatique d’un document de recherche sourcé ne serait pas citable.",
+    langNoticeTranslated: "Ce document a été traduit de l’original anglais par Claude (Anthropic) et vérifié automatiquement par rapport à la source : chaque nombre, URL, marqueur de citation et mention [unverified] correspond à l’original. Le texte lui-même n’a pas encore été relu par un locuteur natif humain.",
     verifyHeading: "État de vérification",
     verifyNone: "Ce document ne porte aucune mention [unverified]. Chaque affirmation renvoie à une source numérotée ci-dessous.",
     verifyCount: "Affirmations que l’auteur n’a pas pu confirmer auprès d’une source primaire, signalées dans le texte et reprises ici :",
@@ -390,6 +477,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     langNoticeSame: "Este documento foi escrito em inglês e é publicado aqui na íntegra, sem edição.",
     langNoticeSummaryEs: "Este documento foi escrito em inglês; seu resumo executivo também existe em espanhol.",
     langNoticeOther: "Este documento não está traduzido para o idioma desta página. Ele é publicado na íntegra no idioma original, inglês. Mostrar o texto real é o objetivo: uma tradução automática de um documento de pesquisa com fontes citadas não seria citável.",
+    langNoticeTranslated: "Este documento foi traduzido do original em inglês por Claude (Anthropic) e verificado automaticamente contra a fonte: cada número, URL, marcador de citação e marca [unverified] corresponde ao original. A prosa em si ainda não foi revisada por um editor humano nativo.",
     verifyHeading: "Estado de verificação",
     verifyNone: "Este documento não traz nenhuma marca [unverified]. Cada afirmação está ligada a uma fonte numerada abaixo.",
     verifyCount: "Afirmações que o autor não conseguiu confirmar contra uma fonte primária, marcadas no texto e repetidas aqui:",
@@ -417,6 +505,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     langNoticeSame: "Este documento foi escrito em inglês e é publicado aqui na íntegra, sem edição.",
     langNoticeSummaryEs: "Este documento foi escrito em inglês; o seu resumo executivo também existe em espanhol.",
     langNoticeOther: "Este documento não está traduzido para a língua desta página. É publicado na íntegra na língua original, inglês. Mostrar-lhe o texto real é o objectivo: uma tradução automática de um documento de investigação com fontes citadas não seria citável.",
+    langNoticeTranslated: "Este documento foi traduzido do original em inglês por Claude (Anthropic) e verificado automaticamente contra a fonte: cada número, URL, marcador de citação e marca [unverified] corresponde ao original. A prosa em si ainda não foi revista por um editor humano nativo.",
     verifyHeading: "Estado de verificação",
     verifyNone: "Este documento não traz qualquer marca [unverified]. Cada afirmação está ligada a uma fonte numerada abaixo.",
     verifyCount: "Afirmações que o autor não conseguiu confirmar contra uma fonte primária, marcadas no texto e repetidas aqui:",
@@ -444,6 +533,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     langNoticeSame: "Dieses Dokument wurde auf Englisch verfasst und wird hier vollständig und unverändert veröffentlicht.",
     langNoticeSummaryEs: "Dieses Dokument wurde auf Englisch verfasst; seine Zusammenfassung existiert auch auf Spanisch.",
     langNoticeOther: "Dieses Dokument ist nicht in die Sprache dieser Seite übersetzt. Es wird vollständig in seiner Originalsprache Englisch veröffentlicht. Genau das ist der Punkt: Eine maschinelle Übersetzung eines quellenbelegten Forschungsdokuments wäre nicht zitierfähig.",
+    langNoticeTranslated: "Dieses Dokument wurde von Claude (Anthropic) aus dem englischen Original übersetzt und automatisch gegen die Quelle geprüft: jede Zahl, URL, Zitatmarkierung und [unverified]-Markierung stimmt mit dem Original überein. Der Fließtext selbst wurde noch nicht von einem muttersprachlichen menschlichen Lektor geprüft.",
     verifyHeading: "Prüfstatus",
     verifyNone: "Dieses Dokument trägt keine [unverified]-Markierung. Jede Aussage ist an eine nummerierte Quelle unten gebunden.",
     verifyCount: "Aussagen, die der Autor nicht gegen eine Primärquelle bestätigen konnte — im Text markiert und hier wiederholt:",
@@ -469,9 +559,16 @@ const categoryLabel = CATEGORY_LABELS[locale][doc.category];
 const langNotice =
   locale === "en"
     ? c.langNoticeSame
-    : summaryLang === "es"
-      ? c.langNoticeSummaryEs
-      : c.langNoticeOther;
+    : effectiveHasTranslation
+      ? c.langNoticeTranslated
+      : summaryLang === "es"
+        ? c.langNoticeSummaryEs
+        : c.langNoticeOther;
+
+// El idioma real del resumen que se está pintando: el locale completo cuando
+// viene de la traducción verificada, o el genérico "es"/"en" del original
+// cuando no.
+const summaryHtmlLang = translatedSummary ? locale : summaryLang;
 
 const corpusNote = c.corpusNote
   .replace("{docs}", String(TOTAL_DOCS))
@@ -512,7 +609,9 @@ const article: Record<string, unknown> = {
   headline: doc.title,
   description: lead,
   abstract,
-  // La verdad, no el locale de la ruta: el cuerpo está en inglés en las siete.
+  // La verdad, no el locale de la ruta por defecto: "en" salvo que el cuerpo
+  // que se está pintando de verdad sea la traducción auditada de ese locale
+  // (`effectiveHasTranslation`, arriba).
   inLanguage: ARTICLE_LANG,
   datePublished: doc.date,
   dateModified: doc.date,
@@ -581,7 +680,7 @@ const jsonLd = { "@context": "https://schema.org", "@graph": graph };
 
   {/* El resumen ejecutivo, pintado desde los MISMOS bloques que van en
       `abstract`. Va arriba, a tamaño de cuerpo, sin acordeón. */}
-  <section class="resumen" lang={summaryLang} aria-labelledby="resumen-h">
+  <section class="resumen" lang={summaryHtmlLang} aria-labelledby="resumen-h">
     <h2 id="resumen-h">{c.summaryHeading}</h2>
     {summaryRuns.map((run) =>
       run.kind === "li" ? (

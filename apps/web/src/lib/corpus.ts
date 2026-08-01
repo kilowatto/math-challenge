@@ -656,6 +656,156 @@ export function loadBodies(): Record<string, () => Promise<{ compiledContent: ()
 }
 
 // ---------------------------------------------------------------------------
+// Traducciones — solo los locales con estructura verificada (2026-08-01)
+// ---------------------------------------------------------------------------
+
+import VERIFICADO from "./corpus-verificado.json";
+
+/**
+ * Qué documento tiene traducción publicable, por locale.
+ *
+ * **La lista la escribe el auditor, no una persona.** `node
+ * audits/corpus-integridad.mjs --manifiesto` compara cada traducción contra su
+ * original —números leídos con la convención del locale, URLs, marcadores de
+ * cita, marcas `[unverified]`, ids `mc-NN`— y escribe aquí solo los que
+ * coinciden. Hoy son 245 de 282.
+ *
+ * Por qué por DOCUMENTO y no por locale, que es como estaba. La página dice, en
+ * su nota de idioma, que la traducción está verificada contra la fuente. Con una
+ * lista por locale esa frase era falsa para todo documento con hallazgo dentro
+ * de un locale aprobado — y `de-DE/mc-36` es el ejemplo que lo obliga: dejó dos
+ * veces `2,500` a la inglesa, que **en alemán se lee 2.5**. No es tipografía:
+ * es una cifra falsa con nuestro nombre encima, que es justo lo que D-033 y
+ * `mc-48` no toleran. Ahora ese documento se publica en inglés y lo dice.
+ */
+const VERIFICADOS: Record<string, Set<string>> = Object.fromEntries(
+  Object.entries(VERIFICADO as Record<string, string[]>).map(([l, fs]) => [l, new Set(fs)]),
+);
+
+/** ¿Puede el sitio servir la traducción de ESTE documento en ESTE locale? */
+export function traduccionVerificada(locale: string, file: string): boolean {
+  return VERIFICADOS[locale]?.has(file) ?? false;
+}
+
+/** Los locales con al menos un documento verificado. */
+export const LOCALES_TRADUCCION_VERIFICADA = Object.entries(VERIFICADOS)
+  .filter(([, s]) => s.size > 0)
+  .map(([l]) => l);
+
+/**
+ * Los encabezados que puede llevar el resumen en el idioma del locale, en orden
+ * de preferencia.
+ *
+ * Son varios por locale porque las traducciones vienen de pasadas distintas y
+ * **son inconsistentes dentro de sí mismas**: de-DE tiene 45 archivos con
+ * `## Zusammenfassung (ES)`, uno con `(DE)` y uno con `## Executive
+ * Zusammenfassung (ES)`. Aceptar la lista es más barato y menos destructivo que
+ * reescribir 141 archivos de contenido para uniformar un encabezado, y deja el
+ * fallo donde debe estar: un archivo cuyo encabezado no está en su lista cae de
+ * vuelta al inglés él solo, sin tumbar a los otros 46.
+ *
+ * El sufijo `(ES)` sobrevive en las traducciones porque es el del original —
+ * marca *cuál de los dos resúmenes* es, no en qué idioma está. Renombrarlo es
+ * trabajo de contenido, no de este archivo.
+ */
+const RESUMEN_HEADING_POR_LOCALE: Record<string, string[]> = {
+  "es-MX": ["Resumen ejecutivo (ES)"],
+  "es-ES": ["Resumen ejecutivo (ES)"],
+  "fr-FR": ["Résumé exécutif (FR)"],
+  "pt-PT": ["Resumo executivo (ES)"],
+  "pt-BR": ["Resumo executivo (tópicos)"],
+  "de-DE": ["Zusammenfassung (ES)", "Zusammenfassung (DE)", "Executive Zusammenfassung (ES)"],
+};
+
+/**
+ * Los `id` (slug de rehype) del SEGUNDO resumen —el que en el original es
+ * `## Executive summary (EN)`—, por locale. `trimBody` corta el cuerpo justo
+ * después de él, así que si ninguno aparece no hay recorte posible.
+ *
+ * Varios por locale por lo mismo que arriba: pt-BR llamó a los dos resúmenes por
+ * su forma (`tópicos` / `prosa`) en vez de por su idioma, y tres de sus archivos
+ * usaron `Sumário executivo (EN)`.
+ */
+export const RESUMEN_EN_IDS_POR_LOCALE: Record<string, string[]> = {
+  "es-MX": ["executive-summary-en"],
+  "es-ES": ["executive-summary-en"],
+  "fr-FR": ["executive-summary-en"],
+  "pt-PT": ["resumo-executivo-en", "executive-summary-en"],
+  "pt-BR": ["resumo-executivo-prosa", "sumário-executivo-en", "sumario-executivo-en"],
+  "de-DE": ["zusammenfassung-en", "executive-summary-en", "executive-zusammenfassung-en"],
+};
+
+/**
+ * Los `id` (slug de rehype) que puede tener el encabezado "Sources" traducido,
+ * por locale, en el orden en que conviene probarlos. Ver `trimBody`.
+ */
+export const SOURCES_IDS_POR_LOCALE: Record<string, string[]> = {
+  "es-MX": ["fuentes", "sources"],
+  "es-ES": ["fuentes", "sources"],
+  "fr-FR": ["sources"],
+  "pt-PT": ["fontes"],
+  "pt-BR": ["fontes"],
+  "de-DE": ["quellen"],
+};
+
+/**
+ * El texto crudo de cada documento TRADUCIDO, por locale y nombre de archivo.
+ * Solo cubre `LOCALES_TRADUCCION_VERIFICADA` — un locale fuera de esa lista
+ * devuelve un objeto vacío, nunca lanza.
+ */
+export function loadTranslatedRaw(): Record<string, Record<string, string>> {
+  const raws = import.meta.glob("../../../../docs/research/*/2026-07-31-mc-*.md", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }) as Record<string, string>;
+
+  const out: Record<string, Record<string, string>> = {};
+  for (const [path, raw] of Object.entries(raws)) {
+    const m = /\/docs\/research\/([^/]+)\/([^/]+\.md)$/.exec(path);
+    if (!m) continue;
+    const [, locale, file] = m;
+    // Se filtra aquí, no en la página: un documento que no pasó el auditor
+    // tampoco entra al bundle, así que no se puede servir por accidente.
+    if (!traduccionVerificada(locale, file)) continue;
+    (out[locale] ??= {})[file] = raw;
+  }
+  return out;
+}
+
+/** Igual que `loadBodies()`, pero para los documentos traducidos. */
+export function loadTranslatedBodies(): Record<
+  string,
+  Record<string, () => Promise<{ compiledContent: () => string | Promise<string> }>>
+> {
+  const mods = import.meta.glob("../../../../docs/research/*/2026-07-31-mc-*.md");
+  const out: Record<string, any> = {};
+  for (const [path, loader] of Object.entries(mods)) {
+    const m = /\/docs\/research\/([^/]+)\/([^/]+\.md)$/.exec(path);
+    if (!m) continue;
+    const [, locale, file] = m;
+    if (!traduccionVerificada(locale, file)) continue;
+    (out[locale] ??= {})[file] = loader;
+  }
+  return out;
+}
+
+/**
+ * El resumen ejecutivo traducido, ya en bloques — o `null` si el documento no
+ * tiene traducción o su encabezado no coincide con lo esperado para ese
+ * locale. `null` es una señal para que quien llama caiga de vuelta al inglés,
+ * no un error: un documento sin traducción todavía es un estado válido
+ * mientras el corpus no llega a 100% en los seis locales.
+ */
+export function translatedSummaryBlocks(raw: string, locale: string): SummaryBlock[] | null {
+  const headings = RESUMEN_HEADING_POR_LOCALE[locale];
+  if (!headings) return null;
+  const body = sectionAny(raw, headings);
+  if (body === null) return null;
+  return summaryBlocks(body);
+}
+
+// ---------------------------------------------------------------------------
 // Transformaciones sobre el HTML ya compilado
 // ---------------------------------------------------------------------------
 
@@ -680,14 +830,37 @@ export function loadBodies(): Record<string, () => Promise<{ compiledContent: ()
  * Tira excepción si no encuentra los cortes. Un recorte que falla en silencio
  * publicaría el H1 duplicado —o el resumen dos veces— en 329 páginas.
  */
-export function trimBody(html: string, file: string): string {
-  const en = html.indexOf('<h2 id="executive-summary-en"');
-  if (en === -1) throw new Error(`corpus: ${file} compilado sin <h2 id="executive-summary-en">`);
+/**
+ * `sourcesIds`: el `id` que rehype-slug le puso al encabezado "Sources" —
+ * `"sources"` en el original y en los locales que tradujeron la sección con
+ * la misma palabra (fr-FR: "Sources" es igual en francés). Los que sí la
+ * tradujeron usan otro id (`es-MX`/`es-ES`: "fuentes"). Acepta varios porque
+ * `es-ES` es inconsistente **dentro de sí mismo** — 28 de 47 archivos usan
+ * "Fuentes" y 19 se quedaron con "Sources", herencia de pasadas de
+ * traducción distintas — así que un solo id fijo fallaría en la mitad de
+ * los documentos de ese locale.
+ */
+export function trimBody(
+  html: string,
+  file: string,
+  sourcesIds: string[] = ["sources"],
+  resumenEnIds: string[] = ["executive-summary-en"],
+): string {
+  let en = -1;
+  for (const id of resumenEnIds) {
+    const idx = html.indexOf(`<h2 id="${id}"`);
+    if (idx !== -1) { en = idx; break; }
+  }
+  if (en === -1) throw new Error(`corpus: ${file} compilado sin <h2> de segundo resumen (probé: ${resumenEnIds.join(", ")})`);
   const start = html.indexOf("<h2", en + 1);
   if (start === -1) throw new Error(`corpus: ${file} no tiene contenido después del resumen`);
-  const cut = html.indexOf('<h2 id="sources"');
-  if (cut === -1) throw new Error(`corpus: ${file} compilado sin <h2 id="sources">`);
-  if (cut <= start) throw new Error(`corpus: ${file} tiene "Sources" antes que el cuerpo`);
+  let cut = -1;
+  for (const id of sourcesIds) {
+    const idx = html.indexOf(`<h2 id="${id}"`);
+    if (idx !== -1) { cut = idx; break; }
+  }
+  if (cut === -1) throw new Error(`corpus: ${file} compilado sin <h2> de fuentes (probé: ${sourcesIds.join(", ")})`);
+  if (cut <= start) throw new Error(`corpus: ${file} tiene la sección de fuentes antes que el cuerpo`);
   return html.slice(start, cut);
 }
 

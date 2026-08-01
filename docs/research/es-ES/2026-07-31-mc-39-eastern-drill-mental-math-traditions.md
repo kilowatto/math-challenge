@@ -7,7 +7,32 @@
 Se investigaron nueve tradiciones asociadas a «métodos orientales»: Kumon, ábaco/soroban y cálculo mental «anzan» (UCMAS, Aloha), matemáticas védicas, el sistema Trachtenberg, la tradición rusa (círculos, Zvonkin, escuelas Kolmogorov, Russian School of Mathematics), el descubrimiento guiado húngaro (Pólya/Varga Tamás), la educación finlandesa y la práctica coreana/taiwanesa. La calidad de la evidencia es muy desigual: el ábaco mental tiene estudios controlados en revistas serias (*Child Development*, *Cognition*); Kumon tiene un solo estudio antiguo de bajo rigor y, por lo demás, testimonios institucionales; las matemáticas védicas son, según la disputa académica, un producto del siglo XX sin origen védico verificable; y las franquicias comerciales de ábaco mezclan un mecanismo cognitivo real con marketing («memoria fotográfica», «cerebro completo») que la evidencia no respalda en esa forma extrema. Finlandia, contraejemplo favorito al drilling, muestra ahora una caída sostenida en PISA (548→484 puntos, 2006‑2022). El este asiático supera a Finlandia por 40‑90 puntos en PISA 2022, pero convive con cultura de hagwon/buxiban ligada a alta ansiedad matemática documentada — los exámenes cronometrados de alto riesgo son un factor causal, y la alta ansiedad cuesta en media 34 puntos PISA, un año escolar. Un modo de juego inspirado en estas tradiciones debe tomar el mecanismo (incrementos pequeños, repetición espaciada, visualización, descubrimiento guiado) y descartar tanto el marketing pseudocientífico como el cronómetro de alto riesgo.
 
 ## Executive summary (EN)
-Las tradiciones agrupadas de forma aproximada bajo «oriental» o la pedagogía matemática basada en ejercicios repetitivos se investigaron: Kumon, cálculo mental con ábaco/sorobán (UCMAS, Aloha), matemáticas védicas, el sistema Trachtenberg, la tradición rusa (círculos matemáticos, Zvonkin, escuelas Kolmogorov, Russian School of Mathematics), la tradición húngara de descubrimiento guiado (Pólya/Varga Tamás), la educación matemática finlandesa y la práctica coreana/taiwanesa. La calidad de la evidencia varía marcadamente. El entrenamiento mental con ábaco cuenta con una investigación controlada genuina (un ensayo aleatorizado en *Child Development*, artículos de cognición en *Cognition* y *Cognitive Science*). Kumon tiene esencialmente un estudio antiguo, metodológicamente débil, y por lo demás se basa en testimonios institucionales. Las matemáticas védicas son, según el relato de los matemáticos que las han examinado, una invención del siglo XX sin ninguna fuente védica verificada, y sus atajos no superan de forma constante a la aritmética convencional en complejidad. Las franquicias comerciales de ábaco (UCMAS, Aloha) se basan en un mecanismo cognitivo real, pero añaden afirmaciones de marketing («memoria fotográfica», «desarrollo de todo el cerebro») que la investigación no respalda a esa escala. Finlandia — el contraejemplo al entrenamiento intensivo durante dos décadas — ha registrado una caída sostenida en matemáticas en PISA (548 en 2006 a 484 en 2022). Los sistemas de Asia Oriental superan a Finlandia entre 40 y 90 puntos PISA en 2022, pero coexisten con una cultura de hagwon/buxiban que genera un alto estrés y ansiedad matemática documentados. La ansiedad matemática está bien estudiada: las pruebas cronometradas y de alta presión son un factor causal, y los estudiantes con alta ansiedad pierden una media de 34 puntos PISA — un año escolar completo. Un modo de juego inspirado en estas tradiciones debería tomar prestado el mecanismo (pequeños incrementos, repetición espaciada, visualización, descubrimiento guiado) mientras descarta tanto el marketing pseudocientífico como el temporizador de alta presión.
+
+Nine traditions loosely grouped under "Eastern" or drill-based math pedagogy
+were investigated: Kumon, abacus/soroban mental calculation (UCMAS, Aloha),
+Vedic mathematics, the Trachtenberg system, the Russian tradition (math
+circles, Zvonkin, Kolmogorov schools, Russian School of Mathematics), the
+Hungarian guided-discovery tradition (Pólya/Varga Tamás), Finnish math
+education, and Korean/Taiwanese practice. Evidence quality varies sharply.
+Mental abacus training has genuine controlled research behind it (a
+randomized trial in *Child Development*, cognition papers in *Cognition* and
+*Cognitive Science*). Kumon has essentially one old, methodologically weak
+study and otherwise rests on institutional testimony. Vedic mathematics is,
+by the account of mathematicians who have examined it, a 20th-century
+invention with no verified Vedic source, and its shortcuts do not
+consistently beat conventional arithmetic in complexity. Commercial abacus
+franchises (UCMAS, Aloha) sit on a real cognitive mechanism but layer
+marketing claims ("photographic memory," "whole-brain development") the
+research doesn't support at that scale. Finland — the counter-example to
+drilling for two decades — has posted a sustained PISA math decline (548 in
+2006 to 484 in 2022). East Asian systems beat Finland by 40-90 PISA points in
+2022, but coexist with a hagwon/buxiban culture producing documented high
+stress and math anxiety. Math anxiety itself is well studied: timed,
+high-stakes testing is a causal factor, and high-anxiety students lose an
+average of 34 PISA points — a full school year. A game mode inspired by
+these traditions should borrow mechanism (small increments, spaced
+repetition, visualization, guided discovery) while discarding both the
+pseudoscientific marketing and the high-stakes timer.
 
 ## Resultados
 

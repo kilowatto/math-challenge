@@ -107,7 +107,7 @@ Eine Meta‑Analyse 2023 (*Educational Technology Research and Development*) zei
 2. **Sollte die Schwere des Streak‑Abbruchs je nach Altersgruppe variieren (sanfter für 4‑7‑Jährige) oder für alle Altersgruppen einheitlich bleiben?**
 3. **Sollten Push‑Benachrichtigungen standardmäßig für kinderverwaltete Profile deaktiviert sein und nur über ein Eltern‑/Erziehungsberechtigten‑Konto aktiviert werden können?**
 4. **Ist eine wöchentliche Liga‑Leiter zum Start vorgesehen, oder soll sie warten, bis die aktive Nutzerbasis pro Alters‑/Klassen‑Band groß genug für sinnvolle Match‑Making‑Kohorten ist?**
-5. **Sollte Math Challenge sich zu einer 60/90‑tägigen erneuten Messung der Engagement‑Metriken ab Tag 1 verpflichten, da die Literatur konsequent warnt, dass frühe Ergebnisse die dauerhafte Wirkung überbewerten?**
+5. **Sollte Math Challenge sich zu einer 60/90‑tägigen erneuten Messung der Engagement‑Metriken ab Tag eins verpflichten, da die Literatur konsequent warnt, dass frühe Ergebnisse die dauerhafte Wirkung überbewerten?**
 
 ## Quellen
 

@@ -7,18 +7,18 @@ Larry existiert bereits in iOS als EN/ES‑Co‑Pilot auf Workers AI (`kimi-k2
 
 Der Eigentümer hat bereits entschieden: Larry Profe nutzt die **Claude‑API** mit **Routen nach Schwierigkeitsgrad** (Haiku/Sonnet/Opus). Der nächstliegende Präzedenzfall im Repository ist nicht der freie Chat, sondern `src/larry/contador/explain.ts`: ein deterministischer Befund wird eingegeben, ein LLM erklärt ihn in natürlicher Sprache, ohne irgendetwas neu zu berechnen, mit einem Fallback auf eine Vorlage. Larry Profe muss exakt dieses Muster befolgen: Die Bewertungs‑Engine entscheidet, was richtig oder falsch ist; Claude erklärt lediglich, in der korrekten Sprache, dem passenden Alter und Tonfall, ohne das Kind zu beschämen.
 
-## Zusammenfassung (EN)
+## Executive summary (EN)
 
-Larry in iOS läuft auf Workers AI (`@cf/moonshotai/kimi-k2.6` → `@cf/openai/gpt-oss-120b` → vorgefertigte Antwort) mit einem handgefertigten einzeiligen‑JSON‑Tool‑Calling‑Protokoll und einer dauerhaften D1‑Audit‑Senkung. Es greift nie auf die Claude‑API zu — Larry Profe wäre die erste Claude‑Integration in diesem Repository, nicht eine Wiederverwendung bestehender Infrastruktur.
+Larry-in-IOS runs on Workers AI (`@cf/moonshotai/kimi-k2.6` → `@cf/openai/gpt-oss-120b` → canned reply), with a hand-rolled single-line-JSON tool-calling protocol and a durable D1 audit sink. It never touches the Claude API — Larry Profe would be this repo's first Claude integration, not a reuse of existing plumbing.
 
-Der Eigentümer hat entschieden, dass Larry Profe die **Claude‑API** mit **Modell‑Routing nach Schwierigkeitsgrad** (Haiku/Sonnet/Opus) verwendet. Der nächstliegende vorhandene Präzedenzfall ist nicht der frei‑formulierte Chat‑Endpunkt, sondern `src/larry/contador/explain.ts`: ein Muster „deterministischer Befund‑Eingang, LLM‑Erklärung‑Ausgang“ mit einer harten Regel „niemals berechnen, nur das zitieren, was im JSON steht“ und einem Vorlagen‑Fallback. Larry Profe sollte diese Form beibehalten: Die eigene Bewertungs‑Engine von Math Challenge ist die Wahrheitsquelle für Korrektheit; Claude darf nur ein strukturiertes Urteil in eine warme, altersgerechte, fünf‑sprachige Erklärung umwandeln — ohne die Mathematik selbst neu abzuleiten.
+The owner has decided Larry Profe uses the **Claude API** with **model routing by difficulty** (Haiku/Sonnet/Opus). The closest existing precedent is not the free-form chat endpoint but `src/larry/contador/explain.ts`: a deterministic-finding-in, LLM-explains-it-out pattern with a hard "never compute, only cite what's in the JSON" rule and a template fallback. Larry Profe should follow that shape: Math Challenge's own grading engine is the source of truth on correctness; Claude's only job is turning a structured verdict into a warm, age-appropriate, five-language explanation — never re-deriving the math itself.
 
 ## Was heute existiert — Dateipfade und Zeilenreferenzen aus diesem Repository
 
 - **Persona/canon.** `docs/larry.md:1-16` — „orange rhinoceros, honest coach“, Catchphrase „¡Ya vas!“ nur beim Annehmen einer Aufgabe, Humor richtet sich ausschließlich an ihn selbst.
 - **Model chain is Workers AI, not Claude.** `src/larry/chat.ts:40-41`: `PRIMARY_MODEL = '@cf/moonshotai/kimi-k2.6'`, `FALLBACK_MODEL = '@cf/openai/gpt-oss-120b'` (same pair in `src/larry/contador/explain.ts:16-17`). `docs/wiki/decisions.md:42-47` (ADR-006): „our own model (Workers AI) serves the routine 70–90 % of traffic; a frontier API handles hard cases“ plus ein semantischer Cache und ein Budget pro Rolle — konzeptionell ähnliche Form wie das, was Larry Profe benötigt, aber iOS ist Workers‑AI‑first mit Claude als Überlauf; das Math Challenge‑Briefing des Eigentümers ist Claude‑first mit Routing nach Problem‑Schwierigkeitsgrad, nicht dieselbe Richtlinie.
 - **Bilinguales Single‑Prompt‑Muster.** `src/larry/prompts.ts:24-57`, `buildSystemPrompt(locale, context)` — jede Persona‑/Regel‑Zeile wird zweimal geschrieben, EN dann ES, in einem String (z. B. `:29`); nur die Anweisung „reply in language X“ (`:47`) ist lokalspezifisch. Skaliert nicht auf 5 Sprachen (siehe unten).
-- **Strikte „never“-Liste.** `src/larry/prompts.ts:38-44` — fünf Punkte: niemals Kundendaten löschen, niemals Objektinhalte lesen, niemals Abrechnung ohne Bestätigung berühren, niemals Schlüssel per Chat erstellen/rotieren, niemals Code/Konfiguration ändern; in Prosa wiedergegeben bei `docs/larry.md:96-102` (§ 4.2). Dies ist der Vorlagen‑Slot, in den Larry Profe seine eigenen Kindersicherheits‑Regeln einfügt.
+- **Strikte „never“-Liste.** `src/larry/prompts.ts:38-44` — fünf Punkte: niemals Kundendaten löschen, niemals Objektinhalte lesen, niemals Abrechnung ohne Bestätigung berühren, niemals Schlüssel per Chat erstellen/rotieren, niemals Code/Konfiguration ändern; in Prosa wiedergegeben bei `docs/larry.md:96-102` (§4.2). Dies ist der Vorlagen‑Slot, in den Larry Profe seine eigenen Kindersicherheits‑Regeln einfügt.
 - **Handgefertigtes Tool‑Protokoll.** Das Modell muss nur mit einer einzeiligen `{"tool": "<name>", "args": {...}}` antworten (`prompts.ts:50-51`), nicht mit Anthropics `tool_use`‑Inhaltsblöcken. Geparst von `parseToolCall` (`chat.ts:273-289`); geschleift von `generateReplyWithTools` (`:236-267`), begrenzt auf `MAX_TOOL_HOPS = 2` (`:44`). Die Mandanten‑bezogene Sicherheit befindet sich in `src/larry/tools.ts:47-48, 342-394`.
 - **Fallback‑Kette, kein Retry/Backoff.** `chat.ts:295-314` `generateReply` versucht jedes Modell einmal, fällt bei beiden Fehlschlägen zu `cannedErrorReply(locale)` (`prompts.ts:67-71`) über.
 - **Audit‑Sink.** `migrations/0011_larry_audit.sql:5-23` — D1‑Tabelle, Zeilenarten `chat`/`tool`, Spalten u.a. `tenant_id`, `locale`, `tools_used`, `outcome`, `latency_ms`, `prompt_tokens`, `completion_tokens`. Schreiber `src/larry/audit.ts:36-67, 70-97` arbeiten nach bestem Bemühen, werfen nie. Token‑Zahlen sind eine grobe Schätzung `text.length / 4` (`audit.ts:31-33`), nicht die echten Modell‑`usage` — Claude‑Antworten enthalten exakte Token‑Zahlen, die das Audit von Larry Profe präzise erfassen sollte.
@@ -37,6 +37,8 @@ Der Eigentümer hat entschieden, dass Larry Profe die **Claude‑API** mit **M
 6. **Den Avatar‑Zustand `denying` entfernen oder abschwächen** für ein Kinder‑Produkt — die Kopfschüttel‑Körpersprache (`larry.css:87-98`) wirkt wie „du liegst falsch“; lieber `thinking`→`presenting` für Korrekturen verwenden.
 
 ## Modell‑Routing‑Tabelle
+
+Preis-/Modell-IDs stammen aus dem `claude-api`-Skill (gecached 2026-06-24; die Einführungspreise für Sonnet 5 gelten bis 2026-08-31), nicht aus dem Trainingsgedächtnis. Die Kostenschätzungen gehen von einem gemeinsamen System-Prompt-Präfix aus (siehe Caching unten) sowie einer Nutzlast pro Aufruf von {Aufgabe, Schülerschritte, Bewertungsergebnis}; die Zahlen sind Schätzwerte, die gegen echte Prompts validiert werden müssen, keine Messungen.
 
 | Schwierigkeitsstufe | Modell‑ID | $/MTok ein / aus | Geschätzte Token ein → aus | Geschätzte Kosten / 1.000 Erklärungen | Latenz‑Ziel |
 |---|---|---|---|---|---|
@@ -136,6 +138,8 @@ Zwei unabhängige Schichten:
 - `migrations/0011_larry_audit.sql`
 - `packages/design-system/larry/LarryAvatar.tsx`, `larry.css`
 - `packages/design-system/src/larry-chat/useLarryChat.ts:1-30`
+
+Alle Pfade sind relativ zu `/Users/estebanrey/Documents/dev/ignia-object-storage/`.
 
 **Claude‑API‑Fakten (aus dem `claude-api`‑Skill, gecached 2026‑06‑24; nicht aus dem Trainingsgedächtnis):**
 - Model IDs/pricing: `claude-haiku-4-5` ($1/$5 per MTok), `claude-sonnet-5` ($3/$15, intro $2/$10 thru 2026-08-31), `claude-opus-5` ($5/$25) — skill's "Current Models" table.

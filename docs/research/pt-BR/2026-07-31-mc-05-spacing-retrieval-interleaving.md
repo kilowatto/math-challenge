@@ -67,7 +67,7 @@ A aprendizagem por domínio de Bloom exige ~80-90% de acurácia antes de avança
 
 ### 7. Curvas de esquecimento
 
-A curva clássica de Ebbinghaus: perda acentuada no início (~42% esquecido em 20 minutos, ~67% em 24 horas) seguida por uma longa cauda de achatamento [16]. Ebbinghaus modelou isso como aproximadamente exponencial, mas o consenso moderno — e a razão pela qual o FSRS substituiu seu próprio modelo exponencial por uma curva de lei de potência no FSRS-4.5/6 — é que o esquecimento real desacelera mais rápido do que a decaimento exponencial puro prevê [16][10].
+A curva clássica de Ebbinghaus: perda acentuada no início (~42% esquecido em 20 minutos, ~67% em 24 horas) seguida por uma longa cauda de achatamento [16]. Ebbinghaus modelou isso como aproximadamente exponencial, mas o consenso moderno — e a razão pela qual o FSRS substituiu seu próprio modelo exponencial por uma curva de lei de potência no FSRS-4,5/6 — é que o esquecimento real desacelera mais rápido do que a decaimento exponencial puro prevê [16][10].
 
 ### 8. Habilidade matemática procedural vs. conceitual
 

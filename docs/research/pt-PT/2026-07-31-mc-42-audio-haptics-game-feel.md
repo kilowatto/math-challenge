@@ -47,7 +47,7 @@ Confetes, contadores de estrelas e animações de mascotes são motivadores extr
 
 ### 6. Haptics na web
 
-O suporte a `navigator.vibrate()` é real mas desigual: Chrome (desktop/Android), Edge, Samsung Internet e a maioria dos navegadores Chromium Android suportam; o Firefox desktop só o suportou até à v128, removido a partir de 129+; e — crucialmente — **o Safari iOS nunca o suportou, em nenhuma versão de 3.2 a 26.5** [5][6]. Como qualquer WebView iOS usa WebKit, isto não é um problema de “trocar de navegador”. A vibração é, na melhor das hipóteses, um acento no Android/Chromium, nunca o canal principal de feedback, pois uma parte significativa da frota‑alvo (todos os iPad/iPhone) não recebe nada. Nenhuma API web expõe o Taptic Engine do iOS como alternativa.
+O suporte a `navigator.vibrate()` é real mas desigual: Chrome (desktop/Android), Edge, Samsung Internet e a maioria dos navegadores Chromium Android suportam; o Firefox desktop só o suportou até à v128, removido a partir de 129+; e — crucialmente — **o Safari iOS nunca o suportou, em nenhuma versão de 3,2 a 26,5** [5][6]. Como qualquer WebView iOS usa WebKit, isto não é um problema de “trocar de navegador”. A vibração é, na melhor das hipóteses, um acento no Android/Chromium, nunca o canal principal de feedback, pois uma parte significativa da frota‑alvo (todos os iPad/iPhone) não recebe nada. Nenhuma API web expõe o Taptic Engine do iOS como alternativa.
 
 ### 7. `prefers-reduced-motion`
 
@@ -63,7 +63,7 @@ Chrome e Safari bloqueiam áudio com som antes de um gesto do utilizador, a meno
 
 ### 10. O feedback nunca pode ser apenas som
 
-WCAG 1.2.1 exige um equivalente baseado em texto para conteúdo apenas áudio, pois o texto pode ser percebido por qualquer modalidade sensorial [12]. As Game Accessibility Guidelines são mais diretas: “garantir que nenhuma informação essencial seja transmitida apenas por sons”, e informação áudio suplementar deve ser replicada em texto/visuais [14]. Para o Math Challenge cada sinal de correto/incorreto, instrução e celebração precisa de uma forma visual (e, quando relevante, textual) que funcione totalmente em mute — restrição também exigida independentemente pelos §§8 e 9.
+WCAG 1.2.1 exige um equivalente baseado em texto para conteúdo apenas áudio, pois o texto pode ser percebido por qualquer modalidade sensorial [12]. As Game Accessibility Guidelines são mais diretas: “garantir que nenhuma informação essencial seja transmitida apenas por sons”, e informação áudio suplementar deve ser replicada em texto/visuais [14]. Para o Math Challenge cada sinal de correto/incorreto, instrução e celebração precisa de uma forma visual (e, quando relevante, textual) que funcione totalmente em mute — restrição também exigida independentemente pelos §8 e §9.
 
 ### 11. Pipeline de ativos
 
@@ -79,7 +79,7 @@ WCAG 1.2.1 exige um equivalente baseado em texto para conteúdo apenas áudio,
 
 | Capacidade | iOS Safari | Android Chrome | Desktop (Chrome/Edge/Firefox/Safari) | Fonte |
 |---|---|---|---|---|
-| **Vibration API** (`navigator.vibrate`) | **Não suportado**, todas as versões 3.2–26.5 testadas | Suportado (atual) | Chrome v30+/Edge v79+ suportado; Firefox v11–128 **apenas**, removido a partir de 129+; Safari desktop não suportado | caniuse.com/vibration [5]; MDN [6] |
+| **Vibration API** (`navigator.vibrate`) | **Não suportado**, todas as versões 3,2–26,5 testadas | Suportado (atual) | Chrome v30+/Edge v79+ suportado; Firefox v11–128 **apenas**, removido a partir de 129+; Safari desktop não suportado | caniuse.com/vibration [5]; MDN [6] |
 | **Web Audio API** | Suportado desde Safari 6 | Suportado (atual) | Chrome v14+, Edge v12+, Firefox v25+, Safari v6+ todos suportados | caniuse.com/audio-api [16]; MDN [15] |
 | **Autoplay (audio with sound)** | Bloqueado antes de gesto; vídeo sem som ou silenciado pode reproduzir‑se automaticamente; `playsinline` necessário em linha | Bloqueado antes de gesto a menos que silenciado; Chrome MEI pode permitir origens frequentes | Chrome/Edge: bloqueado a menos que silenciado/gesto/MEI; Firefox: preferências granulares por domínio; Safari desktop: mesma política que iOS | WebKit blog [10]; Chrome blog [9]; MDN [11] |
 | **`speechSynthesis`** | Suportado desde Safari 7; **contagem/qualidade de vozes por idioma é propriedade do SO** | Suportado (atual); o navegador de sistema Android não o possui | Chrome v33+, Edge v14+, Firefox v49+, Safari v7+ todos suportados | caniuse.com/speech-synthesis [7]; MDN [8] |

@@ -80,7 +80,7 @@ Kuhfeld, Soland & Lewis analisaram 5,4 milhões de estudantes dos EUA nas série
 | Tutoria humana especializada vs. sem tutoria (estimativa contemporânea) | ~+0,7-1,0 SD | VanLehn 2011 line of research [5] | Média — teto para o que a tutoria humana ao vivo plausivelmente alcança hoje |
 | Prática ("fazer") vs. leitura/visualização, benefício de aprendizagem por unidade | ~6x | Koedinger et al. 2015, "doer effect" [6] | Muito alta — o número único mais acionável para o design de sessões |
 | Taxa de conclusão de MOOC, plataformas de elite, 2012 | ~22 % média | HarvardX/MITx data [8] | Média — reformula o que deve ser medido como "sucesso" |
-| Perda de desempenho em matemática, outono 2021 vs. outono 2019 (1.º ao 8.º ano) | −0,20 a −0,27 SD | Kuhfeld, Soland & Lewis 2022 [12] | Alta — quantifica o risco de instrução remota de matemática não supervisionada |
+| Perda de desempenho em matemática, outono 2021 vs. outono 2019 (3.º ao 8.º ano) | −0,20 a −0,27 SD | Kuhfeld, Soland & Lewis 2022 [12] | Alta — quantifica o risco de instrução remota de matemática não supervisionada |
 | Perda de desempenho em leitura, mesmo período | −0,09 a −0,18 SD | Kuhfeld, Soland & Lewis 2022 [12] | Média — a matemática é a disciplina mais frágil, a nossa disciplina |
 | Crescimento da diferença de desempenho baseada na pobreza, mesmo período | +0,10 a +0,20 SD mais ampla | Kuhfeld, Soland & Lewis 2022 [12] | Alta — risco de equidade da entrega apenas auto‑ritmada |
 | Espetadores da Sesame Street, desempenho adequado à série na adolescência | +14 pontos percentuais | Kearney & Levine 2019 [10] | Média — resultado a longo prazo de conteúdo liderado por personagens, requer anos de rigor curricular para alcançar |

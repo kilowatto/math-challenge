@@ -102,7 +102,7 @@ O próprio quadro dos quatro pilares trata «socialmente interativo» como um do
    https://www.sciencedirect.com/science/article/pii/S1071581914001426  
 
 4. "Interação de crianças com dispositivos de ecrã tátil: desempenho e validade da lei de Fitts (comparação de tempo de movimento, arrastar‑e‑soltar vs. toque, idades 4‑6 vs. 7‑10)."  
-   https://www.researchgate.net/publication/355490786_Children's_interaction_with_touchscreen_devices_Performance_and_validity_of_Fitts%27_law  
+   https://www.researchgate.net/publication/355490786_Children's_interaction_with_touchscreen_devices_Performance_and_validity_of_Fitts'_law  
 
 5. "Dimensões físicas das interações de crianças com ecrãs táteis: Lições aprendidas" (seis estudos, mais de 180 participantes, incluindo 116 crianças; cita Baloian et al. 2013 sobre dificuldade de traçar/double‑tap/arrastar‑e‑soltar).  
    https://www.sciencedirect.com/science/article/pii/S1071581918302441  

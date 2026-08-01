@@ -22,6 +22,7 @@ import { validar, extraerJSON } from "./esquema.mjs";
 import { ESQUEMA_VEREDICTO } from "./cliente.mjs";
 import { construirSarif } from "./sarif.mjs";
 import { comparar } from "./informe.mjs";
+import { extraerCitasTextuales, verificarEvidencia } from "./evidencia.mjs";
 
 const universo = cargarUniverso();
 let fallos = 0;
@@ -254,5 +255,58 @@ comprobar("un hallazgo que ya no está cuenta como resuelto",
 comprobar("uno nuevo se distingue de uno que ya estaba",
   comparar([uno, dos], { hallazgos: [uno] }).nuevos.length, 1);
 
-console.log(fallos === 0 ? `\n✓ ${52} comprobaciones` : `\n✗ ${fallos} fallo(s)`);
+// --- Evidencia fabricada: el caso real de la primera corrida --------------
+// `locale-pt-PT` citó D-022 —que existe— y afirmó que pt-PT.json contenía
+// "Ainda sem versión pública". El archivo dice "versão". Cita válida, evidencia
+// inventada, y salió clasificado como bloqueante. Esto es esa corrida,
+// reproducida con las cadenas exactas.
+console.log("\nEvidencia fabricada — el caso que se coló en la corrida real\n");
+
+const TURNO_REAL = 'El archivo apps/web/src/i18n/pt-PT.json contiene "status": "Em construção. Ainda sem versão pública."';
+const cartaPT = POR_ID.get("locale-pt-PT");
+const hPT = (evidencia) => ({
+  archivo: "apps/web/src/i18n/pt-PT.json", linea: 21, gravedad: "bloqueante",
+  resumen: "palabra en español en el locale pt-PT", evidencia,
+  cita_tipo: "decision", cita_id: "D-022", arreglo: "usar versão",
+});
+
+comprobar(
+  "la evidencia inventada YA NO bloquea",
+  clasificar([hPT('La clave contiene el fragmento "Ainda sem versión pública".')], cartaPT, universo, new Map(), TURNO_REAL).bloqueantes.length,
+  0,
+);
+comprobar(
+  "pero se sigue reportando — puede tener razón de fondo",
+  clasificar([hPT('La clave contiene el fragmento "Ainda sem versión pública".')], cartaPT, universo, new Map(), TURNO_REAL).reportados[0].evidenciaNoVerificable,
+  true,
+);
+comprobar(
+  "la misma evidencia, si fuera cierta, SÍ bloquea",
+  clasificar([hPT('La clave contiene el fragmento "Ainda sem versão pública".')], cartaPT, universo, new Map(), TURNO_REAL).bloqueantes.length,
+  1,
+);
+comprobar(
+  "sin turno que comparar, no se degrada nada (no se inventa un veredicto)",
+  clasificar([hPT('cita "inventada totalmente aqui"')], cartaPT, universo, new Map(), null).bloqueantes.length,
+  1,
+);
+comprobar(
+  "un auditor que parafrasea sin citar pasa — limitación conocida, no un pase",
+  verificarEvidencia({ evidencia: "El archivo usa una palabra del castellano." }, TURNO_REAL).sinCitas,
+  true,
+);
+comprobar("extrae de acentos graves", extraerCitasTextuales("dice `Ainda sem versão`").length, 1);
+comprobar("extrae de comillas angulares", extraerCitasTextuales("dice «Ainda sem versão»").length, 1);
+comprobar(
+  "los acentos NO se normalizan — versión ≠ versão es justo el fallo a detectar",
+  verificarEvidencia({ evidencia: '"Ainda sem versión"' }, TURNO_REAL).verificable,
+  false,
+);
+comprobar(
+  "un salto de línea de más no marca como fabricada una cita correcta",
+  verificarEvidencia({ evidencia: '"Ainda sem\n  versão pública"' }, TURNO_REAL).verificable,
+  true,
+);
+
+console.log(fallos === 0 ? `\n✓ ${61} comprobaciones` : `\n✗ ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

@@ -22,8 +22,25 @@ import { readFileSync, existsSync } from "node:fs";
 
 const ARCHIVO = new URL("./ANULACIONES.md", import.meta.url).pathname;
 
+/**
+ * La ruta se normaliza antes de entrar en la huella.
+ *
+ * El campo `archivo` que devuelve el modelo no siempre es una ruta: en una
+ * corrida real llegó `"fonts.css, tokens.css"` —dos archivos en un campo— y
+ * `"wrangler.toml (no incluido en el diff)"`. Con la ruta cruda, una anulación
+ * escrita a mano nunca empareja con el hallazgo que pretende anular, y el
+ * mecanismo entero queda roto sin avisar. Se toma el primer archivo y se le
+ * quita la prosa, igual que para SARIF.
+ */
+export function normalizarRuta(archivo) {
+  return String(archivo ?? "")
+    .split(",")[0]
+    .replace(/\s*\([^)]*\)\s*$/, "")
+    .trim();
+}
+
 export function huella(auditorId, archivo, cita) {
-  return `${auditorId}·${archivo}·${cita}`;
+  return `${auditorId}·${normalizarRuta(archivo)}·${cita}`;
 }
 
 /** Mapa huella → { fecha, quien, razon }. */

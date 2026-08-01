@@ -25,10 +25,19 @@ const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
 
 // Solo el shell mínimo. Los siete locales NO se precachean: serían siete
 // páginas completas descargadas para usar una. Se cachean al visitarse.
+//
+// Las fuentes SÍ, y eso lo levantó el auditor `red-lenta` citando mc-47: son
+// auto-alojadas, bloquean la primera pintura de texto, y sin precachear cuestan
+// un viaje de red extra en la segunda visita — justo el RTT que mc-47 dice que
+// anula la ganancia de HTTP/3 en redes con pérdida. Son 2 archivos de la misma
+// fuente variable (Raleway sirve los pesos 300-500 en un solo woff2 por
+// subconjunto), así que el costo del precaché es pequeño y acotado.
 const PRECACHE = [
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  "/fonts/raleway-var-latin.woff2",
+  "/fonts/raleway-var-latin-ext.woff2",
 ];
 
 self.addEventListener("install", (event) => {

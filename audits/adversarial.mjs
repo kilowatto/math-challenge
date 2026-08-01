@@ -10,6 +10,7 @@
 //   node audits/adversarial.mjs <ref>            contra la referencia que digas
 //   node audits/adversarial.mjs --solo kinder,locale-de-DE
 //   node audits/adversarial.mjs --seco           arma todo y NO llama al modelo
+//   node audits/adversarial.mjs --simular        pipeline completo con veredictos falsos
 //   node audits/adversarial.mjs --cartas         valida las 23 cartas y sale
 //
 // Va aparte del gancho pre-commit a propósito. Los deterministas de
@@ -59,6 +60,12 @@ const valorDe = (f) => {
 };
 const soloCartas = tiene("--cartas");
 const seco = tiene("--seco");
+// `--simular` recorre el pipeline COMPLETO —clasificación, anulaciones,
+// informe, SARIF, validación— con veredictos inventados y cero llamadas al
+// modelo. Existe porque el bug que tiró una corrida de 18 minutos y $1.34
+// vivía en el camino del informe, que solo se ejecuta tras una corrida real:
+// ninguna prueba podía tocarlo. Ahora cuesta un segundo.
+const simular = tiene("--simular");
 const preparado = tiene("--preparado");
 const filtro = valorDe("--solo")?.split(",").map((s) => s.trim()).filter(Boolean) ?? null;
 const refExplicita = argv.find((a) => !a.startsWith("--") && a !== valorDe("--solo")) ?? null;
@@ -324,7 +331,7 @@ if (!process.env.CLOUDFLARE_API_TOKEN && existsSync(`${raiz}.env`)) {
 // Verificación previa. Sin esto, una credencial ausente daría 23 auditores "que
 // no encontraron nada", indistinguible de una flota que corrió limpia.
 try {
-  await verificarCredenciales();
+  if (!simular) await verificarCredenciales();
 } catch (err) {
   console.error(`\n✗ no se pudo autenticar contra Workers AI: ${err.message}\n`);
   console.error(`  Guarda las credenciales sin que toquen git ni el historial:  ./scripts/set-keys.sh`);
@@ -339,16 +346,39 @@ try {
 // haría que cada uno pagara el prefijo entero.
 const sesion = `mc-audit-${process.pid}-${archivosCambiados.length}`;
 
+/** Veredicto inventado para `--simular`: uno bloqueante, uno que solo reporta. */
+function veredictoFalso(carta) {
+  const conDecision = carta.cita.find((c) => !c.startsWith("mc-"));
+  const conInvestigacion = carta.cita.find((c) => c.startsWith("mc-"));
+  const base = { archivo: "SIMULADO.md", linea: 1, evidencia: "simulado", arreglo: "simulado" };
+  return {
+    hallazgos: [
+      conDecision && { ...base, gravedad: "bloqueante", resumen: `simulado bloqueante de ${carta.id}`, cita_tipo: "decision", cita_id: conDecision },
+      conInvestigacion && { ...base, gravedad: "menor", resumen: `simulado menor de ${carta.id}`, cita_tipo: "investigacion", cita_id: conInvestigacion },
+    ].filter(Boolean),
+    nota: "veredicto simulado, sin llamada al modelo",
+    uso: { entrada: 1000, salida: 500, cacheada: 100 },
+    modelo: MODELO_PRINCIPAL,
+    reintentos: 0,
+  };
+}
+
 async function correr(trabajo) {
   try {
-    const v = await auditar({ constitucion, turnoUsuario: trabajo.turno, sesion });
+    const v = simular
+      ? veredictoFalso(trabajo.carta)
+      : await auditar({ constitucion, turnoUsuario: trabajo.turno, sesion });
     return { ...trabajo, ...v };
   } catch (err) {
     return { ...trabajo, error: err, hallazgos: [], nota: "" };
   }
 }
 
-console.log(`  ${trabajos.length} llamada(s) · estimado ${dinero}\n`);
+console.log(
+  simular
+    ? `  MODO SIMULADO — ${trabajos.length} auditor(es), veredictos falsos, sin llamadas\n`
+    : `  ${trabajos.length} llamada(s) · estimado ${dinero}\n`,
+);
 
 // La primera va sola. Una entrada de caché solo se puede leer después de que la
 // primera respuesta empieza a llegar; disparar las 23 a la vez haría que las 23
@@ -389,7 +419,7 @@ const invalidos = [];
 const anulados = [];
 
 for (const r of resultados) {
-  const c = clasificar(r.hallazgos, r.carta, universo, anulaciones);
+  const c = clasificar(r.hallazgos, r.carta, universo, anulaciones, r.turno, r.archivos);
   bloqueantes.push(...c.bloqueantes);
   reportados.push(...c.reportados);
   invalidos.push(...c.invalidos);
@@ -401,7 +431,19 @@ const declinados = resultados.filter((r) => r.declinado);
 
 // ------------------------------------------------------------- 8. el informe
 const imprimir = (h) => {
-  console.log(`\n  ${h.auditor} · ${h.archivo}${h.linea ? `:${h.linea}` : ""}  [${h.cita_id}]`);
+  const marca = h.evidenciaNoVerificable
+    ? "  ⚠ EVIDENCIA NO VERIFICABLE"
+    : h.archivoNoMostrado
+      ? "  ⚠ ARCHIVO NO MOSTRADO"
+      : "";
+  console.log(`\n  ${h.auditor} · ${h.archivo}${h.linea ? `:${h.linea}` : ""}  [${h.cita_id}]${marca}`);
+  if (h.evidenciaNoVerificable) {
+    console.log(`    degradado: citó ${h.citasFaltantes.map((c) => `"${c.slice(0, 48)}"`).join(", ")}`);
+    console.log(`    y eso no aparece en nada de lo que se le mostró. No bloquea.`);
+  }
+  if (h.archivoNoMostrado) {
+    console.log(`    degradado: este auditor nunca vio ese archivo. No bloquea.`);
+  }
   console.log(`    ${h.resumen}`);
   console.log(`    evidencia: ${h.evidencia}`);
   console.log(`    arreglo:   ${h.arreglo}`);
@@ -452,6 +494,18 @@ const uso = resultados.reduce(
 // El informe se escribe SIEMPRE, incluso sin hallazgos: una corrida limpia que
 // no deja rastro no se puede citar en un PR, y CLAUDE.md pide que toda
 // afirmación factual se pueda re-ejecutar.
+// El costo se calcula ANTES del informe porque el informe lo lleva dentro.
+// Estaba después, y `costo: real` reventaba con "Cannot access 'real' before
+// initialization" — al final de una corrida de 18 minutos y $1.34, que se
+// perdió entera. El error no apareció en ninguna prueba porque el informe solo
+// se escribe tras una corrida real, y las pruebas usan datos a mano.
+const p = PRECIOS[MODELO_PRINCIPAL];
+const real = p
+  ? ((uso.entrada - uso.cacheada) / 1e6) * p.entrada +
+    (uso.cacheada / 1e6) * (p.cacheada ?? p.entrada) +
+    (uso.salida / 1e6) * p.salida
+  : null;
+
 const { diff, rutaMd, rutaSarif, erroresSarif } = escribirInforme({
   bloqueantes,
   reportados,
@@ -471,6 +525,7 @@ const { diff, rutaMd, rutaSarif, erroresSarif } = escribirInforme({
   },
   universo,
   cartas: POR_ID,
+  simulado: simular,
 });
 
 console.log(`\n${"─".repeat(72)}`);
@@ -487,13 +542,6 @@ if (erroresSarif.length) {
   console.error(`  ⚠ el SARIF NO cumple el esquema oficial:`);
   for (const e of erroresSarif.slice(0, 5)) console.error(`    · ${e}`);
 }
-const p = PRECIOS[MODELO_PRINCIPAL];
-const real = p
-  ? ((uso.entrada - uso.cacheada) / 1e6) * p.entrada +
-    (uso.cacheada / 1e6) * (p.cacheada ?? p.entrada) +
-    (uso.salida / 1e6) * p.salida
-  : null;
-
 console.log(
   `  tokens: ${uso.entrada.toLocaleString("es-MX")} entrada (${uso.cacheada.toLocaleString("es-MX")} de caché) · ` +
     `${uso.salida.toLocaleString("es-MX")} salida${real === null ? "" : ` · ~$${real.toFixed(3)} USD`}`,
@@ -506,6 +554,16 @@ if (uso.reintentos > 0) {
     `  ⚠ ${uso.reintentos} reintento(s) por veredicto mal formado. El JSON de Workers AI es best-effort;`,
   );
   console.log(`    si esto sube, el esquema le está quedando grande al modelo.`);
+}
+
+// En `--simular` los hallazgos son entrada, no resultado: se inventaron para
+// ejercitar la clasificación. Lo que se está comprobando es que el PIPELINE
+// funcione —que clasifique, escriba el informe y produzca SARIF válido—, así
+// que solo falla si algo se rompió de verdad.
+if (simular) {
+  const roto = erroresSarif.length > 0 || conError.length > 0;
+  console.log(roto ? "\n✗ el camino del informe está roto" : "\n✓ pipeline completo: clasificación, informe y SARIF válido");
+  process.exit(roto ? 1 : 0);
 }
 
 // Un auditor que no pudo correr no es un auditor que aprobó.

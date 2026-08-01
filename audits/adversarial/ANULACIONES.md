@@ -47,4 +47,42 @@ es saltarse el proceso con papeleo.
 
 ## Anulaciones vigentes
 
-*(ninguna todavía — F1 acaba de construir la flota)*
+### `pwa-android` · `apps/web/public/manifest.webmanifest` · `D-031` · 2026-07-31 · Esteban
+
+Razón: falso positivo, comprobable con aritmética. El auditor asume que el arte
+del ícono ocupa todo el lienzo y por eso se recortaría en un recorte maskable.
+No es el caso: `scripts/gen-icons.mjs` dibuja el "+" con `arm = 0.44·size`
+centrado, así que el glifo ocupa del 28% al 72% del lienzo — holgadamente dentro
+del área segura del 80% que Android garantiza. El fondo naranja cubre el lienzo
+entero **a propósito**, que es justo el diseño correcto para un maskable, y está
+escrito en el comentario del generador. Compartir archivo entre `any` y
+`maskable` es un olor válido en general y aquí no aplica.
+
+Se revisará cuando entre el arte definitivo de Recraft: si ese arte no respeta
+el área segura, esta anulación deja de valer y hay que borrarla.
+
+### `locale-fr-FR` · `apps/web/src/i18n/index.ts` · `D-005` · 2026-07-31 · Esteban
+
+Razón: el hallazgo es correcto y llega antes de tiempo. `MATH_CONVENTIONS` está
+definido y hoy no lo consume nadie porque **no existe todavía interfaz que
+muestre números** — el sitio actual es texto. La tabla es el contrato, no la
+implementación, y aplicarla exige el motor de reto.
+
+No se pierde: F3 lleva el criterio explícito de que la puntuación y los ítems se
+rendericen con la convención del locale, y F5 lo lleva para el banco de ítems.
+Esta anulación caduca cuando F3 arranque; si para entonces sigue sin aplicarse,
+el hallazgo vuelve a bloquear y con razón.
+
+### `pwa-android` · `apps/web/src/styles/fonts.css` · `D-031` · 2026-07-31 · Esteban
+
+Razón: el hallazgo es correcto y destapa un **conflicto entre dos decisiones**
+que no me toca resolver a mí. D-031 dice literal "incluyendo tipografía del
+sistema" por plataforma; `docs/guia-de-estilo.md` fija Raleway como la
+tipografía de Ignia, y en F0 se auto-alojó como fuente variable precisamente
+para eliminar las peticiones a terceros. Las dos no pueden ser ciertas a la vez
+en Android.
+
+No se anula porque el auditor se equivoque —no se equivoca— sino porque la
+salida es una decisión del dueño sobre cuál manda, y esa decisión no existe.
+Queda levantada como tensión abierta **T-8** en `docs/decisions.md`. Esta
+anulación caduca en cuanto T-8 se cierre.

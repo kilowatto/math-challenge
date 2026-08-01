@@ -7,6 +7,7 @@
 
 import { verificarCita } from "./citas.mjs";
 import { huella } from "./anulaciones.mjs";
+import { verificarEvidencia, archivoFueMostrado } from "./evidencia.mjs";
 
 /**
  * Reparte los hallazgos de un auditor en cuatro cubetas.
@@ -16,7 +17,7 @@ import { huella } from "./anulaciones.mjs";
  *   invalidos   · regla 1: sin cita real o sin autoridad para invocarla
  *   anulados    · regla 2: bloqueaba, y alguien escribió por qué no debe
  */
-export function clasificar(hallazgos, carta, universo, anulaciones = new Map()) {
+export function clasificar(hallazgos, carta, universo, anulaciones = new Map(), turnoMostrado = null, archivosMostrados = null) {
   const bloqueantes = [];
   const reportados = [];
   const invalidos = [];
@@ -48,6 +49,35 @@ export function clasificar(hallazgos, carta, universo, anulaciones = new Map()) 
     if (!(v.puedeBloquear && h.gravedad === "bloqueante")) {
       reportados.push({ ...hallazgo, clase: v.clase });
       continue;
+    }
+
+    // Regla 1, tercera capa: la cita existe, pero ¿la evidencia también?
+    // Un auditor citó D-022 —real— y afirmó ver la cadena "versión" en un
+    // archivo que dice "versão". La cita válida lo hizo bloqueante. Un hallazgo
+    // cuyas citas textuales no aparecen en nada de lo que se le mostró deja de
+    // bloquear: sigue reportándose, porque puede tener razón de fondo, pero no
+    // detiene a nadie con una prueba que nadie puede encontrar.
+    // ¿Y el hallazgo es sobre un archivo que este auditor llegó a ver?
+    if (archivosMostrados && !archivoFueMostrado(h.archivo, archivosMostrados)) {
+      reportados.push({
+        ...hallazgo,
+        clase: v.clase,
+        archivoNoMostrado: true,
+      });
+      continue;
+    }
+
+    if (turnoMostrado) {
+      const ev = verificarEvidencia(h, turnoMostrado);
+      if (!ev.verificable) {
+        reportados.push({
+          ...hallazgo,
+          clase: v.clase,
+          evidenciaNoVerificable: true,
+          citasFaltantes: ev.faltantes,
+        });
+        continue;
+      }
     }
 
     // Regla 2: anular exige haberlo escrito, y queda en el historial.

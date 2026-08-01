@@ -28,17 +28,20 @@ import { construirSarif } from "./sarif.mjs";
 import { validarSarif } from "./validar-sarif.mjs";
 
 const DIR = new URL("./informes/", import.meta.url).pathname;
-const JSON_PATH = `${DIR}ultimo.json`;
-const MD_PATH = `${DIR}ultimo.md`;
-const SARIF_PATH = `${DIR}ultimo.sarif`;
+// `--simular` escribe a otro nombre. Si escribiera sobre `ultimo.*` pisaría la
+// línea base contra la que se compara la siguiente corrida real, y el "nuevos /
+// resueltos" del plan de remediación pasaría a comparar contra hallazgos
+// inventados. Un plan que compara contra ficción es peor que no comparar.
+const nombre = (base, sim) => `${DIR}${sim ? "simulado" : "ultimo"}.${base}`;
 
 const clave = (h) => huella(h.auditor, h.archivo, h.cita_id);
 
 /** Lee la corrida anterior. Devuelve null si es la primera. */
-export function leerAnterior() {
-  if (!existsSync(JSON_PATH)) return null;
+export function leerAnterior(simulado = false) {
+  const ruta = nombre("json", simulado);
+  if (!existsSync(ruta)) return null;
   try {
-    return JSON.parse(readFileSync(JSON_PATH, "utf8"));
+    return JSON.parse(readFileSync(ruta, "utf8"));
   } catch {
     return null;
   }
@@ -156,6 +159,12 @@ function renderMarkdown({ hallazgos, diff, meta, anulados, invalidos, fallidos }
           `  \n  ` +
           `\`${h.auditor}\` · **[${h.cita_id}]** · ${h.gravedad}${esNuevo && !diff.primera ? " · 🆕 nuevo" : ""}`,
       );
+      if (h.evidenciaNoVerificable) {
+        L.push(
+          `  - ⚠️ **Evidencia no verificable.** Citó ${h.citasFaltantes.map((c) => `\`${c.slice(0, 60)}\``).join(", ")}, ` +
+            `que no aparece en nada de lo que se le mostró. **Degradado: no bloquea.**`,
+        );
+      }
       L.push(`  - **Evidencia:** ${h.evidencia}`);
       L.push(`  - **Arreglo:** ${h.arreglo}`);
       L.push("");
@@ -202,8 +211,11 @@ function renderMarkdown({ hallazgos, diff, meta, anulados, invalidos, fallidos }
 }
 
 /** Escribe los dos archivos y devuelve el diff contra la corrida anterior. */
-export function escribirInforme({ bloqueantes, reportados, anulados, invalidos, fallidos, meta, universo, cartas }) {
-  const anterior = leerAnterior();
+export function escribirInforme({ bloqueantes, reportados, anulados, invalidos, fallidos, meta, universo, cartas, simulado = false }) {
+  const JSON_PATH = nombre("json", simulado);
+  const MD_PATH = nombre("md", simulado);
+  const SARIF_PATH = nombre("sarif", simulado);
+  const anterior = leerAnterior(simulado);
 
   const hallazgos = [
     ...bloqueantes.map((h) => ({ ...h, bloquea: true })),

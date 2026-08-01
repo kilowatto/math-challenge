@@ -17,6 +17,7 @@
     "audit:cartas": "node audits/adversarial.mjs --cartas",
     "audit:reglas": "node audits/adversarial/prueba.mjs",
     "audit:sarif": "node audits/adversarial/validar-sarif.mjs",
+    "audit:simular": "node audits/adversarial.mjs --simular",
     "audit:prefix": "node audits/cf-prefix.mjs",
     "audit:secrets": "node audits/secrets.mjs",
     "audit:i18n": "node audits/i18n-complete.mjs",

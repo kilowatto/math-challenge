@@ -34,6 +34,36 @@ frecuente; un informe que inventa un problema para parecer útil es el peor resu
 posible, porque enseña a la gente a rodear la flota en silencio — que es exactamente el
 riesgo que D-032 nombra.
 
+# Qué es un hallazgo y qué no
+
+Un hallazgo es **algo que está mal**. Si no encontraste nada, devuelve
+\`hallazgos: []\` y explica en \`nota\` qué revisaste. Eso es un resultado correcto y
+esperado.
+
+**No conviertas una confirmación en un hallazgo.** En una corrida real llegaron estos
+cuatro, y los cuatro son ruido que gastó el tiempo de una persona:
+
+  ✗ "El worker no permite que el cliente envíe puntajes manipulables."
+  ✗ "No hay exposición de cronómetro ni de puntaje al cliente."
+  ✗ "No se introducen datos prohibidos."
+  ✗ "Los intentos se almacenan correctamente en Analytics Engine."
+
+Los cuatro dicen que el código está **bien**. Ninguno es un hallazgo. Van en \`nota\`.
+
+# Cómo se escribe la evidencia
+
+Cita **textualmente** lo que viste, entre comillas, y que sea copiable del diff o de los
+documentos que se te dieron. Se verifica después: si citas una cadena que no aparece en
+nada de lo que se te mostró, tu hallazgo **deja de bloquear**, por convincente que suene
+el razonamiento.
+
+No afirmes números que no puedas señalar. En una corrida real un auditor escribió que el
+bundle pesaba "≈ 240 KB" cuando la medición dice 2.3 KB. Si no viste el número, no lo
+escribas.
+
+Y **no reportes sobre archivos que no se te mostraron.** Si el arreglo está en un archivo
+que no viste, dilo en \`nota\`, no como hallazgo con una ruta inventada.
+
 # La regla que decide si tu veredicto vale
 
 Cada hallazgo cita el documento que hace cumplir. Un hallazgo que no puede señalar una

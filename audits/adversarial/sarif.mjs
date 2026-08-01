@@ -63,6 +63,26 @@ function helpUri(id, universo) {
   return REPO;
 }
 
+/**
+ * El campo `archivo` que devuelve el modelo no siempre es una ruta.
+ *
+ * Medido en una corrida real, tres formas de romperlo: dos archivos separados
+ * por coma en un solo campo, prosa entre paréntesis («wrangler.toml (no
+ * incluido en el diff)»), y las rutas dinámicas de Astro, cuyos corchetes
+ * `[locale]` **no son válidos en una URI**. El esquema de SARIF exige
+ * `uri-reference`, así que cualquiera de las tres invalida el informe entero.
+ *
+ * Se toma el primer archivo, se le quita la prosa, y se codifica segmento a
+ * segmento — que es lo único que cubre corchetes, espacios y acentos a la vez.
+ */
+export function rutaComoUri(archivo) {
+  const limpio = String(archivo ?? "")
+    .split(",")[0]
+    .replace(/\s*\([^)]*\)\s*$/, "")
+    .trim();
+  return limpio.split("/").map(encodeURIComponent).join("/");
+}
+
 function descripcionRegla(id, universo) {
   if (universo.lineasRojas.has(id)) return universo.lineasRojas.get(id);
   if (universo.decisiones.has(id)) return universo.decisiones.get(id);
@@ -101,7 +121,7 @@ export function construirSarif({ hallazgos, anulados, fallidos, meta, universo, 
     locations: [
       {
         physicalLocation: {
-          artifactLocation: { uri: h.archivo, uriBaseId: "%SRCROOT%" },
+          artifactLocation: { uri: rutaComoUri(h.archivo), uriBaseId: "%SRCROOT%" },
           // SARIF exige startLine >= 1. Un hallazgo no puntual no lleva región,
           // en vez de inventarle la línea 1 y mandar a leer el lugar equivocado.
           ...(h.linea > 0 ? { region: { startLine: h.linea } } : {}),

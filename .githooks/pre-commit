@@ -40,5 +40,16 @@ if ! node audits/adversarial/prueba.mjs >/dev/null; then
   exit 1
 fi
 
-echo "  ✓ 23 cartas válidas · las dos reglas clasifican bien"
+# El pipeline entero —clasificación, anulaciones, informe, SARIF, validación—
+# con veredictos falsos y cero llamadas al modelo. Va aquí porque ese camino
+# solo se ejecutaba tras una corrida real de ~18 minutos, y un bug ahí costó
+# una corrida completa antes de que existiera esta comprobación.
+if ! node audits/adversarial.mjs --simular >/dev/null 2>&1; then
+  node audits/adversarial.mjs --simular 2>&1 | tail -12
+  echo
+  echo "✗ el camino del informe está roto (SARIF, plan de remediación o clasificación)."
+  exit 1
+fi
+
+echo "  ✓ 23 cartas válidas · las dos reglas clasifican bien · informe y SARIF válidos"
 echo "    los adversariales se corren a mano:  node audits/adversarial.mjs"

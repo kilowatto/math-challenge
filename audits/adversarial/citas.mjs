@@ -111,7 +111,7 @@ export function textoDecision(id) {
 
 /**
  * Resumen ejecutivo de una investigación. El documento completo puede pasar de
- * 3.000 palabras; 23 auditores con el texto íntegro de sus citas costarían más
+ * 3.000 palabras; 28 auditores con el texto íntegro de sus citas costarían más
  * que la revisión que justifican. Se manda el encabezado y el resumen.
  */
 export function resumenInvestigacion(id, maxCaracteres = 2500) {

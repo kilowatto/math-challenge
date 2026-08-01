@@ -73,7 +73,7 @@ async function llamarWorkersAI({ modelo, sistema, usuario, esquema, sesion, maxT
         authorization: `Bearer ${token()}`,
         "content-type": "application/json",
         // Manda todas las peticiones de esta corrida a la misma instancia, para
-        // que la caché de prefijo de la constitución acierte. Sin esto, los 23
+        // que la caché de prefijo de la constitución acierte. Sin esto, los 28
         // pueden caer en instancias distintas y cada uno paga el prefijo entero.
         "x-session-affinity": sesion,
       },
@@ -81,7 +81,7 @@ async function llamarWorkersAI({ modelo, sistema, usuario, esquema, sesion, maxT
         model: modelo,
         max_tokens: maxTokens,
         messages: [
-          // El sistema va primero y es idéntico en los 23: es el prefijo que se
+          // El sistema va primero y es idéntico en los 28: es el prefijo que se
           // cachea. Cualquier cosa variable aquí lo invalidaría.
           { role: "system", content: sistema },
           { role: "user", content: usuario },

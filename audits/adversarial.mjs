@@ -11,13 +11,13 @@
 //   node audits/adversarial.mjs --solo kinder,locale-de-DE
 //   node audits/adversarial.mjs --seco           arma todo y NO llama al modelo
 //   node audits/adversarial.mjs --simular        pipeline completo con veredictos falsos
-//   node audits/adversarial.mjs --todos          los 23 aunque no les toque — al cerrar fase
+//   node audits/adversarial.mjs --todos          los 28 aunque no les toque — al cerrar fase
 //   node audits/adversarial.mjs --rutas apps/web/  acota el diff a esas rutas
 //   node audits/adversarial.mjs --cartas         valida las 28 cartas y sale
 //
 // Va aparte del gancho pre-commit a propósito. Los deterministas de
 // audits/run.mjs cuestan milisegundos y bloquean cada commit; estos cuestan
-// dinero y segundos, y bloquear cada commit con 23 llamadas de LLM es
+// dinero y segundos, y bloquear cada commit con 28 llamadas de LLM es
 // exactamente cómo una flota se vuelve el ruido que D-032 teme. Se corre antes
 // de abrir el PR.
 
@@ -43,7 +43,7 @@ const CONCURRENCIA = Number(process.env.MC_AUDIT_CONCURRENCIA ?? 4);
 
 // Archivos que ningún auditor debe leer nunca. No es ahorro cosmético: el diff
 // de un lockfile o de una fuente binaria son miles de tokens que no contienen
-// un solo juicio posible, y los paga cada uno de los 23. Lo que sí importa de
+// un solo juicio posible, y los paga cada uno de los 28. Lo que sí importa de
 // un asset —peso, formato, paleta— ya lo revisan `bundle-budget` y
 // `brand-image`, que son deterministas y cuestan milisegundos.
 const IGNORADOS = [
@@ -68,10 +68,10 @@ const seco = tiene("--seco");
 // vivía en el camino del informe, que solo se ejecuta tras una corrida real:
 // ninguna prueba podía tocarlo. Ahora cuesta un segundo.
 const simular = tiene("--simular");
-// `--todos` despierta a los 23 aunque su alcance no toque el diff.
+// `--todos` despierta a los 28 aunque su alcance no toque el diff.
 //
 // Por defecto solo despierta el que tiene algo que revisar, y eso es lo correcto
-// para el día a día: 23 llamadas por un cambio de documentación son el ruido que
+// para el día a día: 28 llamadas por un cambio de documentación son el ruido que
 // D-032 teme. Pero al CERRAR una fase la pregunta es otra — no "¿qué toca este
 // diff?" sino "¿esta fase entera aguanta a la flota entera?", y ahí un auditor
 // dormido es un área sin revisar que nadie declaró.
@@ -224,7 +224,7 @@ const dormidos = CARTAS.length - plan.length;
 
 console.log("Flota adversarial — D-032, F1\n");
 console.log(`  modo      ${modo}${rama ? ` (${rama})` : ""}${base ? ` · base ${base}` : ""}`);
-if (todos) console.log(`  modo      TODOS los 23 forzados (cierre de fase)`);
+if (todos) console.log(`  modo      TODOS los 28 forzados (cierre de fase)`);
 if (rutas.length) console.log(`  acotado   ${rutas.join(", ")}`);
 console.log(
   `  cambio    ${archivosCambiados.length} archivo(s) revisables` +
@@ -372,7 +372,7 @@ if (!process.env.CLOUDFLARE_API_TOKEN && existsSync(`${raiz}.env`)) {
   process.loadEnvFile(`${raiz}.env`);
 }
 
-// Verificación previa. Sin esto, una credencial ausente daría 23 auditores "que
+// Verificación previa. Sin esto, una credencial ausente daría 28 auditores "que
 // no encontraron nada", indistinguible de una flota que corrió limpia.
 try {
   if (!simular) await verificarCredenciales();
@@ -385,7 +385,7 @@ try {
   process.exit(1);
 }
 
-// Un identificador estable por corrida: manda los 23 a la misma instancia para
+// Un identificador estable por corrida: manda los 28 a la misma instancia para
 // que la caché de prefijo de la constitución acierte. Cambiarlo entre auditores
 // haría que cada uno pagara el prefijo entero.
 const sesion = `mc-audit-${process.pid}-${archivosCambiados.length}`;
@@ -425,7 +425,7 @@ console.log(
 );
 
 // La primera va sola. Una entrada de caché solo se puede leer después de que la
-// primera respuesta empieza a llegar; disparar las 23 a la vez haría que las 23
+// primera respuesta empieza a llegar; disparar las 28 a la vez haría que las 28
 // pagaran precio completo por la constitución.
 const describirResultado = (r, ms) => {
   const t = `${(ms / 1000).toFixed(1)}s`;

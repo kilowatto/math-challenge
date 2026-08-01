@@ -1,0 +1,37 @@
+{
+  // El paquete no tenía `tsconfig.json`, así que `astro check` corría con los
+  // defaults y reportaba seis errores que no eran defectos del código.
+  //
+  // Cuatro de los seis son el mismo: `ts(5097)`, «un import solo puede acabar en
+  // .ts si allowImportingTsExtensions está activo». Este repo importa el motor
+  // de `packages/motor/src/*.ts` **por su ruta con extensión, a propósito**: es
+  // lo que permite correr el MISMO archivo que se despliega con
+  // `node --experimental-strip-types` en las pruebas, sin un paso de compilación
+  // que produzca una copia que pueda diferir.
+  //
+  // `noEmit` es obligatorio junto a `allowImportingTsExtensions` — y aquí es
+  // gratis, porque quien emite es Astro, no `tsc`.
+  // `base` y no `strict`. Poner `strict` de golpe sobre un paquete que nunca tuvo
+  // `tsconfig.json` no arregla nada: destapa 22 errores de una vez —variables sin
+  // usar, props opcionales, tipos de `Astro.props`— en archivos que acaban de
+  // escribirse, y un check con 22 errores rojos se deja de mirar a la semana.
+  //
+  // Lo que este archivo SÍ arregla son los seis errores que ya había y que no
+  // eran defectos: cuatro de import con extensión `.ts` y dos de tipos de
+  // Cloudflare sin resolver.
+  //
+  // Subir a `strict` es trabajo propio, con su commit, y hay que hacerlo: la
+  // lista de 22 sale con `npx astro check` cambiando esta línea.
+  "extends": "astro/tsconfigs/base",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    // Los tipos de los bindings de Cloudflare —`KVNamespace`, `D1Database`,
+    // `AnalyticsEngineDataset`— vienen de aquí. Sin esta línea, `astro check`
+    // reporta siete «Cannot find name 'KVNamespace'» que no son defectos del
+    // código: son tipos que nadie le dijo dónde encontrar.
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": [".astro/types.d.ts", "**/*", "../../packages/motor/src/**/*"],
+  "exclude": ["dist"]
+}

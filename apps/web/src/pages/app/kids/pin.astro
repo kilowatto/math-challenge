@@ -1,0 +1,908 @@
+---
+/**
+ * `/app/kids/pin` — el niño entra tocando tres dibujos. Criterio #116 · D-012.
+ *
+ * @banda KINDER
+ *
+ * ─── Por qué esta pantalla se mide con la vara de KINDER ────────────────────
+ *
+ * La usan todos los perfiles de niño, de los 4 a los 17. El marcador `@banda
+ * KINDER` de arriba no es una etiqueta decorativa: `audits/touch-targets.mjs` lo
+ * lee y exige **88 px** en cada blanco táctil de este archivo, que es el piso de
+ * `mc-20` §201 — 23.7 mm, el tamaño con el que un niño de cuatro años acierta el
+ * 90% de las veces. El usuario más pequeño fija el piso; para el de dieciséis,
+ * un blanco grande no le cuesta nada.
+ *
+ * Es lo más importante de la pantalla y por eso va primero: **si el toque falla,
+ * el niño no entra y no sabe por qué.** No hay mensaje de error que arregle eso.
+ *
+ * ─── Las nueve casillas se DERIVAN, no se guardan ──────────────────────────
+ *
+ * `rejillaDe(PIN_PAD_SECRET, childProfileId)` decide qué nueve dibujos, de los
+ * 24 del catálogo, le tocan a este niño y en qué orden se pintan. No hay ninguna
+ * columna con la rejilla: dos hermanos en la misma tablet ven dos rejillas
+ * distintas, y lo que se guarda —`child_image_pin.pin_hash`— son POSICIONES
+ * hasheadas, no dibujos. El razonamiento completo está en
+ * `packages/motor/src/pin-imagenes.ts`, que es donde vive la derivación.
+ *
+ * ─── Funciona sin JavaScript, y el orden de los toques nunca va en la URL ───
+ *
+ * Cada casilla es un `<button type="submit" name="t">` cuyo `value` es la
+ * secuencia acumulada **más** esta posición. Sin JavaScript, cada toque hace un
+ * POST y el servidor repinta con el progreso ya reflejado; con JavaScript, los
+ * dos primeros toques se quedan en el cliente y solo el tercero viaja.
+ *
+ * Se usa POST y no GET a propósito, y no por costumbre: con GET la secuencia a
+ * medias quedaría escrita en la barra de direcciones y en el historial del
+ * navegador. En una tablet compartida por dos hermanos, el historial sería
+ * exactamente el atajo que este PIN existe para cerrar.
+ *
+ * El tercer toque envía **sin `requestSubmit()`**: se deja pasar el envío nativo
+ * del botón. `requestSubmit` no existe en iOS Safari 15, que sigue vivo en
+ * iPads viejos, y `mc-33` documenta que el camino de JavaScript falla más de lo
+ * que nadie cree en el dispositivo de referencia.
+ *
+ * ─── Lo que esta pantalla no tiene, a propósito ────────────────────────────
+ *
+ *  · **Ni un campo de texto, ni un teclado.** Línea roja #3. No hay `input` de
+ *    texto, ni `textarea`, ni ninguna región editable: el niño toca, no escribe.
+ *    El único dato que viaja es una secuencia de dígitos que produce el toque.
+ *  · **Cero telemetría.** Línea roja #2 y D-037: no se incluye `Base.astro` —
+ *    que trae el beacon de campo, la navegación pública y el pie de siete
+ *    idiomas— sino un documento propio y mínimo. `audits/telemetria-infantil.mjs`
+ *    vigila este archivo por su ruta.
+ *  · **Ningún bloqueo tras fallar.** Son 504 combinaciones y no hay contador de
+ *    intentos: D-012 dice que la protección real la da el dispositivo del hogar,
+ *    y `mc_h` ya se comprobó antes de pintar una sola casilla. Un candado por
+ *    intentos fallidos castigaría a un niño de cuatro años por equivocarse —
+ *    justo lo que la línea roja #4 y el espíritu de la #8 prohíben. Queda dicho
+ *    aquí como residuo conocido, no como descuido.
+ *  · **Ninguna vergüenza al fallar.** El mensaje dice «esos tres no eran» y
+ *    nada más: sin rojo, sin cruz, sin contador de errores (línea roja #7).
+ *
+ * ─── Dos residuos conocidos, dichos aquí y no en un informe que se pierde ───
+ *
+ *  1. **No existe la pantalla donde el niño ELIGE sus tres dibujos.** D-012 dice
+ *     «3 imágenes que el propio niño eligió» y `child_image_pin` solo tiene fila
+ *     cuando esa elección ocurrió — hoy no ocurre en ninguna parte del repo, así
+ *     que **todo perfil recién creado llega aquí sin `pin_hash`**. Un perfil sin
+ *     PIN no puede acertar nunca: la rejilla sería un juego imposible y el niño
+ *     quedaría fuera de su propio perfil para siempre, que es la línea roja #4
+ *     en su espíritu. Ver el bloque «Un perfil sin PIN todavía» más abajo, que
+ *     es lo que se hace mientras esa pantalla no exista.
+ *  2. **`DESTINO_TRAS_ENTRAR` apunta a la rejilla de caras**, que es de donde
+ *     vino el niño: hoy no hay casa del niño dentro de la aplicación, así que
+ *     entrar con el PIN correcto lo devuelve al mismo sitio. No se arregla desde
+ *     aquí —hace falta la ruta— y **no se arregla dejando pasar sin PIN a quien
+ *     ya tiene `mc_k` abierta**: la sesión de niño dura 12 horas y ese atajo le
+ *     abriría el perfil del hermano a quien toque su cara esa misma tarde, que
+ *     es exactamente lo único que este PIN defiende.
+ *
+ * ─── El contrato con la pantalla que trae al niño hasta aquí ───────────────
+ *
+ * `/app/kids/pin?p=<child_profile_id>`. El id llega de la rejilla de avatares,
+ * que es otro criterio y otro archivo. Aquí se valida siempre contra el
+ * dispositivo del hogar: un `p` de un niño de otra casa no pinta nada.
+ */
+import "../../../styles/fonts.css";
+import "../../../styles/tokens.css";
+/**
+ * La capa de banda, igual que en `app/kids/index.astro`.
+ *
+ * `bandas.css` es lo que convierte `data-band="KINDER"` en la escala de KINDER:
+ * `--text-xs` sube de 14 px a 16 px, `--weight-*` sube a Medium —`mc-20` no deja
+ * bajar de ahí— y `--tap-min` pasa a 88 px, con lo que la regla de `button` de
+ * `tokens.css` protege cualquier control que se añada aquí mañana sin acordarse
+ * del piso. Sin este import la pantalla del PIN y la rejilla de caras, que son
+ * dos pasos del mismo gesto, se pintaban con dos escalas distintas.
+ */
+import "../../../styles/bandas.css";
+import { t, isLocale, DEFAULT_LOCALE, type Locale } from "../../../i18n";
+import {
+  COOKIE_HOGAR,
+  COOKIE_NINO,
+  abrirSesionNino,
+  leerCookies,
+  leerDispositivoDelHogar,
+} from "../../../lib/sesiones";
+import {
+  CASILLAS,
+  LARGO_PIN,
+  hashearPin,
+  pinValido,
+  pinesIguales,
+  rejillaDe,
+  type Dibujo,
+} from "../../../../../../packages/motor/src/pin-imagenes.ts";
+
+export const prerender = false;
+
+/**
+ * Los bindings, tipados por LO QUE LOS RECIBE y no por el tipo global.
+ *
+ * `apps/web` no tiene `tsconfig.json` ni depende de `@cloudflare/workers-types`,
+ * así que escribir `DB: D1Database` en un `.astro` es un `ts(2304)` — el mismo
+ * nombre en un `.ts` pasa solo porque `astro check` no mira los `.ts`. Sacar el
+ * tipo de la firma de la función que va a usarlo dice exactamente lo mismo, no
+ * añade una dependencia y no puede desincronizarse de `lib/sesiones.ts`.
+ */
+type BaseDelHogar = Parameters<typeof leerDispositivoDelHogar>[0];
+type AlmacenDeSesiones = Parameters<typeof abrirSesionNino>[0];
+
+interface Env {
+  DB: BaseDelHogar;
+  SESSION_KV: AlmacenDeSesiones;
+  /**
+   * El secreto del que salen las rejillas y los hashes de PIN. Va con
+   * `wrangler secret put PIN_PAD_SECRET`, **nunca** en `wrangler.jsonc`: si se
+   * filtrara, las nueve casillas de cada niño dejarían de ser un secreto
+   * derivado y pasarían a ser un cálculo que cualquiera repite.
+   */
+  PIN_PAD_SECRET?: string;
+}
+
+/** A dónde va el niño cuando entra. Su casa dentro de la aplicación. */
+const DESTINO_TRAS_ENTRAR = "/app/kids/";
+
+/**
+ * A dónde va quien no debería estar aquí.
+ *
+ * La raíz, que elige idioma y es superficie de adulto. No se responde 404 ni
+ * 403: un código distinto según el caso convertiría esta ruta en un oráculo que
+ * dice si un `child_profile_id` existe.
+ */
+const DESTINO_SIN_PERMISO = "/";
+
+// Esta pantalla no se guarda en ninguna caché ni se indexa. El service worker
+// ya excluye `/app/` (ver `public/sw.js`), y estas cabeceras cubren los
+// intermediarios y los rastreadores que no lo saben.
+//
+// `vary: cookie` porque la respuesta depende de `mc_h`, y `referrer-policy`
+// porque la URL lleva el `child_profile_id` en la barra: es un id opaco y no un
+// dato personal (línea roja #2), pero no tiene por qué salir de este origen.
+const CABECERAS_PRIVADAS: Record<string, string> = {
+  "cache-control": "no-store, private",
+  vary: "cookie",
+  "referrer-policy": "same-origin",
+  "x-robots-tag": "noindex, nofollow",
+};
+for (const [k, v] of Object.entries(CABECERAS_PRIVADAS)) Astro.response.headers.set(k, v);
+
+/**
+ * Toda salida de esta ruta se arma a mano, y no con `Astro.redirect`.
+ *
+ * `Astro.redirect` devuelve una respuesta nueva que **no arrastra las cabeceras
+ * puestas arriba**: el 303 saldría sin `no-store` y sin `vary`. Un intermediario
+ * que guarde «`/app/kids/pin?p=X` manda a la raíz» seguiría echando al niño
+ * **después** de que su papá marcara la tablet como de la casa, y el síntoma
+ * —«tocar mi cara me saca al sitio web»— no apuntaría nunca a una caché.
+ * `app/kids/index.astro` documenta el mismo golpe; se paga una vez.
+ */
+const salidaHacia = (destino: string, extra?: Record<string, string>) =>
+  new Response(null, {
+    status: 303,
+    headers: { ...CABECERAS_PRIVADAS, location: destino, ...extra },
+  });
+
+const env = (Astro.locals as any).runtime?.env as Env | undefined;
+if (!env?.DB || !env?.SESSION_KV || !env?.PIN_PAD_SECRET) {
+  // Sin bindings no se puede derivar la rejilla, y una rejilla inventada sería
+  // peor que un error: el niño tocaría sus tres dibujos y no entraría nunca.
+  return new Response(null, { status: 503, headers: CABECERAS_PRIVADAS });
+}
+const secreto = env.PIN_PAD_SECRET;
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+
+// D-012: `/app/kids` no pinta una sola cara si la petición no viene de un
+// dispositivo que el adulto marcó como de la casa. Se comprueba ANTES de leer
+// el perfil, antes de derivar nada y antes de escribir una línea de HTML.
+//
+// El `try` no es adorno defensivo, y es el mismo de `index.astro`: si la
+// consulta revienta —tabla que todavía no existe, base caída— lo que sale por
+// omisión es la página de error del servidor **en la pantalla de un niño**. Un
+// fallo de lectura aquí significa operativamente que no se pudo demostrar que
+// este aparato sea de la casa, así que no lo es: se falla cerrado y en silencio
+// hacia el adulto.
+let hogar: Awaited<ReturnType<typeof leerDispositivoDelHogar>> = null;
+try {
+  hogar = await leerDispositivoDelHogar(env.DB, cookies[COOKIE_HOGAR]);
+} catch (err) {
+  console.error("pin: no se pudo leer el dispositivo del hogar", String(err).slice(0, 200));
+}
+if (!hogar) return salidaHacia(DESTINO_SIN_PERMISO);
+
+/**
+ * El perfil, con su hash de PIN si lo tiene.
+ *
+ * El `parent_user_id = ?` contra el dueño del dispositivo es la autorización de
+ * verdad: un id de otro hogar no devuelve fila, y la respuesta es la misma
+ * redirección que si no existiera. El `LEFT JOIN` es a propósito — un perfil sin
+ * PIN elegido todavía es un caso real, no un error de datos.
+ */
+interface FilaPerfil {
+  id: string;
+  alias: string;
+  locale: string;
+  parent_user_id: string;
+  pin_hash: string | null;
+}
+
+const perfilId = Astro.url.searchParams.get("p") ?? "";
+let perfil: FilaPerfil | null = null;
+// Mismo `try` y misma razón que arriba: un fallo de lectura no puede acabar en
+// una página de error delante de un niño. Y aquí la salida además coincide con
+// la del perfil que no existe, así que un fallo tampoco distingue un id bueno de
+// uno inventado.
+try {
+  perfil = perfilId
+    ? await env.DB.prepare(
+        "SELECT c.id, c.alias, c.locale, c.parent_user_id, p.pin_hash " +
+          "FROM child_profiles c LEFT JOIN child_image_pin p ON p.child_profile_id = c.id " +
+          "WHERE c.id = ? AND c.parent_user_id = ? AND c.deleted_at IS NULL",
+      )
+        .bind(perfilId, hogar.ownerUserId)
+        .first<FilaPerfil>()
+    : null;
+} catch (err) {
+  console.error("pin: no se pudo leer el perfil", String(err).slice(0, 200));
+}
+if (!perfil) return salidaHacia(DESTINO_SIN_PERMISO);
+
+/**
+ * Un perfil sin PIN todavía: se entra, no se pide lo que no existe.
+ *
+ * `child_image_pin` solo tiene fila cuando el niño ya eligió sus tres dibujos, y
+ * **hoy no hay ninguna pantalla en el repo donde los elija** — o sea que todo
+ * perfil recién creado cae en esta rama. Pintarle la rejilla sería un juego que
+ * no se puede ganar: los tres toques nunca coinciden con un hash que no está,
+ * el mensaje diría «esos tres no eran» para siempre, y el niño se quedaría fuera
+ * de su propio perfil. Eso es cobrar en frustración lo que la línea roja #4
+ * prohíbe cobrar en dinero.
+ *
+ * Y no se está saltando ninguna protección, porque no hay ninguna que saltar:
+ * D-012 dice con esas palabras que **la protección real la da el dispositivo**,
+ * ya comprobado arriba, y que el PIN separa hermanos. Un perfil sin PIN no
+ * separa a nadie todavía. En cuanto exista la pantalla de elección esta rama
+ * deja de ejecutarse sola, sin que nadie tenga que acordarse de quitarla.
+ *
+ * Lo que sí se pierde, dicho de frente: mientras esto viva, un hermano puede
+ * abrir el perfil de otro que aún no eligió PIN. Es el criterio de elección de
+ * PIN el que falta, y está anotado arriba como residuo.
+ *
+ * Y un efecto secundario de un GET, también dicho: esta rama abre sesión sin que
+ * haya un POST de por medio. Hoy no hay prefetch en el proyecto —ni en
+ * `astro.config`, ni un `data-astro-prefetch` en la rejilla de caras— así que
+ * nadie llega aquí sin que un dedo toque una cara. **Si algún día se enciende el
+ * prefetch, esta rama pasa a abrir sesiones al pasar el dedo por encima** y hay
+ * que moverla detrás de un POST.
+ */
+if (!perfil.pin_hash) {
+  const { cookie } = await abrirSesionNino(
+    env.SESSION_KV,
+    { childProfileId: perfil.id, parentUserId: perfil.parent_user_id, creadaEn: Date.now() },
+    cookies[COOKIE_NINO],
+  );
+  return salidaHacia(DESTINO_TRAS_ENTRAR, { "set-cookie": cookie });
+}
+
+/**
+ * El idioma sale del PERFIL, no de la URL ni del navegador.
+ *
+ * Esta ruta no lleva segmento de locale porque no es del sitio público: es
+ * aplicación, no contenido indexable, y no tiene hreflang que cerrar. El idioma
+ * en el que un niño ve su pantalla es un dato del perfil que su padre configuró,
+ * y `Accept-Language` en una tablet compartida diría el idioma del sistema, que
+ * es el de la casa y no siempre el del niño.
+ */
+const locale: Locale = isLocale(perfil.locale) ? perfil.locale : DEFAULT_LOCALE;
+const m = t(locale);
+
+/**
+ * Lee la secuencia de toques que viene en el formulario.
+ *
+ * El formato es `"0.4.7"` — solo dígitos y puntos, nunca texto. Todo lo que no
+ * sea una posición válida de la rejilla se descarta en silencio, y las repetidas
+ * también: `pinValido()` exige tres posiciones DISTINTAS, porque tocar la misma
+ * casilla tres veces es lo que hace un niño que no entendió, y aceptarlo
+ * reduciría el espacio de 504 a 9 sin que nadie lo notara.
+ */
+function leerSecuencia(crudo: string): number[] {
+  const out: number[] = [];
+  for (const trozo of crudo.split(".")) {
+    if (!/^\d{1,2}$/.test(trozo)) continue;
+    const n = Number(trozo);
+    if (n < 0 || n >= CASILLAS || out.includes(n)) continue;
+    out.push(n);
+    if (out.length >= LARGO_PIN) break;
+  }
+  return out;
+}
+
+let hechos: number[] = [];
+let noEranEsos = false;
+
+if (Astro.request.method === "POST") {
+  // 0-RTT. La zona lo tiene activo y ahorra un viaje entero de red en el
+  // dispositivo de referencia, pero `early data` es **replicable por diseño**
+  // (RFC 8470): quien capture los bytes de un intento acertado podría reenviarlos
+  // para abrir sesión otra vez. Se responde 425 y el navegador reintenta solo,
+  // ya con el apretón de manos completo. El niño no ve nada.
+  if (Astro.request.headers.get("early-data") === "1") {
+    return new Response(null, { status: 425, headers: CABECERAS_PRIVADAS });
+  }
+
+  // El formulario es del mismo origen y las tres cookies son `SameSite=Lax`, así
+  // que un POST desde otro sitio no llevaría `mc_h` y moriría en la comprobación
+  // de arriba. Por eso aquí no hace falta un token de CSRF propio.
+  const datos = await Astro.request.formData();
+  hechos = leerSecuencia(String(datos.get("t") ?? ""));
+
+  if (hechos.length >= LARGO_PIN) {
+    let acertó = false;
+    if (perfil.pin_hash && pinValido(hechos)) {
+      const hash = await hashearPin(secreto, perfil.id, hechos);
+      acertó = pinesIguales(hash, perfil.pin_hash);
+    }
+
+    if (acertó) {
+      const { cookie } = await abrirSesionNino(
+        env.SESSION_KV,
+        { childProfileId: perfil.id, parentUserId: perfil.parent_user_id, creadaEn: Date.now() },
+        cookies[COOKIE_NINO],
+      );
+      // 303 y no 302: obliga al navegador a hacer GET sobre el destino, así que
+      // recargar la página siguiente no reenvía el PIN.
+      return salidaHacia(DESTINO_TRAS_ENTRAR, { "set-cookie": cookie });
+    }
+
+    // Se vuelve a empezar sin penalización de ningún tipo: no se cuenta el
+    // fallo, no se retrasa la siguiente vuelta y no se bloquea nada (línea roja
+    // #8, y #4 en su espíritu). Lo único que cambia es que las tres casillas se
+    // vacían, porque dejarlas puestas haría que el siguiente toque fuera el
+    // cuarto de una secuencia que ya falló.
+    hechos = [];
+    noEranEsos = true;
+  }
+}
+
+/** Las nueve de este niño. Siempre las mismas para él, distintas de las de su hermano. */
+const rejilla: Dibujo[] = await rejillaDe(secreto, perfil.id);
+
+/**
+ * Los dibujos son EMOJI, no arte propio, y no es una decisión provisional
+ * disfrazada de definitiva. Las razones, en orden:
+ *
+ *  1. **No hay arte todavía**, y cablear rutas a imágenes inexistentes daría
+ *     nueve cuadros rotos — que en esta pantalla significa un niño que no entra.
+ *  2. **Pesan cero bytes de red.** El dispositivo de referencia es un Android de
+ *     gama baja sobre 4G lento (`mc-47`); 24 SVG en línea o nueve peticiones de
+ *     imagen se pagan en la primera pintura, que es justo donde el niño espera.
+ *  3. El repo ya lo hace: `components/reto/Formatos.astro` cuenta patos con 🦆.
+ *
+ * Y el riesgo, dicho: **la forma exacta del emoji cambia entre Samsung, Google y
+ * Apple.** Aquí eso no rompe nada, y por una razón concreta — el PIN son
+ * POSICIONES, no dibujos (`hashearPin` hashea `"0,4,7"`). Un niño que recuerda
+ * «el de arriba a la izquierda» sigue entrando aunque el gato se dibuje distinto
+ * al cambiar de tablet. El día que exista arte de Recraft, esta tabla cambia y
+ * ningún PIN se invalida.
+ */
+const EMOJI: Record<Dibujo, string> = {
+  sol: "☀️", luna: "🌙", estrella: "⭐", nube: "☁️",
+  arbol: "🌳", flor: "🌻", manzana: "🍎", platano: "🍌",
+  pez: "🐟", gato: "🐱", perro: "🐶", pajaro: "🐦",
+  mariposa: "🦋", abeja: "🐝", rana: "🐸", tortuga: "🐢",
+  casa: "🏠", coche: "🚗", barco: "⛵", avion: "✈️",
+  pelota: "⚽", globo: "🎈", tambor: "🥁", campana: "🔔",
+};
+
+/**
+ * El nombre de cada dibujo, en el idioma del perfil.
+ *
+ * No lo lee el niño —a los cuatro años no lee, y `mc-20` dice que el texto es
+ * apoyo, nunca requisito— sino el lector de pantalla: el del padre que acompaña,
+ * o el del niño con baja visión. Un `<button>` sin nombre accesible es
+ * `button-name` [critical] en axe, y nueve botones sin nombre son nueve botones
+ * idénticos para quien no ve la pantalla.
+ *
+ * Los nombres están AUTORADOS por locale, no traducidos en masa: en `pt-BR` el
+ * perro es «Cachorro» y en `pt-PT` es «Cão»; en `es-MX` el coche es «Carro» y en
+ * `es-ES` «Coche». Un fallback de «es» o de «pt» le pondría a un niño el nombre
+ * de otro país en la boca del lector de pantalla.
+ */
+const NOMBRE: Record<Dibujo, string> = {
+  sol: m.pinDrawSun, luna: m.pinDrawMoon, estrella: m.pinDrawStar, nube: m.pinDrawCloud,
+  arbol: m.pinDrawTree, flor: m.pinDrawFlower, manzana: m.pinDrawApple, platano: m.pinDrawBanana,
+  pez: m.pinDrawFish, gato: m.pinDrawCat, perro: m.pinDrawDog, pajaro: m.pinDrawBird,
+  mariposa: m.pinDrawButterfly, abeja: m.pinDrawBee, rana: m.pinDrawFrog, tortuga: m.pinDrawTurtle,
+  casa: m.pinDrawHouse, coche: m.pinDrawCar, barco: m.pinDrawBoat, avion: m.pinDrawPlane,
+  pelota: m.pinDrawBall, globo: m.pinDrawBalloon, tambor: m.pinDrawDrum, campana: m.pinDrawBell,
+};
+
+/**
+ * El `value` de cada casilla sin JavaScript: lo que ya se tocó, más ésta.
+ *
+ * Si la casilla ya está elegida, el valor no cambia — tocarla otra vez no suma
+ * ni resta. Repetir no es un error que castigar, es un toque que no hace nada.
+ */
+const valorDe = (i: number) => (hechos.includes(i) ? hechos : [...hechos, i]).join(".");
+
+const accion = `/app/kids/pin?p=${encodeURIComponent(perfil.id)}`;
+const estadoTexto = m.pinProgress.replace("{n}", String(hechos.length));
+
+/**
+ * `data-band="KINDER"` en `<html>`, escrito por el SERVIDOR y fijo.
+ *
+ * Fijo aunque aquí el perfil ya se conoce y su banda se podría leer: es el mismo
+ * gesto que la rejilla de caras —tocar mi cara, tocar mis tres dibujos— y las dos
+ * pantallas tienen que medirse igual. Entre el tema del hermano mayor y el de
+ * quien menos lee manda el segundo: un adolescente sabe usar una interfaz
+ * grande, un niño de cuatro años no sabe usar una chica (`mc-20`). Es también lo
+ * que hace verdadero el marcador `@banda KINDER` que lee
+ * `audits/touch-targets.mjs`, que no sabe leer una banda que cambia por fila.
+ *
+ * Nunca desde JavaScript: un tema pintado después del primer render es el
+ * destello blanco del Android de gama baja sobre 4G lento. Y la constante vive
+ * aquí y no en un comentario de plantilla entre el `<!doctype>` y el `<html>`:
+ * ahí el compilador de Astro deja de ver el documento como documento y borra
+ * `<html>`, `<head>` y `<body>` de la salida (lo pagó `app/kids/index.astro`).
+ */
+const BANDA_DE_LA_PANTALLA = "KINDER";
+---
+
+<!doctype html>
+<html lang={m.htmlLang} data-band={BANDA_DE_LA_PANTALLA}>
+  <head>
+    <meta charset="utf-8" />
+    {/* `viewport-fit=cover` para poder respetar las áreas seguras de los cuatro
+        lados en iPad (D-041). Sin `maximum-scale` ni `user-scalable=no`: quitar
+        el zoom es violación de WCAG 2.2 AA 1.4.4, y en un producto infantil lo
+        usa el padre que acompaña. */}
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{m.pinTitle}</title>
+    <meta name="theme-color" content="#F36B1C" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link
+      rel="preload"
+      href="/fonts/raleway-var-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </head>
+
+  <body>
+    <main class="pin">
+      {/* El alias del niño, para que sepa de quién es esta rejilla. Es texto
+          GENERADO por el sistema y elegido entre opciones (D-003), nunca escrito
+          por él: la línea roja #3 no se roza. */}
+      <p class="alias">{perfil.alias}</p>
+      <h1>{m.pinTitle}</h1>
+
+      {noEranEsos && (
+        /* Sin rojo, sin cruz, sin contador. Larry no aparece aquí porque no hay
+           nada que explicar: no es un error de matemáticas, es un toque que no
+           era. `role="status"` y no `role="alert"` — una alerta interrumpe al
+           lector de pantalla a media frase, y esto no es una urgencia. */
+        <p class="reintenta" role="status">{m.pinTryAgain}</p>
+      )}
+
+      {/* `data-largo` es cuántos toques son, para el script. Va como dato del
+          documento y no como un `3` escrito otra vez en el JavaScript: el
+          servidor ya decide con `LARGO_PIN`, y dos números que significan lo
+          mismo en dos sitios se separan el día que uno cambie — con el síntoma
+          de que la rejilla se envía al tercer toque y el servidor pide cuatro. */}
+      <form
+        method="post"
+        action={accion}
+        id="rejilla"
+        data-hechos={hechos.join(".")}
+        data-largo={LARGO_PIN}
+        autocomplete="off"
+      >
+        <div class="casillas" role="group" aria-label={m.pinGridLabel}>
+          {rejilla.map((dibujo, i) => (
+            <button
+              type="submit"
+              class="casilla"
+              name="t"
+              value={valorDe(i)}
+              data-casilla={i}
+              aria-pressed={hechos.includes(i) ? "true" : "false"}
+              aria-label={NOMBRE[dibujo]}
+            >
+              <span aria-hidden="true">{EMOJI[dibujo]}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Cuántos llevas, sin números y sin texto: tres marcas que se llenan.
+            Cambia la FORMA además del color —anillo hueco contra círculo lleno—
+            porque ~8% de los niños varones tiene deficiencia de visión del color
+            (`mc-38`), y un indicador que solo cambia de color no existe para
+            ellos. */}
+        <p class="pasos" aria-hidden="true">
+          {Array.from({ length: LARGO_PIN }, (_, k) => (
+            <span class="paso" data-lleno={hechos.length > k ? "" : undefined}></span>
+          ))}
+        </p>
+
+        {/* Volver a empezar. Un botón grande con un icono y sin una letra: el
+            niño no lee. El nombre accesible va en `aria-label`, que es para el
+            lector de pantalla y no ocupa pantalla.
+
+            Está SIEMPRE presente, incluso con cero toques. Un botón que aparece
+            y desaparece cambia de sitio lo que hay debajo, y un niño que ya
+            apuntó el dedo falla el toque. */}
+        <button type="submit" class="borrar" name="t" value="" data-borrar aria-label={m.pinClear}>
+          <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" focusable="false">
+            <path
+              d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8Z"
+              fill="currentColor"
+            ></path>
+          </svg>
+        </button>
+      </form>
+
+      {/* Solo para lectores de pantalla. Aquí sí se dicen los números —«2 de 3»—
+          porque es la única forma de que quien no ve las marcas sepa cuántas
+          lleva. En la pantalla no aparece ninguna cifra. */}
+      <p class="solo-lectores" role="status" id="estado" data-plantilla={m.pinProgress}>
+        {estadoTexto}
+      </p>
+
+      {/* Una línea para el adulto que acompaña. El niño no la necesita para
+          entrar, y por eso va debajo y en gris: `mc-20` — el texto es apoyo. */}
+      <p class="apoyo">{m.pinHelp}</p>
+    </main>
+
+    <style>
+      /* Fondo limpio y nada más. Sin navegación, sin pie, sin selector de
+         idioma: cada elemento de más en una pantalla de niño es un sitio donde
+         un dedo de cuatro años aterriza por error. */
+      body {
+        min-block-size: 100dvh;
+        margin: 0;
+        background: var(--color-bg);
+        color: var(--color-text);
+      }
+
+      /* D-041: las áreas seguras en los cuatro lados. En horizontal el indicador
+         de inicio del iPad se come el borde inferior, que es justo donde está el
+         botón de volver a empezar.
+
+         El `padding` lateral baja a 8 px en pantallas estrechas a propósito: en
+         Split View a un tercio hay 320 px, y tres casillas de 88 px más dos
+         huecos son 280. Ninguna regla de aquí exige un ancho mínimo mayor que
+         ése: un contenedor que pida más se rompe en multitarea en silencio,
+         y en pantalla completa nadie lo nota nunca. */
+      .pin {
+        box-sizing: border-box;
+        max-inline-size: 34rem;
+        margin-inline: auto;
+        padding-block: max(1rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-bottom));
+        padding-inline:
+          max(clamp(0.5rem, 3vw, 1.25rem), env(safe-area-inset-left))
+          max(clamp(0.5rem, 3vw, 1.25rem), env(safe-area-inset-right));
+        text-align: center;
+      }
+
+      /* El alias, en la voz de la marca. Es de lo poco que se lee aquí. */
+      .alias {
+        font-family: var(--font-marca);
+        /* Nunca Light en KINDER: `mc-20` pide alto grosor de trazo para que se
+           distinga de un vistazo, y `--weight-title` es Raleway 300 en la base.
+           `bandas.css` lo sube a 500 bajo `data-band="KINDER"`, que es el techo
+           REAL de esta Raleway: `fonts.css` la declara `font-weight: 300 500`,
+           así que **un 700 aquí no existe** — el navegador lo recorta a 500 o lo
+           falsifica, y un falso negrita engorda el trazo emborronando el contra-
+           forma de la letra, que es justo lo que `mc-20` pide conservar. Donde
+           hace falta negrita de verdad se cambia de familia, no de número: es lo
+           que hace `bandas.css` con `--font-numeral`. */
+        font-weight: var(--weight-subtitle);
+        font-size: var(--text-lg);
+        color: var(--color-text-brand);
+        margin: 0 0 0.25rem;
+        max-inline-size: none;
+        /* Se recentra porque `bandas.css` alinea al inicio todo `<p>` de una
+           banda de niño, y con razón: centrar párrafos estorba a quien está
+           aprendiendo a leer (`mc-21`). Un alias es UNA palabra sobre el título
+           al que pertenece, no un párrafo que se lee de corrido. Los otros dos
+           `<p>` de esta pantalla sí son frases y sí se quedan alineados al
+           inicio. */
+        text-align: center;
+      }
+
+      h1 {
+        font-family: var(--font-marca);
+        /* Misma razón que el alias, y el mismo techo de 500: en KINDER el grosor
+           manda sobre la escala de pesos por defecto (guia-de-estilo.md, «la
+           excepción de kinder»), pero pedir 700 a una fuente que llega a 500 no
+           da negrita, da negrita falsa. */
+        font-weight: var(--weight-subtitle);
+        font-size: clamp(1.5rem, 5.5vw, 2rem);
+        line-height: 1.2;
+        color: var(--color-text);
+        margin: 0 0 1rem;
+        text-wrap: balance;
+      }
+
+      .reintenta {
+        font-family: var(--font-marca);
+        font-weight: 500;
+        color: var(--color-text);
+        background: var(--color-surface);
+        border-radius: var(--radius);
+        padding: 0.75rem 1rem;
+        margin: 0 auto 1rem;
+        max-inline-size: none;
+      }
+
+      /* --- Las nueve casillas ---------------------------------------------- */
+
+      .casillas {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(var(--tap-kinder), 1fr));
+        gap: clamp(0.5rem, 2vw, 1rem);
+        justify-content: center;
+      }
+
+      /* 88 px en las DOS direcciones, no solo en alto (`mc-20` §201). El
+         `aspect-ratio` las hace crecer cuadradas cuando hay sitio; el
+         `min-*-size` es el piso que `audits/touch-targets.mjs` mide. */
+      .casilla {
+        min-block-size: var(--tap-kinder);
+        min-inline-size: var(--tap-kinder);
+        aspect-ratio: 1;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        /* D-036: los controles hablan en la voz del sistema. Aquí dentro no hay
+           ni una letra —solo un dibujo— así que la excepción de grosor de kinder
+           no tiene sobre qué aplicar. */
+        font-family: var(--font-sistema);
+        font-size: clamp(2.25rem, 10vw, 3.5rem);
+        line-height: 1;
+
+        color: var(--color-text);
+        background: var(--color-bg);
+        border: 3px solid var(--color-border);
+        /* El token, no el `1rem` que valía lo mismo: bajo `data-band="KINDER"`
+           `bandas.css` sube `--radius` a 1rem, así que el número escrito a mano
+           coincidía hoy y se separaba el día que la banda lo cambie. */
+        border-radius: var(--radius);
+        cursor: pointer;
+        /* Sin resaltado azul de Android/iOS al tocar: el estado elegido lo
+           cuenta el borde, y dos señales que se pisan confunden. */
+        -webkit-tap-highlight-color: transparent;
+        /* Sin el retardo de 300 ms del doble toque para hacer zoom. Un niño que
+           toca dos casillas seguidas rápido las toca DE VERDAD seguidas, y en el
+           Android de gama baja de referencia ese retardo es la diferencia entre
+           una marca que se llena al instante y una que llega tarde. */
+        touch-action: manipulation;
+        /* El tamaño NO se anima. Un blanco que se encoge al tocarlo se falla, y
+           a los cuatro años el segundo intento cae fuera. */
+        transition: border-color 120ms ease, background-color 120ms ease;
+      }
+
+      /* El toque, mientras el dedo está encima.
+         **Sin esto, el camino sin JavaScript no da ni una señal**: se quitó el
+         resaltado nativo y el borde grueso no llega hasta que vuelve el POST —
+         en 4G lento, eso es medio segundo de pantalla que no acusa recibo, y lo
+         que hace un niño de cuatro años ante una pantalla que no reacciona es
+         volver a tocar. El `:active` es local, instantáneo y no cuesta red. */
+      .casilla:active,
+      .borrar:active {
+        border-color: var(--color-accent);
+        background: var(--color-surface);
+      }
+
+      /* El `:hover` va detrás de `@media (hover: hover)` a propósito.
+         En una pantalla táctil el hover se QUEDA pegado en el último elemento
+         tocado hasta que se toca otro: sin esta guarda, una casilla que el niño
+         tocó y luego borró se quedaba con el borde naranja —el mismo color que
+         marca «elegida»— y contaba una elección que ya no existía. */
+      @media (hover: hover) and (pointer: fine) {
+        .casilla:hover { border-color: var(--color-accent); }
+      }
+
+      /* Teclado físico: en un iPad con Magic Keyboard esto es uso normal
+         (D-041), y WCAG 2.4.7 lo exige en cualquier caso. */
+      .casilla:focus-visible {
+        outline: 4px solid var(--color-text);
+        outline-offset: 3px;
+      }
+
+      /* Ya elegida. Forma Y color: el borde engorda y el fondo cambia, no solo
+         el tono. */
+      .casilla[aria-pressed="true"] {
+        border-color: var(--color-accent);
+        border-width: 6px;
+        background: var(--color-surface);
+      }
+
+      /* --- Cuántos llevas --------------------------------------------------- */
+
+      .pasos {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        margin: 1.25rem 0 1rem;
+        max-inline-size: none;
+      }
+
+      .paso {
+        inline-size: 1.5rem;
+        block-size: 1.5rem;
+        border-radius: 50%;
+        border: 3px dashed var(--color-border);
+        background: transparent;
+      }
+
+      /* Lleno: círculo sólido con el naranja de Ignia. Es un gráfico, no texto —
+         el umbral aplicable es 3:1 y el naranja da 3.03:1 sobre blanco. */
+      .paso[data-lleno] {
+        border-style: solid;
+        border-color: var(--color-accent);
+        background: var(--color-accent);
+      }
+
+      /* --- Volver a empezar ------------------------------------------------- */
+
+      .borrar {
+        min-block-size: var(--tap-kinder);
+        min-inline-size: var(--tap-kinder);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+
+        color: var(--color-text);
+        background: var(--color-surface);
+        border: 3px solid var(--color-border);
+        border-radius: 50%;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
+
+      /* Misma guarda que en las casillas: hover pegado en táctil. */
+      @media (hover: hover) and (pointer: fine) {
+        .borrar:hover { border-color: var(--color-accent); }
+      }
+
+      .borrar:focus-visible { outline: 4px solid var(--color-text); outline-offset: 3px; }
+
+      .apoyo {
+        font-family: var(--font-marca);
+        font-size: var(--text-xs);
+        line-height: var(--leading-body);
+        color: var(--color-text-muted);
+        margin: 1.5rem auto 0;
+        max-inline-size: 30ch;
+      }
+
+      .solo-lectores {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+    </style>
+
+    <script>
+      /**
+       * El camino con JavaScript. Ahorra dos viajes de red de tres.
+       *
+       * Sin este script la pantalla funciona igual: cada toque es un POST y el
+       * servidor repinta. Lo que el script añade es que los dos primeros toques
+       * se queden en el cliente — en 4G lento, dos viajes menos entre el dedo y
+       * la marca que se llena.
+       *
+       * **El tercero se envía solo.** No se llama a `requestSubmit()`: se deja
+       * pasar el envío nativo del `<button type="submit">` después de haberle
+       * puesto el `value` correcto. `requestSubmit` no existe en iOS Safari 15,
+       * que sigue vivo en iPads que un niño usa hoy.
+       */
+      const forma = document.getElementById("rejilla") as HTMLFormElement | null;
+      const estado = document.getElementById("estado");
+      const pasos = Array.from(document.querySelectorAll<HTMLElement>(".paso"));
+
+      if (forma) {
+        const plantilla = estado?.dataset.plantilla ?? "";
+        // Cuántos toques son, dicho por el servidor. No se importa `LARGO_PIN`
+        // del motor: ese módulo arrastra `crypto.subtle` al paquete del cliente
+        // para traer un número, y esta pantalla se pinta en un Android de gama
+        // baja. El respaldo es el mismo 3 del servidor por si el atributo falta.
+        const largo = Number(forma.dataset.largo) || 3;
+        // Se arranca de lo que el SERVIDOR ya sabe, no de cero: si el script
+        // llega tarde y hubo un toque sin él, el estado no se pierde.
+        const hechos = (forma.dataset.hechos ?? "")
+          .split(".")
+          .filter(Boolean)
+          .map(Number);
+
+        const pintar = () => {
+          pasos.forEach((p, k) => {
+            if (k < hechos.length) p.setAttribute("data-lleno", "");
+            else p.removeAttribute("data-lleno");
+          });
+          if (estado && plantilla) estado.textContent = plantilla.replace("{n}", String(hechos.length));
+        };
+
+        /**
+         * Háptica: acento donde exista, jamás canal.
+         *
+         * iOS Safari **no tiene Vibration API en ninguna versión**, así que la
+         * realimentación de verdad es la marca que se llena y el borde que
+         * engorda — las dos ya ocurrieron antes de llegar aquí. Esto solo añade
+         * un golpecito en Android para quien lo tenga.
+         */
+        const acento = () => {
+          const nav = navigator as Navigator & { vibrate?: (p: number | number[]) => boolean };
+          if (typeof nav.vibrate !== "function") return;
+          try {
+            nav.vibrate(8);
+          } catch {
+            /* Un aparato que se queja al vibrar es un aparato que no vibra. */
+          }
+        };
+
+        forma.addEventListener("click", (ev) => {
+          const destino = ev.target as HTMLElement | null;
+          if (!destino) return;
+
+          // Volver a empezar: se resuelve aquí mismo, sin viaje de red y sin
+          // contar nada. Corregir no se penaliza nunca (línea roja #8).
+          if (destino.closest("[data-borrar]")) {
+            ev.preventDefault();
+            hechos.length = 0;
+            // El `value` vuelve a ser «solo esta posición», que es lo que el
+            // servidor habría pintado con la rejilla vacía. Así el camino sin
+            // script y el camino con script no se separan a mitad de sesión.
+            forma.querySelectorAll<HTMLButtonElement>("[data-casilla]").forEach((b) => {
+              b.setAttribute("aria-pressed", "false");
+              b.value = b.dataset.casilla ?? "";
+            });
+            pintar();
+            return;
+          }
+
+          const casilla = destino.closest("[data-casilla]") as HTMLButtonElement | null;
+          if (!casilla) return;
+
+          const i = Number(casilla.dataset.casilla);
+          if (!Number.isInteger(i)) return;
+
+          // Tocar dos veces la misma casilla no suma ni resta: el PIN son tres
+          // posiciones distintas. No es un error, así que no se avisa de nada.
+          if (hechos.includes(i)) {
+            ev.preventDefault();
+            return;
+          }
+
+          hechos.push(i);
+          casilla.value = hechos.join(".");
+          casilla.setAttribute("aria-pressed", "true");
+          pintar();
+          acento();
+
+          // Los dos primeros se quedan aquí. El tercero cae sin `preventDefault`
+          // y el navegador envía el formulario con el `value` recién puesto.
+          if (hechos.length < largo) ev.preventDefault();
+        });
+
+        pintar();
+      }
+    </script>
+  </body>
+</html>

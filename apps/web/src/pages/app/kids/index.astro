@@ -1,0 +1,849 @@
+---
+/**
+ * /app/kids — la rejilla de caras. Criterios #116 y #117 de F2 · D-012.
+ *
+ * @banda KINDER
+ *
+ * Ese marcador de arriba no es decoración: `audits/touch-targets.mjs` lo lee
+ * (`bandaDe()`) y a partir de él mide **todos** los blancos táctiles de este
+ * archivo contra 88 px, el piso de `mc-20` §201 — 23.7 mm es el tamaño con el
+ * que un niño de cuatro años acierta el 90% de las veces. Sin el marcador, la
+ * ruta no dice «kinder» por ningún lado y el auditor mediría contra 24 px.
+ *
+ * En esta rejilla conviven las tres bandas de niño: un hermano de KINDER y otro
+ * de SECUNDARIA tocan la misma pantalla. Manda el piso más alto de los tres.
+ *
+ * ─── Lo primero que hace esta página es no pintar nada ──────────────────────
+ *
+ * D-012 dice que **la protección real la da el dispositivo**. El PIN de tres
+ * imágenes separa hermanos —504 combinaciones, y `pin-imagenes.ts` lo dice con
+ * esas palabras— pero no defiende de un extraño. Lo que defiende de un extraño
+ * es que este dispositivo esté marcado como de la casa.
+ *
+ * Así que sin `mc_h` válido y no revocado aquí no hay ni una cara. Y el destino
+ * de esa negativa es `/app/signin`, que es una pantalla de ADULTO: **jamás se
+ * le enseña un formulario a un niño**, ni siquiera para decirle que no puede
+ * pasar. Un niño que llega a esta URL en la tablet de otra casa ve la pantalla
+ * de su papá, no una puerta cerrada con su nombre.
+ *
+ * Se falla CERRADO en todos los caminos: sin cookie, con cookie de forma
+ * inválida, con dispositivo revocado, y también si no hay base de datos
+ * enlazada. Ese último caso es el que suele fallar abierto por accidente en
+ * desarrollo, y es el que dejaría la rejilla de caras servida a cualquiera.
+ *
+ * ─── Por qué esta página NO usa `layouts/Base.astro` ────────────────────────
+ *
+ * Es la desviación consciente de este archivo, y tiene tres motivos
+ * independientes. Cualquiera de los tres bastaría:
+ *
+ *  1. **Base monta `<Rum banda="PUBLICO">`**, la medición de Core Web Vitals de
+ *     campo de D-037. D-037 permite medir **solo en superficies de adulto**, y
+ *     ésta es la superficie de niño por definición. Heredar el layout metería
+ *     medición de comportamiento sobre un menor — línea roja #2 y `mc-25`
+ *     impl. 6. `audits/telemetria-infantil.mjs` bloquea el commit por esto.
+ *  2. **Base monta la barra del sitio abierto**: cinco enlaces a páginas de
+ *     marketing y un pie con el conmutador de siete idiomas y el enlace al
+ *     repositorio. Delante de un niño de cuatro años eso son siete blancos
+ *     táctiles que lo sacan del producto y ninguno que lo meta.
+ *  3. **Base arma `canonical`, `hreflang` y JSON-LD a partir de una `Seccion`**
+ *     de la tabla de rutas públicas. `/app/kids` no es una sección del sitio
+ *     abierto, no tiene URL por locale y **no debe indexarse**: es una pantalla
+ *     autenticada que enseña quiénes viven en una casa.
+ *
+ * Lo que sí se hereda —y es lo que importa— son los **tokens**: `tokens.css` y
+ * `fonts.css` se importan aquí. Ni un color, ni un tamaño de blanco táctil, ni
+ * una familia tipográfica se inventa en este archivo.
+ *
+ * ─── Cero de lo que esta pantalla no puede tener ───────────────────────────
+ *
+ *  · **Cero texto libre** (línea roja #3): el niño toca, no escribe. No hay
+ *    campos de escritura, ni áreas de texto, ni edición directa en la página.
+ *    `audits/child-free-text.mjs` vigila `app/kids/**` por ruta.
+ *  · **Cero telemetría** (D-037): ni un beacon, ni un observador de
+ *    rendimiento, ni un envío en segundo plano.
+ *  · **Cero Turnstile** (línea roja #1, D-054): es defensa de bots sobre
+ *    formularios de adulto. Puede mostrar un desafío interactivo, y delante de
+ *    un niño que no lee eso es un navegador bloqueado con otro nombre.
+ *    `audits/turnstile-solo-adulto.mjs` bloquea por ruta.
+ *  · **Cero JavaScript.** No hay una sola línea de script en esta página. El
+ *    dispositivo de referencia es Android de gama baja sobre 4G lento (§11 del
+ *    plan): siete enlaces servidos por HTML son más rápidos y más fiables que
+ *    cualquier cosa que haya que hidratar, y `mc-33` documenta que el
+ *    JavaScript falla más veces de las que nadie cree ahí.
+ *  · **Cero cronómetro**, cero puntos, cero racha. Nada que cuente antes de
+ *    entrar (D-024, D-045).
+ */
+import { LOCALES, DEFAULT_LOCALE, t, type Locale } from "../../../i18n";
+import {
+  COOKIE_HOGAR,
+  leerCookies,
+  leerDispositivoDelHogar,
+} from "../../../lib/sesiones";
+import "../../../styles/fonts.css";
+import "../../../styles/tokens.css";
+import "../../../styles/bandas.css";
+
+export const prerender = false;
+
+/**
+ * Nunca en caché, en ningún intermediario.
+ *
+ * Esta respuesta es la lista de quién vive en una casa. Servida desde caché a
+ * la petición de otra persona sería una fuga de datos de menores, no un fallo
+ * de rendimiento. `sw.js` ya se salta `/app/` entero por la misma razón; esto
+ * lo hace cumplir también sobre cualquier proxy que haya en medio.
+ */
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+Astro.response.headers.set("referrer-policy", "same-origin");
+
+const SIGNIN = "/app/signin";
+
+/**
+ * La negativa, con sus propias cabeceras.
+ *
+ * No se usa `Astro.redirect` porque la respuesta que devuelve **no arrastra las
+ * cabeceras de arriba**: se construye aparte. Un 302 de `/app/kids` a
+ * `/app/signin` guardado por un intermediario seguiría mandando a la puerta del
+ * adulto **después** de que el papá marcara el dispositivo como de la casa, y
+ * el síntoma —«la tablet ya no reconoce a los niños»— no apuntaría nunca a una
+ * caché. `Vary: Cookie` por lo mismo: la respuesta depende de `mc_h`.
+ *
+ * ─── Y una advertencia sobre el `ts(6133)` que verás al correr `astro check` ──
+ *
+ * `astro check` dice «'aLaPuertaDelAdulto' is declared but its value is never
+ * read» y **no es un falso positivo inofensivo: es el aviso de que las dos
+ * líneas que cierran esta puerta son las únicas del archivo que el verificador
+ * de tipos NO mira.** El generador de TSX de Astro descarta los `return` de
+ * primer nivel del bloque de guiones —en TypeScript un `return` a nivel de
+ * módulo no es válido— y con ellos se va la única lectura de esta función.
+ *
+ * Medido, no supuesto: al escribir `return aLaPuertaDelAdulto(1, 2, 3)`,
+ * `astro check` sigue reportando **cero errores** y solo repite este mismo
+ * aviso. Una llamada con tres argumentos de más a una función sin parámetros
+ * pasa el verificador. Lo que sí se compila está comprobado aparte, leyendo la
+ * salida real de `astro build` en
+ * `dist/_worker.js/pages/app/kids.astro.mjs`, donde los dos `if (...) return`
+ * aparecen intactos.
+ *
+ * Consecuencia práctica para quien toque esto: **un cambio en la puerta no lo
+ * atrapa `astro check`.** Se comprueba corriendo la página, o leyendo el
+ * `.mjs` compilado.
+ */
+const aLaPuertaDelAdulto = () =>
+  new Response(null, {
+    status: 302,
+    headers: {
+      location: SIGNIN,
+      "cache-control": "no-store, private",
+      vary: "cookie",
+    },
+  });
+
+/**
+ * A dónde lleva tocar una cara: al PIN de tres imágenes (D-012, `mc-25`).
+ *
+ * **La forma exacta la fija `app/kids/pin.astro`, no este archivo.** Esa
+ * pantalla lee `Astro.url.searchParams.get("p")` y arma su propio `action` con
+ * `?p=`; escribir aquí `?perfil=` produciría un enlace que llega a una pantalla
+ * que redirige a la portada, y el síntoma —«tocar una cara no hace nada»— no
+ * apuntaría a un nombre de parámetro.
+ *
+ * El id viaja en la URL y eso es aceptable: es un identificador opaco, no un
+ * dato personal. Línea roja #2 — no hay nombre real ni correo de un niño que
+ * pueda filtrarse en una barra de direcciones, porque no existen.
+ */
+const rutaDelPin = (id: string) => `/app/kids/pin?p=${encodeURIComponent(id)}`;
+
+// --- La puerta: sin dispositivo de la casa, no hay caras -------------------
+
+const runtime = (Astro.locals as any).runtime;
+const db = runtime?.env?.DB;
+
+// Sin base de datos no se puede comprobar el dispositivo, y lo que no se puede
+// comprobar se niega. Un `if (!db) { seguir sin comprobar }` es exactamente
+// cómo esta pantalla acabaría abierta en producción tras un despliegue con un
+// binding mal escrito.
+if (!db) return aLaPuertaDelAdulto();
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+
+// El `try` no es adorno defensivo: si la consulta revienta —tabla que no existe
+// todavía, base caída— la alternativa por omisión es una página de error del
+// servidor **en la pantalla de un niño**, con su traza y todo. Aquí un fallo se
+// trata como lo que operativamente es: no se pudo demostrar que este aparato sea
+// de la casa, así que no lo es. Fallar cerrado y en silencio hacia el adulto.
+let hogar: Awaited<ReturnType<typeof leerDispositivoDelHogar>> = null;
+try {
+  hogar = await leerDispositivoDelHogar(db, cookies[COOKIE_HOGAR]);
+} catch (err) {
+  console.error("kids: no se pudo leer el dispositivo del hogar", String(err).slice(0, 200));
+}
+if (!hogar) return aLaPuertaDelAdulto();
+
+// --- Los perfiles de esta casa --------------------------------------------
+
+interface FilaPerfil {
+  id: string;
+  alias: string;
+  theme_band: string;
+  avatar_parts: string;
+  locale: string;
+}
+
+/**
+ * `deleted_at IS NULL` usa el índice parcial `idx_child_parent` de la migración
+ * 0002. Un perfil borrado no es un error: es un niño que ya no está en esta
+ * cuenta, y su cara no puede seguir en la tablet.
+ *
+ * `ORDER BY created_at` y no por alias: **la posición de una cara no puede
+ * cambiar**. Un niño que no lee encuentra la suya por dónde está, y ordenar por
+ * un texto que ni siquiera lee movería las caras cada vez que entra un hermano
+ * nuevo.
+ *
+ * El tope de 60 existe para que un salón grande no produzca una página de
+ * cientos de tarjetas en un teléfono de gama baja. Un salón de maestro tiene su
+ * propia forma de entrar y no es ésta; ver el informe de esta pantalla.
+ */
+let perfiles: FilaPerfil[] = [];
+try {
+  const consulta = await db
+    .prepare(
+      "SELECT id, alias, theme_band, avatar_parts, locale FROM child_profiles " +
+        "WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at ASC LIMIT 60",
+    )
+    .bind(hogar.ownerUserId)
+    .all();
+  // El resultado se acota aquí y no con un parámetro de tipo en `.all()`: el
+  // binding llega como `any` —los tipos de Workers no están enlazados en este
+  // paquete, y `pin.astro` tropieza con lo mismo— y una llamada sin tipar no
+  // admite argumentos de tipo.
+  perfiles = (consulta?.results as FilaPerfil[] | undefined) ?? [];
+} catch (err) {
+  // Aquí NO se falla cerrado hacia la puerta del adulto: el dispositivo ya se
+  // demostró de la casa, y mandar a `/app/signin` por un fallo de lectura sería
+  // pedirle la contraseña a alguien que no la tiene. Se cae al estado vacío, que
+  // ya lleva la salida hacia el adulto. Lo que se pierde a cambio, dicho de
+  // frente: el adulto ve «no hay perfiles» cuando sí los hay, y solo el registro
+  // del Worker distingue los dos casos.
+  console.error("kids: no se pudieron leer los perfiles", String(err).slice(0, 200));
+}
+
+// --- En qué idioma habla esta pantalla ------------------------------------
+
+/**
+ * `/app/kids` no lleva locale en la URL a propósito: es una pantalla de
+ * dispositivo, no una página del sitio abierto, y no tiene versión por idioma
+ * que indexar (ver el bloque de arriba sobre `Base.astro`).
+ *
+ * El idioma sale, en este orden:
+ *
+ *  1. **El de los perfiles de la casa.** Lo eligió el adulto al crear cada
+ *     perfil, así que es lo más cercano a un hecho que hay. Si hay varios, gana
+ *     el más frecuente; los empates los rompe quién se creó primero.
+ *  2. `Accept-Language`, si todavía no hay perfiles.
+ *  3. Inglés.
+ *
+ * Nada de esto cambia lo que el niño ve de verdad, que es un dibujo. El idioma
+ * gobierna el título y el enlace del adulto, que son las dos cosas de esta
+ * página que se leen.
+ */
+const RESPALDO_POR_IDIOMA: Record<string, Locale> = {
+  en: "en",
+  // «es» y «pt» a secas no dicen cuál de los dos locales es. Se elige el de
+  // mayor población hispanohablante y lusófona, y se anota que es una elección
+  // y no un hecho: es-MX y es-ES no comparten separador decimal, pt-BR y pt-PT
+  // no comparten escala numérica (mc-34, D-022).
+  es: "es-MX",
+  pt: "pt-BR",
+  fr: "fr-FR",
+  de: "de-DE",
+};
+
+function negociarLocale(cabecera: string | null): Locale {
+  if (!cabecera) return DEFAULT_LOCALE;
+  const preferencias = cabecera
+    .split(",")
+    .map((trozo) => {
+      const [etiqueta, ...params] = trozo.trim().split(";");
+      const q = params.find((p) => p.trim().startsWith("q="));
+      return { etiqueta: etiqueta.trim(), q: q ? Number(q.split("=")[1]) || 0 : 1 };
+    })
+    .sort((a, b) => b.q - a.q);
+
+  for (const { etiqueta } of preferencias) {
+    const exacto = LOCALES.find((l) => l.toLowerCase() === etiqueta.toLowerCase());
+    if (exacto) return exacto;
+    const base = RESPALDO_POR_IDIOMA[etiqueta.split("-")[0].toLowerCase()];
+    if (base) return base;
+  }
+  return DEFAULT_LOCALE;
+}
+
+function localeDeLaCasa(): Locale {
+  const cuenta = new Map<Locale, number>();
+  for (const p of perfiles) {
+    const l = LOCALES.find((x) => x === p.locale);
+    if (l) cuenta.set(l, (cuenta.get(l) ?? 0) + 1);
+  }
+  let ganador: Locale | null = null;
+  for (const [l, n] of cuenta) {
+    if (ganador === null || n > (cuenta.get(ganador) ?? 0)) ganador = l;
+  }
+  return ganador ?? negociarLocale(Astro.request.headers.get("accept-language"));
+}
+
+const locale = localeDeLaCasa();
+const m = t(locale);
+
+/**
+ * `data-band="KINDER"` en `<html>`, escrito por el SERVIDOR.
+ *
+ * Es el contrato que fija `styles/bandas.css`: nunca desde JavaScript, porque un
+ * tema que se pinta después del primer render es el destello blanco que ve un
+ * niño en un Android de gama baja sobre 4G lento.
+ *
+ * Y KINDER aunque en esta rejilla convivan las tres bandas de niño. La banda no
+ * se elige por perfil aquí porque **todavía no hay perfil elegido** — elegirlo es
+ * justo lo que esta pantalla hace. Entre poner el tema del hermano mayor y el de
+ * quien menos lee, manda el segundo: pesos Medium, escala grande y `--tap-min`
+ * subido a 88 px. Un adolescente sabe usar una interfaz grande; un niño de cuatro
+ * años no sabe usar una chica (`mc-20`).
+ *
+ * No se emite `data-theme`: su ausencia es "automático" y deja vivir el default
+ * claro de la banda, que es lo que `bandas.css` documenta como contrato.
+ *
+ * **Este comentario vive aquí y no encima del `<html>` por una razón que costó
+ * una corrida de humo:** un comentario de plantilla (de los que van entre llaves)
+ * puesto entre el `<!doctype>` y el `<html>` hace que el compilador de Astro
+ * deje de ver el documento como documento y **borre
+ * las etiquetas `<html>`, `<head>` y `<body>` enteras** de la salida. El síntoma
+ * no es un error de build: es una página que se ve bien y se sirve sin `lang` —
+ * violación de WCAG 2.2 §3.1.1— y sin `data-band`, o sea sin la banda entera.
+ */
+const BANDA_DE_LA_PANTALLA = "KINDER";
+
+// --- La cara de cada perfil -----------------------------------------------
+
+/**
+ * Seis formas y seis colores: 36 caras distintas. Y **manda la forma.**
+ *
+ * ─── Por qué no hay una paleta pastel inventada aquí ───────────────────────
+ *
+ * La había: ocho pastel elegidos a mano. `audits/brand-image.mjs` los rechazó
+ * uno por uno —«no está en la paleta Ignia»— y tenía razón, aunque el motivo
+ * que se ve (nueve hexadecimales sueltos) no es el importante. El importante es
+ * que inventar ocho colores de marca en una pantalla de niño **es una decisión
+ * de marca**, y esa no es de este archivo: la paleta la fija
+ * `docs/guia-de-estilo.md`. Un auditor que bloquea la vía fácil aquí está
+ * haciendo exactamente su trabajo.
+ *
+ * Así que los seis rellenos son seis tokens `--ignia-*` y las dos tintas son el
+ * blanco y el negro de la misma paleta. **Ni un hexadecimal en la hoja de
+ * estilo.** El único del archivo está en `<meta name="theme-color">`, donde no
+ * cabe una `var()` —es un atributo HTML, no CSS— y es el mismo valor y el mismo
+ * patrón que `layouts/Base.astro`. Decirlo así y no «ni un hexadecimal en este
+ * archivo», que es lo que decía antes y era falso leyendo diez líneas más
+ * abajo.
+ *
+ * ─── Y por eso la FORMA pasa a ser el eje principal ────────────────────────
+ *
+ * Con la paleta de Ignia hay tres naranjas y un azul: tres de los seis colores
+ * son cálidos y vecinos. Distinguir a dos hermanos SOLO por color sería frágil
+ * de por sí, y ante daltonismo —que es lo que WCAG 2.2 §1.4.1 llama «uso del
+ * color»— dejaría de funcionar del todo. La silueta no tiene ese problema: un
+ * gato y un conejo se distinguen sin ver un solo color.
+ *
+ * De ahí que el desempate de hermanos mueva primero la FORMA y solo después el
+ * color. Salió mejor de lo que era antes por culpa del auditor.
+ *
+ * ─── Los pares están medidos, y en los DOS temas ───────────────────────────
+ *
+ * Cada relleno lleva la tinta con la que pasa 4.5:1 (`--ignia-azul` con blanco
+ * da 5.67:1; `--ignia-naranja` con negro, 6.93:1), y cada par se comprobó
+ * además contra la tarjeta clara y la oscura: en cada tema, **o el relleno o el
+ * contorno** despega del fondo por encima de 3:1. Nunca los dos a la vez, y no
+ * hace falta — basta con que uno delimite la figura (WCAG 2.2 §1.4.11).
+ *
+ * Los valores concretos viven en la hoja de estilo de abajo, en `.c0`…`.c5`,
+ * que es donde se pueden leer junto al color al que se refieren.
+ */
+const COLORES = 6;
+
+/** Cuántas siluetas hay. Se dibujan más abajo, una por índice. */
+const FORMAS = 6;
+
+/**
+ * FNV-1a de 32 bits sobre el id del perfil.
+ *
+ * No es criptográfico y no tiene por qué serlo: no protege nada, solo reparte.
+ * Lo único que se le exige es ser **estable para siempre**, porque un niño
+ * reconoce su cara y una cara que cambia es un niño que ya no se encuentra.
+ * Una función de hash con sal por sesión, o `Math.random`, romperían justo eso.
+ */
+function hash32(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+
+interface Cara {
+  forma: number;
+  color: number;
+}
+
+/**
+ * La cara de un perfil.
+ *
+ * **Si el niño ya armó su avatar, manda el avatar.** `avatar_parts` es el JSON
+ * de índices al catálogo de piezas de la migración 0002 (D-028, `mc-43`) —
+ * piezas de un catálogo, jamás una foto y jamás una cámara (línea roja #1).
+ * Mientras ese catálogo no exista, la cara se deriva del id, igual que
+ * `pin-imagenes.ts` deriva la rejilla en vez de guardarla: **derivar no hace
+ * crecer el esquema**, y un dato menos de un menor es un dato menos que
+ * proteger, borrar y explicar.
+ */
+function caraDe(p: FilaPerfil): Cara {
+  let elegido: { cara?: unknown; color?: unknown } = {};
+  try {
+    elegido = JSON.parse(p.avatar_parts || "{}");
+  } catch {
+    // Un JSON ilegible no puede dejar a un niño sin cara: se deriva y ya.
+    elegido = {};
+  }
+  const h = hash32(p.id);
+  return {
+    forma: indice(elegido.cara, FORMAS, h % FORMAS),
+    color: indice(elegido.color, COLORES, Math.floor(h / FORMAS) % COLORES),
+  };
+}
+
+/**
+ * Un índice del catálogo, o el derivado si lo guardado no sirve.
+ *
+ * `typeof x === "number"` NO alcanza, y el modo de fallar es silencioso y feo.
+ * `NaN`, `Infinity` y `1.5` son todos `number`, y `NaN % 6` es `NaN`: la clase
+ * salía `c${NaN}`, ninguna regla `.c0`…`.c5` casaba, `--cara-relleno` quedaba sin
+ * resolver y **la cara entera se pintaba negra** —una `var()` sin valor deja la
+ * propiedad «inválida en tiempo de valor calculado» y `fill` cae al heredado— y
+ * además `forma === 1|2|3|4|5` era falso para todas, o sea sin orejas. Un niño se
+ * quedaba sin su cara por un JSON mal escrito en otra pantalla.
+ *
+ * Se exige entero finito y no negativo. Lo que no lo sea vuelve al derivado del
+ * id, que es lo que esta pantalla sabe hacer siempre.
+ */
+function indice(valor: unknown, modulo: number, derivado: number): number {
+  if (typeof valor !== "number" || !Number.isInteger(valor) || valor < 0) return derivado;
+  return valor % modulo;
+}
+
+/**
+ * Dos hermanos NUNCA pueden tener la misma cara.
+ *
+ * Con 36 combinaciones y tres hermanos la probabilidad de choque ronda el 8%:
+ * suficiente para que pase de verdad y suficiente para que nadie lo vea al
+ * probar con un perfil. Dos caras iguales en la rejilla no son un defecto
+ * estético — son un niño que entra al perfil de su hermano.
+ *
+ * **Se separa primero por FORMA.** Es la señal que sobrevive al daltonismo
+ * (WCAG 2.2 §1.4.1) y la que no depende de que tres de los seis colores de la
+ * paleta sean naranjas vecinos. Solo cuando ya no quedan siluetas libres —a
+ * partir del séptimo perfil— se empieza a mover el color.
+ *
+ * Se recorre en el orden de creación y solo se mueve el que llega después, así
+ * que **la cara del hermano mayor no cambia nunca** por lo que haga el menor.
+ * Lo que esto sí puede hacer, dicho de frente: si se borra un perfil, otro que
+ * había sido desplazado recupera su cara derivada y cambia. Se acepta a cambio
+ * de que no haya duplicados, y desaparece el día que exista el catálogo de
+ * avatares y cada niño elija la suya.
+ */
+const formasUsadas = new Set<number>();
+const coloresUsados = new Set<number>();
+const paresUsados = new Set<string>();
+
+const caras = perfiles.map((p) => {
+  const base = caraDe(p);
+  let forma = base.forma;
+  let color = base.color;
+
+  // 1. Silueta única mientras queden. Es el eje que manda: sobrevive al
+  //    daltonismo y no depende de que tres de los seis colores sean naranjas.
+  if (formasUsadas.size < FORMAS) {
+    while (formasUsadas.has(forma)) forma = (forma + 1) % FORMAS;
+  }
+
+  // 2. Y color único mientras queden, TAMBIÉN. Con solo el paso 1 la rejilla
+  //    salía correcta y fea: cuatro hermanos con cuatro siluetas distintas y
+  //    dos grises repetidos, porque el hash había caído dos veces en el mismo
+  //    color. Se vio en la corrida de humo, no leyendo el código.
+  if (coloresUsados.size < COLORES) {
+    while (coloresUsados.has(color)) color = (color + 1) % COLORES;
+  }
+
+  // 3. Con más de seis perfiles ya no alcanzan ni las siluetas ni los colores:
+  //    entonces lo único exigible es que el PAR no se repita.
+  for (let intento = 0; intento < FORMAS * COLORES; intento++) {
+    if (!paresUsados.has(`${forma}:${color}`)) break;
+    forma = (forma + 1) % FORMAS;
+    if (forma === base.forma) color = (color + 1) % COLORES;
+  }
+
+  formasUsadas.add(forma);
+  coloresUsados.add(color);
+  paresUsados.add(`${forma}:${color}`);
+  return { perfil: p, forma, color };
+});
+---
+
+<!doctype html>
+<html lang={m.htmlLang} data-band={BANDA_DE_LA_PANTALLA}>
+  <head>
+    <meta charset="utf-8" />
+    {/* `viewport-fit=cover` para que en iPhone y iPad instalados el fondo llegue
+        al borde; el contenido se retira con `env(safe-area-inset-*)` más abajo
+        (D-041). Sin `maximum-scale` ni `user-scalable=no`: impedir el zoom es
+        violación de WCAG 2.2 AA 1.4.4, y en esta pantalla la haría alguien que
+        quiere ver mejor la cara de su hijo. */}
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    {/* Pantalla autenticada: fuera del índice, y sin seguir enlaces desde ella.
+        La cabecera `x-robots-tag` dice lo mismo para quien no ejecuta HTML. */}
+    <meta name="robots" content="noindex, nofollow" />
+
+    <title>{m.kidsTitle}</title>
+    <meta name="theme-color" content="#F36B1C" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="preload" href="/fonts/raleway-var-latin.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+
+  <body>
+    <main class="pantalla">
+      <h1 class="titulo">{m.kidsTitle}</h1>
+      <p class="pista">{m.kidsPick}</p>
+
+      {caras.length === 0 ? (
+        <p class="vacio">{m.kidsNobodyYet}</p>
+      ) : (
+        <ul class="rejilla" role="list">
+          {/* `role="list"` sobre algo que YA es una lista no es redundante aquí:
+              en cuanto un `<ul>` lleva `list-style: none`, WebKit le quita la
+              semántica de lista y VoiceOver deja de anunciar «lista de 4
+              elementos, 1 de 4». D-041 pone al iPad en primera clase y iOS
+              Safari es WebKit: sin este atributo, quien navegue con lector de
+              pantalla pierde la cuenta de cuántas caras hay y en cuál está.
+              Reponerlo es lo que el propio WebKit recomienda desde que
+              introdujo el cambio.
+
+              (Y va DENTRO del `<ul>` y no encima: la rama de un ternario admite
+              una sola expresión, y un comentario de plantilla ahí al lado es una
+              segunda — el compilador de Astro responde con «Expected
+              corresponding JSX closing tag for 'html'» quinientos renglones más
+              abajo, que no apunta a nada parecido al problema.) */}
+          {caras.map(({ perfil, forma, color }) => (
+            <li>
+              <a class="cara" href={rutaDelPin(perfil.id)} aria-label={`${m.kidsPlayAs} ${perfil.alias}`}>
+                {/* El dibujo es decorativo para la tecnología de asistencia: el
+                    nombre accesible del enlace ya lo da el `aria-label`, y
+                    anunciar «imagen» dos veces sobra. Para el niño que no lee,
+                    en cambio, el dibujo ES la interfaz y el alias el apoyo.
+
+                    El color entra como CLASE y no como atributo `fill`: así el
+                    valor sale de un token `--ignia-*` en la hoja de estilo, y no
+                    hay un solo color escrito dentro del marcado. */}
+                <svg class={`dibujo c${color}`} viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+                  {/* Las orejas van ANTES de la cabeza para que el relleno de la
+                      cabeza tape su base y el trazo no se cruce por dentro. */}
+                  {forma === 1 && (
+                    <g>
+                      <path class="relleno" d="M30 44 L26 12 L56 30 Z" stroke-linejoin="round" />
+                      <path class="relleno" d="M90 44 L94 12 L64 30 Z" stroke-linejoin="round" />
+                    </g>
+                  )}
+                  {forma === 2 && (
+                    <g>
+                      <ellipse class="relleno" cx="45" cy="26" rx="10" ry="23" transform="rotate(-13 45 26)" />
+                      <ellipse class="relleno" cx="75" cy="26" rx="10" ry="23" transform="rotate(13 75 26)" />
+                    </g>
+                  )}
+                  {forma === 3 && (
+                    <g>
+                      <circle class="relleno" cx="30" cy="38" r="15" />
+                      <circle class="relleno" cx="90" cy="38" r="15" />
+                    </g>
+                  )}
+                  {/* Antena y copete son figuras RELLENAS, no trazos sueltos:
+                      un `fill="none"` en el marcado perdería contra la clase
+                      —el CSS gana sobre los atributos de presentación— y la
+                      curva saldría rellena de color en vez de dibujada. */}
+                  {forma === 4 && (
+                    <g>
+                      <rect class="relleno" x="56" y="8" width="8" height="26" rx="4" />
+                      <circle class="relleno" cx="60" cy="10" r="9" />
+                    </g>
+                  )}
+                  {forma === 5 && (
+                    <path class="relleno" d="M60 42 Q40 22 60 2 Q80 22 60 42 Z" stroke-linejoin="round" />
+                  )}
+
+                  <circle class="relleno" cx="60" cy="68" r="38" />
+                  <circle class="tinta" cx="47" cy="62" r="6" />
+                  <circle class="tinta" cx="73" cy="62" r="6" />
+                  <path class="boca" d="M44 84 Q60 98 76 84" />
+                </svg>
+                <span class="alias">{perfil.alias}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/*
+        La salida del adulto. Va al final, chica y en la voz del sistema, y va
+        dentro de un párrafo a propósito: es un enlace dentro de una frase, que
+        es la excepción «Inline» de WCAG 2.2 §2.5.8 y la razón por la que no
+        tiene que medir 88 px como las caras. Un enlace de adulto de 88 px en
+        una pantalla de niño competiría con las caras, que es justo lo contrario
+        de lo que esta pantalla quiere.
+      */}
+      <p class="adulto">
+        {m.kidsAdultQuestion} <a href={SIGNIN}>{m.kidsAdultLink}</a>
+      </p>
+    </main>
+
+    <style>
+      /* Fondo de superficie y no de página: la rejilla es una tarjeta grande y
+         las caras se recortan sobre ella. */
+      .pantalla {
+        min-block-size: 100svb;
+        max-inline-size: 60rem;
+        margin-inline: auto;
+        padding-block: calc(var(--space) * 2) calc(var(--space) * 3);
+        padding-inline: var(--space);
+        /* D-041: en un iPhone o iPad instalado, el contenido no se mete bajo el
+           indicador de inicio ni bajo las esquinas redondeadas. */
+        padding-block-end: calc(var(--space) * 3 + env(safe-area-inset-bottom));
+        padding-inline-start: calc(var(--space) + env(safe-area-inset-left));
+        padding-inline-end: calc(var(--space) + env(safe-area-inset-right));
+      }
+
+      /* D-036 y la excepción de kinder: la marca habla en Raleway, y aquí NUNCA
+         en Light. Los pesos salen de los tokens y no de un número escrito a
+         mano — con `data-band="KINDER"`, `bandas.css` sube `--weight-title` de
+         300 a 500, así que pedir el token es pedir Medium.
+
+         Lo que la guía pide y este archivo NO puede dar: Bold. La Raleway
+         variable que se auto-hospeda declara `font-weight: 300 500`, o sea que
+         700 no existe en el archivo y pedirlo daría negrita sintética. Aquí no
+         estorba porque en esta pantalla no hay ni un numeral; en las pantallas
+         de reto sí lo va a haber, y ahí hace falta decidirlo. Va al informe. */
+      .titulo {
+        font-family: var(--font-marca);
+        font-weight: var(--weight-title);
+        font-size: var(--text-2xl);
+        line-height: 1.2;
+        color: var(--color-text-brand);
+        margin-block: 0 calc(var(--space) * 0.5);
+      }
+
+      /* Alineado al inicio y no centrado, a propósito: `bandas.css` alinea al
+         inicio todo el cuerpo de texto de las bandas por el parámetro de
+         dislexia de `mc-21`, y pelearse con una regla compartida por gusto
+         estético es cómo una decisión con evidencia se pierde en un archivo. */
+      p.pista {
+        font-family: var(--font-marca);
+        font-weight: var(--weight-subtitle);
+        font-size: var(--text-lg);
+        color: var(--color-text);
+        margin-block: 0 calc(var(--space) * 2);
+      }
+
+      .rejilla {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        /* `auto-fit` con mínimo en rem: dos columnas en un teléfono estrecho,
+           más columnas según haya sitio, y nada de anchos fijos en px que
+           romperían el tercio de pantalla del Split View del iPad (D-041). */
+        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+        gap: calc(var(--space) * 1.25);
+      }
+
+      /* El `<li>` como rejilla de una sola celda, para que la tarjeta de dentro
+         se estire hasta el alto de la fila. Sin esto, un alias corto y otro que
+         parte en dos líneas dan dos tarjetas de altura distinta en la misma
+         fila: el blanco táctil del alias corto encoge hasta su mínimo y la
+         rejilla queda dentada. Un niño de cuatro años apunta a la tarjeta, no al
+         dibujo — que todas midan igual es parte del blanco, no del adorno. */
+      .rejilla > li {
+        display: grid;
+      }
+
+      /* El blanco táctil. 88 px es el piso de mc-20 §201 — 23.7 mm, el tamaño
+         con el que un niño de cuatro años acierta el 90% de las veces. La
+         tarjeta real es mucho mayor; esto es el suelo que el auditor mide. */
+      .cara {
+        min-block-size: var(--tap-kinder);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding-block: 1rem;
+        padding-inline: 0.5rem;
+        text-decoration: none;
+        color: var(--color-text);
+        background: var(--color-surface);
+        /* El borde NO es `--color-border`, y la diferencia importa. Ese token
+           está documentado en `tokens.css` a 2.44:1 y ahí dice «solo bordes»:
+           sirve para separar bloques de lectura. Aquí el borde es **el contorno
+           del blanco táctil**, o sea información necesaria para identificar el
+           control — WCAG 2.2 §1.4.11 pide 3:1 y `--color-text-muted` da 4.38:1
+           sobre la superficie. A un niño de cuatro años hay que enseñarle dónde
+           empieza y dónde acaba lo que puede tocar. */
+        border: 2px solid var(--color-text-muted);
+        border-radius: calc(var(--radius) * 2);
+        transition: transform 120ms ease-out;
+      }
+
+      /* `aspect-ratio` explícito y no solo `block-size: auto`. Un SVG **en
+         línea** no es un elemento reemplazado: que el `viewBox` le dé una
+         relación de aspecto intrínseca es comportamiento moderno, y en el
+         WebView viejo de un Android de gama baja —el dispositivo de referencia,
+         §11 del plan— un `height: auto` sin relación de aspecto cae a la altura
+         por omisión de 150 px y la cara sale aplastada. Escribirlo cuesta una
+         línea y además fija el hueco antes de que pinte el SVG, o sea cero CLS
+         (`mc-47`). */
+      .dibujo {
+        inline-size: 6.5rem;
+        block-size: auto;
+        aspect-ratio: 1 / 1;
+        max-inline-size: 100%;
+      }
+
+      /* ── Los seis colores de cara, y solo tokens de Ignia ───────────────────
+         Cada pareja lleva medido el contraste que la sostiene:
+
+           relleno / tinta      (≥4.5:1, WCAG 2.2 §1.4.3)
+           lo que delimita la figura sobre la tarjeta clara y sobre la oscura
+           (≥3:1 en cada tema, WCAG 2.2 §1.4.11) — a veces es el relleno y a
+           veces el contorno, y basta con uno.
+
+         El trazo de 7 unidades sobre un lienzo de 120 es el grosor alto que
+         `mc-20` §219-223 pide de 3 a 6 años: a esa edad el dibujo se discrimina
+         de un vistazo, no se examina. */
+      .c0 { --cara-relleno: var(--ignia-naranja);        --cara-tinta: var(--ignia-negro);  } /* 6.93 · 2.83/19.61 · 5.28/1.31 */
+      .c1 { --cara-relleno: var(--ignia-azul);           --cara-tinta: var(--ignia-blanco); } /* 5.67 · 5.30/1.07 · 2.82/16.00 */
+      .c2 { --cara-relleno: var(--ignia-naranja-claro);  --cara-tinta: var(--ignia-negro);  } /* 10.29 · 1.91/19.61 · 7.84/1.31 */
+      .c3 { --cara-relleno: var(--ignia-naranja-oscuro); --cara-tinta: var(--ignia-blanco); } /* 4.58 · 4.28/1.07 · 3.49/16.00 */
+      .c4 { --cara-relleno: var(--ignia-gris-400);       --cara-tinta: var(--ignia-negro);  } /* 8.60 · 2.28/19.61 · 6.55/1.31 */
+      .c5 { --cara-relleno: var(--ignia-gris-900);       --cara-tinta: var(--ignia-blanco); } /* 9.63 · 8.99/1.07 · 1.66/16.00 */
+
+      .relleno {
+        fill: var(--cara-relleno);
+        stroke: var(--cara-tinta);
+        stroke-width: 7;
+      }
+
+      .tinta { fill: var(--cara-tinta); }
+
+      .boca {
+        fill: none;
+        stroke: var(--cara-tinta);
+        stroke-width: 7;
+        stroke-linecap: round;
+      }
+
+      /* El alias es APOYO, no requisito: quien lee, lee; quien no, reconoce el
+         dibujo (D-003, `mc-43`). Va en la voz de la marca, nunca en Light. */
+      .alias {
+        font-family: var(--font-marca);
+        font-weight: var(--weight-subtitle);
+        font-size: var(--text-lg);
+        line-height: 1.3;
+        text-align: center;
+        overflow-wrap: anywhere;
+      }
+
+      /* Retroalimentación al tocar. Es acento visual y no canal: iOS Safari no
+         tiene Vibration API en ninguna versión (§11 del plan), así que nada de
+         lo que esta pantalla comunica puede depender de que algo vibre. */
+      .cara:active { transform: scale(0.97); }
+      /* `--color-accent-hover` y no `--color-accent`: el naranja de Ignia da
+         2.83:1 sobre la superficie clara y se quedaría por debajo del 3:1 de
+         gráficos; el naranja oscuro da 4.28:1. En tema oscuro el token cambia
+         al naranja claro y sube más todavía.
+
+         Y dentro de `@media (hover: hover)` a propósito. En Android táctil —el
+         dispositivo de referencia— `:hover` se **queda pegado** al elemento que
+         se tocó hasta que se toca otra cosa: al volver del PIN, la cara del
+         hermano equivocado seguiría con el borde naranja, que en esta pantalla
+         es justo la señal de «esta es la tuya». Un estado que miente a un niño
+         que no lee es peor que no tener estado. */
+      @media (hover: hover) {
+        .cara:hover { border-color: var(--color-accent-hover); }
+      }
+      .cara:focus-visible { outline: 4px solid var(--color-accent); outline-offset: 3px; }
+
+      /* La voz del sistema (D-036): esto no es la marca hablando, es una salida
+         de utilidad para el adulto. En KINDER `--text-xs` vale 16 px, que es
+         además el piso por debajo del cual iOS Safari amplía. */
+      p.vacio, p.adulto {
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        margin-block-start: calc(var(--space) * 2);
+      }
+
+      p.adulto a { color: var(--color-text-brand); }
+
+      /* D-041 — «horizontal óptimo, vertical digno», y las DOS se estilizan.
+         Vertical no es lo que quede: es una rejilla más apretada para que
+         quepan dos caras completas sin desplazar en un teléfono. */
+      @media (orientation: portrait) {
+        .rejilla { grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); }
+      }
+
+      /* Y por debajo de ~23rem la regla de arriba NO cumple lo que promete.
+         Medido en navegador con la hoja construida, no calculado a ojo:
+
+           320px → 1 columna · 344px → 1 columna · 360px → 2 · 390px → 2
+
+         La cuenta que lo explica: en KINDER `--space` vale 1.5rem, así que a
+         320px quedan 272px de contenido y dos columnas de 8rem con 30px de
+         hueco piden 286. `auto-fit` no falla — cae a una sola columna y la
+         tarjeta sale de 257px de ancho, preciosa y sola.
+
+         Una cara por fila significa **desplazar para ver al hermano**, y un
+         niño de cuatro años no busca lo que no está en pantalla: elige entre lo
+         que ve. Y 320px no es un caso raro — es el tercio de pantalla del Split
+         View del iPad, que D-041 pone en primera clase.
+
+         7rem de mínimo y `--space` de hueco dan dos columnas desde 320px, con
+         tarjetas de 117px medidas: un tercio más que los 88px de `mc-20` §201.
+         Vuelto a medir con la hoja construida: 320 → 2 · 344 → 2 · 360 → 2 ·
+         368 → 2, y de 390px para arriba nada cambió. Por debajo de 320px sigue
+         cayendo a una columna (300px → 1), y se deja así: no hay teléfono de
+         320px de ancho de viewport para abajo. */
+      @media (orientation: portrait) and (max-width: 23rem) {
+        .rejilla {
+          grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+          gap: var(--space);
+        }
+      }
+
+      /* Horizontal en tablet: hay sitio de sobra, y `mc-20` dice que el blanco
+         se relaja al revés — más grande, nunca más chico. */
+      @media (orientation: landscape) and (min-width: 48rem) {
+        .rejilla { gap: calc(var(--space) * 2); }
+        .dibujo { inline-size: 8rem; }
+      }
+    </style>
+  </body>
+</html>

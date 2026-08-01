@@ -1,0 +1,719 @@
+---
+/**
+ * La puerta del padre — crear el perfil de un hijo. Criterio #114 de F2.
+ *
+ * Gobierna: D-053 (solo el AÑO), D-002 y D-017 (edad y dificultad son ejes
+ * separados), D-013 (el niño es un perfil, no un usuario), D-026 (registrarse
+ * y configurarse son dos cosas: esto es lo segundo), D-036 (dos voces
+ * tipográficas), D-041 (iPad de primera clase), D-003 (el alias se genera).
+ * Investigación: `mc-45` (marcas contextuales), `mc-33` (realidad PWA),
+ * `mc-38` (accesibilidad), `mc-47` (rendimiento en Android de gama baja).
+ *
+ * ─── Lo que esta pantalla NO tiene, y no es un descuido ─────────────────────
+ *
+ *  · **Ningún selector de fecha del navegador**, y ningún campo de mes. D-053
+ *    dejó el año y nada más: un calendario *tiene* día, y el día no se pide
+ *    (línea roja #2). `audits/signup-dos-campos.mjs` bloquea el commit si
+ *    aparece uno, en cualquier archivo de producto, no solo en los de
+ *    registro — y lo busca por texto, así que ni siquiera se puede citar el
+ *    marcado prohibido dentro de un comentario. Este párrafo ya lo intentó.
+ *  · **Ningún campo donde alguien escriba un nombre.** El alias se genera
+ *    (D-003, línea roja #3). Que no lo escriba el niño es la línea roja; que
+ *    tampoco lo escriba el adulto es la consecuencia — un campo libre en la
+ *    cuenta del padre es exactamente donde aterriza «Sofía Martínez, 7 años,
+ *    Escuela Benito Juárez».
+ *  · **Ninguna casilla marcada de antemano**, y ninguna casilla en absoluto.
+ *    La declaración de tutela se lee sobre el botón, en prosa, y lo que la
+ *    hace auditable es la fila de `consent_records` que escribe el servidor
+ *    (D-013), no un `checkbox` que el adulto marca sin leer.
+ *  · **Ningún paso obligatorio.** Los tres traen respuesta puesta y el
+ *    formulario se puede enviar tal cual: si se saltan todos, el niño juega
+ *    igual (línea roja #4).
+ *
+ * ─── Por qué el año es un `<select>` que empieza en «Ahora no» ──────────────
+ *
+ * No existe un año de nacimiento por defecto que sea honesto. Preselecionar
+ * uno sería inventarse un dato de un menor para ahorrarle un toque a un
+ * adulto, así que el valor puesto de fábrica es **no decirlo**, y el tema
+ * visual cae en su propio valor sano. Eso convierte el «Ahora no» de este paso
+ * en la primera opción de la lista: sin botón extra, sin JavaScript, y
+ * alcanzable con el teclado como cualquier otra opción.
+ *
+ * ─── El tema se deriva en el SERVIDOR y viaja en `data-tema` ────────────────
+ *
+ * El navegador no repite la tabla de bandas: cada `<option>` de año trae ya
+ * calculado, por `temaPorEdad()`, el tema que le toca; y cada tarjeta de tema
+ * trae en `data-para` los temas derivados que la permiten, según
+ * `temasPermitidos()`. El script solo compara cadenas.
+ *
+ * Es la única forma de que la tabla no pueda divergir —no hay segunda copia—
+ * y de paso el motor no cruza al cliente, que es lo que exige
+ * `audits/puntaje-servidor.mjs` para la fórmula de puntos.
+ *
+ * ─── Qué manda este formulario, y dónde no coincide con el endpoint ────────
+ *
+ * `POST /api/perfil-nuevo`, como `application/x-www-form-urlencoded`:
+ *
+ *   locale  el idioma de la página; decide de qué lista salió el alias
+ *   anio    año de nacimiento, o **vacío** si el adulto respondió «Ahora no»
+ *   tema    KINDER · PRIMARIA · SECUNDARIA — preferencia, no orden
+ *   alias   el alias que el adulto está viendo
+ *   accion  `crear` · `ahora-no`, según qué botón se pulsó
+ *
+ * `apps/web/src/pages/api/perfil-nuevo.ts` ya existe y **hoy no acepta dos de
+ * esos cinco**. Queda escrito aquí, y no arreglado en silencio, porque ese
+ * archivo no es de esta pantalla:
+ *
+ *  1. **`anio` vacío se rechaza** con `anio_fuera_de_rango`. Mientras siga así,
+ *     el «Ahora no» del año produce un error en vez de un perfil, y eso
+ *     contradice a D-026 («pasos saltables con defaults sanos») y a la línea
+ *     roja #4. Arreglarlo pide además que `birth_year` deje de ser `NOT NULL`,
+ *     que es justo la reconstrucción de tabla que D-053 ya dejó pendiente para
+ *     la migración `0005`.
+ *  2. **`alias` se ignora**: el servidor genera el suyo. Su razón es buena —un
+ *     alias que llega del cliente es un campo de texto libre con otro nombre—
+ *     pero la consecuencia es que esta pantalla enseña un nombre y la base
+ *     guarda otro. La salida no es dejar de enseñarlo: es que el servidor
+ *     acepte el recibido **solo si el generador de ese locale pudo haberlo
+ *     producido** (sus listas más `aliasPermitido()`), que es una comprobación
+ *     que ningún nombre real pasa.
+ *
+ * Y una tercera que no es de campos: el endpoint responde **JSON 201**, así que
+ * un envío sin JavaScript deja al adulto mirando llaves y comillas. Necesita
+ * responder 303 hacia el siguiente paso cuando la petición viene de un
+ * formulario (`Accept: text/html`).
+ *
+ * ─── Esta pantalla necesita una ruta SSR ────────────────────────────────────
+ *
+ * `astro.config.mjs` tiene `output: "static"`. Si el componente se monta en una
+ * ruta prerenderizada, `generarAlias()` y `new Date()` se evalúan **en el
+ * build**: todos los padres del mundo verían el mismo alias y la misma lista de
+ * años hasta el próximo `wrangler deploy`. La ruta que use este componente
+ * tiene que declarar `export const prerender = false`.
+ *
+ * Y esa ruta tiene que mandar además `x-robots-tag: noindex, nofollow`, para
+ * quien no ejecuta HTML. Aquí va la etiqueta `<meta>`; la cabecera es de la
+ * ruta, que es quien tiene la respuesta en la mano.
+ *
+ * ─── Por qué NO usa `layouts/Base.astro` ────────────────────────────────────
+ *
+ * Esta es la corrección que trajo la revisión, y no era cosmética. `Base` es el
+ * layout del **sitio abierto**: arma `canonical`, los siete `hreflang`, el
+ * `x-default` y el JSON-LD a partir de una `Seccion` de la tabla de rutas
+ * públicas. Esta pantalla no es una sección —no está en `rutas-tabla.mjs`, y no
+ * puede estarlo: hay que haber iniciado sesión para verla—, así que `seccion`
+ * llegaba `null` y `Base` resolvía la ruta de todos los locales a la PORTADA.
+ * El resultado era una página que declaraba, en `<link rel="canonical">` y en
+ * ocho `hreflang`, **ser la portada del sitio en siete idiomas**, con un
+ * JSON-LD cuyo `name` era «Crea el perfil de tu hijo» y cuya `url` era la
+ * portada — lo mismo que el propio `Base` prohíbe por escrito en su cabecera
+ * («el esquema COINCIDE con lo visible»). Un grupo de hreflang que miente no
+ * rompe ninguna página: rompe la indexación, en silencio, meses después.
+ *
+ * Encima traía la barra del sitio abierto —cinco enlaces a marketing— y el pie
+ * con el conmutador de siete idiomas, dentro de un flujo de alta.
+ *
+ * `apps/web/src/pages/app/kids/index.astro` ya había escrito este mismo
+ * razonamiento para la superficie de niño; aquí valen sus motivos 2 y 3. El 1
+ * (la medición de `Rum`) no aplica: esto es superficie de ADULTO y D-037 la
+ * permite — pero tampoco se monta, porque una pantalla que no se indexa y que
+ * se ve una vez por hijo no alimenta ningún percentil de campo.
+ *
+ * Lo que sí se hereda, que es lo que importa: `tokens.css` y `fonts.css`. Ni un
+ * color, ni un tamaño de blanco táctil, ni una familia tipográfica se inventa
+ * en este archivo.
+ */
+import { t, type Locale } from "../../i18n";
+import "../../styles/fonts.css";
+import "../../styles/tokens.css";
+import {
+  aniosOfrecidos,
+  edadDesdeAnio,
+  nivelesDe,
+  temaPermitido,
+  temaPorEdad,
+  type TemaVisual,
+} from "../../../../../packages/motor/src/bandas.ts";
+import { generarAlias } from "../../../../../packages/motor/src/alias.ts";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props as Props;
+const m = t(locale);
+
+const titulo = m.profileNewTitle;
+const lead = m.profileNewLead;
+
+/**
+ * Los temas que un perfil de niño puede tener HOY.
+ *
+ * `bandas.ts` conoce cinco (D-017) y `temasPermitidos()` puede devolver SERIO
+ * para un chico de 17 movido una banda arriba — pero el `CHECK` de
+ * `migrations/0002_child_profiles.sql` solo acepta KINDER, PRIMARIA y
+ * SECUNDARIA. Ofrecer SERIO produciría un `INSERT` rechazado por la base
+ * después de que el adulto ya llenó todo, así que aquí se intersecta y en el
+ * informe queda escrito que las dos tablas no dicen lo mismo.
+ */
+const TEMAS_DE_NINO = ["KINDER", "PRIMARIA", "SECUNDARIA"] as const satisfies readonly TemaVisual[];
+type TemaDeNino = (typeof TEMAS_DE_NINO)[number];
+
+/**
+ * El año actual. En una ruta SSR es el de la petición; en una prerenderizada
+ * sería el del build — ver el encabezado. El servidor **vuelve a calcularlo**
+ * al recibir el POST y rechaza cualquier año fuera de `aniosOfrecidos()`: un
+ * `<option>` es una sugerencia, no una validación.
+ */
+const anioActual = new Date().getFullYear();
+const anios = aniosOfrecidos(anioActual);
+
+/**
+ * El tema cuando no hay año. PRIMARIA es el punto medio de los tres que la
+ * base acepta, y desde ahí `temasPermitidos()` alcanza a los otros dos: quien
+ * salta el año conserva las tres opciones en lugar de quedarse encerrado.
+ */
+const TEMA_SIN_ANIO: TemaDeNino = "PRIMARIA";
+
+/** Año → tema derivado, calculado aquí una vez para pintarlo en cada opción. */
+const temaDe = (anio: number): TemaVisual => temaPorEdad(edadDesdeAnio(anio, anioActual));
+
+/**
+ * Para cada tema ofrecible, los temas derivados que lo permiten.
+ *
+ * Se pregunta con `temaPermitido()`, que es el mismo MARGEN de una banda que
+ * usará el servidor. Sale una tabla de tres × tres que el script recorre sin
+ * saber nada de bandas.
+ */
+const permitidoPara = (tema: TemaDeNino): string =>
+  TEMAS_DE_NINO.filter((derivado) => temaPermitido(derivado, tema)).join(" ");
+
+const COPIA: Record<TemaDeNino, { nombre: string; que: string }> = {
+  KINDER: { nombre: m.profileThemeKinder, que: m.profileThemeKinderWhat },
+  PRIMARIA: { nombre: m.profileThemePrimaria, que: m.profileThemePrimariaWhat },
+  SECUNDARIA: { nombre: m.profileThemeSecundaria, que: m.profileThemeSecundariaWhat },
+};
+
+/**
+ * «Niveles 3-6» no se escribe a mano en siete idiomas: sale de `nivelesDe()`,
+ * que reenvía a la única tabla de niveles que existe. Los números no pasan por
+ * `formatear()` a propósito — un nivel no lleva separador de millares en
+ * ningún locale, y un año tampoco (`2.018` en de-DE sería una fecha rota).
+ */
+const nivelesTexto = (tema: TemaDeNino): string => {
+  const n = nivelesDe(tema);
+  return m.profileThemeLevels.replace("{min}", String(n.min)).replace("{max}", String(n.max));
+};
+
+/**
+ * Un puñado de alias, generados por locale y sin repetir.
+ *
+ * Se generan varios de una vez para que «Otro» no cueste un viaje al servidor:
+ * el dispositivo de referencia es Android de gama baja sobre 4G lento
+ * (`mc-47`), donde un viaje por cada alias descartado se siente. El servidor
+ * **revalida** el alias recibido con `aliasPermitido()`: un `hidden` es una
+ * sugerencia del navegador, no un hecho.
+ */
+const CUANTOS_ALIAS = 6;
+const alias: string[] = [];
+for (let i = 0; alias.length < CUANTOS_ALIAS && i < CUANTOS_ALIAS * 4; i++) {
+  const candidato = generarAlias(locale).alias;
+  if (!alias.includes(candidato)) alias.push(candidato);
+}
+---
+
+<!doctype html>
+<html lang={m.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    {/* `viewport-fit=cover` para que en iPhone y iPad instalados el fondo llegue
+        al borde; el contenido se retira con `env(safe-area-inset-*)` más abajo
+        (D-041). Sin `maximum-scale` ni `user-scalable=no`: impedir el zoom es
+        violación de WCAG 2.2 AA 1.4.4. */}
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    {/* Pantalla autenticada, y encima sobre un menor: fuera del índice, y sin
+        seguir enlaces desde ella. Ver la cabecera del archivo. */}
+    <meta name="robots" content="noindex, nofollow" />
+
+    <title>{titulo}</title>
+    <meta name="description" content={lead} />
+    <meta name="theme-color" content="#F36B1C" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="preload" href="/fonts/raleway-var-latin.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+
+  <body>
+    {/* `<main>` y no `<article>`: sin la barra de navegación de `Base` este
+        documento se quedaba sin ninguna región de referencia, y quien navega
+        con lector de pantalla pierde el salto al contenido (WCAG 2.4.1). Un
+        formulario de alta no es un artículo. */}
+    <main class="perfil">
+        <h1>{titulo}</h1>
+      <p class="lead">{lead}</p>
+
+      {/*
+        Marca contextual 2 de D-026, `profile-not-user`. Va anclada al formulario
+        porque es donde el adulto busca el correo del niño y no lo encuentra.
+
+        `mc-45` §3 exige que una marca se vea inequívocamente como ANOTACIÓN y no
+        como control: sin superficie elevada, sin borde de botón, sin el naranja
+        de acento como fondo. Aquí es una raya lateral y texto atenuado, y no hay
+        nada tocable dentro.
+
+        Lo que todavía NO tiene, y hay que decirlo: el descarte permanente. El
+        componente compartido de marcas y su tabla son de F2 y no existen; hasta
+        entonces esto es una anotación fija de una pantalla que un adulto ve una
+        vez por hijo, no un aviso que reaparece (lo segundo sería el *nagging*
+        que la FTC nombra por su nombre, `mc-17`).
+      */}
+      <aside class="marca">
+        <p class="marca-etiqueta">{m.profileNoteLabel}</p>
+        <p>{m.profileMarkProfile}</p>
+      </aside>
+
+      <form method="post" action="/api/perfil-nuevo" id="form-perfil">
+        {/* El locale no se pregunta: viaja como `hidden` porque es el idioma de
+            la página, y es el que decide de qué lista salió el alias
+            (`alias_locale` en la migración 0002). */}
+        <input type="hidden" name="locale" value={locale} />
+
+        <fieldset class="paso">
+          <legend>{m.profileYearLegend}</legend>
+          <p class="ayuda">{m.profileYearHelp}</p>
+
+          <label class="etiqueta" for="anio">{m.profileYearLabel}</label>
+          <select id="anio" name="anio">
+            {/* «Ahora no» es la primera opción y la que viene puesta. Ver el
+                encabezado: no hay año por defecto que sea honesto. */}
+            <option value="" selected data-tema={TEMA_SIN_ANIO}>{m.profileYearSkip}</option>
+            {anios.map((anio) => (
+              <option value={anio} data-tema={temaDe(anio)}>{anio}</option>
+            ))}
+          </select>
+        </fieldset>
+
+        <fieldset class="paso" id="paso-tema">
+          <legend>{m.profileThemeLegend}</legend>
+          <p class="ayuda">{m.profileThemeHelp}</p>
+
+          <ul class="temas">
+            {TEMAS_DE_NINO.map((tema) => (
+              <li>
+                <label class="tarjeta" data-para={permitidoPara(tema)}>
+                  <input
+                    type="radio"
+                    name="tema"
+                    value={tema}
+                    checked={tema === TEMA_SIN_ANIO}
+                  />
+                  <span class="nombre">{COPIA[tema].nombre}</span>
+                  <span class="que">{COPIA[tema].que}</span>
+                  {/* Los niveles se enseñan porque el padre pregunta «¿y qué va a
+                      ver?», y se enseñan CON la advertencia de la marca de arriba:
+                      son los niveles que este tema muestra, no dónde arranca su
+                      hijo. D-002: la edad y la dificultad son ejes separados. */}
+                  <span class="niveles">{nivelesTexto(tema)}</span>
+                  <span class="fuera">{m.profileThemeOutOfRange}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+
+        <fieldset class="paso" id="paso-alias">
+          <legend>{m.profileAliasLegend}</legend>
+          <p class="ayuda">{m.profileAliasHelp}</p>
+
+          <div class="fila-alias">
+            {/* `aria-live` porque al pedir otro alias cambia un texto que nadie
+                enfocó: sin esto, quien usa lector de pantalla pulsa el botón y no
+                se entera de nada. */}
+            <p class="alias" id="alias-visible" aria-live="polite">{alias[0]}</p>
+            {/*
+              Nace `hidden` y lo enseña el script. Un botón que no hace nada sin
+              JavaScript es peor que un botón ausente, y `mc-33` documenta que el
+              JavaScript falla más veces de las que nadie cree en el dispositivo de
+              referencia. Aparece dentro de una fila que ya tiene alto propio, así
+              que no empuja nada al aparecer (CLS ≤ 0.1, D-030).
+            */}
+            <button type="button" id="otro-alias" hidden data-opciones={JSON.stringify(alias)}>
+              {m.profileAliasAnother}
+            </button>
+          </div>
+          {/* Viaja el alias que el adulto está viendo. Hoy el endpoint lo ignora
+              y genera el suyo — ver el punto 2 del encabezado: mientras eso siga
+              así, este campo es una promesa que el servidor no cumple, y por eso
+              está dicho aquí y no solo en el informe. */}
+          <input type="hidden" name="alias" id="alias-campo" value={alias[0]} />
+        </fieldset>
+
+        <p class="declaracion">{m.profileGuardianDeclaration}</p>
+
+        {/*
+          Dos envíos, y el orden importa: el primer `submit` del formulario es el
+          que dispara la tecla Intro. Por eso «Crear el perfil» va antes que
+          «Ahora no» en el marcado y también en el orden visual — moverlo con CSS
+          rompería el orden de tabulación (WCAG 2.4.3), que es justo el modo de
+          entrada con teclado físico que D-041 exige tratar como de primera clase.
+        */}
+        <div class="acciones">
+          <button type="submit" name="accion" value="crear" class="primaria">{m.profileSubmit}</button>
+          <button type="submit" name="accion" value="ahora-no" class="secundaria">{m.profileSkipAll}</button>
+        </div>
+        <p class="ayuda">{m.profileSkipAllHelp}</p>
+      </form>
+
+      {/* Marca contextual 1 de D-026, `age-vs-difficulty`: se dispara aquí porque
+          aquí es donde el adulto ve por primera vez una banda derivada de un año y
+          concluye, razonablemente, que acaba de elegir la dificultad. */}
+      <aside class="marca">
+        <p class="marca-etiqueta">{m.profileNoteLabel}</p>
+        <p>{m.profileMarkAge}</p>
+      </aside>
+    </main>
+
+    <style>
+      /* Una columna, y nunca más ancha que --measure. El tercio de Split View del
+         iPad son 320px (D-041), así que aquí no hay ni un ancho mínimo en px: lo
+         que ordena es un grid que se pliega solo.
+
+         El relleno lateral lo ponía `Base` en su `<main>`; al dejar de heredarlo
+         hay que ponerlo aquí, o el texto toca el borde de la pantalla. Y va con
+         `env(safe-area-inset-*)`, que es lo que `Base` NO hacía: en un iPhone
+         instalado y en horizontal, la muesca se come justo el borde donde
+         arrancan estas líneas (D-041 § Áreas seguras). */
+      .perfil {
+        max-width: var(--measure);
+        margin-inline: auto;
+        padding-block: calc(var(--space) * 2)
+          calc(var(--space) * 3 + env(safe-area-inset-bottom));
+        padding-inline-start: calc(var(--space) * 1.25 + env(safe-area-inset-left));
+        padding-inline-end: calc(var(--space) * 1.25 + env(safe-area-inset-right));
+      }
+
+      /* El título, a tamaño grande, es de los pocos sitios donde el naranja de
+         Ignia alcanza: 3.03:1 sobre blanco pasa el umbral de 3:1 del texto
+         grande y reprueba el 4.5:1 del normal. Por eso --color-text-brand, que
+         resuelve al azul en claro y al naranja en oscuro. */
+      h1 {
+        font-family: var(--font-marca);
+        font-weight: var(--weight-title);
+        font-size: var(--text-xl);
+        color: var(--color-text-brand);
+        margin-block-end: var(--space);
+      }
+
+      .lead {
+        font-family: var(--font-marca);
+        font-size: var(--text-lg);
+        line-height: var(--leading-body);
+        color: var(--color-text);
+        margin-block-end: calc(var(--space) * 2);
+      }
+
+      /* La marca contextual: anotación, nunca control (mc-45 §3). Una raya
+         lateral y texto atenuado; ni fondo elevado ni nada tocable dentro. */
+      .marca {
+        border-inline-start: 3px solid var(--color-border);
+        padding-inline-start: var(--space);
+        margin-block: calc(var(--space) * 1.5);
+      }
+      .marca p {
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        line-height: var(--leading-body);
+        margin-block-end: 0;
+      }
+      .marca-etiqueta {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-block-end: 0.25em;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--space) * 1.5);
+      }
+
+      /* Cada paso es un `fieldset` sin caja: la caja de un `fieldset` del
+         navegador es un borde de los noventa, y aquí lo que separa es el aire. */
+      .paso {
+        border: 0;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--space) * 0.5);
+      }
+
+      /* D-036: todo lo que se opera habla en la voz del sistema. Las tres
+         familias salen de tokens; ninguna se escribe literal. */
+      legend {
+        font-family: var(--font-sistema);
+        font-size: var(--text-lg);
+        font-weight: var(--weight-subtitle);
+        color: var(--color-text);
+        padding: 0;
+      }
+
+      .etiqueta {
+        font-family: var(--font-sistema);
+        font-weight: var(--weight-subtitle);
+        color: var(--color-text);
+      }
+
+      .ayuda {
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        line-height: var(--leading-body);
+        margin-block-end: 0;
+      }
+
+      select {
+        font-family: var(--font-sistema);
+        /* 16px o más: por debajo de eso Safari en iOS hace zoom al enfocar y deja
+           medio formulario fuera de la pantalla. */
+        font-size: var(--text-base);
+        min-block-size: var(--tap-primaria);
+        padding-inline: calc(var(--space) * 0.75);
+        color: var(--color-text);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        inline-size: 100%;
+      }
+
+      /* Superficie de adulto: el piso es el de la HIG, 44px, muy por encima de
+         los 24px de WCAG 2.5.8. Los 88px de kinder son de la pantalla del niño,
+         no de esta. */
+      .temas {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: var(--space);
+        grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+      }
+
+      .tarjeta {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.25em var(--space);
+        align-items: start;
+        min-block-size: var(--tap-primaria);
+        padding: var(--space);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius);
+        cursor: pointer;
+      }
+
+      .tarjeta input {
+        grid-row: 1 / span 4;
+        min-block-size: 1.75rem;
+        min-inline-size: 1.75rem;
+        accent-color: var(--color-accent);
+      }
+
+      .tarjeta .nombre {
+        font-family: var(--font-sistema);
+        font-weight: var(--weight-subtitle);
+        color: var(--color-text);
+      }
+      .tarjeta .que,
+      .tarjeta .niveles,
+      .tarjeta .fuera {
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        line-height: var(--leading-body);
+      }
+
+      .tarjeta:has(input:checked) { border-color: var(--color-accent); }
+
+      /* El hover mueve el BORDE, no el fondo, y eso no es gusto: la tarjeta lleva
+         tres líneas en `--color-text-muted` (#727476), que sobre `--color-bg`
+         blanco dan 4.69:1 y pasan, pero sobre `--color-surface` (#F7F7F8) caen a
+         **4.38:1** y reprueban el 4.5:1 de texto normal. Es el mismo par que
+         `audits/contrast.mjs` lleva marcado en rojo a nivel de token. Un estado
+         de hover que hunde el contraste del texto es una regresión de WCAG que
+         solo existe mientras el cursor está encima, y por eso nadie la ve. */
+      .tarjeta:hover { border-color: var(--color-text-muted); }
+
+      /* El foco del teclado tiene que verse en la TARJETA, no solo alrededor del
+         botón de radio de 28px que hay en su esquina (WCAG 2.4.7 y D-041, que
+         trata el teclado físico del iPad como entrada de primera clase). */
+      .tarjeta:has(input:focus-visible) {
+        outline: 3px solid var(--color-accent);
+        outline-offset: 2px;
+      }
+
+      /* Fuera de rango: se atenúa con el token de texto atenuado, que sí pasa
+         contraste, y no con `opacity` — bajar la opacidad hunde el contraste de
+         todo lo que hay debajo sin que ningún token lo declare. */
+      .tarjeta .fuera { display: none; }
+      .tarjeta[data-fuera="si"] { border-style: dashed; }
+      .tarjeta[data-fuera="si"] .nombre { color: var(--color-text-muted); }
+      .tarjeta[data-fuera="si"] .fuera { display: block; }
+      /* El cursor dice la verdad: la tarjeta deshabilitada no se puede elegir.
+         Se sigue pudiendo leer y sigue explicando por qué, que es lo que hace
+         falta — desaparecerla dejaría al adulto preguntándose qué pasó. */
+      .tarjeta[data-fuera="si"] { cursor: default; }
+      .tarjeta[data-fuera="si"]:hover { border-color: var(--color-border); }
+
+      .fila-alias {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space);
+        min-block-size: var(--tap-primaria);
+      }
+
+      /* El alias es un nombre, no un control: habla en la voz de la marca. */
+      .alias {
+        font-family: var(--font-marca);
+        font-size: var(--text-lg);
+        font-weight: var(--weight-subtitle);
+        color: var(--color-text);
+        margin-block-end: 0;
+      }
+
+      .declaracion {
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        line-height: var(--leading-body);
+        margin-block-end: 0;
+      }
+
+      .acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space);
+      }
+
+      button {
+        font-family: var(--font-sistema);
+        font-size: var(--text-base);
+        font-weight: var(--weight-subtitle);
+        min-block-size: var(--tap-primaria);
+        padding-inline: calc(var(--space) * 1.5);
+        border-radius: var(--radius);
+        cursor: pointer;
+      }
+
+      /* ATENCIÓN, deuda declarada y no arreglada aquí a propósito.
+       *
+       * `--color-on-accent` es BLANCO en tema claro y su propia declaración en
+       * `tokens.css` dice, textualmente, «3.03:1 — solo texto grande». Esta
+       * etiqueta mide 16px con peso 500, que **no** es texto grande según WCAG
+       * 2.2 (hace falta ≥24px, o ≥18.66px en negrita de verdad). O sea: blanco
+       * sobre #F36B1C a 3.03:1 donde el umbral exigible es 4.5:1.
+       *
+       * No se arregla en esta pantalla y sola, y esa es la decisión: el mismo par
+       * está en el botón de `Registro.astro`, que ya está mergeado. Cambiarlo aquí
+       * deja dos botones primarios distintos en el mismo producto y esconde el
+       * problema en vez de resolverlo. `audits/contrast.mjs` tampoco lo ve, porque
+       * comprueba tokens y no el tamaño al que se usan.
+       *
+       * El arreglo va en `tokens.css`, que es archivo compartido: un
+       * `--color-accent-strong` que resuelva a `--ignia-naranja-oscuro` (#CE4912,
+       * 4.58:1 con blanco) en claro y a `--ignia-naranja-claro` (#F8A337, 10.29:1
+       * con negro) en oscuro, y que sea el relleno de todo botón cuya etiqueta no
+       * sea texto grande. Está escrito en el informe de la revisión. */
+      .primaria {
+        color: var(--color-on-accent);
+        background: var(--color-accent);
+        border: 2px solid var(--color-accent);
+      }
+      .primaria:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+
+      /* «Ahora no» es un botón de verdad, con el mismo blanco táctil que el
+         primario. Esconder la salida detrás de un enlace diminuto es el patrón
+         oscuro que este producto tiene prohibido por escrito. */
+      .secundaria,
+      #otro-alias {
+        color: var(--color-text);
+        background: transparent;
+        border: 2px solid var(--color-border);
+      }
+      .secundaria:hover,
+      #otro-alias:hover { background: var(--color-surface); }
+    </style>
+
+    <script>
+      /**
+       * Dos mejoras, y las dos son mejoras: sin JavaScript el formulario se envía
+       * igual y crea un perfil jugable.
+       *
+       * 1. Al elegir un año, el tema derivado se marca y los que quedan a más de
+       *    una banda se deshabilitan.
+       * 2. «Otro» rota entre los alias que el servidor ya mandó, sin viaje.
+       *
+       * Ninguna de las dos sabe qué es una banda: el servidor pintó `data-tema` y
+       * `data-para` con `temaPorEdad()` y `temaPermitido()`, y aquí solo se
+       * comparan cadenas. Es lo que impide que la tabla de bandas tenga una
+       * segunda copia, que es como se desincronizan las tablas.
+       */
+      const anio = document.getElementById("anio") as HTMLSelectElement | null;
+      const tarjetas = Array.from(document.querySelectorAll<HTMLElement>(".tarjeta"));
+
+      function aplicarDerivado() {
+        const opcion = anio?.selectedOptions[0];
+        const derivado = opcion?.dataset.tema;
+        if (!derivado) return;
+
+        let elegidoSigueValiendo = false;
+        const radios: HTMLInputElement[] = [];
+
+        for (const tarjeta of tarjetas) {
+          const radio = tarjeta.querySelector("input") as HTMLInputElement | null;
+          if (!radio) continue;
+          radios.push(radio);
+          const permitidos = (tarjeta.dataset.para ?? "").split(" ");
+          const vale = permitidos.includes(derivado);
+          radio.disabled = !vale;
+          tarjeta.dataset.fuera = vale ? "no" : "si";
+          if (vale && radio.checked) elegidoSigueValiendo = true;
+        }
+
+        // Solo se pisa la elección del adulto si dejó de ser posible. Cambiar el
+        // año no debe borrar en silencio un tema que él movió a mano: eso es la
+        // clase de "ayuda" que hace desconfiar de un formulario.
+        if (elegidoSigueValiendo) return;
+        for (const radio of radios) {
+          if (radio.value === derivado) radio.checked = true;
+        }
+      }
+
+      anio?.addEventListener("change", aplicarDerivado);
+      aplicarDerivado();
+
+      const otro = document.getElementById("otro-alias") as HTMLButtonElement | null;
+      const visible = document.getElementById("alias-visible");
+      const campo = document.getElementById("alias-campo") as HTMLInputElement | null;
+
+      if (otro && visible && campo) {
+        let opciones: string[] = [];
+        try {
+          opciones = JSON.parse(otro.dataset.opciones ?? "[]") as string[];
+        } catch {
+          // Un `data-` ilegible deja el botón escondido y el alias que ya está
+          // puesto: se degrada al caso sin JavaScript, que funciona.
+          opciones = [];
+        }
+
+        if (opciones.length > 1) {
+          otro.hidden = false;
+          let i = 0;
+          otro.addEventListener("click", () => {
+            i = (i + 1) % opciones.length;
+            visible.textContent = opciones[i];
+            campo.value = opciones[i];
+          });
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -36,13 +36,34 @@ const locale: Locale = raw;
 import { formatear } from "../../../../../packages/motor/src/numeros.ts";
 const opciones = (ns: number[]) => ns.map((n) => formatear(n, locale));
 
+/**
+ * Los ítems son del BANCO REAL, con su id, para que la respuesta se pueda
+ * calificar de verdad contra `POST /api/reto`. Las opciones se ordenan de forma
+ * estable —no al azar— para que la posición del acierto no cambie entre
+ * despliegues: un niño que aprende «la de la esquina» no está aprendiendo a
+ * sumar, pero un niño al que la respuesta le SALTA de sitio en cada visita
+ * tampoco puede confiar en la pantalla.
+ */
 const DEMOS = [
-  { formato: "toca_la_respuesta" as const, titulo: "3 + 4", opciones: opciones([7, 12, 1, 8]) },
-  { formato: "cual_sobra" as const, titulo: "¿Cuál sobra?", opciones: opciones([2, 4, 7, 8]) },
-  { formato: "toca_para_contar" as const, titulo: "Toca cada pato", opciones: [], cantidad: 6 },
-  { formato: "arma_el_numero" as const, titulo: "Arma el 7", opciones: [], cantidad: 10 },
-  { formato: "flash" as const, titulo: "¿Cuántos eran?", opciones: opciones([3, 4, 5]), cantidad: 4 },
+  { itemId: "k11-3-4", formato: "toca_la_respuesta" as const, titulo: "3 + 4", opciones: opciones([1, 7, 8, 12]) },
+  { itemId: "k07-2-8", formato: "cual_sobra" as const, titulo: "¿Cuál grupo tiene más?", opciones: opciones([2, 8]) },
+  { itemId: "k03-6", formato: "toca_para_contar" as const, titulo: "Toca cada pato", opciones: opciones([5, 6, 7]), cantidad: 6 },
+  { itemId: "k10-7-3", formato: "arma_el_numero" as const, titulo: "Completa hasta 7", opciones: opciones([3, 4, 7, 10]), cantidad: 10 },
+  { itemId: "k02-4", formato: "flash" as const, titulo: "¿Cuántos eran?", opciones: opciones([3, 4, 5]), cantidad: 4 },
 ];
+
+/** La retroalimentación del locale. Sin texto, no hay nada que mostrar. */
+import retro from "../../i18n/reto/en.json";
+import retroEsMX from "../../i18n/reto/es-MX.json";
+import retroEsES from "../../i18n/reto/es-ES.json";
+import retroFr from "../../i18n/reto/fr-FR.json";
+import retroPtBR from "../../i18n/reto/pt-BR.json";
+import retroPtPT from "../../i18n/reto/pt-PT.json";
+import retroDe from "../../i18n/reto/de-DE.json";
+const RETRO: Record<Locale, typeof retro> = {
+  "en": retro, "es-MX": retroEsMX as any, "es-ES": retroEsES as any, "fr-FR": retroFr as any,
+  "pt-BR": retroPtBR as any, "pt-PT": retroPtPT as any, "de-DE": retroDe as any,
+};
 ---
 
 <Base
@@ -58,7 +79,7 @@ const DEMOS = [
     </p>
 
     {DEMOS.map((d) => (
-      <section>
+      <section data-item={d.itemId}>
         <h2>{d.titulo}</h2>
         <Formatos
           formato={d.formato}
@@ -66,11 +87,17 @@ const DEMOS = [
           cantidad={d.cantidad}
           etiquetaGrupo={d.titulo}
         />
+        {/* `aria-live="polite"` y no `assertive`: el veredicto se anuncia cuando
+            el lector termine lo que está diciendo, no interrumpiéndolo. */}
+        <div class="veredicto" hidden aria-live="polite">
+          <p class="causa"></p>
+          <p class="siguiente"></p>
+        </div>
       </section>
     ))}
   </div>
 
-  <script>
+  <script is:inline define:vars={{ RETRO: RETRO[locale] }}>
     // Alternar `aria-pressed`. Sin marco, sin dependencias, y con delegación:
     // 26 blancos táctiles con un solo escuchador.
     //
@@ -90,9 +117,44 @@ const DEMOS = [
 
     // El flash: exposición del estímulo, NO un reloj. Se esconde una vez y no
     // vuelve; no cuenta hacia atrás, no se muestra y no puntúa (D-024).
-    document.querySelectorAll<HTMLElement>(".flash").forEach((f) => {
+    document.querySelectorAll(".flash").forEach((f) => {
       const ms = Number(f.dataset.ms ?? 500);
       setTimeout(() => f.setAttribute("data-visible", "false"), ms);
+    });
+
+    // Calificar contra el SERVIDOR. El cliente manda una elección y recibe un
+    // veredicto; la fórmula de D-010 no viaja hasta aquí, y por eso
+    // `audits/puntaje-servidor.mjs` puede afirmar que no está en el bundle.
+    document.querySelectorAll("section[data-item]").forEach((seccion) => {
+      const itemId = seccion.dataset.item;
+      const caja = seccion.querySelector(".veredicto");
+      if (!caja) return;
+
+      seccion.addEventListener("click", async (e) => {
+        const b = e.target.closest("button[data-valor]");
+        if (!b) return;
+
+        let r;
+        try {
+          const res = await fetch("/api/reto", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ itemId, eleccion: Number(b.dataset.valor) }),
+          });
+          r = await res.json();
+        } catch {
+          // Sin conexión no se inventa un veredicto: el servidor califica, y si
+          // no está, la respuesta espera. Es lo que la cola de D-047 recogerá.
+          return;
+        }
+
+        const clave = r.acc === 1 ? "acierto" : r.causa ?? "inesperada";
+        const texto = RETRO[clave];
+        caja.dataset.acierto = String(r.acc);
+        caja.hidden = false;
+        caja.querySelector(".causa").textContent = Array.isArray(texto) ? texto[0] : texto;
+        caja.querySelector(".siguiente").textContent = Array.isArray(texto) ? texto[1] : "";
+      });
     });
   </script>
 </Base>

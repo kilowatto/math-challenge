@@ -1,0 +1,260 @@
+---
+/**
+ * /{locale}/origen/ — la página de origen (S2).
+ *
+ * Plan: docs/planes/sitio-s0-s1-s2.md §5.1. Fuente de la voz:
+ * docs/por-que-existe.md, la entrevista al dueño del 2026-07-31.
+ *
+ * Tres cosas de esta página no son estéticas, son requisitos:
+ *
+ *   1. NO abre con el producto. Abre con niños perdiendo el tiempo en TikTok y
+ *      un adulto que extrañaba las matemáticas (por-que-existe.md, cierre).
+ *   2. La palabra "adictivo" se queda, con lo que la investigación le hizo.
+ *      Es la única señal de *Experience* que la investigación no puede producir
+ *      (mc-48 §2), y esconderla convertiría el sitio en marketing.
+ *   3. La medida de éxito del dueño —"que llegue a quien no puede pagar"— va
+ *      visible y grande, no en letra chica.
+ *
+ * Regla dura de mc-48 §3: el JSON-LD tiene que COINCIDIR con lo visible. Por eso
+ * `name` y `description` del marcado salen de las MISMAS variables que renderiza
+ * el cuerpo (`p.title` es el <h1>, `p.description` es el párrafo de entrada), y
+ * no de constantes paralelas que se desincronizan a la primera edición.
+ */
+import Base from "../../layouts/Base.astro";
+import { LOCALES, t, isLocale } from "../../i18n";
+import textos from "../../i18n/paginas/origen.json";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params;
+if (!isLocale(locale)) return Astro.redirect("/en/");
+
+const p = textos[locale];
+const home = t(locale);
+
+const site = "https://math.kilowatto.com";
+const canonical = `${site}/${locale}/origen/`;
+
+// El repositorio es público y el archivo está en `main`: los dos enlaces
+// resuelven hoy. Verificado con `gh repo view kilowatto/math-challenge
+// --json visibility` → PUBLIC, y `git ls-files docs/por-que-existe.md`.
+//
+// Lo que NO se escribe aquí es "código abierto": el repositorio no tiene
+// archivo LICENSE (`licenseInfo: null`), y un repo público sin licencia es
+// código visible con todos los derechos reservados, no código abierto
+// (plan §6.1, conflicto C1). Se dice lo que es cierto: es público.
+const REPO = "https://github.com/kilowatto/math-challenge";
+const ENTREVISTA = `${REPO}/blob/main/docs/por-que-existe.md`;
+
+// Fecha de la entrevista. Visible bajo el título, para que `datePublished` del
+// marcado tenga contraparte en la página y no sea una afirmación solo legible
+// por máquina.
+const FECHA = "2026-07-31";
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "AboutPage",
+      "@id": `${canonical}#aboutpage`,
+      url: canonical,
+      name: p.title,
+      description: p.description,
+      inLanguage: locale,
+      datePublished: FECHA,
+      dateModified: FECHA,
+      about: { "@id": `${site}/#esteban` },
+      // Estos dos @id los emite Base.astro en su propio bloque JSON-LD de esta
+      // misma página. Google fusiona todos los bloques del documento, así que
+      // las referencias resuelven. Si el auditor de S0 (plan §3.1, punto 5)
+      // termina exigiendo que el @id viva en el MISMO @graph, la salida es
+      // mover estos nodos al grafo de Base, no duplicar aquí un Organization
+      // con un `name` que no aparece en el cuerpo.
+      isPartOf: { "@id": `${site}/#website` },
+      publisher: { "@id": `${site}/#organization` },
+      breadcrumb: { "@id": `${canonical}#breadcrumb` },
+    },
+    {
+      // Se declara porque el nombre está visible en el primer párrafo. Un
+      // `Person` que la página no nombra sería exactamente el desajuste que
+      // hace que Google descarte el marcado entero.
+      "@type": "Person",
+      "@id": `${site}/#esteban`,
+      name: "Esteban Rey",
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${canonical}#breadcrumb`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: home.title, item: `${site}/${locale}/` },
+        { "@type": "ListItem", position: 2, name: p.title, item: canonical },
+      ],
+    },
+  ],
+};
+---
+
+<Base locale={locale} path="origen/" title={p.title} description={p.description}>
+  {/* Migas reales, no solo marcado: el BreadcrumbList de arriba describe esto.
+      Es navegación, así que va en la voz del sistema (D-036). */}
+  <nav class="migas" aria-label={p.breadcrumbLabel}>
+    <ol>
+      <li><a href={`/${locale}/`}>{home.title}</a></li>
+      <li aria-current="page">{p.title}</li>
+    </ol>
+  </nav>
+
+  <h1>{p.title}</h1>
+  <p class="lead">{p.description}</p>
+  <p class="fecha"><time datetime={FECHA}>{p.date}</time></p>
+
+  <h2>{p.originHeading}</h2>
+  <p>{p.origin1}</p>
+  <p>{p.origin2}</p>
+
+  <h2>{p.wordHeading}</h2>
+  <p>{p.word1}</p>
+  <p>{p.word2}</p>
+  <p>{p.word3}</p>
+  <p>{p.word4}</p>
+
+  <h2>{p.mathHeading}</h2>
+  <p>{p.math1}</p>
+  <p>{p.math2}</p>
+
+  <h2>{p.againstHeading}</h2>
+  <p>{p.against1}</p>
+  <p>{p.against2}</p>
+  <p>{p.against3}</p>
+
+  <h2>{p.goalHeading}</h2>
+  <blockquote class="medida">
+    <p>{p.goalQuote}</p>
+  </blockquote>
+  <p>{p.goal1}</p>
+  <p>{p.goal2}</p>
+  <ul class="lista">
+    {p.goalItems.map((item) => <li>{item}</li>)}
+  </ul>
+
+  <h2>{p.forbidsHeading}</h2>
+  <p>{p.forbidsLead}</p>
+  <ol class="lista">
+    {p.forbids.map((item) => <li>{item}</li>)}
+  </ol>
+
+  <h2>{p.closingHeading}</h2>
+  <p>{p.closing}</p>
+
+  <p class="estado">{p.statusNote}</p>
+
+  <h2>{p.sourcesHeading}</h2>
+  <p>{p.sourcesNote}</p>
+  <ul class="fuentes">
+    <li><a href={ENTREVISTA} rel="external">{p.sourcesInterview}</a></li>
+    <li><a href={REPO} rel="external">{p.sourcesRepo}</a></li>
+  </ul>
+
+  {/* Va dentro del cuerpo a propósito: Base.astro no expone el <head> por
+      página, y schema.org es válido en el <body>. El auditor de S0 extrae todo
+      script de tipo ld+json del documento, no solo los del head. */}
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+</Base>
+
+<style>
+  /* Navegación: voz del sistema (D-036). Blanco táctil de 24px (WCAG 2.5.8). */
+  .migas {
+    font-family: var(--font-sistema);
+    font-size: var(--text-xs);
+    margin-block-end: 2rem;
+  }
+  .migas ol {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    padding: 0;
+    margin: 0;
+  }
+  .migas li { display: inline-flex; align-items: center; min-block-size: var(--tap-min); }
+  .migas li + li::before { content: "/"; margin-inline-end: 0.75rem; color: var(--color-text-muted); }
+  .migas [aria-current] { color: var(--color-text-muted); }
+
+  /* El naranja de Ignia a 2.5rem: aquí sí, porque es texto grande (>=24px) y el
+     umbral aplicable es 3:1, que pasa con 3.03:1 sobre blanco. En un párrafo
+     sería una violación (docs/guia-de-estilo.md). */
+  h1 {
+    color: var(--color-accent);
+    font-weight: var(--weight-subtitle);
+  }
+
+  h2 {
+    margin-block-start: 2.75rem;
+    color: var(--color-text);
+  }
+
+  .lead {
+    font-size: var(--text-lg);
+    color: var(--color-text-brand);   /* azul, 5.67:1 — el naranja no alcanza aquí */
+    margin-block-end: 0.75rem;
+  }
+
+  .fecha {
+    color: var(--color-text-muted);   /* 4.69:1 sobre el fondo de página */
+    font-size: var(--text-xs);
+    margin-block-end: 2.5rem;
+  }
+
+  /* La medida de éxito del dueño. Va grande y arriba de su sección, no en una
+     nota al pie: es el único criterio que él dio para saber si esto valió la
+     pena (por-que-existe.md, "Qué haría que valiera la pena").
+
+     Contraste, calculado y no supuesto (node audits/contrast.mjs --tabla):
+     va sobre --color-bg y NO sobre --color-surface a propósito. Sobre la
+     superficie (#F7F7F8) el naranja oscuro cae a 4.28:1 y el naranja de marca a
+     2.83:1 — por debajo del umbral de texto normal el primero, y por debajo
+     incluso del de gráficos el segundo. Sobre el fondo de página el texto da
+     4.58:1 (pasa como texto normal, sin depender de que sea grande) y el borde
+     naranja 3.03:1 (pasa como gráfico). Las dos parejas son las que el propio
+     token declara. */
+  .medida {
+    margin: 1.5rem 0 2rem;
+    padding-block: 0.25rem;
+    padding-inline-start: 1.5rem;
+    border-inline-start: 4px solid var(--color-accent);
+  }
+  .medida p {
+    margin: 0;
+    max-width: none;
+    font-size: var(--text-xl);
+    font-weight: var(--weight-subtitle);
+    color: var(--color-text-brand-warm);
+  }
+
+  .lista {
+    padding-inline-start: 1.5rem;
+    max-inline-size: var(--measure);
+  }
+  .lista li { margin-block-end: 0.9rem; }
+
+  /* El aviso de que nada de esto es un producto lanzado. Texto normal, así que
+     NO puede ir en --color-text-muted sobre superficie (4.38:1, por debajo del
+     4.5:1 de WCAG): va en el color de texto pleno, 8.99:1. */
+  .estado {
+    margin-block-start: 2.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    color: var(--color-text);
+    font-size: var(--text-xs);
+  }
+
+  .fuentes {
+    padding-inline-start: 1.25rem;
+    max-inline-size: var(--measure);
+  }
+  .fuentes li { margin-block-end: 0.5rem; }
+  .fuentes a { display: inline-flex; align-items: center; min-block-size: var(--tap-min); }
+</style>

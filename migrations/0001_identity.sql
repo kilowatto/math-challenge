@@ -3,7 +3,7 @@
 -- Decisiones que este esquema hace cumplir:
 --   D-013  el niño NUNCA es un usuario. No hay fila de niño en esta migración.
 --   D-026  registro de 2 campos: correo + credencial. Nada más al registrarse.
---   D-035  passkey primero, contraseña como respaldo.
+--   D-038  passkey primero, contraseña como respaldo.
 --   D-022  siete locales, no cinco.
 --
 -- Lo que deliberadamente NO está aquí:

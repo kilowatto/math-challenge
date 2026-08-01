@@ -20,11 +20,12 @@ const ACTIVE = [
   ["secrets",           "ningún secreto commiteado",                         "CLAUDE.md § Cloudflare"],
   ["brand-image",       "paleta Ignia, AVIF/WebP, llaves de imagen",         "guia-de-estilo.md, mc-38, mc-47"],
   ["bundle-budget",     "peso gz por página, JS y CSS de cliente",           "D-030, mc-47 §4"],
+  ["telemetria-infantil","ninguna telemetría en superficies de niño",         "D-037, línea roja #2"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
 const PENDING = [
-  ["cwv-budget",        "INP ≤150ms, LCP ≤2.5s, CLS ≤0.1 en Android de gama baja/4G lento", "F0 · cuando haya despliegue"],
+  ["cwv-budget",        "INP ≤150ms, LCP ≤2.5s, CLS ≤0.1 — datos de CAMPO", "D-037 · cuando el beacon lleve semanas recolectando"],
   ["axe-a11y",          "axe-core sin violaciones",                  "F2 · cuando haya interfaz"],
   ["contrast",          "contraste 4.5:1 texto, 3:1 gráficos",       "F2 · cuando haya interfaz"],
   ["touch-targets",     "24px WCAG / 44px HIG / 88px kinder",        "F2 · cuando haya interfaz"],

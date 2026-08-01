@@ -92,6 +92,21 @@ try {
   problems.push(`0-RTT no se pudo medir: ${err.message}`);
 }
 
+// 4c. La inyección automática del beacon sigue APAGADA (D-037).
+//
+// Cloudflare puede inyectar el beacon de Web Analytics a nivel de zona, y eso lo
+// pondría en TODAS las páginas sin pasar por el código — incluidas las de niños.
+// `audits/telemetria-infantil.mjs` vigila el repo y es ciego a esto, porque no
+// hay archivo que mirar. La única forma de comprobarlo es leer el HTML servido.
+if (html.includes("cloudflareinsights.com") || html.includes("beacon.min.js")) {
+  problems.push(
+    "el beacon de Cloudflare aparece en el HTML servido — si nadie lo puso en el código, " +
+      "la inyección automática de la zona está ENCENDIDA y hay que apagarla (D-037)",
+  );
+} else {
+  ok.push("sin beacon inyectado por la zona (D-037)");
+}
+
 // 5. El camino de RPC nativo está vivo (D-030): web → ingest → D1
 try {
   const health = await (await get("/api/health")).json();

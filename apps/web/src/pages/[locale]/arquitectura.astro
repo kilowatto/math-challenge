@@ -1,0 +1,453 @@
+---
+import Base from "../../layouts/Base.astro";
+import { LOCALES, MATH_CONVENTIONS, isLocale, type Locale } from "../../i18n";
+import copy from "../../i18n/paginas/arquitectura.json";
+
+/**
+ * /{locale}/arquitectura/ — la página técnica del sitio abierto (S2).
+ *
+ * `mc-48` implicación #10: la página de arquitectura es CONTENIDO, no un pie de
+ * página. Y D-033 le pone el límite que la hace creíble: **presumir
+ * infraestructura que no es** está prohibido, igual que reclamar resultados de
+ * aprendizaje. En un sitio cuyo activo es el rigor, una cifra inventada aquí
+ * cuesta más que en cualquier otra página.
+ *
+ * De ahí las tres reglas con las que se escribió:
+ *
+ *   1. **Ninguna cifra se escribe en las traducciones.** Todas viven aquí
+ *      abajo, cada una con el comando que la produjo, y se interpolan en los
+ *      siete locales. Así una medición nueva se cambia en un lugar y no en
+ *      siete, y no puede desincronizarse en silencio.
+ *   2. **Lo que corre y lo que no van en secciones distintas.** El inventario
+ *      de docs/infrastructure.md está casi entero por crear; una página que
+ *      solo enseñara lo creado sería un folleto.
+ *   3. **La atribución va en dos mitades separadas** (D-033): Ignia hace el
+ *      proyecto, Cloudflare es la infraestructura. Decir que el stack lo provee
+ *      Ignia sería desmentible con una consulta de DNS, y el lector de esta
+ *      página es exactamente quien la haría.
+ *
+ * Tipografía: D-036. Títulos y cuerpo en `--font-marca`; la navegación de
+ * migas, en `--font-sistema`. Los bloques de evidencia van en monoespaciada
+ * del sistema porque son salida literal de un comando, no prosa ni control.
+ */
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params;
+if (!isLocale(locale)) return Astro.redirect("/en/");
+
+const COPY = copy as unknown as Record<Locale, typeof copy.en>;
+const c = COPY[locale];
+
+const site = "https://math.kilowatto.com";
+const url = `${site}/${locale}/arquitectura/`;
+
+// ---------------------------------------------------------------------------
+// LAS CIFRAS. Cada una con el comando que la produce. Si una deja de ser
+// cierta, se corrige aquí y cambia en los siete locales a la vez.
+// ---------------------------------------------------------------------------
+
+/** Fecha en que se releyeron de producción las cifras y la evidencia de abajo. */
+const VERIFICADO = "2026-07-31";
+
+/**
+ * node audits/bundle-budget.mjs   (2026-07-31, tras cablear la navegación de S2)
+ *   ✓ bundle-budget — 36 página(s), la más pesada 7.7 KB gz
+ *     · JS de cliente 2.6 KB gz · CSS 1.5 KB gz (gz = como viaja)
+ *
+ * La más pesada del sitio es, hoy, esta misma página en de-DE y fr-FR: es la
+ * que más texto tiene y el alemán y el francés son los idiomas que más se
+ * alargan. Sigue holgada dentro del presupuesto de 12 KB.
+ *
+ * ⚠ ESTE NÚMERO CAMBIA CADA VEZ QUE SE AGREGA UNA PÁGINA. Vuelve a correr el
+ * auditor y actualiza estos tres valores antes de commitear: publicar un peso
+ * viejo en la página que presume de medirlo todo es el error más caro posible.
+ *
+ * Ya pasó una vez: la navegación de cinco enlaces que Base.astro añadió a las
+ * 36 páginas movió la más pesada de 7.6 a 7.7 y el CSS de 1.4 a 1.5. Cero
+ * JavaScript nuevo — la navegación son cinco <a>, no un componente.
+ */
+const PESO = { pagina: 7.7, js: 2.6, css: 1.5 };
+
+/** audits/bundle-budget.mjs, constante BUDGET. Viene de D-030 y mc-47 §4. */
+const PRESUPUESTO = { html: 12, js: 60 };
+
+/** D-030. INP 150 y no 200: juego de alta frecuencia de interacción. */
+const CWV = { inp: 150, lcp: 2.5, cls: 0.1 };
+
+/**
+ * node audits/run.mjs
+ *   → "31 construidos · 8 esperando fase · 39 planeados (D-032)"
+ * De los 31 construidos, 8 son deterministas y bloquean el commit; 23 son
+ * adversariales con modelo de lenguaje y corren antes de abrir el PR.
+ */
+const FLOTA = { deterministas: 8, adversariales: 23, planeados: 39, esperando: 8 };
+
+/** mc-32 §D1 y la página de límites de D1: 10 GB por base en el plan de pago. */
+const D1_GB = 10;
+
+/** apps/web/src/components/Rum.astro — el script en línea de D-037. */
+const RUM_BYTES = 600;
+
+/**
+ * Evidencia literal, leída de producción el 2026-07-31. No se traduce: es
+ * salida de un comando, y traducirla la volvería incomprobable.
+ *
+ *   curl -sI https://math.kilowatto.com/en/          → alt-svc
+ *   openssl s_client … -tls1_3 -sess_out s.pem       → Max Early Data
+ */
+const EVIDENCIA = [
+  'alt-svc: h3=":443"; ma=86400',
+  "TLS 1.3 · Max Early Data: 14336",
+];
+
+/** Comandos que reproducen lo que esta página afirma. */
+const COMPROBACIONES = [
+  { que: c.check1, cmd: "curl -sI https://math.kilowatto.com/en/ | grep alt-svc" },
+  {
+    que: c.check2,
+    cmd:
+      "openssl s_client -connect math.kilowatto.com:443 -tls1_3 -sess_out s.pem\n" +
+      'openssl sess_id -in s.pem -text | grep "Max Early Data"',
+  },
+  { que: c.check3, cmd: "curl -s https://math.kilowatto.com/api/health" },
+  { que: c.check4, cmd: "node audits/bundle-budget.mjs" },
+];
+
+/**
+ * Fuentes. Los títulos van en su idioma original en los siete locales, porque
+ * son títulos de obras externas: traducirlos rompe la búsqueda que el lector
+ * haría para comprobarlos. Cada uno se releyó contra la fuente primaria antes
+ * de publicarse; las dos citas textuales de más abajo salen de [1] y [2].
+ */
+const FUENTES = [
+  {
+    name: "About Service bindings — Cloudflare Workers docs",
+    url: "https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/",
+  },
+  {
+    name: "We've added JavaScript-native RPC to Cloudflare Workers",
+    url: "https://blog.cloudflare.com/javascript-native-rpc/",
+  },
+  {
+    name: "Support HTTP/2 bidirectional streaming (gRPC) in Workers/Durable Objects — cloudflare/workerd issue #6455",
+    url: "https://github.com/cloudflare/workerd/issues/6455",
+  },
+  {
+    name: "gRPC Web (PROTOCOL-WEB) — gRPC core documentation",
+    url: "https://grpc.github.io/grpc/core/md_doc__p_r_o_t_o_c_o_l-_w_e_b.html",
+  },
+  {
+    name: "Road to gRPC — Cloudflare blog",
+    url: "https://blog.cloudflare.com/road-to-grpc/",
+  },
+  {
+    name: "HTTP/3 (with QUIC) — Cloudflare Speed docs",
+    url: "https://developers.cloudflare.com/speed/optimization/protocol/http3/",
+  },
+  {
+    name: "D1 Platform limits — Cloudflare docs",
+    url: "https://developers.cloudflare.com/d1/platform/limits/",
+  },
+  {
+    name: "JSON Mode — Cloudflare Workers AI docs",
+    url: "https://developers.cloudflare.com/workers-ai/features/json-mode/",
+  },
+];
+
+/**
+ * Citas textuales, en inglés y marcadas con `lang`. Se dejan en el original a
+ * propósito: una cita traducida ya no es una cita, y el lector que viene a esta
+ * página es el que va a ir a [1] y [2] a compararlas palabra por palabra.
+ */
+const CITAS = [
+  "When you use Service Bindings, there is zero overhead or added latency. By default, both Workers run on the same thread of the same Cloudflare server.",
+  "RPC to another Worker (over a Service Binding) usually does not even cross a network. In fact, the other Worker usually runs in the very same thread as the caller, reducing latency to zero.",
+];
+
+// ---------------------------------------------------------------------------
+// Formato de número POR LOCALE. Esto no es un detalle: es la tesis del producto
+// aplicada a su propia página. es-MX escribe 2.1 y es-ES escribe 2,1; el
+// kilobyte en francés es Ko. Se toma de MATH_CONVENTIONS, la misma tabla que va
+// a formatear las matemáticas del juego (mc-34, D-022).
+// ---------------------------------------------------------------------------
+const conv = MATH_CONVENTIONS[locale];
+const num = (n: number) => String(n).replace(".", conv.decimal);
+
+const VALORES: Record<string, string> = {
+  peso: num(PESO.pagina),
+  js: num(PESO.js),
+  css: num(PESO.css),
+  presupuesto: String(PRESUPUESTO.html),
+  jsBudget: String(PRESUPUESTO.js),
+  inp: String(CWV.inp),
+  lcp: num(CWV.lcp),
+  cls: num(CWV.cls),
+  det: String(FLOTA.deterministas),
+  adv: String(FLOTA.adversariales),
+  planned: String(FLOTA.planeados),
+  esperando: String(FLOTA.esperando),
+  d1gb: String(D1_GB),
+  bytes: String(RUM_BYTES),
+  kb: c.unitKB,
+};
+
+/** Interpola los tokens del archivo de textos. Un token desconocido se queda
+ *  visible como `{token}` a propósito: se ve en la página y se arregla, en vez
+ *  de desaparecer y dejar una frase sin su número. */
+const f = (s: string) => s.replace(/\{(\w+)\}/g, (_m, k: string) => VALORES[k] ?? `{${k}}`);
+
+// ---------------------------------------------------------------------------
+// JSON-LD. La regla dura de mc-48 §3: el marcado debe COINCIDIR con lo visible,
+// o Google puede ignorarlo por completo. Por eso aquí no hay ni un campo de
+// texto que no se renderice más abajo:
+//
+//   headline / name → el <h1>
+//   description     → el párrafo de entrada
+//   datePublished   → la fecha visible bajo el título
+//   citation[].name → la lista de fuentes, con los mismos títulos
+//   publisher.name  → "Ignia", en la atribución del final
+//   BreadcrumbList  → las migas visibles de arriba
+//
+// Ningún `@id` de este grafo apunta fuera de él, para que el auditor
+// `jsonld-valid` de S0 pueda resolverlos sin salir del bloque.
+// ---------------------------------------------------------------------------
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      // TechArticle y no `Course` ni `Product`: esto es documentación técnica.
+      // Idéntico en los siete locales, que es lo que mc-48 §3 exige — nada de
+      // un @type en alemán y otro en español.
+      "@type": "TechArticle",
+      "@id": `${url}#article`,
+      url,
+      name: c.h1,
+      headline: c.h1,
+      description: c.lead,
+      inLanguage: locale,
+      datePublished: VERIFICADO,
+      dateModified: VERIFICADO,
+      publisher: { "@type": "Organization", name: "Ignia", url: "https://ignia.cloud" },
+      citation: FUENTES.map((s) => ({ "@type": "CreativeWork", name: s.name, url: s.url })),
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${url}#breadcrumb`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: c.breadcrumbHome, item: `${site}/${locale}/` },
+        { "@type": "ListItem", position: 2, name: c.breadcrumbHere, item: url },
+      ],
+    },
+  ],
+};
+---
+
+<Base locale={locale} path="arquitectura/" title={c.pageTitle} description={c.pageDescription}>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <nav class="migas" aria-label={c.breadcrumbHere}>
+    <a href={`/${locale}/`}>{c.breadcrumbHome}</a>
+    <span aria-hidden="true">›</span>
+    <span aria-current="page">{c.breadcrumbHere}</span>
+  </nav>
+
+  <h1>{c.h1}</h1>
+  <p class="lead">{c.lead}</p>
+  <p class="meta">
+    {c.verified}: <time datetime={VERIFICADO}>{VERIFICADO}</time>
+  </p>
+
+  <h2>{c.todayHeading}</h2>
+  <ul class="lista">
+    <li><code>math-challenge-web</code> — {c.todayWeb}</li>
+    <li><code>math-challenge-ingest</code> — {c.todayIngest}</li>
+    <li><code>math-challenge-db</code> — {c.todayD1}</li>
+    <li>{c.todayKv}</li>
+    <li>{c.todayR2}</li>
+    <li>{c.todayAe}</li>
+  </ul>
+  <p>{c.todayNote}</p>
+
+  <h2>{c.protoHeading}</h2>
+  <p>{c.protoBody}</p>
+  <p class="meta">{c.protoEvidence}</p>
+  <pre class="evidencia"><code>{EVIDENCIA.join("\n")}</code></pre>
+  <p class="salvedad">{c.protoCaveat}</p>
+
+  <h2>{c.rpcHeading}</h2>
+  <p>{c.rpcBody}</p>
+  <blockquote lang="en">
+    {CITAS.map((q) => <p>{q}</p>)}
+    <footer class="meta">{c.rpcQuoteAttr}</footer>
+  </blockquote>
+  <p>{c.rpcAfter}</p>
+
+  <h2>{c.grpcHeading}</h2>
+  <p>{c.grpcIntro}</p>
+  <ol class="lista">
+    <li>{c.grpc1}</li>
+    <li>{c.grpc2}</li>
+    <li>{c.grpc3}</li>
+  </ol>
+  <p>{c.grpcClose}</p>
+
+  <h2>{c.thirdHeading}</h2>
+  <p>{c.thirdBody}</p>
+  <p>{c.fontBody}</p>
+
+  <h2>{c.aiHeading}</h2>
+  <p>{f(c.aiBody)}</p>
+  <p class="salvedad">{c.aiHonest}</p>
+
+  <h2>{c.d1Heading}</h2>
+  <p>{f(c.d1Body)}</p>
+
+  <h2>{c.rumHeading}</h2>
+  <p>{f(c.rumBody)}</p>
+
+  <h2>{c.weightHeading}</h2>
+  <p>{f(c.weightBody)}</p>
+  <p class="meta">{c.weightNote}</p>
+
+  <h2>{c.perfHeading}</h2>
+  <p>{f(c.perfBody)}</p>
+  <p class="salvedad">{c.perfHonest}</p>
+
+  <h2>{c.fleetHeading}</h2>
+  <p>{f(c.fleetBody)}</p>
+  <p>{c.fleetRules}</p>
+
+  <h2>{c.pendingHeading}</h2>
+  <p>{c.pendingBody}</p>
+  <ul class="lista">
+    <li>{c.pending1}</li>
+    <li>{c.pending2}</li>
+    <li>{c.pending3}</li>
+    <li>{c.pending4}</li>
+  </ul>
+
+  <h2>{c.checkHeading}</h2>
+  <dl class="comprobaciones">
+    {COMPROBACIONES.map((x) => (
+      <>
+        <dt>{x.que}</dt>
+        <dd><pre class="evidencia"><code>{x.cmd}</code></pre></dd>
+      </>
+    ))}
+  </dl>
+
+  <h2>{c.sourcesHeading}</h2>
+  <ol class="fuentes">
+    {FUENTES.map((s) => (
+      <li><a href={s.url} rel="noopener">{s.name}</a></li>
+    ))}
+  </ol>
+
+  <p class="atribucion">
+    {c.attribBody}{" "}
+    <a href="https://ignia.cloud" rel="noopener">{c.attribLink}</a>
+  </p>
+</Base>
+
+<style>
+  /* Migas: navegación, así que habla en la voz del sistema (D-036). */
+  .migas {
+    font-family: var(--font-sistema);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-end: 2rem;
+  }
+  /* WCAG 2.5.8: 24px de blanco táctil también aquí. */
+  .migas a { display: inline-flex; align-items: center; min-block-size: var(--tap-min); }
+
+  /* El naranja de Ignia a 2.5rem: aquí sí, porque es texto grande (>=24px) y el
+     umbral aplicable es 3:1, que pasa con 3.03:1. En un párrafo sería una
+     violación de WCAG — por eso el token se llama --color-accent y no
+     --color-text (docs/guia-de-estilo.md). */
+  h1 { color: var(--color-accent); font-weight: var(--weight-subtitle); }
+
+  .lead {
+    font-size: var(--text-lg);
+    color: var(--color-text-brand); /* azul: 5.67:1, sí pasa texto normal */
+    margin-block-end: 1rem;
+  }
+
+  .meta { color: var(--color-text-muted); font-size: var(--text-xs); }
+
+  h2 { margin-block-start: 2.75rem; color: var(--color-text); }
+
+  .lista { padding-inline-start: 1.25rem; max-inline-size: var(--measure); }
+  .lista li { margin-block-end: 0.6rem; }
+
+  /* Salida literal de un comando. Monoespaciada del sistema: no es prosa (que
+     va en Raleway) ni un control (que va en la voz del sistema), es evidencia
+     que tiene que poder copiarse carácter por carácter. */
+  .evidencia {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    letter-spacing: normal;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    /* El cuerpo de la página nunca se desplaza en horizontal: el bloque ancho
+       se desplaza dentro de sí mismo. */
+    overflow-x: auto;
+    max-inline-size: 100%;
+  }
+  .evidencia code { white-space: pre; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    letter-spacing: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* La barra usa el naranja como elemento gráfico, no como texto: el umbral
+     aplicable son 3:1 y lo pasa con 3.03:1. */
+  blockquote {
+    margin: 1.5rem 0;
+    padding-inline-start: 1rem;
+    border-inline-start: 3px solid var(--color-accent);
+  }
+  blockquote p { margin-block-end: 0.75rem; }
+  blockquote footer { margin-block-start: 0.25rem; }
+
+  /* Las salvedades no se esconden en un acordeón gris: son la mitad del valor
+     de esta página (mc-48 §1). Se marcan, se leen a tamaño de cuerpo. */
+  .salvedad {
+    background: var(--color-surface);
+    border-inline-start: 3px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.9rem 1rem;
+    max-inline-size: var(--measure);
+  }
+
+  .comprobaciones { max-inline-size: var(--measure); margin: 0; }
+  .comprobaciones dt { margin-block-start: 1.25rem; color: var(--color-text-muted); font-size: var(--text-xs); }
+  .comprobaciones dd { margin: 0.4rem 0 0; }
+
+  .fuentes {
+    padding-inline-start: 1.25rem;
+    max-inline-size: var(--measure);
+    font-size: var(--text-xs);
+  }
+  .fuentes li { margin-block-end: 0.6rem; }
+  .fuentes a { display: inline-flex; align-items: center; min-block-size: var(--tap-min); }
+
+  .atribucion {
+    margin-block-start: 3rem;
+    padding-block-start: 1.5rem;
+    border-block-start: 1px solid var(--color-border);
+    max-inline-size: var(--measure);
+  }
+</style>

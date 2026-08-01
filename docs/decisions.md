@@ -148,6 +148,12 @@ siguiente grado, y así sucesivamente.
 consentimiento parental verificable y la verificación de identidad del maestro a
 la ruta crítica.
 
+> **Reafirmado el 2026-07-31.** Un agente detectó que el tablero tenía F9 como
+> "Ruta crítica: No", contradiciendo esta decisión. El dueño confirmó que **F9
+> sigue en el MVP y T-5 hay que cerrarla**: el MVP no sale sin resolver quién
+> verifica al adulto que abre un salón. T-5 pasa a ruta crítica, y la
+> verificación previa del maestro es criterio de **F2**, no de F9.
+
 ---
 
 ## D-010 — Motor de puntuación · 2026-07-31
@@ -330,6 +336,22 @@ pensamiento).
 ítems de kinder** en 14 habilidades. La unidad de diseño es la **serie**, no la
 pregunta suelta — es enseñanza con variación (`mc-02`), y es curaduría, no
 generación al azar.
+
+---
+
+> **Enmendado el 2026-07-31 por decisión del dueño.** La serie es la unidad de
+> diseño **en kinder**; en la franja adulta N8-N10 (D-034) **no**. La
+> contradicción la levantó el auditor `pedagogia` en la primera corrida real de
+> la flota, y era real: D-034 dice "sin curaduría por serie" y esta decisión
+> decía que la serie es la unidad, sin excepción.
+>
+> Se enmienda en vez de curar la franja adulta por series porque eso rompería el
+> barandal de "mínima" que D-034 puso a propósito, y porque `mc-40` documenta que
+> la proporción de plantilla baja a 20-35% en esa banda contra ~70% en kinder —
+> es decir, curar por series ahí cuesta varias veces más.
+>
+> **La renuncia queda escrita aquí, no escondida en el plan.** CLAUDE.md § Contenido
+> también dice "la unidad de diseño es la serie": léase con esta excepción.
 
 ---
 
@@ -1138,6 +1160,132 @@ trazo de 3 a 6 años; si la cara del sistema resulta más delgada, en KINDER los
 controles también van en Raleway Medium o Bold.
 
 **Investigación relacionada:** `mc-21`, `mc-22`, `mc-23`, `mc-47` §6.
+
+---
+
+## D-037 — Rendimiento medido, y nunca sobre un niño · 2026-07-31
+
+**Decisión del dueño:** se mide el rendimiento con datos de campo usando Cloudflare
+Web Analytics, **con cuidado con los niños, incluido no medir cuando está en retos
+de niños**.
+
+**Por qué hacía falta.** D-030 fija umbrales —**INP ≤150 ms, LCP ≤2.5 s, CLS ≤0.1**—
+y hasta hoy nadie los medía. `bundle-budget` pesa el bundle, que es una causa del
+rendimiento, no el rendimiento. `red-lenta` es un LLM leyendo el diff: en su primera
+corrida real, **4 de sus 6 hallazgos eran falsos**, incluido inventar que el bundle
+pesaba 240 KB cuando la medición da 2.3 KB. Sospechar no es medir.
+
+**Por qué de campo y no de laboratorio.** `mc-47` documenta que **Google rankea con
+datos de campo**. Un Lighthouse local mide una máquina rápida en una red rápida; el
+número que decide el ranking —y que describe la experiencia real— viene de usuarios
+reales en sus dispositivos reales.
+
+### La asimetría que esta decisión crea, dicha de frente
+
+Los Core Web Vitals de campo los mide **el navegador del usuario**, con un beacon. Sin
+beacon no hay dato de campo — no es una limitación de Cloudflare, es física de la
+medición. Así que al no medir en superficies de niño:
+
+**Nunca vamos a tener datos de campo justo donde está el mercado objetivo.** `mc-47`
+apunta a Android de gama baja sobre 4G lento, y esos son en buena parte los niños. Se
+acepta el hueco a cambio de no instrumentar a un menor, y **se compensa donde se
+puede, no se ignora**: en superficies de niño se mide en **laboratorio** con
+estrangulamiento de CPU y red, etiquetado siempre como laboratorio y nunca reportado
+como si fuera campo.
+
+### Qué se permite y qué no
+
+| Superficie | Medición | Cómo |
+|---|---|---|
+| Sitio abierto, panel de padres, bandas adultas | **campo** | Beacon de Cloudflare Web Analytics |
+| Retos, práctica y cualquier pantalla de niño | **jamás campo** | Solo laboratorio, con estrangulamiento, etiquetado como tal |
+
+Cloudflare Web Analytics **no usa cookies ni huella de dispositivo**, que es lo único
+por lo que sería aceptable siquiera en superficies de adulto. Aun así no toca a un
+niño: la línea roja #2 dice que el niño no es un usuario, y medir su navegación es
+tratarlo como uno.
+
+**La inyección automática de la zona se queda APAGADA.** Cloudflare puede inyectar el
+beacon a nivel de zona, y eso lo pondría en todas las páginas sin pasar por el
+código — incluidas las de niños. Se activa por código, página por página, o no se
+activa. Anotado en `docs/infrastructure.md`.
+
+### Cómo se hace cumplir
+
+`audits/telemetria-infantil.mjs`, determinista y bloqueando en cada commit. Falla si
+encuentra telemetría en una superficie de niño, y también si encuentra telemetría en
+cualquier sitio **sin citar D-037** — porque si no se declara, no se distingue
+"revisado y acotado" de "se coló". Se le vio fallar en ambos casos antes de existir.
+
+**Investigación relacionada:** `mc-47` §4, `mc-25`, `mc-32`.
+
+---
+
+## D-038 — Passkey primero, contraseña como respaldo · 2026-07-31
+
+**Decisión del dueño, tomada en F0 y escrita hoy.** El dueño la contestó al
+arrancar F0 —*"passkey first, password fallback"*— y se implementó en
+`migrations/0001_identity.sql`, pero **nunca se escribió aquí**. Esta entrada
+repara esa omisión.
+
+**Cómo salió.** La levantó un agente auditando F2: el comentario de la migración
+citaba **D-035** como *"passkey primero, contraseña como respaldo"*, y D-035 es
+*"Workers AI como proveedor de inferencia"*. Cité un número que en su momento no
+existía y que después se asignó a otra cosa. La decisión era real; la cita, no.
+
+**Lo que esto enseña sobre la flota, y hay que decirlo:** `citas.mjs` valida que
+el id **exista**, no que **diga lo que se le atribuye**. `D-035` existe, así que
+esta cita habría pasado los tres filtros deterministas. La atrapó un agente
+leyendo. **No todo se puede volver determinista**, y este es el ejemplo.
+
+**Qué se implementa:**
+- `user_passkeys` es el camino principal: WebAuthn, sin contraseña que robar.
+- `user_password` es el respaldo, y existe porque el mercado objetivo incluye
+  Android de gama baja donde el autenticador falla o no está.
+- **En Workers, sin WASM, el hash disponible es PBKDF2 por WebCrypto.** Argon2id
+  no corre nativo. PBKDF2 es más débil frente a hardware dedicado, y decirlo es
+  parte de la decisión: se compensa con límite de tasa por Durable Object y con
+  que la contraseña sea el camino secundario, no el principal.
+
+**Investigación relacionada:** `mc-45` §registro.
+
+---
+
+## D-039 — Licencia AGPL-3.0 · 2026-07-31
+
+**Decisión del dueño:** el proyecto se licencia bajo **AGPL-3.0**.
+
+Es copyleft fuerte y de red: quien lo use **como servicio** tiene que publicar
+sus cambios. Protege contra que alguien tome el motor y el banco de ítems y
+lance un competidor cerrado y de pago — que es el escenario que más importa
+aquí, porque el banco de ítems **es** el producto (CLAUDE.md § Contenido) y
+representa el grueso del trabajo real.
+
+**Lo que cuesta, dicho de frente:** la AGPL espanta a empresas que podrían
+contribuir; muchas la prohíben por política interna. Se acepta a cambio de que
+la promesa central —*"que llegue a quien no puede pagar"* (`por-que-existe.md`)—
+no pueda ser capturada por alguien que sí cobre.
+
+`LICENSE` en la raíz, con el texto íntegro. La página de código abierto de S2 lo
+declara sin inventar nada.
+
+---
+
+## D-040 — El tablero global es opt-in por hijo · 2026-07-31
+
+**Decisión del dueño:** un perfil de hijo recién creado **no aparece** en el
+tablero global. El padre lo activa.
+
+Lo recomienda `mc-25` implicación 5, y hay una razón que suele pasarse por alto:
+**un alias sigue siendo dato personal mientras nosotros guardemos el mapeo
+alias→identidad** (GDPR recital 26). "Anónimo hacia afuera" no es "anónimo".
+
+**Consecuencia de esquema:** no se inserta fila en el tablero global al crear el
+perfil. Se inserta cuando el padre lo enciende, y esa acción se registra igual
+que el consentimiento — quién, cuándo, y qué se comparte.
+
+Enmienda D-003, que creó el tablero global con alias generados y no fijó el
+default.
 
 ---
 

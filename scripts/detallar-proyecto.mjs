@@ -44,6 +44,23 @@ aviso de que el proyecto es de código abierto con enlace al repo.
 
 ### Qué NO incluye
 El corpus de investigación (S1) ni la página de origen (S2).
+
+### Auditoría de cierre — decisión del dueño
+Al terminar esta fase se corre **la flota entera**, no solo los auditores a los que
+les toca por alcance:
+
+\`\`\`
+node audits/adversarial.mjs --todos
+node audits/adversarial/subir-sarif.mjs
+\`\`\`
+
+Por qué \`--todos\` y no la corrida normal: por defecto solo despierta el auditor que
+tiene algo que revisar, y eso es correcto en el día a día. **Al cerrar una fase la
+pregunta es otra** — no "¿qué toca este diff?" sino "¿esta fase entera aguanta a la
+flota entera?". Un auditor dormido es un área sin revisar que nadie declaró, y ese
+fue exactamente el error de F0: cerrada con un criterio sin verificar.
+
+Cuesta ~$1.30 y ~15 min. Un cierre de fase al mes lo justifica; cada commit no.
 `),
   "S1": D(`
 **Vía:** Sitio abierto · **Depende de:** S0
@@ -66,6 +83,23 @@ también lo que incomoda.
 ### Riesgo conocido
 Publicar en 7 locales multiplica por 7 el trabajo de traducción de ~157,000
 palabras. Decidir si son 7 o 2 antes de empezar.
+
+### Auditoría de cierre — decisión del dueño
+Al terminar esta fase se corre **la flota entera**, no solo los auditores a los que
+les toca por alcance:
+
+\`\`\`
+node audits/adversarial.mjs --todos
+node audits/adversarial/subir-sarif.mjs
+\`\`\`
+
+Por qué \`--todos\` y no la corrida normal: por defecto solo despierta el auditor que
+tiene algo que revisar, y eso es correcto en el día a día. **Al cerrar una fase la
+pregunta es otra** — no "¿qué toca este diff?" sino "¿esta fase entera aguanta a la
+flota entera?". Un auditor dormido es un área sin revisar que nadie declaró, y ese
+fue exactamente el error de F0: cerrada con un criterio sin verificar.
+
+Cuesta ~$1.30 y ~15 min. Un cierre de fase al mes lo justifica; cada commit no.
 `),
   "S2": D(`
 **Vía:** Sitio abierto · **Depende de:** S0
@@ -83,6 +117,23 @@ el propósito, y la arquitectura técnica atribuida a **Ignia sobre Cloudflare**
 - [ ] Atribución "Un proyecto de Ignia, sobre Cloudflare" con enlace a ignia.cloud
 - [ ] **Sección de código abierto**: qué licencia, qué se puede reusar, cómo
       contribuir, y enlace al tablero público del plan
+
+### Auditoría de cierre — decisión del dueño
+Al terminar esta fase se corre **la flota entera**, no solo los auditores a los que
+les toca por alcance:
+
+\`\`\`
+node audits/adversarial.mjs --todos
+node audits/adversarial/subir-sarif.mjs
+\`\`\`
+
+Por qué \`--todos\` y no la corrida normal: por defecto solo despierta el auditor que
+tiene algo que revisar, y eso es correcto en el día a día. **Al cerrar una fase la
+pregunta es otra** — no "¿qué toca este diff?" sino "¿esta fase entera aguanta a la
+flota entera?". Un auditor dormido es un área sin revisar que nadie declaró, y ese
+fue exactamente el error de F0: cerrada con un criterio sin verificar.
+
+Cuesta ~$1.30 y ~15 min. Un cierre de fase al mes lo justifica; cada commit no.
 `),
   "F0": D(`
 **Vía:** Producto · **CERRADA** ✅

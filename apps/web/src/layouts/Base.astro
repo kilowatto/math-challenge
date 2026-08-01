@@ -19,12 +19,44 @@ interface Props {
   /** Se pasa explícito para que el JSON-LD no pueda desincronizarse del <title>. */
   title: string;
   description: string;
+  /**
+   * Ruta DESPUÉS del locale, con barra final. La portada pasa "" y
+   * /{locale}/origen/ pasa "origen/".
+   *
+   * Existe porque `canonical` y los `hreflang` estaban cableados a `/{locale}/`
+   * para toda página: con S2, `/en/origen/` declaraba `canonical` a `/en/` y
+   * sus siete alternates apuntaban a la portada. Eso no es un detalle de SEO —
+   * un canonical que señala otra URL le dice a Google que esta página no debe
+   * indexarse, y un grupo de hreflang que no cierra el ciclo se descarta entero
+   * (mc-48 §3, plan §3.2-§3.3, hueco H5).
+   *
+   * Todavía NO es el "conjunto de locales en que la página existe" que pide el
+   * plan §3.3: hoy las cinco páginas existen en los 7, así que el conjunto es
+   * el mismo. Ese prop hace falta cuando S1 publique el corpus en menos de 7.
+   */
+  path?: string;
 }
 
-const { locale, title, description } = Astro.props;
+const { locale, title, description, path = "" } = Astro.props;
 const m = t(locale);
 const site = "https://math.kilowatto.com";
-const canonical = `${site}/${locale}/`;
+const canonical = `${site}/${locale}/${path}`;
+
+/**
+ * Navegación del sitio abierto, en los 7 locales.
+ *
+ * Los `path` son segmentos invariantes en español, igual que los nombres de
+ * archivo que ya crearon las páginas. Eso equivale a contestar la pregunta P5
+ * del plan (§8) sin que el dueño la haya contestado: son URLs permanentes y
+ * conviene cerrarla antes de publicar, no después con redirecciones eternas.
+ */
+const NAV = [
+  { path: "", label: m.navHome },
+  { path: "origen/", label: m.navOrigin },
+  { path: "niveles/", label: m.navLevels },
+  { path: "arquitectura/", label: m.navArchitecture },
+  { path: "codigo-abierto/", label: m.navOpen },
+];
 
 // JSON-LD. `name` y `description` vienen de las MISMAS variables que renderiza
 // el <body>, no de constantes paralelas: es la única forma de que la regla de
@@ -73,9 +105,9 @@ const jsonLd = {
     {/* hreflang recíproco: cada página apunta a TODAS, incluida a sí misma.
         Sin la auto-referencia el ciclo no cierra y Google ignora el grupo. */}
     {LOCALES.map((l) => (
-      <link rel="alternate" hreflang={l} href={`${site}/${l}/`} />
+      <link rel="alternate" hreflang={l} href={`${site}/${l}/${path}`} />
     ))}
-    <link rel="alternate" hreflang="x-default" href={`${site}/${DEFAULT_LOCALE}/`} />
+    <link rel="alternate" hreflang="x-default" href={`${site}/${DEFAULT_LOCALE}/${path}`} />
 
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#F36B1C" />
@@ -120,6 +152,21 @@ const jsonLd = {
   <body>
     <a class="skip" href="#main">{m.skipToContent}</a>
 
+    {/* Navegación del sitio. Es navegación, así que habla en la voz del
+        sistema — D-036: la marca en `--font-marca`, los controles y la
+        navegación en `--font-sistema`. Sin JavaScript: cinco enlaces. */}
+    <nav class="sitio" aria-label={m.navLabel}>
+      <ul>
+        {NAV.map((item) => (
+          <li>
+            {item.path === path
+              ? <span aria-current="page">{item.label}</span>
+              : <a href={`/${locale}/${item.path}`}>{item.label}</a>}
+          </li>
+        ))}
+      </ul>
+    </nav>
+
     <main id="main">
       <slot />
     </main>
@@ -132,7 +179,7 @@ const jsonLd = {
             <li>
               {l === locale
                 ? <span aria-current="true">{t(l).localeName}</span>
-                : <a href={`/${l}/`} hreflang={l} lang={l}>{t(l).localeName}</a>}
+                : <a href={`/${l}/${path}`} hreflang={l} lang={l}>{t(l).localeName}</a>}
             </li>
           ))}
         </ul>
@@ -150,7 +197,40 @@ const jsonLd = {
       }
       .skip:focus { inset-inline-start: 0; z-index: 10; }
 
-      main { max-inline-size: 46rem; margin: 0 auto; padding: 3rem 1.25rem; }
+      /* D-036: la navegación habla en la voz del sistema, no en Raleway. */
+      nav.sitio {
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+        max-inline-size: 46rem;
+        margin: 0 auto;
+        padding: 1.25rem 1.25rem 0;
+        border-block-end: 1px solid var(--color-border);
+      }
+      nav.sitio ul {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 1.25rem;
+        padding: 0;
+        margin: 0;
+      }
+      /* WCAG 2.5.8: ningún blanco táctil por debajo de 24px. */
+      nav.sitio a, nav.sitio [aria-current] {
+        display: inline-flex;
+        align-items: center;
+        min-block-size: var(--tap-min);
+        padding-block: 0.35rem;
+      }
+      /* El naranja de Ignia da 3.03:1 sobre blanco y NO alcanza el 4.5:1 de
+         texto normal: la página actual se marca con el color de texto y una
+         línea inferior, no con el naranja. El naranja se queda en el borde,
+         que es gráfico y solo necesita 3:1. */
+      nav.sitio [aria-current] {
+        color: var(--color-text);
+        box-shadow: inset 0 -3px 0 0 var(--color-accent);
+      }
+
+      main { max-inline-size: 46rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
 
       footer {
         max-inline-size: 46rem;

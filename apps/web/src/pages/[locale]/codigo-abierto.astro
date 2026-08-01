@@ -1,0 +1,214 @@
+---
+/**
+ * /{locale}/codigo-abierto/ — la página de código abierto de S2.
+ *
+ * Gobierno: docs/planes/sitio-s0-s1-s2.md §6, D-033 (el sitio abierto),
+ * D-032 (la flota), D-022 (los siete locales), D-036 (tipografía).
+ *
+ * Tres reglas que esta página no puede romper, y por qué:
+ *
+ *  1. **Toda cifra sale de un comando.** 47 y ~157,000 de `ls docs/research/…`
+ *     y `wc -w`; 31/39, 8 deterministas y 23 adversariales de
+ *     `node audits/run.mjs`; 18 elementos y 2 tensiones de
+ *     `gh project item-list 1 --owner kilowatto`; la ausencia de licencia de
+ *     `gh repo view kilowatto/math-challenge --json licenseInfo` → `null`.
+ *     Un sitio cuyo argumento es el rigor no puede publicar un número de
+ *     memoria (plan §4.9).
+ *
+ *  2. **No se escribe qué licencia tiene el proyecto, porque no hay ninguna.**
+ *     `ls LICENSE*` no devuelve nada y el README todavía dice "Privado. Todos
+ *     los derechos reservados." Un repositorio público sin licencia es código
+ *     visible, no código reusable, y decir lo contrario se desmiente en el
+ *     primer scroll del enlace que esta misma página ofrece (plan §6.1).
+ *     Por eso el JSON-LD de abajo **no lleva `license`** (plan §6.4).
+ *
+ *  3. **El JSON-LD coincide con lo visible.** `name`, `description` y
+ *     `codeRepository` del nodo `SoftwareSourceCode` se renderizan literalmente
+ *     en el <body> — el mismo patrón que Base.astro usa para `title` y
+ *     `description`. Si difiere, Google puede ignorar el marcado entero
+ *     (mc-48 §3, regla dura).
+ *
+ * Cero peticiones a terceros: los enlaces a GitHub son navegación del usuario,
+ * no recursos que el navegador pida al cargar. No hay JavaScript de cliente ni
+ * telemetría nueva — el beacon de D-037 lo pone Base.astro una sola vez.
+ */
+import Base from "../../layouts/Base.astro";
+import { LOCALES, isLocale, type Locale } from "../../i18n";
+import textos from "../../i18n/paginas/codigo-abierto.json";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params;
+if (!isLocale(locale)) return Astro.redirect("/en/");
+const m = textos[locale as Locale];
+
+// Verificado el 2026-07-31, no supuesto:
+//   gh repo view kilowatto/math-challenge --json visibility → "PUBLIC"
+//   gh project list --owner kilowatto → número 1, "public": true, 18 elementos
+const REPO = "https://github.com/kilowatto/math-challenge";
+const TABLERO = "https://github.com/users/kilowatto/projects/1";
+
+const site = "https://math.kilowatto.com";
+const canonical = `${site}/${locale}/codigo-abierto/`;
+
+// Grafo propio, sin referencias a @id de otro <script>: la validación de
+// JSON-LD que S0 planea (plan §3.1, punto 5) exige que todo @id referenciado
+// exista DENTRO del mismo @graph, y este bloque no puede alcanzar el de
+// Base.astro. Por eso `SoftwareSourceCode` no apunta al Organization.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareSourceCode",
+      "@id": `${canonical}#codigo`,
+      // Las tres cadenas legibles por humano de este nodo se renderizan tal
+      // cual más abajo. Si alguien edita una sola de las dos mitades, el
+      // auditor jsonld-valid de S0 lo caza.
+      name: "kilowatto/math-challenge",
+      description: m.repoTexto,
+      codeRepository: REPO,
+      inLanguage: locale,
+      // Sin `license`: declarar una licencia en marcado legible por máquina
+      // cuando el repositorio no tiene archivo LICENSE es una afirmación falsa
+      // — en un sitio cuyo activo es no tener ninguna. Se añade el día que
+      // exista el archivo, no antes (plan §6.4).
+    },
+  ],
+};
+---
+
+<Base locale={locale} path="codigo-abierto/" title={m.tituloPagina} description={m.descripcion}>
+  <h1>{m.tituloPagina}</h1>
+  <p class="lead">{m.descripcion}</p>
+
+  <h2>{m.abiertoTitulo}</h2>
+  <p>{m.abiertoIntro}</p>
+
+  <ul class="enlaces">
+    <li>
+      <h3>{m.repoTitulo}</h3>
+      <p>{m.repoTexto}</p>
+      <p class="url"><a href={REPO} rel="noopener">{REPO}</a></p>
+    </li>
+    <li>
+      <h3>{m.tableroTitulo}</h3>
+      <p>{m.tableroTexto}</p>
+      <p class="url"><a href={TABLERO} rel="noopener">{TABLERO}</a></p>
+    </li>
+  </ul>
+
+  <h2>{m.investigacionTitulo}</h2>
+  <p>{m.investigacionTexto}</p>
+  <p>{m.investigacionNota}</p>
+
+  <h2>{m.auditoresTitulo}</h2>
+  <p>{m.auditoresTexto}</p>
+  <p>{m.auditoresSarif}</p>
+
+  {/* El bloque incómodo va en el flujo, a tamaño de cuerpo y sin acordeón. La
+      tentación de diseño es esconderlo; esconderlo destruye exactamente lo que
+      lo vuelve valioso (plan §4.4). La barra naranja es gráfico, no texto:
+      a 3.03:1 pasa el umbral de 3:1 y no toca el de 4.5:1. */}
+  <section class="honestidad" aria-labelledby="fallo">
+    <h2 id="fallo">{m.falloTitulo}</h2>
+    <p>{m.falloTexto}</p>
+    <p>{m.falloArreglo}</p>
+    <p>{m.falloLimite}</p>
+  </section>
+
+  <h2>{m.licenciaTitulo}</h2>
+  <p>{m.licenciaTexto}</p>
+  <p>{m.licenciaPendiente}</p>
+
+  <h2>{m.porqueTitulo}</h2>
+  <p>{m.porqueTexto}</p>
+
+  <h2>{m.comprobarTitulo}</h2>
+  <p>{m.comprobarTexto}</p>
+  <pre class="comando"><code>git clone {REPO}
+node audits/run.mjs</code></pre>
+
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+</Base>
+
+<style>
+  /* El naranja de Ignia solo donde el umbral aplicable es 3:1 — aquí, el h1 a
+     2.5rem (texto grande) y la barra de la sección de honestidad, que es
+     gráfico. En un párrafo sería una violación de WCAG: 3.03:1 sobre blanco
+     (docs/guia-de-estilo.md, audits/brand-image.mjs). */
+  h1 {
+    color: var(--color-accent);
+    font-weight: var(--weight-subtitle);
+  }
+
+  .lead {
+    font-size: var(--text-lg);
+    color: var(--color-text);
+    margin-block-end: 2.5rem;
+  }
+
+  h2 {
+    margin-block-start: 2.75rem;
+    color: var(--color-text);
+  }
+
+  h3 {
+    font-family: var(--font-marca);
+    font-size: var(--text-base);
+    font-weight: var(--weight-subtitle);
+    color: var(--color-text-brand);
+    margin-block-end: 0.35rem;
+  }
+
+  .enlaces {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+    display: grid;
+    gap: 1rem;
+  }
+  .enlaces li {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+  .enlaces p { margin-block-end: 0.75rem; }
+  .enlaces p:last-child { margin-block-end: 0; }
+
+  /* La URL completa se muestra como texto, no un "ver en GitHub": esta página
+     va de comprobar, y una etiqueta amable esconde a dónde lleva el enlace.
+     `overflow-wrap` para que no desborde en 320 px. */
+  .url a {
+    overflow-wrap: anywhere;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--tap-min); /* WCAG 2.2 AA 2.5.8 */
+  }
+
+  .honestidad {
+    margin-block-start: 2.75rem;
+    padding-inline-start: 1.25rem;
+    border-inline-start: 4px solid var(--color-accent);
+  }
+  .honestidad h2 { margin-block-start: 0; }
+
+  /* Monoespaciada del sistema, y es a propósito. D-036 reparte Raleway
+     (--font-marca) para títulos y cuerpo y la voz del sistema
+     (--font-sistema) para controles; un comando de shell no es ninguna de las
+     dos. Se copia carácter por carácter, así que necesita ancho fijo para que
+     l/1 y O/0 se distingan. La pila es del sistema: ni una petición externa. */
+  .comando {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--text-xs);
+    letter-spacing: normal;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    overflow-x: auto;
+    max-inline-size: var(--measure);
+  }
+</style>

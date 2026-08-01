@@ -1,6 +1,10 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { LOCALES, t, isLocale } from "../../i18n";
+import origen from "../../i18n/paginas/origen.json";
+import niveles from "../../i18n/paginas/niveles.json";
+import arquitectura from "../../i18n/paginas/arquitectura.json";
+import codigoAbierto from "../../i18n/paginas/codigo-abierto.json";
 
 export function getStaticPaths() {
   return LOCALES.map((locale) => ({ params: { locale } }));
@@ -9,6 +13,22 @@ export function getStaticPaths() {
 const { locale } = Astro.params;
 if (!isLocale(locale)) return Astro.redirect("/en/");
 const m = t(locale);
+
+/**
+ * Enlaces a las cuatro páginas de S2.
+ *
+ * El texto del enlace es el <h1> de la página destino, leído de su propio
+ * archivo de textos — no una etiqueta paralela escrita aquí. Así el enlace no
+ * puede prometer una página distinta de la que abre, y no hay una quinta
+ * traducción que mantener por página. (La navegación del layout sí usa
+ * etiquetas cortas: ahí el espacio manda.)
+ */
+const s2 = [
+  { href: `/${locale}/origen/`, texto: origen[locale].title },
+  { href: `/${locale}/niveles/`, texto: niveles[locale].title },
+  { href: `/${locale}/arquitectura/`, texto: arquitectura[locale].h1 },
+  { href: `/${locale}/codigo-abierto/`, texto: codigoAbierto[locale].tituloPagina },
+];
 ---
 
 <Base locale={locale} title={`${m.title} — ${m.tagline}`} description={m.description}>
@@ -35,6 +55,11 @@ const m = t(locale);
 
   <h2>{m.statusHeading}</h2>
   <p>{m.status}</p>
+
+  <h2>{m.exploreHeading}</h2>
+  <ul class="explorar">
+    {s2.map((p) => <li><a href={p.href}>{p.texto}</a></li>)}
+  </ul>
 </Base>
 
 <style>
@@ -63,4 +88,20 @@ const m = t(locale);
     max-inline-size: var(--measure);
   }
   .principles li { margin-block-end: 0.6rem; }
+
+  /* Lista de destinos: es navegación, no prosa, así que habla en la voz del
+     sistema (D-036). El blanco táctil no baja de 24px (WCAG 2.5.8). */
+  .explorar {
+    font-family: var(--font-sistema);
+    list-style: none;
+    padding: 0;
+    max-inline-size: var(--measure);
+  }
+  .explorar li { margin-block-end: 0.25rem; }
+  .explorar a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--tap-min);
+    padding-block: 0.25rem;
+  }
 </style>

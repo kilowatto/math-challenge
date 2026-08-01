@@ -1,0 +1,102 @@
+---
+/**
+ * Medición de Core Web Vitals de campo (D-037).
+ *
+ * NO se incluye en superficies de niño. Ese es el punto entero de esta decisión:
+ * la línea roja #2 dice que el niño no es un usuario, y medir su navegación es
+ * tratarlo como uno. `audits/telemetria-infantil.mjs` lo vigila y bloquea el
+ * commit si este componente aparece donde no debe.
+ *
+ * Se mide con `PerformanceObserver`, que es la misma API de la que sale el dato
+ * que reporta Chrome. No hay beacon de terceros: F0 se cerró con *cero
+ * peticiones a terceros* verificado en vivo, y meter `cloudflareinsights.com`
+ * habría roto eso por comodidad.
+ *
+ * Peso: ~700 bytes sin comprimir, en línea, después de la primera pintura.
+ */
+interface Props {
+  /** Nunca KINDER ni PRIMARIA — el endpoint también las rechaza. */
+  banda?: "SECUNDARIA" | "SERIO" | "JR" | "PRO" | "PUBLICO";
+  locale?: string;
+}
+const { banda = "PUBLICO", locale = "en" } = Astro.props;
+---
+
+<script is:inline define:vars={{ banda, locale }}>
+  // Se manda con sendBeacon para que no bloquee la descarga ni se pierda al
+  // salir de la página. Si no existe, se calla: la telemetría nunca rompe nada.
+  const enviar = (metrica, valor) => {
+    try {
+      navigator.sendBeacon?.(
+        "/api/rum",
+        new Blob([JSON.stringify({ metrica, valor, banda, locale })], { type: "application/json" }),
+      );
+    } catch {}
+  };
+
+  const observar = (type, fn, opciones) => {
+    try {
+      new PerformanceObserver(fn).observe({ type, buffered: true, ...opciones });
+    } catch {}
+  };
+
+  // LCP: se queda el último valor antes de que el usuario interactúe, que es la
+  // definición de Chrome — después de un clic el LCP deja de contar.
+  let lcp = 0;
+  observar("largest-contentful-paint", (l) => {
+    for (const e of l.getEntries()) lcp = e.startTime;
+  });
+
+  // CLS: suma de la peor ventana de 5 s. Sumar todo el documento infla el número
+  // y no es lo que mide Google.
+  let cls = 0;
+  let ventana = 0;
+  let primera = 0;
+  let ultima = 0;
+  observar("layout-shift", (l) => {
+    for (const e of l.getEntries()) {
+      if (e.hadRecentInput) continue;
+      if (ventana && e.startTime - ultima < 1000 && e.startTime - primera < 5000) {
+        ventana += e.value;
+      } else {
+        ventana = e.value;
+        primera = e.startTime;
+      }
+      ultima = e.startTime;
+      if (ventana > cls) cls = ventana;
+    }
+  });
+
+  // INP: la peor interacción de la visita. Es la métrica que 43% de los sitios
+  // reprueba (mc-47), y la que D-030 pone en ≤150 ms.
+  let inp = 0;
+  observar("event", (l) => {
+    for (const e of l.getEntries()) {
+      if (e.interactionId && e.duration > inp) inp = e.duration;
+    }
+  }, { durationThreshold: 40 });
+
+  observar("paint", (l) => {
+    for (const e of l.getEntries()) {
+      if (e.name === "first-contentful-paint") enviar("FCP", e.startTime);
+    }
+  });
+
+  observar("navigation", (l) => {
+    for (const e of l.getEntries()) enviar("TTFB", e.responseStart);
+  });
+
+  // Se manda al ocultarse la pestaña, no en `unload`: `unload` no dispara en
+  // móvil cuando el sistema mata la app, que es justo el caso de Android de
+  // gama baja que mc-47 pone en el centro.
+  let mandado = false;
+  const cerrar = () => {
+    if (mandado || document.visibilityState !== "hidden") return;
+    mandado = true;
+    if (lcp) enviar("LCP", lcp);
+    if (cls) enviar("CLS", cls);
+    if (inp) enviar("INP", inp);
+  };
+  addEventListener("visibilitychange", cerrar);
+  addEventListener("pagehide", cerrar);
+</script>

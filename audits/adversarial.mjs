@@ -11,6 +11,7 @@
 //   node audits/adversarial.mjs --solo kinder,locale-de-DE
 //   node audits/adversarial.mjs --seco           arma todo y NO llama al modelo
 //   node audits/adversarial.mjs --simular        pipeline completo con veredictos falsos
+//   node audits/adversarial.mjs --todos          los 23 aunque no les toque — al cerrar fase
 //   node audits/adversarial.mjs --cartas         valida las 23 cartas y sale
 //
 // Va aparte del gancho pre-commit a propósito. Los deterministas de
@@ -66,6 +67,14 @@ const seco = tiene("--seco");
 // vivía en el camino del informe, que solo se ejecuta tras una corrida real:
 // ninguna prueba podía tocarlo. Ahora cuesta un segundo.
 const simular = tiene("--simular");
+// `--todos` despierta a los 23 aunque su alcance no toque el diff.
+//
+// Por defecto solo despierta el que tiene algo que revisar, y eso es lo correcto
+// para el día a día: 23 llamadas por un cambio de documentación son el ruido que
+// D-032 teme. Pero al CERRAR una fase la pregunta es otra — no "¿qué toca este
+// diff?" sino "¿esta fase entera aguanta a la flota entera?", y ahí un auditor
+// dormido es un área sin revisar que nadie declaró.
+const todos = tiene("--todos");
 const preparado = tiene("--preparado");
 const filtro = valorDe("--solo")?.split(",").map((s) => s.trim()).filter(Boolean) ?? null;
 const refExplicita = argv.find((a) => !a.startsWith("--") && a !== valorDe("--solo")) ?? null;
@@ -161,7 +170,14 @@ for (const archivo of archivosCambiados) {
 // ------------------------------------------- 3. qué auditores despiertan
 const enAlcance = (carta) => archivosCambiados.filter((a) => carta.alcance.some((re) => re.test(a)));
 
-let plan = CARTAS.map((carta) => ({ carta, archivos: enAlcance(carta) })).filter((p) => p.archivos.length > 0);
+let plan = todos
+  ? CARTAS.map((carta) => {
+      const propios = enAlcance(carta);
+      // Al forzar, un auditor sin alcance propio ve el cambio completo: se le
+      // pregunta por su especialidad sobre todo, no sobre nada.
+      return { carta, archivos: propios.length ? propios : archivosCambiados, forzado: propios.length === 0 };
+    })
+  : CARTAS.map((carta) => ({ carta, archivos: enAlcance(carta) })).filter((p) => p.archivos.length > 0);
 
 if (filtro) {
   const desconocidos = filtro.filter((f) => !POR_ID.has(f));
@@ -182,6 +198,7 @@ const dormidos = CARTAS.length - plan.length;
 
 console.log("Flota adversarial — D-032, F1\n");
 console.log(`  modo      ${modo}${rama ? ` (${rama})` : ""}${base ? ` · base ${base}` : ""}`);
+if (todos) console.log(`  modo      TODOS los 23 forzados (cierre de fase)`);
 console.log(
   `  cambio    ${archivosCambiados.length} archivo(s) revisables` +
     `${ignorados.length ? ` · ${ignorados.length} binario(s)/lockfile(s) excluidos` : ""}`,

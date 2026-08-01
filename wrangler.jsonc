@@ -91,6 +91,12 @@
     {
       "binding": "ATTEMPTS_AE",
       "dataset": "math-challenge-attempts-ae"
+    },
+    {
+      // Core Web Vitals de campo, medidos por nosotros (D-037). Nunca desde una
+      // superficie de niño: el script no se carga ahí y el endpoint lo rechaza.
+      "binding": "VITALS_AE",
+      "dataset": "math-challenge-vitals-ae"
     }
   ],
 

@@ -30,6 +30,8 @@
     "ajv": "^8.20.0",
     "ajv-draft-04": "^1.0.0",
     "ajv-formats": "^3.0.1",
+    "axe-core": "^4.12.1",
+    "happy-dom": "^20.11.1",
     "typescript": "^5.7.2",
     "wrangler": "^4.100.0"
   }

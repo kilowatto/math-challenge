@@ -1,0 +1,301 @@
+---
+/**
+ * /{locale}/niveles/ — la escalera y el objeto del producto (S2).
+ *
+ * Fuentes de contenido, todas rastreables:
+ *   · D-002        edad → tema visual; ubicación adaptativa → dificultad
+ *   · D-017        12 niveles × 5 temas, sin nombre de grado escolar
+ *   · D-018        ítem vs reto, y los cinco modos con su reloj
+ *   · master-plan.md §4.1 (la escalera) y §4.2 (ítem, reto y los cinco modos)
+ *   · mc-15        fracciones 6-9, negativos 9-12, álgebra 10-14 según el país
+ *   · mc-10        Ashcraft: el efecto de ansiedad aparece con reloj, no sin él
+ *   · mc-05        Rohrer y Taylor: intercalar empeora la sesión y duplica el día siguiente
+ *   · mc-44        ubicación adaptativa, calibración Rasch diferida
+ *
+ * Reglas que esta página tiene que cumplir, y cómo las cumple:
+ *
+ *   1. El JSON-LD COINCIDE con lo visible (mc-48 §3). Por eso `title` es
+ *      literalmente el <h1> y `description` es literalmente el párrafo de
+ *      entrada: Base.astro los usa como name/description del nodo WebPage, y si
+ *      fueran cadenas distintas de las visibles, Google puede descartar el
+ *      marcado entero. Los ItemList de abajo solo declaran cadenas que salen
+ *      renderizadas en la tabla.
+ *
+ *   2. `ItemList`, no `Course` — a propósito, y apartándose de mc-48 §3.
+ *      `Course` describe un curso ofrecido y su resultado enriquecido pide
+ *      oferta e instancias. Marcar como `Course` algo que no se vende y del que
+ *      tenemos prohibido prometer resultados (D-033, master-plan §14.4) sería
+ *      afirmar de más. Está razonado en docs/planes/sitio-s0-s1-s2.md §5.2.
+ *
+ *   3. Cero afirmaciones de resultado de aprendizaje. La sección `limitsHeading`
+ *      lo dice en voz alta en los siete locales.
+ *
+ *   4. D-036: títulos y cuerpo en var(--font-marca) — que es lo que hereda del
+ *      body. Lo único que es navegación, el enlace de vuelta, va en
+ *      var(--font-sistema).
+ *
+ *   5. Cero peticiones a terceros y cero JavaScript de cliente: la página es
+ *      texto y dos tablas.
+ */
+import Base from "../../layouts/Base.astro";
+import { LOCALES, isLocale } from "../../i18n";
+import paginas from "../../i18n/paginas/niveles.json";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params;
+if (!isLocale(locale)) return Astro.redirect("/en/");
+
+// `_nota` es documentación dentro del JSON; los siete locales son sus hermanos.
+const p = (paginas as unknown as Record<string, Record<string, string>>)[locale];
+
+const site = "https://math.kilowatto.com";
+const pageUrl = `${site}/${locale}/niveles/`;
+
+/** La escalera, en el orden en que se renderiza la tabla. */
+const bandas = [
+  { tema: p.band1, edades: p.ages1, niveles: p.levels1 },
+  { tema: p.band2, edades: p.ages2, niveles: p.levels2 },
+  { tema: p.band3, edades: p.ages3, niveles: p.levels3 },
+  { tema: p.band4, edades: p.ages4, niveles: p.levels4 },
+  { tema: p.band5, edades: p.ages5, niveles: p.levels5 },
+];
+
+/** Los cinco modos. `reloj` es la cadena visible de la celda. */
+const modos = [
+  { modo: p.mode1, composicion: p.comp1, reloj: p.clockNo, conReloj: false },
+  { modo: p.mode2, composicion: p.comp2, reloj: p.clockYes, conReloj: true },
+  { modo: p.mode3, composicion: p.comp3, reloj: p.clockNo, conReloj: false },
+  { modo: p.mode4, composicion: p.comp4, reloj: p.clockYes, conReloj: true },
+  { modo: p.mode5, composicion: p.comp5, reloj: p.clockDepends, conReloj: false },
+];
+
+// JSON-LD propio de la página. Va aparte del @graph de Base.astro y es
+// AUTOCONTENIDO a propósito: no referencia ningún @id que viva en el otro
+// grafo, porque un @id colgante es exactamente lo que el auditor de esquema
+// tiene que cazar. Cuando Base.astro acepte nodos extra, esto se funde ahí.
+//
+// Cada cadena legible por humano de este bloque —los dos `name` de lista y los
+// diez `name` de elemento— se renderiza literalmente más abajo: los `name` de
+// lista son los <h2>, y los de elemento son celdas de las tablas.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "ItemList",
+      "@id": `${pageUrl}#escalera`,
+      name: p.ladderHeading,
+      inLanguage: locale,
+      itemListOrder: "https://schema.org/ItemListOrderAscending",
+      numberOfItems: bandas.length,
+      itemListElement: bandas.map((b, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: b.tema,
+      })),
+    },
+    {
+      "@type": "ItemList",
+      "@id": `${pageUrl}#modos`,
+      name: p.modesHeading,
+      inLanguage: locale,
+      itemListOrder: "https://schema.org/ItemListOrderAscending",
+      numberOfItems: modos.length,
+      itemListElement: modos.map((m, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: m.modo,
+      })),
+    },
+  ],
+};
+---
+
+<Base locale={locale} path="niveles/" title={p.title} description={p.description}>
+  <h1>{p.title}</h1>
+  <p class="lead">{p.description}</p>
+
+  <h2>{p.axesHeading}</h2>
+  <p>{p.axes1}</p>
+  <p>{p.axes2}</p>
+
+  <h2 id="escalera">{p.ladderHeading}</h2>
+  <p>{p.ladderIntro}</p>
+
+  <div class="tabla-wrap">
+    <table>
+      <caption>{p.tableCaption}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{p.thTheme}</th>
+          <th scope="col">{p.thAges}</th>
+          <th scope="col">{p.thLevels}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {bandas.map((b) => (
+          <tr>
+            <th scope="row">{b.tema}</th>
+            <td>{b.edades}</td>
+            <td class="niveles">{b.niveles}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <p>{p.overlap}</p>
+  <p>{p.themeNameNote}</p>
+
+  <h2>{p.gradesHeading}</h2>
+  <p>{p.grades1}</p>
+  <p class="dato">{p.gradesLocal}</p>
+  <p>{p.grades2}</p>
+
+  <h2>{p.unitHeading}</h2>
+  <p>{p.unit1}</p>
+  <p>{p.unit2}</p>
+
+  <h2 id="modos">{p.modesHeading}</h2>
+  <p>{p.modesIntro}</p>
+
+  <div class="tabla-wrap">
+    <table>
+      <caption>{p.tableCaptionModes}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{p.thMode}</th>
+          <th scope="col">{p.thComp}</th>
+          <th scope="col">{p.thClock}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {modos.map((m) => (
+          <tr>
+            <th scope="row">{m.modo}</th>
+            <td>{m.composicion}</td>
+            <td class:list={["reloj", { "reloj-si": m.conReloj }]}>{m.reloj}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>{p.clockHeading}</h2>
+  <p>{p.clockWhy1}</p>
+  <p>{p.clockWhy2}</p>
+  <p class="dato">{p.clockWhy3}</p>
+
+  <h2>{p.limitsHeading}</h2>
+  <p>{p.limits1}</p>
+  <p>{p.limits2}</p>
+
+  <h2>{p.sourcesHeading}</h2>
+  <p>{p.sourcesNote}</p>
+
+  {/* D-036: esto sí es navegación, así que habla en la voz del sistema. */}
+  <nav class="volver" aria-label={p.backToHome}>
+    <a href={`/${locale}/`}>{p.backToHome}</a>
+  </nav>
+
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+</Base>
+
+<style>
+  /* El naranja de Ignia (#F36B1C) da 3.03:1 sobre blanco: no alcanza el 4.5:1
+     de texto normal, y sí el 3:1 de texto grande. El h1 son 2.5rem, así que
+     aquí pasa — igual que en la portada. En ningún párrafo de esta página se
+     usa. Lo vigila audits/brand-image.mjs. */
+  h1 {
+    color: var(--color-accent);
+    font-weight: var(--weight-subtitle);
+  }
+
+  .lead {
+    font-size: var(--text-lg);
+    color: var(--color-text-brand);
+    margin-block-end: 2.5rem;
+  }
+
+  h2 {
+    margin-block-start: 3rem;
+    color: var(--color-text);
+  }
+
+  /* Los datos que vienen de una investigación concreta se marcan, para que se
+     distingan de la prosa de producto sin depender del color solo (WCAG 1.4.1):
+     el borde lateral es la señal, el fondo solo acompaña. */
+  .dato {
+    border-inline-start: 3px solid var(--color-accent);
+    background: var(--color-surface);
+    padding: 0.9rem 1.1rem;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    max-inline-size: var(--measure);
+  }
+
+  /* La tabla se desborda dentro de su caja, nunca en el <body>: en un teléfono
+     de gama baja en vertical, tres columnas de texto no caben (mc-47 §5). */
+  .tabla-wrap {
+    overflow-x: auto;
+    margin-block: 1.5rem 2rem;
+    max-inline-size: var(--measure);
+  }
+
+  table {
+    border-collapse: collapse;
+    inline-size: 100%;
+    min-inline-size: 22rem;
+    text-align: start;
+  }
+
+  caption {
+    text-align: start;
+    color: var(--color-text-muted);   /* 4.69:1 ✓ */
+    font-size: var(--text-xs);
+    padding-block-end: 0.6rem;
+  }
+
+  th, td {
+    text-align: start;
+    vertical-align: top;
+    padding: 0.6rem 0.9rem 0.6rem 0;
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  thead th {
+    font-weight: var(--weight-subtitle);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+  }
+
+  tbody th {
+    font-weight: var(--weight-subtitle);
+    white-space: nowrap;
+  }
+
+  .niveles { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .reloj { white-space: nowrap; }
+  /* El "sí" del reloj se destaca con el naranja OSCURO (#CE4912, 4.58:1), no
+     con el de marca: esto es texto normal y el naranja de marca no alcanza. */
+  .reloj-si {
+    color: var(--color-text-brand-warm);
+    font-weight: var(--weight-subtitle);
+  }
+
+  .volver {
+    margin-block-start: 3.5rem;
+    font-family: var(--font-sistema);
+    font-size: var(--text-xs);
+  }
+  /* WCAG 2.5.8: ningún blanco táctil por debajo de 24 px. */
+  .volver a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--tap-min);
+  }
+</style>

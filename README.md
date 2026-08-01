@@ -108,4 +108,4 @@ usa escala larga mientras Brasil usa escala corta.
 
 ## Licencia / License
 
-Privado. Todos los derechos reservados. · Private. All rights reserved.
+**Licencia: [AGPL-3.0](LICENSE)** — copyleft fuerte de red. Quien lo use como servicio publica sus cambios (D-039).

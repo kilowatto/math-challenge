@@ -24,7 +24,7 @@
 // que toque el puntaje. Un modelo entrenado en otra parte con esa señal está
 // fuera del alcance del análisis estático.
 
-import { archivos, leer, informar, SOLO_PRODUCTO } from "./lib/repo.mjs";
+import { archivos, leer, informar, SOLO_PRODUCTO, palabra, esDeNino } from "./lib/repo.mjs";
 
 /**
  * Nombres que representan «cuántas veces cambió de opinión».
@@ -121,6 +121,71 @@ for (const archivo of fuentes) {
   }
 }
 
+
+// --- 2. La palabra "trampa" no aparece en superficie de niño (mc-29 impl. 2) --
+//
+// El criterio #37 de F3 lo pide con esas palabras: «sin bloqueos, sin
+// advertencias, y la palabra trampa no aparece en ninguna superficie de niño».
+//
+// Larry nunca avergüenza (línea roja #7). Acusar a un niño de tramposo por
+// contestar rápido es la forma más eficiente de que deje de contestar rápido —
+// y un niño rápido de verdad existe. El piso de tiempo enciende una señal para
+// la bitácora y nadie se entera desde la pantalla.
+// "copiar" a secas NO está en la lista: es un verbo normal, y marcó
+// «Khan, Brilliant, Kumon: qué copiar, qué evitar» del índice de investigación
+// del sitio adulto. Lo que se persigue es la ACUSACIÓN, no el verbo.
+const ACUSACION = palabra(
+  "trampa", "tramposo", "cheat\\w*", "cheating", "fraude", "sospechos[oa]",
+  "copiaste", "hiciste_?trampa", "batota", "betrug\\w*", "triche\\w*", "schummel\\w*",
+);
+
+for (const archivo of archivos(/\.(astro|tsx|jsx|svelte|vue|json)$/).filter((f) => SOLO_PRODUCTO.test(f))) {
+  // SOLO superficies de niño. El sitio adulto puede hablar de trampas —de hecho
+  // la página de arquitectura explica el anti-trampa— y marcarlo era ruido: el
+  // índice de investigación se llevó tres avisos por decir «qué copiar».
+  if (!esDeNino(archivo)) continue;
+  const texto = leer(archivo) ?? "";
+  const lineas = texto.split("\n");
+  for (let i = 0; i < lineas.length; i++) {
+    const l = lineas[i].replace(/\/\/.*$/, "");
+    if (!ACUSACION.test(l)) continue;
+    // Solo importa si es texto que un niño puede leer: una cadena entre
+    // comillas en un archivo de mensajes o en una plantilla.
+    if (!/["'`>]/.test(l)) continue;
+    problemas.push(
+      `${archivo}:${i + 1}: acusación visible en superficie de niño — ` +
+        `\`${l.trim().slice(0, 70)}\`. Línea roja #7 y mc-29 impl. 2: Larry nunca ` +
+        "avergüenza, y un niño rápido de verdad existe.",
+    );
+  }
+}
+
+// --- 3. Nada de dinámica de tecleo ni ritmo por niño (mc-30 impl. 8) --------
+//
+// Es la raya del artículo 9 del GDPR: un modelo del RITMO de una persona es un
+// dato biométrico de comportamiento. La línea roja #1 ya prohíbe la biometría;
+// esto es la misma prohibición donde nadie la busca.
+const BIOMETRIA_DE_RITMO = palabra(
+  "keystroke\\w*", "keydown_?interval", "dwell_?time", "flight_?time",
+  "dinamica_?de_?tecleo", "ritmo_?de_?tecleo", "typing_?(dynamics|rhythm|profile)",
+  "cadencia_?por_?(nino|usuario)", "behavioral_?biometric\\w*",
+);
+
+for (const archivo of fuentes) {
+  const texto = leer(archivo) ?? "";
+  const lineas = texto.split("\n");
+  for (let i = 0; i < lineas.length; i++) {
+    const l = lineas[i].replace(/\/\/.*$/, "").replace(/^\s*\*.*$/, "");
+    if (l.trim() && BIOMETRIA_DE_RITMO.test(l)) {
+      problemas.push(
+        `${archivo}:${i + 1}: modelo de ritmo o dinámica de tecleo — ` +
+          `\`${l.trim().slice(0, 70)}\`. Es dato biométrico de comportamiento: ` +
+          "artículo 9 del GDPR, línea roja #1 y mc-30 impl. 8.",
+      );
+    }
+  }
+}
+
 if (conSenal > 0) notas.unshift(`${conSenal} uso(s) de la señal de borrado, ninguno tocando el puntaje (D-020 la permite guardar)`);
 else notas.unshift("ningún uso de la señal de borrado en el código — nada que penalizar todavía");
 
@@ -128,7 +193,7 @@ informar({
   nombre: "sin-penalizacion",
   problemas,
   notas: notas.slice(0, 6),
-  cita: "línea roja #8, D-020, mc-30",
+  cita: "línea roja #8, línea roja #7, línea roja #1, D-020, mc-29, mc-30",
   revisados: fuentes.length,
   resumen: `${fuentes.length} archivo(s) de código`,
   porQueBloquea:

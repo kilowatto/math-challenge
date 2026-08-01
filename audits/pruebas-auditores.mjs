@@ -182,6 +182,20 @@ const CASOS = [
     contenido: "# Borrado\n\nSe corre `DELETE FROM child_profiles WHERE id = ?` en la base D1.\n",
     espera: "R2",
   },
+  {
+    auditor: "sin-penalizacion",
+    que: "la palabra «trampa» en una superficie de niño",
+    archivo: "apps/web/src/components/RetoKinderPrueba.astro",
+    contenido: '---\n---\n<p>Eso fue muy rápido, ¿hiciste trampa?</p>\n',
+    espera: "acusación visible",
+  },
+  {
+    auditor: "sin-penalizacion",
+    que: "un modelo de dinámica de tecleo (art. 9 del GDPR)",
+    archivo: "apps/web/src/lib/prueba-ritmo.ts",
+    contenido: "export function perfil(keystroke_intervals: number[]) {\n  return keystroke_intervals.reduce((a, b) => a + b, 0);\n}\n",
+    espera: "biométrico",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

@@ -16,6 +16,9 @@
 
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { calificar, pareceImposible, type Veredicto } from "../../../packages/motor/src/puntuacion.ts";
+import { generarBanco } from "../../../packages/motor/src/banco-kinder.ts";
+import { calificarRespuesta, type VeredictoDeItem } from "../../../packages/motor/src/item.ts";
+import { agregar, validarLote, SQL_UPSERT } from "../../../packages/motor/src/rollup.ts";
 
 interface Env {
   DB: D1Database;
@@ -171,6 +174,72 @@ export class Ingest extends WorkerEntrypoint<Env> {
       cortarConItemServido: cortarServido,
       cortarSinItemServido: cortarVacio,
     };
+  }
+
+  /**
+   * El banco de kinder, generado una vez por instancia del Worker.
+   *
+   * Se genera y no se lee de D1 a propósito: son plantillas paramétricas
+   * deterministas (`mc-40`, ~40% del banco), así que el mismo código produce los
+   * mismos 185 ítems con los mismos ids en cada isolate. Una tabla de ítems en
+   * D1 sería una copia que puede desincronizarse del código que la genera.
+   *
+   * Los otros dos tercios del banco —redactados con IA y revisados, y escritos a
+   * mano— sí vivirán en almacenamiento, porque no se derivan de nada.
+   */
+  #banco: Map<string, ReturnType<typeof generarBanco>[number]> | null = null;
+
+  private banco() {
+    if (!this.#banco) this.#banco = new Map(generarBanco().map((i) => [i.id, i]));
+    return this.#banco;
+  }
+
+  /**
+   * Califica una respuesta contra el banco, **nombrando la causa del error**.
+   *
+   * Es lo que separa «fallaste» de «multiplicaste en vez de sumar». Larry recibe
+   * esto ya resuelto y solo lo explica — nunca calcula (línea roja #7).
+   */
+  async calificarContraBanco(
+    itemId: string,
+    eleccion: number | string,
+  ): Promise<VeredictoDeItem & { nivel: number; habilidad: string }> {
+    const item = this.banco().get(itemId);
+    if (!item) throw new Error(`ítem desconocido: ${itemId}`);
+    return { ...calificarRespuesta(item, eleccion), nivel: item.nivel, habilidad: item.habilidad };
+  }
+
+  /** Cuántos ítems tiene el banco vivo. Para comprobar el despliegue. */
+  async tamanoDelBanco(): Promise<{ items: number; habilidades: number }> {
+    const b = [...this.banco().values()];
+    return { items: b.length, habilidades: new Set(b.map((i) => i.habilidad)).size };
+  }
+
+  /**
+   * Escribe el acumulado del tablero a D1, **por lotes** (criterio #35).
+   *
+   * D1 guarda estados, no eventos: mil intentos de treinta niños salen como
+   * treinta escrituras. `validarLote` rechaza cualquier campo que no sea del
+   * estado agregado — un `itemId` aquí convertiría esta tabla en una tabla por
+   * intento con otro nombre (`mc-32` riesgo #1).
+   */
+  async escribirRollup(
+    intentos: Array<{ childProfileId: string; period: string; themeBand: string; puntos: number }>,
+  ): Promise<{ filas: number; intentos: number }> {
+    const lote = agregar(intentos);
+    const problemas = validarLote(lote);
+    if (problemas.length > 0) {
+      throw new Error(`lote inválido para D1: ${problemas.join(" | ")}`);
+    }
+
+    const ahora = Date.now();
+    await this.env.DB.batch(
+      lote.filas.map((f) =>
+        this.env.DB.prepare(SQL_UPSERT).bind(f.childProfileId, f.period, f.themeBand, f.delta, ahora),
+      ),
+    );
+
+    return { filas: lote.filas.length, intentos: lote.intentosAgregados };
   }
 
   /** Sin ruta pública: cualquier petición directa se rechaza. */

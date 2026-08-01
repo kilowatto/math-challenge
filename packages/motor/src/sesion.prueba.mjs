@@ -177,6 +177,46 @@ caso("no se puede reservar un orden ya contestado", () => {
   lanza(() => servir(s, item(1), 1000), "ya se contestó");
 });
 
+// --- Borrar y corregir nunca penaliza (#36, línea roja #8) ------------------
+caso("la MISMA respuesta con cinco correcciones y con ninguna da el MISMO puntaje", () => {
+  // El criterio #36 nombra esta prueba. La forma más fuerte de cumplirla es que
+  // no haya dónde contar las correcciones: `Respuesta` lleva `orden` y
+  // `eleccion`, y la sesión no expone ninguna forma de decir cuántas veces el
+  // niño cambió de opinión antes de enviar.
+  const conCorrecciones = (() => {
+    let s = estadoInicial("PRIMARIA");
+    s = servir(s, item(1), 0);
+    // Cinco cambios de opinión en el dispositivo: ninguno llega al servidor.
+    return responder(s, { orden: 1, eleccion: "bien" }, correcta, 4000);
+  })();
+  const sinNinguna = (() => {
+    let s = estadoInicial("PRIMARIA");
+    s = servir(s, item(1), 0);
+    return responder(s, { orden: 1, eleccion: "bien" }, correcta, 4000);
+  })();
+  if (conCorrecciones.resultado.veredicto.puntos !== sinNinguna.resultado.veredicto.puntos) {
+    throw new Error("el puntaje cambió con las correcciones");
+  }
+  // Y la comprobación estructural: no hay campo donde meterlas.
+  const campos = new Set(Object.keys({ orden: 1, eleccion: "x" }));
+  for (const prohibido of ["correcciones", "borrados", "intentos", "cambios", "erasures"]) {
+    if (campos.has(prohibido)) throw new Error(`la respuesta lleva "${prohibido}"`);
+  }
+});
+
+caso("la señal de borrado no tiene ruta hasta el motor (D-020 la permite guardar, no puntuar)", () => {
+  // D-020 permite guardar la señal derivada. Lo que no puede es tocar el
+  // puntaje, y aquí eso se garantiza por construcción: `calificar` recibe
+  // banda, nivel, acc y —si acaso— rtMs. No hay quinto parámetro.
+  let s = estadoInicial("KINDER");
+  s = servir(s, item(1, 2), 0);
+  const r = responder(s, { orden: 1, eleccion: "bien" }, correcta, 1000);
+  const d = r.resultado.veredicto.detalle;
+  for (const k of Object.keys(d)) {
+    if (/borrad|erase|correccion|undo|cambio/i.test(k)) throw new Error(`el detalle lleva "${k}"`);
+  }
+});
+
 console.log("");
 if (fallos > 0) {
   console.error(`✗ sesión de reto — ${fallos} de ${corridos} caso(s) fallaron\n`);

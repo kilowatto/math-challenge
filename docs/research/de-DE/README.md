@@ -47,7 +47,7 @@
 | 14 | [Khan, Brilliant, Kumon, IXL, Prodigy, ST Math…](2026-07-31-mc-14-competitive-products.md) | ⭐ Was zu kopieren, was zu vermeiden ist, und wo die Marktlücke liegt |
 | 15 | [Escaleras de grado internacionales](2026-07-31-mc-15-international-grade-ladders.md) | ⭐ Vorschlag für eine interne Leiter von 11 Stufen, länderneutral, mit Namen in 5 Sprachen |
 | 36 | [Diseño de retos y formatos de reactivo](2026-07-31-mc-36-problem-design-item-formats.md) | ⭐ Katalog von 20 Formaten mit „Hält ein Solver stand?“ und Reihenfolge des MVP‑Aufbaus |
-| 40 | [Banco de 2,500 reactivos: cómo se opera](2026-07-31-mc-40-item-bank-content-operations.md) | ⭐⭐ Der konkrete Plan für die 2.500: Vorlagen vs. Hand vs. LLM, Schema, Aufwand und Kosten |
+| 40 | [Banco de 2.500 reactivos: cómo se opera](2026-07-31-mc-40-item-bank-content-operations.md) | ⭐⭐ Der konkrete Plan für die 2.500: Vorlagen vs. Hand vs. LLM, Schema, Aufwand und Kosten |
 | 44 | [Ubicación adaptativa (CAT, IRT, ALEKS)](2026-07-31-mc-44-adaptive-placement-cat.md) | ⭐ Der platzierbare Algorithmus, in v1 ohne kalibrierten Itembank |
 | 37 | [Larry Profe: portar a Larry](2026-07-31-mc-37-larry-profe-port.md) | ⭐⭐ Was heute im Repo existiert (mit `archivo:línea`), die Routing‑Tabelle der Modelle und die Kosten pro Erklärung |
 

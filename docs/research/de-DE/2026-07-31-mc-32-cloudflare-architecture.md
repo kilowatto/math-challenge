@@ -221,7 +221,7 @@ Roh‑Versuchszeilen sind **absichtlich nicht enthalten** in diesem Schema — s
 
 1. **Die 10 GB/Datenbank‑Obergrenze von D1 ist die erste harte Grenze**, verursacht durch einen Design‑Fehler (Speichern von Roh‑Versuchen in D1), nicht durch das Verkehrs‑Wachstum — die Analytics‑Engine‑Milderung muss bereits beim ersten Commit vorhanden sein, nicht nachträglich hinzugefügt werden [2].
 
-2. **Ein einzelnes „globales“ Durable Object ist ein Anti‑Pattern** — ein DO, das alle Verkehrsengpässe bei ~500–1.000 req/s verarbeitet; Ligen und Klassenräume müssen von Tag 1 an pro Entität ein DO erhalten [7].
+2. **Ein einzelnes „globales“ Durable Object ist ein Anti‑Pattern** — ein DO, das alle Verkehrsengpässe bei ~500–1.000 req/s verarbeitet; Ligen und Klassenräume müssen von Tag eins an pro Entität ein DO erhalten [7].
 
 3. **Die 60‑Sekunden‑Worst‑Case‑Propagation und das 30‑Sekunden‑Minimum `cacheTtl` von KV** bedeuten, dass die globale/Klassen‑Leaderboard nie wirklich live ist — zeigen Sie dies in der UI („vor einer Minute aktualisiert“) an, damit Kinder nicht denken, verdiente Punkte seien verschwunden [11][12].
 

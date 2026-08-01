@@ -143,8 +143,8 @@ Alle Pfade sind relativ zu `/Users/estebanrey/Documents/dev/ignia-object-storage
 
 **Claude‑API‑Fakten (aus dem `claude-api`‑Skill, gecached 2026‑06‑24; nicht aus dem Trainingsgedächtnis):**
 - Model IDs/pricing: `claude-haiku-4-5` ($1/$5 per MTok), `claude-sonnet-5` ($3/$15, intro $2/$10 thru 2026-08-31), `claude-opus-5` ($5/$25) — skill's "Current Models" table.
-- Prompt caching economics and per-model minimum cacheable prefix (Haiku 4.5 = 4,096 tokens; Opus 5 = 512) — `shared/prompt-caching.md`.
-- Batch API (50% discount, up to 100,000 requests/batch) — `python/claude-api/batches.md`.
+- Prompt caching economics and per-model minimum cacheable prefix (Haiku 4.5 = 4.096 tokens; Opus 5 = 512) — `shared/prompt-caching.md`.
+- Batch API (50% discount, up to 100.000 requests/batch) — `python/claude-api/batches.md`.
 - Adaptive thinking on by default on Opus 5, `output_config.effort`, thinking billed as output — `SKILL.md` § Thinking & Effort, `shared/model-migration.md` → Migrating to Claude Opus 5.
 - Structured outputs (`output_config.format`, `strict: true`) — `SKILL.md` § Architecture, `shared/tool-use-concepts.md` § Structured Outputs.
 - Live-pricing fetch targets named by the skill (`shared/live-sources.md`): `https://platform.claude.com/docs/en/pricing.md`, `https://platform.claude.com/docs/en/about-claude/models/overview.md` — not fetched separately in this pass since the skill's cached table was current for the needed models.

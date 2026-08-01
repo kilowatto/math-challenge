@@ -250,6 +250,38 @@ export function extraer(textoCrudo, locale) {
   tomaLiteral(/\b\d{4}-\d{2}-\d{2}\b/g);
   tomaLiteral(/§\s?\d+(?:\.\d+)*/g);
   tomaLiteral(/\b\d+\.\d+\.\d+(?:\.\d+)*\b/g);
+
+  // Citas legales. `16 CFR 312.5` y `34 CFR 99.31(a)(1)` son direcciones dentro
+  // de un código, no cantidades: el punto separa título de sección, y en alemán
+  // se escriben igual que en inglés.
+  //
+  // Esto no es hipotético. Sin esta línea el auditor exigía convertirlas, y un
+  // agente obedeció: cambió `16 CFR 312.12` por `312,12` en pt-BR/mc-27 y
+  // `34 CFR 99.31` por `99,31` en es-ES/mc-28 — inventando dos regulaciones que
+  // no existen dentro de un documento que habla de cumplimiento infantil.
+  // Un auditor que fabrica citas legales falsas es peor que no tener auditor.
+  tomaLiteral(/\b\d+\s+(?:CFR|U\.?\s?S\.?\s?C\.?)\s+§?\s?\d+(?:\.\d+)*(?:\([a-z0-9]+\))*/gi);
+
+  // Un número de versión separado de su producto por palabras. `NOMBRES_CON_VERSION`
+  // solo caza `Safari 16.4` pegados; el texto real dice «Safari seulement depuis
+  // la version 16.4», y ahí el 16.4 quedaba suelto. Mismo daño: un agente lo
+  // convirtió en `16,4` y fabricó una versión de Safari que no existe.
+  //
+  // **Solo el número entra al literal, nunca la palabra que lo introduce.** La
+  // palabra SÍ se traduce —«version» es «versión», «versão», «Version»— y meterla
+  // en el literal exigiría que sobreviviera verbatim, o sea exigiría NO traducir.
+  // Con el patrón goloso el auditor reportaba «perdido: version 18 · alterado:
+  // versión 18», que es pedir que el español esté en inglés.
+  t = t.replace(
+    /\b(?:versi[oóõ]ns?|versão|version|guideline|pauta|directriz|diretriz|Richtlinie|ligne\s+directrice)\s+v?(\d+(?:\.\d+)*)/gi,
+    (_m, num) => (literales.push(num), CENTINELA),
+  );
+
+  // Numeración de sección: un número que ABRE un encabezado Markdown, o un ítem
+  // numerado en negrita. `### 1.1 Les trois modèles` no es un decimal francés, y
+  // convertirlo a `1,1` renumera el documento. También pasó.
+  tomaLiteral(/^#{1,6}\s+\d+(?:\.\d+)*/gm);
+  tomaLiteral(/^\s{0,3}\*\*\d+(?:\.\d+)*\./gm);
   tomaLiteral(new RegExp(`\\b(?:${NOMBRES_CON_VERSION})[\\s/-]{0,2}v?\\d+(?:\\.\\d+)*\\+?`, "g"));
   tomaLiteral(/\b\d+\.\d+\s+A{1,3}\b/g);
 

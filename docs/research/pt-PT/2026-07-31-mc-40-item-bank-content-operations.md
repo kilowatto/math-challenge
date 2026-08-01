@@ -119,7 +119,7 @@ qti_export_ref, curriculum_tags[], retirement_reason
 
 **Custo estimado de LLM para redação + tradução (preços padrão Claude Sonnet 5: $3,00 entrada / $15,00 saída por milhão de tokens):**
 
-- Itens redigidos por LLM, primeiro rascunho (~1.500 entrada + ~800 saída tokens/item): (1.500×$3 + 800×$15)/1.000.000 = **$0,0165/item** × 715 ≈ **$12**.
+- Itens redigidos por LLM, primeiro rascunho (~1.500 entrada + ~800 saída tokens/item): (1.500×$3 + 800×$15)/1000000 = **$0,0165/item** × 715 ≈ **$12**.
 - Itens escritos à mão, apenas elaboração de conceções erradas assistida por LLM (mesmo perfil de tokens): 775 × $0,0165 ≈ **$13**.
 - Assistência na autoria de modelos (~5.000 entrada + 2.000 saída tokens/modelo): $0,045/modelo × 50 ≈ **$2**.
 - Tradução (~800 entrada + ~900 saída tokens/unidade): $0,0159/unidade × 6.160 unidades ≈ **$98**.

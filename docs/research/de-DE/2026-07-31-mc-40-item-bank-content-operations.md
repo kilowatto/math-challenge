@@ -121,7 +121,7 @@ qti_export_ref, curriculum_tags[], retirement_reason
 
 **Geschätzte LLM‑Kosten für Entwurf + Übersetzung** (Claude Sonnet 5 Standard‑Preise: $3,00 Input / $15,00 Output pro Million Tokens):
 
-- LLM‑erstellte Items, erster Entwurf (~1.500 Input + ~800 Output‑Tokens/Item): (1.500×$3 + 800×$15)/1.000.000 = **$0,0165/Item** × 715 ≈ **$12**.
+- LLM‑erstellte Items, erster Entwurf (~1.500 Input + ~800 Output‑Tokens/Item): (1.500×$3 + 800×$15)/1000000 = **$0,0165/Item** × 715 ≈ **$12**.
 - Handgeschriebene Items, LLM‑unterstützte Fehlvorstellungs‑Erstellung nur (gleiches Token‑Profil): 775 × $0,0165 ≈ **$13**.
 - Vorlagen‑Autorenschaft‑Unterstützung (~5.000 Input + 2.000 Output‑Tokens/Vorlage): $0,045/Vorlage × 50 ≈ **$2**.
 - Übersetzung (~800 Input + ~900 Output‑Tokens/Einheit): $0,0159/Einheit × 6.160 Einheiten ≈ **$98**.

@@ -1,0 +1,183 @@
+---
+/**
+ * El aviso de instalación. Issue #264 · `master-plan` §11, `mc-33`, D-047.
+ *
+ * ─── Esto no es marketing, es lo que sostiene el modo avión ────────────────
+ *
+ * `master-plan` §11 lo mide:
+ *
+ *   «La app instalada queda **exenta** de la expulsión proactiva de
+ *    almacenamiento a los 7 días, y accede a ~60% de la cuota de disco.
+ *    **Sin instalar, el progreso offline es frágil.**»
+ *
+ * Sin instalación, D-047 —practicar en el metro— es una promesa que no se
+ * cumple: el navegador expulsa el almacenamiento a los siete días y el trabajo
+ * del niño desaparece sin que nadie haya hecho nada mal.
+ *
+ * Y `mc-33`: **el push en iOS existe desde 16.4 pero EXIGE que la app esté
+ * instalada** en la pantalla de inicio.
+ *
+ * ─── Se OFRECE en Android y se EXPLICA en iOS ──────────────────────────────
+ *
+ * `master-plan` §11, con esas palabras: «No hay `beforeinstallprompt` en iOS: la
+ * instalación se explica, no se ofrece.»
+ *
+ *  · **Android/Chromium** — se intercepta `beforeinstallprompt`, se guarda, y se
+ *    dispara desde un botón propio. Nunca de golpe al entrar: un diálogo del
+ *    sistema en el primer segundo se cierra sin leerse.
+ *  · **iOS Safari** — no existe el evento. Se enseña el gesto real: Compartir →
+ *    Añadir a pantalla de inicio. **Solo en Safari**, porque en Chrome de iOS ese
+ *    gesto no instala nada (Chrome y Edge en iOS no soportan instalación de PWA).
+ *
+ * ─── Cómo se esconde cuando YA está instalada ──────────────────────────────
+ *
+ * `@media (display-mode: standalone)`, en CSS puro. Es la vía principal a
+ * propósito: funciona sin JavaScript, sin destello y sin esperar a que corra un
+ * script. `navigator.standalone` cubre iOS antiguo y
+ * `navigator.getInstalledRelatedApps()` afina donde exista — pero ninguno de los
+ * dos es la comprobación principal, porque el segundo no es Baseline.
+ *
+ * ─── Y NUNCA delante de un niño ────────────────────────────────────────────
+ *
+ * Este componente no se monta en ninguna superficie de niño, y hay un auditor
+ * que lo impide. Un diálogo de instalación delante de un niño de cuatro años que
+ * no lee es una pantalla que no puede pasar — el mismo argumento que con
+ * Turnstile, y la misma línea roja #1.
+ */
+import { t, type Locale } from "../i18n";
+import type { Plataforma } from "../lib/plataforma";
+
+interface Props {
+  locale: Locale;
+  plataforma: Plataforma;
+}
+const { locale, plataforma } = Astro.props as Props;
+const m = t(locale);
+
+// Solo tiene sentido donde se puede instalar de verdad. En escritorio Chromium
+// también se puede, pero el valor —la exención de la expulsión de almacenamiento
+// a los 7 días— es de móvil, que es donde se practica sin conexión.
+const ofrece = plataforma === "android";
+const explica = plataforma === "ios";
+---
+
+{(ofrece || explica) && (
+  <aside class="instalar" hidden={ofrece} data-instalar>
+    <p class="por-que">{m.installWhy}</p>
+
+    {ofrece && (
+      <button type="button" id="instalar-boton">{m.installCta}</button>
+    )}
+
+    {explica && (
+      <p class="gesto">
+        {/* El gesto real, no un icono inventado: en iOS el botón Compartir es un
+            cuadrado con una flecha hacia arriba, y nombrarlo es más fiable que
+            dibujarlo mal. */}
+        {m.installIosStep1} <strong>{m.installIosShare}</strong> {m.installIosStep2}{" "}
+        <strong>{m.installIosAdd}</strong>
+      </p>
+    )}
+  </aside>
+)}
+
+<style>
+  /* ── Se esconde sola cuando la app ya está instalada ──────────────────────
+     CSS puro y sin JavaScript: es la vía principal. Un aviso que se esconde por
+     script parpadea una vez en cada arranque de una app instalada, que es
+     exactamente a quien ya no hay que molestar. */
+  @media (display-mode: standalone), (display-mode: minimal-ui), (display-mode: fullscreen) {
+    .instalar { display: none !important; }
+  }
+
+  .instalar {
+    margin-block: var(--space);
+    padding: var(--space);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    font-family: var(--font-sistema);
+    font-size: var(--text-xs);
+    line-height: var(--leading-body);
+  }
+  .por-que { margin: 0 0 var(--space); color: var(--color-text); }
+  .gesto { margin: 0; color: var(--color-text-muted); }
+
+  button {
+    font-family: var(--font-sistema);
+    font-size: var(--text-base);
+    font-weight: var(--weight-subtitle);
+    min-block-size: var(--tap-primaria);
+    padding-inline: calc(var(--space) * 1.5);
+    color: var(--color-on-accent);
+    background: var(--color-accent);
+    border: 0;
+    border-radius: var(--radius-control, var(--radius));
+    cursor: pointer;
+  }
+  button:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+</style>
+
+<script>
+  /**
+   * Android/Chromium. En iOS este script no hace nada y es correcto: el evento
+   * no existe ahí, y el bloque de iOS ya se pintó desde el servidor.
+   *
+   * El aviso nace `hidden` en el camino de Android y solo aparece **cuando el
+   * navegador confirma que se puede instalar**. Al revés —pintarlo y esconderlo
+   * si el evento no llega— enseñaría un botón muerto a quien ya la tiene
+   * instalada o a quien no puede instalarla.
+   */
+  const caja = document.querySelector<HTMLElement>("[data-instalar]");
+  const boton = document.getElementById("instalar-boton");
+
+  let diferido: any = null;
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    // Sin esto, Chrome enseña su propia barra. Se guarda para dispararla desde
+    // el botón propio, cuando la persona ya sabe por qué le conviene.
+    e.preventDefault();
+    diferido = e;
+    if (caja) caja.hidden = false;
+  });
+
+  boton?.addEventListener("click", async () => {
+    if (!diferido) return;
+    diferido.prompt();
+    // `userChoice` resuelve con `{ outcome }`. No se guarda en ninguna parte:
+    // es telemetría, y D-037 no permite escribirla desde una superficie que un
+    // niño pueda estar mirando. Solo se usa para dejar de ofrecerlo.
+    const { outcome } = await diferido.userChoice;
+    diferido = null;
+    if (outcome === "accepted" && caja) caja.hidden = true;
+  });
+
+  // Ya instalada: no se vuelve a ofrecer en esta pestaña.
+  window.addEventListener("appinstalled", () => {
+    if (caja) caja.hidden = true;
+    diferido = null;
+  });
+
+  /**
+   * Refinamiento, nunca la comprobación principal.
+   *
+   * `getInstalledRelatedApps()` **no es Baseline**: es experimental, solo en
+   * contexto seguro y de nivel superior, y solo Chromium. Detecta una PWA del
+   * mismo origen si el manifiesto declara `related_applications` con
+   * `platform: "webapp"`.
+   *
+   * Si falla o no existe, no pasa nada: la consulta de medios de arriba ya
+   * escondió el aviso a quien la tiene instalada.
+   */
+  const nav = navigator as any;
+  if (typeof nav.getInstalledRelatedApps === "function") {
+    void nav
+      .getInstalledRelatedApps()
+      .then((apps: Array<{ platform?: string }>) => {
+        if (apps.some((a) => a.platform === "webapp") && caja) caja.hidden = true;
+      })
+      .catch(() => {
+        /* No es un fallo: es una API que puede no estar. */
+      });
+  }
+</script>

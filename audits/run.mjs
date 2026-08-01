@@ -59,6 +59,7 @@ const ACTIVE = [
   // flota. Se corre a mano. Lo que sí bloquea es que su manifiesto envejezca,
   // porque ese modo falla ABIERTO: el sitio seguiría prometiendo verificación
   // sobre un archivo que ya cambió.
+  ["passkey-rp-id",          "el rp.id de las passkeys no se toca",          "D-038, #112, #263"],
   ["turnstile-solo-adulto",   "Turnstile jamás delante de un niño",           "línea roja #1, D-054, #113"],
   ["corpus-manifiesto",      "el manifiesto del corpus traducido está al día", "D-033, D-022, mc-48 §3"],
 

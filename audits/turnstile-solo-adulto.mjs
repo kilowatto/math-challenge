@@ -31,6 +31,18 @@ const HAY_TURNSTILE =
   /(cf-turnstile|challenges\.cloudflare\.com|turnstile\.render|TURNSTILE_SITE_KEY|data-sitekey)/i;
 
 /**
+ * El aviso de instalación tiene EXACTAMENTE el mismo argumento (#264).
+ *
+ * `beforeinstallprompt` abre un diálogo del sistema. Delante de un adulto es una
+ * decisión; delante de un niño de cuatro años que no lee es una pantalla que no
+ * puede pasar — línea roja #1, que no admite banda ni excepción.
+ *
+ * Y hay una segunda razón, propia de este caso: **el que instala es el adulto**.
+ * Un niño no puede aceptar instalar nada, igual que no puede consentir (D-013).
+ */
+const HAY_INSTALAR = /(beforeinstallprompt|getInstalledRelatedApps|data-instalar)/i;
+
+/**
  * Qué es una superficie de niño.
  *
  * Por RUTA —el árbol `app/kids/`, que D-012 define como la superficie donde el
@@ -69,7 +81,9 @@ for (const archivo of fuentes) {
   if (archivo.endsWith("turnstile-solo-adulto.mjs")) continue;
 
   const crudo = leer(archivo) ?? "";
-  if (!HAY_TURNSTILE.test(crudo)) continue;
+  const esTurnstile = HAY_TURNSTILE.test(crudo);
+  const esInstalar = HAY_INSTALAR.test(crudo);
+  if (!esTurnstile && !esInstalar) continue;
 
   // Los comentarios se quitan antes de buscar marcas de superficie de niño.
   // Sin esto el auditor se caza a sí mismo: `turnstile.ts` menciona `app/kids/`
@@ -82,9 +96,11 @@ for (const archivo of fuentes) {
 
   if (RUTA_DE_NINO.test(archivo)) {
     problemas.push(
-      `${archivo}: Turnstile en una superficie de niño (por la ruta). ` +
-        `Puede mostrar un desafío interactivo, y delante de un niño de cuatro años que no lee ` +
-        `eso es un navegador bloqueado — línea roja #1, que no admite banda ni excepción.`,
+      `${archivo}: ${esTurnstile ? "Turnstile" : "el aviso de instalación"} en una superficie de ` +
+        `niño (por la ruta). Abre un diálogo del sistema, y delante de un niño de cuatro años ` +
+        `que no lee eso es una pantalla que no puede pasar — línea roja #1, que no admite banda ` +
+        `ni excepción. Además, quien instala es el ADULTO: un niño no puede aceptarlo, igual ` +
+        `que no puede consentir (D-013).`,
     );
     continue;
   }
@@ -92,7 +108,8 @@ for (const archivo of fuentes) {
   const marcas = MARCAS_DE_NINO.filter((m) => palabra(m).test(texto));
   if (marcas.length > 0) {
     problemas.push(
-      `${archivo}: Turnstile en un archivo con marcas de superficie de niño (${marcas.join(", ")}). ` +
+      `${archivo}: ${esTurnstile ? "Turnstile" : "el aviso de instalación"} en un archivo con ` +
+        `marcas de superficie de niño (${marcas.join(", ")}). ` +
         `Turnstile es defensa de bots sobre un formulario de ADULTO (D-054). Si este archivo ` +
         `sirve a las dos superficies, sepáralas: la frontera no puede depender de una condición ` +
         `en tiempo de ejecución que alguien invierta sin querer.`,

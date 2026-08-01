@@ -114,5 +114,11 @@
   "signinFormLead": "La cuenta es del adulto. Los niños entran en su dispositivo, tocando su cara.",
   "signinFormCta": "Entrar",
   "signinNoAccount": "¿Todavía no tienes cuenta?",
-  "signinChildNote": "Los niños nunca entran por aquí. Tocan su cara en un dispositivo que un adulto marcó como de la casa."
+  "signinChildNote": "Los niños nunca entran por aquí. Tocan su cara en un dispositivo que un adulto marcó como de la casa.",
+  "installWhy": "Instala Math Challenge en tu pantalla de inicio. Una app instalada conserva el progreso sin conexión: el navegador borra el almacenamiento de un sitio a los siete días, y una app instalada queda exenta.",
+  "installCta": "Instalar la app",
+  "installIosStep1": "Toca",
+  "installIosShare": "Compartir",
+  "installIosStep2": "y luego",
+  "installIosAdd": "Agregar a inicio"
 }

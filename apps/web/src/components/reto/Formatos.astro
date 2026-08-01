@@ -1,0 +1,114 @@
+---
+/**
+ * Los cinco formatos táctiles de kinder (plan §9, criterio #39 de F3).
+ *
+ * Todos de TOCAR. A los 4-6 años arrastrar es medibledamente más lento y más
+ * propenso a error que tocar, y esa diferencia desaparece hacia los 7-10 — así
+ * que en kinder no existe el arrastre.
+ *
+ * Los blancos son de 88 px, en `reto.css`. WCAG 2.5.8 pide 24 y la HIG de Apple
+ * 44; para un niño de cuatro años que necesita ~23.7 mm para acertar el 90% de
+ * las veces, ninguno de los dos alcanza.
+ *
+ * **Ningún formato escribe texto.** Línea roja #3: ningún niño escribe texto
+ * libre, en ninguna superficie del producto. Los cinco son elegir, tocar o
+ * contar.
+ */
+// El tipo se declara aquí en vez de importarse del motor: `packages/` está
+// fuera del `rootDir` de este tsconfig, y el motor NO debe viajar al cliente
+// —`audits/puntaje-servidor.mjs` bloquea si la fórmula aparece en el bundle.
+// Cinco literales duplicados a cambio de que el motor no cruce la frontera.
+type Formato =
+  | "toca_la_respuesta"
+  | "toca_para_contar"
+  | "flash"
+  | "arma_el_numero"
+  | "cual_sobra";
+
+interface Props {
+  formato: Formato;
+  /** Las opciones ya formateadas con la convención del locale. */
+  opciones: string[];
+  /** Cuántos objetos hay que contar o cuántas casillas tiene el marco. */
+  cantidad?: number;
+  /** Exposición del estímulo en ms. NO es un reloj: no puntúa ni se muestra. */
+  flashMs?: number;
+  etiquetaGrupo: string;
+}
+
+const { formato, opciones, cantidad = 10, flashMs = 500, etiquetaGrupo } = Astro.props;
+---
+
+{formato === "toca_la_respuesta" && (
+  <ul class="opciones" aria-label={etiquetaGrupo}>
+    {opciones.map((o) => (
+      <li>
+        <button class="opcion" type="button" aria-pressed="false" data-valor={o}>{o}</button>
+      </li>
+    ))}
+  </ul>
+)}
+
+{formato === "cual_sobra" && (
+  <ul class="opciones" aria-label={etiquetaGrupo}>
+    {opciones.map((o) => (
+      <li>
+        <button class="opcion" type="button" aria-pressed="false" data-valor={o}>{o}</button>
+      </li>
+    ))}
+  </ul>
+)}
+
+{formato === "toca_para_contar" && (
+  <ul class="contables" aria-label={etiquetaGrupo}>
+    {Array.from({ length: cantidad }, (_, i) => (
+      <li>
+        <button class="contable" type="button" aria-pressed="false" data-indice={i}>🦆</button>
+      </li>
+    ))}
+  </ul>
+)}
+
+{formato === "arma_el_numero" && (
+  <div class="marco" role="group" aria-label={etiquetaGrupo}>
+    {/* Cada casilla necesita nombre accesible: un `<button>` vacío es
+        `button-name` [critical] en axe, y para quien usa lector de pantalla
+        —el padre acompañando, o un niño con baja visión— diez botones sin
+        nombre son diez botones idénticos. */}
+    {Array.from({ length: 10 }, (_, i) => (
+      <button
+        class="casilla"
+        type="button"
+        aria-pressed="false"
+        data-indice={i}
+        aria-label={`${etiquetaGrupo}: ${i + 1}`}
+      ></button>
+    ))}
+  </div>
+)}
+
+{formato === "flash" && (
+  <>
+    {/* `data-ms` es exposición del estímulo, no un cronómetro: no cuenta hacia
+        atrás, no se muestra y no entra en el puntaje (D-024). */}
+    {/* `role="img"` y no un div pelado: `aria-label` sobre un div sin rol es
+        `aria-prohibited-attr` en axe, porque un div genérico no acepta nombre.
+        Los puntos son una imagen que se describe con una cifra. */}
+    <div
+      class="flash"
+      data-visible="true"
+      data-ms={flashMs}
+      role="img"
+      aria-label={`${etiquetaGrupo}: ${cantidad}`}
+    >
+      {Array.from({ length: cantidad }, () => <span aria-hidden="true">●</span>)}
+    </div>
+    <ul class="opciones" aria-label={etiquetaGrupo}>
+      {opciones.map((o) => (
+        <li>
+          <button class="opcion" type="button" aria-pressed="false" data-valor={o}>{o}</button>
+        </li>
+      ))}
+    </ul>
+  </>
+)}

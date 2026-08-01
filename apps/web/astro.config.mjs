@@ -63,7 +63,16 @@ export default defineConfig({
       // `en` también lleva prefijo. Sin esto, la raíz sirve inglés sin ruta
       // propia y el hreflang recíproco de S0 no puede cerrar el ciclo.
       prefixDefaultLocale: true,
-      redirectToDefaultLocale: true,
+      // `false` a propósito. Con `true`, Astro genera su PROPIO stub en `/`
+      // —`<meta http-equiv="refresh" content="2;url=/en/">`— que pisa a
+      // `src/pages/index.astro` y es violación CRÍTICA de WCAG 2.2.1: un
+      // refresco retardado le quita la página de debajo a quien lee despacio.
+      // Encima el stub de Astro no lleva `lang`, así que falla también 3.1.1.
+      //
+      // Con `false`, la raíz la sirve nuestra página, que elige el locale del
+      // navegador con `location.replace` y deja un enlace visible para quien no
+      // tiene JavaScript.
+      redirectToDefaultLocale: false,
     },
   },
 

@@ -62,13 +62,27 @@ const TERCIO = 320;
 let anchosRevisados = 0;
 for (const f of css) {
   const t = readFileSync(`${raiz}${f}`, "utf8");
+
+  // Los rangos que ocupa el PREÁMBULO de cada `@media`, de `@media` hasta `{`.
+  //
+  // Un `min-width` que ES la condición de la media query está acotado por
+  // definición: la regla solo aplica por encima de ese ancho, así que no puede
+  // romper nada por debajo. La primera versión buscaba hacia atrás un
+  // `@media …min-width` y fallaba justo en ese caso —el texto anterior a la
+  // coincidencia todavía no contenía el `min-width`, porque la coincidencia ERA
+  // el `min-width`. Marcó `@media (orientation: landscape) and
+  // (min-inline-size: 900px)`, que es exactamente la forma correcta de acotarlo.
+  const preambulos = [...t.matchAll(/@media[^{]*/g)].map((m) => [m.index, m.index + m[0].length]);
+  const dentroDePreambulo = (i) => preambulos.some(([a, b]) => i >= a && i < b);
+
   for (const m of t.matchAll(/min-(?:width|inline-size)\s*:\s*(\d+)px/g)) {
+    if (dentroDePreambulo(m.index)) continue;
     anchosRevisados++;
     const px = Number(m[1]);
-    // Un min-width dentro de una media query de escritorio es legítimo: solo
-    // aplica por encima de ese ancho. Se mira si hay una consulta que lo acote.
+    // Un min-width dentro del CUERPO de una media query de escritorio también es
+    // legítimo. Se mira si hay una consulta que lo acote.
     const antes = t.slice(Math.max(0, m.index - 400), m.index);
-    const acotado = /@media[^{]*min-width\s*:\s*(\d+)px/.test(antes);
+    const acotado = /@media[^{]*min-(?:width|inline-size)\s*:\s*(\d+)px/.test(antes);
     if (px > TERCIO && !acotado) {
       problemas.push(
         `${f}: min-width ${px}px sin acotar por media query. El tercio de un iPad en Split View ` +

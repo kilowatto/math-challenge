@@ -108,5 +108,11 @@
   "pinDrawBalloon": "Ballon de baudruche",
   "pinDrawDrum": "Tambour",
   "pinDrawBell": "Cloche",
-  "navSignup": "Créer un compte"
+  "navSignup": "Créer un compte",
+  "navSignin": "Se connecter",
+  "signinFormTitle": "Se connecter",
+  "signinFormLead": "Le compte appartient à l’adulte. Les enfants entrent sur leur appareil, en touchant leur visage.",
+  "signinFormCta": "Se connecter",
+  "signinNoAccount": "Pas encore de compte ?",
+  "signinChildNote": "Les enfants ne se connectent jamais ici. Ils touchent leur visage sur un appareil qu’un adulte a marqué comme appareil du foyer."
 }

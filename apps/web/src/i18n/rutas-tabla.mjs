@@ -23,6 +23,7 @@ export const SEGMENTOS = {
     "registro-padre": "signup-parent",
     "registro-maestro": "signup-teacher",
     "registro-aprendo": "signup-learner",
+    "entrar": "sign-in",
   },
   "es-MX": {
     "investigacion": "investigacion",
@@ -33,6 +34,7 @@ export const SEGMENTOS = {
     "registro-padre": "registro-padre",
     "registro-maestro": "registro-maestro",
     "registro-aprendo": "registro-aprendo",
+    "entrar": "entrar",
   },
   "es-ES": {
     "investigacion": "investigacion",
@@ -43,6 +45,7 @@ export const SEGMENTOS = {
     "registro-padre": "registro-padre",
     "registro-maestro": "registro-maestro",
     "registro-aprendo": "registro-aprendo",
+    "entrar": "entrar",
   },
   "fr-FR": {
     "investigacion": "recherche",
@@ -53,6 +56,7 @@ export const SEGMENTOS = {
     "registro-padre": "inscription-parent",
     "registro-maestro": "inscription-enseignant",
     "registro-aprendo": "inscription-apprendre",
+    "entrar": "connexion",
   },
   "pt-BR": {
     "investigacion": "pesquisa",
@@ -63,6 +67,7 @@ export const SEGMENTOS = {
     "registro-padre": "cadastro-responsavel",
     "registro-maestro": "cadastro-professor",
     "registro-aprendo": "cadastro-aprender",
+    "entrar": "entrar",
   },
   "pt-PT": {
     // pt-PT dice "investigação" donde Brasil dice "pesquisa": no es la misma
@@ -77,6 +82,7 @@ export const SEGMENTOS = {
     "registro-padre": "registo-encarregado",
     "registro-maestro": "registo-professor",
     "registro-aprendo": "registo-aprender",
+    "entrar": "entrar",
   },
   "de-DE": {
     "investigacion": "forschung",
@@ -87,6 +93,7 @@ export const SEGMENTOS = {
     "registro-padre": "anmeldung-eltern",
     "registro-maestro": "anmeldung-lehrkraft",
     "registro-aprendo": "anmeldung-lernen",
+    "entrar": "anmelden",
   },
 };
 

@@ -108,5 +108,11 @@
   "pinDrawBalloon": "Balloon",
   "pinDrawDrum": "Drum",
   "pinDrawBell": "Bell",
-  "navSignup": "Sign up"
+  "navSignup": "Sign up",
+  "navSignin": "Sign in",
+  "signinFormTitle": "Sign in",
+  "signinFormLead": "The account belongs to the grown-up. Children get in on their own device, by tapping their face.",
+  "signinFormCta": "Sign in",
+  "signinNoAccount": "No account yet?",
+  "signinChildNote": "Children never sign in here. They tap their face on a device an adult marked as one of the household devices."
 }

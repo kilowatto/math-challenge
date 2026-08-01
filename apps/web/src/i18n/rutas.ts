@@ -38,7 +38,9 @@ export type Seccion =
   // siete idiomas igual que el resto del sitio.
   | "registro-padre"
   | "registro-maestro"
-  | "registro-aprendo";
+  | "registro-aprendo"
+  // La puerta de vuelta. Sin ella se podia crear una cuenta y no volver a ella.
+  | "entrar";
 
 /**
  * El segmento de cada sección en cada locale.

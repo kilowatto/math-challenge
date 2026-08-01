@@ -26,6 +26,7 @@ import Investigacion from "../../../components/paginas/Investigacion.astro";
 import Niveles from "../../../components/paginas/Niveles.astro";
 import Origen from "../../../components/paginas/Origen.astro";
 import Registro from "../../../components/paginas/Registro.astro";
+import Entrar from "../../../components/paginas/Entrar.astro";
 
 export function getStaticPaths() {
   return LOCALES.flatMap((locale) =>
@@ -62,6 +63,7 @@ const PAGINAS: Record<Seccion, typeof Arquitectura> = {
   "registro-padre": Registro,
   "registro-maestro": Registro,
   "registro-aprendo": Registro,
+  "entrar": Entrar,
 };
 
 const Pagina = PAGINAS[seccion];

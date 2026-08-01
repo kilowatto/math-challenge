@@ -174,6 +174,20 @@ las cinco marcas contextuales (no carrusel — D-026, NN/g).
       comparte**: esa fila es el consentimiento y es auditable
 - [ ] Un maestro no puede crear salón sin verificación previa
 
+### Criterios que aportó la flota (issues #17-#22, cerrados aquí)
+El auditor \`ux-banda\` levantó seis sobre \`Base.astro\`. Son ciertos y llegaban
+antes de tiempo: no hay interfaz de niño que adaptar hasta esta fase.
+
+- [ ] La interfaz varía por banda de edad — los 5 temas visuales de D-017
+- [ ] Blancos táctiles: 24px WCAG / 44px HIG / **88px kinder** (\`mc-38\`)
+- [ ] Tema oscuro para adolescentes y adultos (\`mc-22\`, \`mc-23\`)
+- [ ] Tipografía diferenciada KINDER vs PRIMARIA (\`mc-21\`) — y en KINDER
+      **nunca Light**: \`mc-20\` exige alto grosor de trazo
+- [ ] El naranja de Ignia **nunca** como texto normal sobre claro: 3.03:1,
+      por debajo del 4.5:1 de WCAG. Ya vigilado por \`audits/brand-image.mjs\`
+- [ ] Adaptación por plataforma **y** por banda a la vez (D-031 + D-017),
+      con la tipografía repartida según D-036
+
 ### Por qué importa para la flota
 Primera fase donde tocan a la vez esquema de menores, consentimiento y texto
 libre. \`privacidad\`, \`lineas-rojas\` y \`child-free-text\` despiertan juntos.
@@ -197,6 +211,22 @@ del lado del servidor**.
 - [ ] El intento crudo va a Analytics Engine, **jamás a D1** (mc-32 riesgo #1);
       \`audits/no-attempts-in-d1.mjs\` lo vigila
 - [ ] \`recordAttempt()\` implementado — hoy lanza a propósito
+- [ ] Los números se renderizan con la convención del locale activo, consumiendo
+      \`MATH_CONVENTIONS\` (hoy la tabla existe y no la usa nadie — anulación
+      escrita en \`ANULACIONES.md\` que caduca al arrancar esta fase)
+
+### Criterios que aportó la flota (issues #5-#10, cerrados aquí)
+El auditor \`pedagogia\` levantó seis contra el master-plan. El plan sí los
+especifica; lo que falta es el código, y el código es esta fase y F5.
+
+- [ ] **Ejemplo trabajado antes de la práctica** (\`mc-04\`, carga cognitiva)
+- [ ] **Espaciado e intercalado** implementados, no solo planeados (\`mc-05\`:
+      mezclar duele en la sesión y **duplica** el desempeño al día siguiente)
+- [ ] La retroalimentación **nombra el error**, no dice solo bien/mal (\`mc-11\`)
+      — es lo que exige el arreglo de errores con causa nombrada del ítem
+- [ ] La variación entre ítems de una serie es explícita, no azarosa (\`mc-02\`)
+- [ ] Los retos traen contexto y apertura, no son cálculo pelón (\`mc-36\`)
+- [ ] El modo historia tiene fase de exploración y de síntesis (\`mc-01\`)
 `),
   "F4": D(`
 **Vía:** Producto · **Depende de:** F3

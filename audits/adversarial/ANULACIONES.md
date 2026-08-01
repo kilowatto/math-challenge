@@ -73,16 +73,17 @@ rendericen con la convención del locale, y F5 lo lleva para el banco de ítems.
 Esta anulación caduca cuando F3 arranque; si para entonces sigue sin aplicarse,
 el hallazgo vuelve a bloquear y con razón.
 
-### `pwa-android` · `apps/web/src/styles/fonts.css` · `D-031` · 2026-07-31 · Esteban
+## Anulaciones retiradas
 
-Razón: el hallazgo es correcto y destapa un **conflicto entre dos decisiones**
-que no me toca resolver a mí. D-031 dice literal "incluyendo tipografía del
-sistema" por plataforma; `docs/guia-de-estilo.md` fija Raleway como la
-tipografía de Ignia, y en F0 se auto-alojó como fuente variable precisamente
-para eliminar las peticiones a terceros. Las dos no pueden ser ciertas a la vez
-en Android.
+### ~~`pwa-android` · `apps/web/src/styles/fonts.css` · `D-031`~~ — RETIRADA 2026-07-31
 
-No se anula porque el auditor se equivoque —no se equivoca— sino porque la
-salida es una decisión del dueño sobre cuál manda, y esa decisión no existe.
-Queda levantada como tensión abierta **T-8** en `docs/decisions.md`. Esta
-anulación caduca en cuanto T-8 se cierre.
+Se anuló porque destapaba un conflicto entre D-031 ("tipografía del sistema") y
+la guía de estilo (Raleway), y esa era una decisión del dueño, no mía. **T-8 se
+cerró el mismo día con D-036**, así que la anulación caducó según sus propios
+términos.
+
+**El hallazgo se arregló**, no se dejó pasar: `--font-marca` para títulos y
+cuerpo, `--font-sistema` para botones, campos y navegación. Se deja aquí el
+registro en vez de borrarlo, porque una anulación retirada cuenta la historia
+de por qué el código cambió — y esta fue la primera tensión que levantó la
+flota en vez de una persona.

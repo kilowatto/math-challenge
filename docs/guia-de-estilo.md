@@ -90,6 +90,35 @@ contraste, que es lo que está arriba.
 **Raleway**, en tres pesos: Light para títulos, Medium para subtítulos, Regular
 para textos.
 
+### Las excepciones por sistema (D-036)
+
+D-031 exige **tipografía del sistema** por plataforma; esta guía fija Raleway.
+Las dos no pueden ser ciertas a la vez en el mismo elemento, y la salida no es
+elegir una y perder la otra: **la marca habla en Raleway, los controles hablan
+en la voz del sistema.**
+
+| Superficie | Tipografía | Por qué |
+|---|---|---|
+| Títulos, cuerpo, textos de Larry | **Raleway** (`--font-marca`) | Es donde se lee a Ignia |
+| Botones, campos, selects, navegación | **la del sistema** (`--font-sistema`) | Un control con tipografía ajena se siente web, y `mc-22` documenta que los adolescentes abandonan sin diagnosticar por qué |
+
+Lo que resuelve `system-ui` en cada sistema, y con qué se parece más a Raleway:
+
+| Sistema | Cara del sistema | Distancia a Raleway |
+|---|---|---|
+| Android | **Roboto** | Neo-grotesca contra humanista; es la más lejana, y es innegociable — es la tipografía de Material 3, y usar otra anula el motivo de la excepción |
+| iOS / macOS | **SF Pro** | Cercana en proporciones; el cambio casi no se nota a tamaño de control |
+| Windows | **Segoe UI Variable** | Cercana; comparte el aire humanista |
+| Linux, web de escritorio | lo que haya | Raleway se queda: no hay convención de plataforma que respetar |
+
+**No se detecta la plataforma en JavaScript.** `system-ui` la resuelve sola en
+CSS, y una detección en JS fallaría justo en la primera pintura, que es donde
+importa.
+
+**La excepción de kinder manda sobre esta tabla.** En KINDER el grosor de trazo
+no se negocia (ver abajo), así que ahí los controles también van en Raleway
+Medium o Bold antes que en la cara del sistema si esta resulta más delgada.
+
 ### La excepción de kinder, que no es negociable
 
 `mc-20` establece para 3-6 años: sans-serif redondeada, numerales de **24-32 px

@@ -1105,6 +1105,42 @@ a propósito), `mc-32` §Workers AI y §Vectorize, `mc-47`.
 
 ---
 
+## D-036 — La marca habla en Raleway, los controles en la voz del sistema · 2026-07-31
+
+**Decisión del dueño:** si una tipografía no funciona en un sistema en
+particular, **no se insiste**: se busca la más parecida que ese sistema sí tenga
+y queda escrita en la guía de estilo como la excepción de ese sistema.
+
+**Cierra la tensión T-8**, que levantó el auditor `pwa-android` en la primera
+corrida real de la flota citando D-031 correctamente: D-031 exige "tipografía
+del sistema" por plataforma y `guia-de-estilo.md` fija Raleway. En el mismo
+elemento no pueden ser ciertas a la vez.
+
+**La salida no es elegir una y perder la otra**, sino repartir por superficie:
+
+| Superficie | Tipografía | Por qué |
+|---|---|---|
+| Títulos, cuerpo, textos de Larry | **Raleway** (`--font-marca`) | Es donde se lee a Ignia |
+| Botones, campos, selects, navegación | **la del sistema** (`--font-sistema`) | Un control con tipografía ajena se siente web, y `mc-22` documenta que los adolescentes abandonan sin diagnosticar por qué — "no se culpan a sí mismos, te culpan a ti" |
+
+`system-ui` resuelve solo a Roboto en Android, SF Pro en iOS y macOS, Segoe UI
+Variable en Windows. **No se detecta la plataforma en JavaScript:** fallaría
+justo en la primera pintura, que es donde importa.
+
+**Lo que esto cuesta, dicho de frente.** En Android la cara del sistema es
+Roboto, una neo-grotesca, y Raleway es humanista: es la más lejana de las tres y
+la que más se va a notar. Se acepta igual, porque Roboto **es** la tipografía de
+Material 3 y sustituirla por algo "más parecido a Raleway" anularía el motivo
+mismo de la excepción.
+
+**La excepción de kinder manda sobre esta tabla.** `mc-20` exige alto grosor de
+trazo de 3 a 6 años; si la cara del sistema resulta más delgada, en KINDER los
+controles también van en Raleway Medium o Bold.
+
+**Investigación relacionada:** `mc-21`, `mc-22`, `mc-23`, `mc-47` §6.
+
+---
+
 ## Tensiones abiertas que el dueño debe resolver
 
 Estas salieron de la investigación. Cuatro ya se cerraron con decisiones; se
@@ -1119,5 +1155,5 @@ las dos que siguen abiertas no se pierdan entre 43 documentos.
 | T-4 | Tablero público global vs. minimización de datos de menores | **Cerrada** por D-003: alias generados, sin nombre real, sin foto, sin ciudad | `mc-25`, `mc-18` |
 | T-5 | Quién verifica que un adulto que abre un salón o un club es quien dice ser | **Abierta, y ahora más ancha.** D-011 propone un stack de mitigación que no es garantía, y D-027 extiende el mismo problema a los clubs de papás. D-027 lo acota eliminando el contacto no supervisado, pero **no verifica al adulto** | `mc-28`, `mc-46` |
 | T-6 | Nivel PhD: qué se puede calificar automáticamente de verdad y qué no | **Abierta.** No bloquea el MVP, que llega hasta N10 (D-034), pero define si el modo Pro es viable | `mc-12-advanced-proof-olympiad-phd.md` |
-| T-8 | **Tipografía: D-031 exige "tipografía del sistema" por plataforma; `guia-de-estilo.md` fija Raleway como la tipografía de Ignia, auto-alojada en F0 para eliminar peticiones a terceros. En Android las dos no pueden ser ciertas a la vez** | **Abierta.** La levantó el auditor `pwa-android` en la primera corrida real de la flota, citando D-031 correctamente. Anulada por escrito en `audits/adversarial/ANULACIONES.md` hasta que el dueño decida cuál manda. Bloquea F2 (primera interfaz real) | D-031, `docs/guia-de-estilo.md`, `mc-21`, `mc-22` |
+| T-8 | Tipografía: D-031 exige "tipografía del sistema" por plataforma; `guia-de-estilo.md` fija Raleway. En el mismo elemento no pueden ser ciertas a la vez | **Cerrada** por D-036: la marca habla en Raleway, los controles en la voz del sistema. Fue la primera tensión que levantó la flota adversarial, no una persona | D-031, D-036, `docs/guia-de-estilo.md`, `mc-22` |
 | T-7 | La vía del adulto no tenía contenido en el MVP, y un club de adultos compitiendo en sumas de kinder no tiene sentido | **Cerrada** por D-034: el MVP lleva kinder completo más una franja mínima de contenido adulto (N8-N10), con barandales para que no crezca | D-009, D-028, D-034, `por-que-existe.md` |

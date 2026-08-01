@@ -88,6 +88,17 @@ export default defineConfig({
   },
 
   vite: {
+    // `.env` vive en la RAÍZ del monorepo y Astro compila desde `apps/web`, así
+    // que sin esto Vite busca `apps/web/.env` y no encuentra nada. El síntoma no
+    // es un error: es un widget de Turnstile que simplemente no se pinta, y una
+    // página que parece correcta.
+    envDir: "../..",
+    // Las variables sin prefijo `PUBLIC_` no llegan al build. `TURNSTILE_SITE_KEY`
+    // ES pública por diseño —viaja en el HTML de cada página— pero se llama como
+    // la nombra Cloudflare, no con el prefijo de Astro, así que se declara aquí.
+    // La SECRETA no está en esta lista y no debe estarlo: vive en
+    // `wrangler secret put` y solo la ve el servidor.
+    envPrefix: ["PUBLIC_", "TURNSTILE_SITE_"],
     build: {
       // El presupuesto de bundle lo hace cumplir audits/bundle-budget.mjs.
       // Este aviso es la señal temprana, antes de que el auditor bloquee.

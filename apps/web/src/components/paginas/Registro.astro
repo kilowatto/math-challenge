@@ -85,7 +85,16 @@ const puerta = PUERTAS[seccion];
  * parezca protección: el servidor rechaza igual, y lo hace con un motivo que se
  * puede leer en el registro.
  */
-const siteKey = (import.meta.env.TURNSTILE_SITE_KEY as string | undefined) ?? "";
+// Astro solo mete en `import.meta.env` las variables con prefijo `PUBLIC_`; las
+// demás quedan en `process.env` durante el build. Se prueban las tres formas
+// para que la llave funcione tanto si vive en `.env` como si alguien la pone en
+// `wrangler.jsonc` bajo `vars` — y `?? ""` para que la ausencia sea un widget
+// que no se pinta, nunca un `undefined` en el HTML.
+const siteKey =
+  (import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined) ??
+  (import.meta.env.TURNSTILE_SITE_KEY as string | undefined) ??
+  (typeof process !== "undefined" ? process.env?.TURNSTILE_SITE_KEY : undefined) ??
+  "";
 const titulo = m[puerta.titulo];
 const lead = m[puerta.lead];
 ---

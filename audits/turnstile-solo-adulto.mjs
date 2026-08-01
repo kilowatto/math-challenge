@@ -24,7 +24,7 @@
 // Lo que NO comprueba: si Turnstile aparece en una pantalla que un adulto abre
 // pero un niño está mirando. Eso no se puede leer del código.
 
-import { archivos, leer, informar, SOLO_PRODUCTO, palabra } from "./lib/repo.mjs";
+import { archivos, leer, informar, SOLO_PRODUCTO, palabra, sinComentarios } from "./lib/repo.mjs";
 
 /** Cómo se reconoce a Turnstile en el código, en cualquiera de sus formas. */
 const HAY_TURNSTILE =
@@ -77,10 +77,7 @@ for (const archivo of fuentes) {
   // que castiga documentar su propia regla se acaba anulando por costumbre.
   //
   // El código SÍ se mira entero — un `if (esKinder)` sigue siendo código.
-  const texto = crudo
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ")
-    .replace(/<!--[\s\S]*?-->/g, " ");
+  const texto = sinComentarios(crudo);
   conTurnstile++;
 
   if (RUTA_DE_NINO.test(archivo)) {

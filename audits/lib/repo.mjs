@@ -148,3 +148,30 @@ export const TABLAS_DE_NINO = ["child_profiles", "child_group", "child_group_mem
 export function sqlSinComentarios(sql) {
   return sql.replace(/--[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
+
+/**
+ * El texto sin comentarios: `//`, `/* … *\/`, `<!-- … -->` y `-- ` de SQL.
+ *
+ * Existe porque la misma clase de falso positivo apareció CUATRO veces, y las
+ * cuatro con la misma forma: un auditor caza una palabra dentro de un comentario
+ * que está ahí **para explicar por qué esa cosa no se hace**.
+ *
+ *   · `sin-penalizacion` sobre una cadena de prosa y sobre `-- Borrado suave`
+ *   · `turnstile-solo-adulto` sobre su propio párrafo que dice dónde NO va
+ *   · `adaptativo-simulacion` sobre «eso lo hace el motor adaptativo», escrito
+ *     justo para aclarar que ESTE archivo no lo es
+ *
+ * Un guardián que castiga documentar su propia regla se acaba anulando por
+ * costumbre, y entonces deja de guardar. El código se sigue mirando entero: un
+ * `if (esAdaptativo)` sigue siendo código.
+ *
+ * NO se usa para buscar SECRETOS: una llave commiteada dentro de un comentario
+ * sigue estando commiteada. `secrets.mjs` mira el archivo crudo, a propósito.
+ */
+export function sinComentarios(texto) {
+  return String(texto ?? "")
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/^\s*--[^\n]*/gm, " ");
+}

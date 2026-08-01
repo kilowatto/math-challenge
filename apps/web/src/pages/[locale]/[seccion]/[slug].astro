@@ -285,6 +285,7 @@ interface Copy {
   /** Título del `<title>`/`description` no: ver más abajo, ambos salen del documento. */
   categoryLabel: Record<CategoryKey, string>;
   metaDate: string;
+  metaAuthor: string;
   metaWords: string;
   metaSources: string;
   summaryHeading: string;
@@ -375,6 +376,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     breadcrumbHome: "Home",
     breadcrumbResearch: "Research",
     metaDate: "Published",
+    metaAuthor: "by Math Challenge Research",
     metaWords: "words",
     metaSources: "cited sources",
     summaryHeading: "Executive summary",
@@ -403,6 +405,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     breadcrumbHome: "Inicio",
     breadcrumbResearch: "Investigación",
     metaDate: "Publicado",
+    metaAuthor: "de Math Challenge Research",
     metaWords: "palabras",
     metaSources: "fuentes citadas",
     summaryHeading: "Resumen ejecutivo",
@@ -431,6 +434,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     breadcrumbHome: "Inicio",
     breadcrumbResearch: "Investigación",
     metaDate: "Publicado",
+    metaAuthor: "de Math Challenge Research",
     metaWords: "palabras",
     metaSources: "fuentes citadas",
     summaryHeading: "Resumen ejecutivo",
@@ -459,6 +463,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     breadcrumbHome: "Accueil",
     breadcrumbResearch: "Recherche",
     metaDate: "Publié",
+    metaAuthor: "par Math Challenge Research",
     metaWords: "mots",
     metaSources: "sources citées",
     summaryHeading: "Résumé exécutif",
@@ -487,6 +492,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     breadcrumbHome: "Início",
     breadcrumbResearch: "Pesquisa",
     metaDate: "Publicado",
+    metaAuthor: "por Math Challenge Research",
     metaWords: "palavras",
     metaSources: "fontes citadas",
     summaryHeading: "Resumo executivo",
@@ -515,6 +521,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     breadcrumbHome: "Início",
     breadcrumbResearch: "Investigação",
     metaDate: "Publicado",
+    metaAuthor: "por Math Challenge Research",
     metaWords: "palavras",
     metaSources: "fontes citadas",
     summaryHeading: "Resumo executivo",
@@ -543,6 +550,7 @@ const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
     breadcrumbHome: "Start",
     breadcrumbResearch: "Forschung",
     metaDate: "Veröffentlicht",
+    metaAuthor: "von Math Challenge Research",
     metaWords: "Wörter",
     metaSources: "zitierte Quellen",
     summaryHeading: "Zusammenfassung",
@@ -633,7 +641,7 @@ const article: Record<string, unknown> = {
   dateModified: doc.date,
   wordCount: doc.words,
   keywords: [doc.id, categoryLabel],
-  author: { "@type": "Organization", name: "Ignia", url: "https://ignia.cloud" },
+  author: { "@type": "Organization", name: "Math Challenge Research" },
   publisher: { "@type": "Organization", name: "Ignia", url: "https://ignia.cloud" },
 };
 if (doc.sources.length) {
@@ -690,6 +698,7 @@ const jsonLd = { "@context": "https://schema.org", "@graph": graph };
   <p class="meta">
     <span class="id">{doc.id}</span>
     {" · "}{c.metaDate}: <time datetime={doc.date}>{doc.date}</time>
+    {" · "}{c.metaAuthor}
     {" · "}{doc.words.toLocaleString(locale)}{" "}{c.metaWords}
     {doc.sources.length ? <>{" · "}{doc.sources.length}{" "}{c.metaSources}</> : null}
   </p>

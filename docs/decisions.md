@@ -1740,3 +1740,99 @@ el navegador. La línea roja #1 prohíbe cámara, micrófono, biometría y naveg
 bloqueado — nada de eso ocurre aquí. Lo que sí hay que impedir mecánicamente es
 que el widget aparezca alguna vez en una superficie de niño, y para eso se
 escribe `audits/turnstile-solo-adulto.mjs` en este mismo PR.
+
+---
+
+## D-055 — XP es un eje separado de los puntos del tablero, nunca el mismo número · 2026-08-01
+
+**Decisión:** el eje de progreso de F7 (XP → Rango) es una segunda fórmula,
+deliberadamente distinta de los puntos que D-025 usa para el tablero. Nunca se
+deriva de `score_totals`.
+
+**Por qué hacía falta decidir esto.** Diseñando F7 en paralelo, dos de los siete
+subsistemas llegaron a issues de GitHub incompatibles sobre la misma pregunta:
+uno construía XP como una fórmula nueva (`xpDeItem`/`xpDelReto`, tabla
+`xp_totals` propia); el otro afirmaba, en la misma tanda, que "XP es el mismo
+valor que produce `calificar()`... sin segunda fórmula". Las dos no pueden ser
+ciertas a la vez, y ninguna de las dos issues lo señalaba.
+
+**Por qué XP no puede ser el mismo número que los puntos, dicho con la
+propiedad que decide todo:**
+
+| Propiedad | Puntos (`score_totals`, D-025) | XP (Rango) |
+|---|---|---|
+| ¿Puede bajar? | Sí — fallar rápido resta más que fallar lento (D-010) | Nunca |
+| ¿Depende del reloj? | Sí, de PRIMARIA a Pro | Nunca, en ninguna banda |
+| ¿Se resetea? | Sí, por temporada (`period`) | Nunca — acumulado de por vida |
+| ¿Para qué sirve? | Ordenar el tablero/ligas (competitivo) | Progresar de Rango (personal) |
+
+Un sistema de niveles construido sobre un número que puede bajar o resetearse
+le quitaría a un niño un Rango ya ganado. Eso no es un detalle de
+implementación: es exactamente lo que D-014 prohíbe con "cosméticos ganados
+(**deterministas**)" — un desbloqueo que se puede perder no es determinista,
+es una promesa rota. La misma garantía que protege un cosmético tiene que
+proteger el número que decide cuándo se otorga.
+
+**Lo que esto cuesta, dicho de frente:** un niño de 8 años ve dos números que
+suben con su desempeño y tiene que entender por qué no son el mismo. Se mitiga
+por lo que HACEN, no por su aritmética — "los puntos son tu marcador de esta
+liga, puede subir y bajar"; "el XP es todo lo que has aprendido, nunca baja" —
+y por una regla de interfaz dura: **nunca se muestran los dos números en la
+misma pantalla sin una etiqueta que los distinga**, y ninguno se deriva del
+otro en código.
+
+**Caso especial que hace que el lanzamiento no exponga el problema todavía:**
+en KINDER, la fórmula de puntos (D-024, `valor_del_ítem · acc`, sin tiempo, sin
+signo negativo posible) y la fórmula de XP son matemáticamente el mismo número
+por construcción. Kinder es toda la banda que el MVP construye (D-009/D-034),
+así que el primer release no muestra la divergencia — pero el código de XP
+tiene que existir como eje separado desde el día uno, o la migración futura a
+SERIO/JR/PRO (D-034, la banda cronometrada) rompe un Rango ya otorgado.
+
+**Investigación relacionada:** `mc-16` (Duolingo separa XP de gemas/rachas por
+la misma razón: un número competitivo y uno de progreso personal no deben
+mezclarse), `mc-43` (visualización de progreso e identidad).
+
+---
+
+## D-056 — Ligas: ascenso 23.3% (7/30), descenso 16.7% (5/30) — las cifras reales de Duolingo, no el 10% sin verificar de master-plan · 2026-08-01
+
+**Decisión:** el ciclo semanal de ascenso/descenso de liga usa
+`round(tamaño × 7/30)` para ascender y `round(tamaño × 5/30)` para descender,
+mínimo 1 en ambos casos, escalado por tamaño real de la cohorte (una liga de
+menos de 30 no asciende/desciende los mismos absolutos que una completa).
+
+**Enmienda explícita.** `docs/master-plan.md` §6 dice, sin cifra de ascenso:
+*"Descenso suave (solo el 10% inferior, solo entre activos)"*. Esa cifra nunca
+se verificó contra el producto que la inspira. Al diseñar F7, se confirmó en
+vivo (fetch directo a duolingoguides.com) el mecanismo real de Duolingo: liga
+de 30, **7 ascienden (23.3%)**, **5 descienden (16.7%)**, el tier superior
+(Diamante) solo puede descender. Esta decisión adopta esas cifras y corrige la
+mención de master-plan.
+
+**Por qué las cifras reales y no las de master-plan.** `mc-18`
+(Leaderboards & competition) documenta el mismo mecanismo con una
+recomendación algo más conservadora ("promote the top 15-20%... demote only
+the bottom 10%") — ninguna de las dos coincide exactamente con lo que Duolingo
+hace en producción, que es lo que master-plan cita como modelo ("estilo
+Duolingo", D-003). Entre inventar un número propio, usar la recomendación de
+`mc-18`, o replicar el producto real que D-003 ya nombra como referencia, se
+eligió lo último: **es la única de las tres opciones que se puede verificar
+contra un sistema que de verdad opera a esta escala**, no una recomendación de
+investigación sin desplegar.
+
+**Lo que NO resuelve, dicho de frente:** `mc-18` tiene una objeción de fondo
+que ninguna cifra de porcentaje arregla — el ranking dentro de la liga sigue
+siendo por puntos (D-025), con el mismo sesgo hacia volumen sobre dificultad
+que D-025 ya reconoce y no resuelve del todo. Cambiar el porcentaje de
+ascenso/descenso no toca esa objeción.
+
+**Condición de revisión:** si el producto real de Duolingo cambia su mecánica
+(lo ha hecho antes — antes de 2022 no existía la zona de descenso suave), esta
+decisión se revisa. Hasta entonces, replicar el número real gana sobre
+inventar uno propio.
+
+**Investigación que la respalda:** producto real de Duolingo, verificado en
+vivo el 2026-08-01 (duolingoguides.com).
+**Investigación que la matiza:** `mc-18-leaderboards-competition.md`
+implicación 5 (recomienda 15-20%/10%, más conservador que lo adoptado).

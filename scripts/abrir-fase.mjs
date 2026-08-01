@@ -40,11 +40,17 @@ const items = JSON.parse(
   gh("project", "item-list", PROYECTO, "--owner", DUENO, "--format", "json", "--limit", "100"),
 ).items;
 
-// Emparejar por la clave más larga primero: "F1" es prefijo de "F10" y "F11", y
-// emparejar en orden de inserción le daría a F10 los datos de F1. Ya pasó.
-const item = items
-  .filter((i) => i.title.startsWith(fase))
-  .sort((a, b) => a.title.length - b.title.length)[0];
+// El nombre de la fase tiene que coincidir COMPLETO, no como prefijo.
+//
+// `startsWith` mordió dos veces. La primera con F1/F10/F11, y se «arregló»
+// ordenando por longitud y tomando el más corto — que es peor, porque entonces
+// pedir F5 devuelve **F5b**: "F5b · Franja adulta" es más corto que
+// "F5 · Contenido kinder — RUTA CRÍTICA" y gana el desempate.
+//
+// Lo correcto no es desempatar mejor: es que no haya empate. El título empieza
+// con la fase seguida de un separador —espacio o punto medio— así que `F5` no
+// puede casar con `F5b` porque después de `F5` viene una `b`, no un separador.
+const item = items.find((i) => new RegExp(`^${fase}(\\s|·|$)`).test(i.title));
 
 if (!item) {
   console.error(`✗ no encontré la fase "${fase}" en el tablero.`);

@@ -19,11 +19,11 @@
 ## Executive summary (EN)
 
 - Van Hiele's five levels of geometric thought (visualization, analysis, informal deduction, formal deduction, rigor) are **sequential and instruction-dependent, not age-dependent** [1][8].
-- Spatial reasoning is trainable: Uttal et al.'s (2013) meta-analysis of 217 studies found g=0.47 (g=0.61 for children under 13), transferring to untrained spatial tasks [2][3].
+- Spatial reasoning is trainable: Uttal et al.'s (2013) meta-analysis of 217 studies found g=0,47 (g=0,61 for children under 13), transferring to untrained spatial tasks [2][3].
 - Uttal's intrinsic/extrinsic × static/dynamic 2×2 taxonomy is the most-cited frame for classifying which spatial skill an activity trains; more recent meta-analyses confirm spatial skill reliably correlates with math performance across ages [11][14].
 - Tangrams and pattern blocks have a millennia-old Chinese lineage; their documented value is shape composition/decomposition, congruence, area, and perimeter through direct manipulation [6][9].
 - Origami blends art and applied mathematics (fold geometry, Kawasaki's theorem) and is used for spatial visualization across education levels [9].
-- Dynamic geometry environments (GeoGebra, Cabri) show consistently positive effects on conceptual understanding and retention (up to g≈0.96 in a 29-study meta-analysis) — though short interventions and small classes inflate the effect, a possible Hawthorne effect [5][7].
+- Dynamic geometry environments (GeoGebra, Cabri) show consistently positive effects on conceptual understanding and retention (up to g≈0,96 in a 29-study meta-analysis) — though short interventions and small classes inflate the effect, a possible Hawthorne effect [5][7].
 - Cabri-type software documents students shifting from visual to geometric strategies, but also the risk that dragging-and-seeing-it-hold substitutes for real mathematical justification [7].
 - Two-column proof has dominated US instruction since 1913; professional mathematical writing is narrative, and each format trades off differently by proof length [8].
 - Touchscreen-specific research already exists: the "Geometric Constructer" software (Italian secondary students) found finger-dragging changes geometric reasoning relative to mouse-dragging [12].

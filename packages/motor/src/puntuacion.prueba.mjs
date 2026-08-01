@@ -67,6 +67,32 @@ caso("un nivel 8 vale como ~30 sumas de nivel 1 — ninguna estrategia domina", 
   if (razon < 25 || razon > 32) throw new Error(`razón ${razon.toFixed(1)}, D-010 dice ~30`);
 });
 
+caso("calificar() PESA por dificultad en HSHS — no solo valorDelItem() (bug #189)", () => {
+  // El caso de arriba comprobaba `valorDelItem(8) / valorDelItem(1)` **en
+  // aislamiento**, y por eso pasó en verde mientras `calificar()` ignoraba el
+  // peso por completo. Es la misma forma del error que ya vivió aquí con la
+  // escalera de 10 niveles: la prueba defendía el bug en vez de cazarlo.
+  //
+  // Este mira lo que de verdad se le da a un niño: el resultado de `calificar`.
+  const p = (n) => calificar({ banda: "PRIMARIA", nivel: n, acc: 1, rtMs: 10000 }).puntos;
+
+  const razon = p(8) / p(1);
+  if (razon < 25 || razon > 32) {
+    throw new Error(
+      `un nivel 8 puntúa ${razon.toFixed(1)}× un nivel 1 y D-010 pide ~30. ` +
+        "Con razón 1, moler nivel 1 es estrictamente dominante: más ítems por " +
+        "minuto y los mismos puntos por ítem.",
+    );
+  }
+  if (!(p(12) > p(8))) throw new Error("un nivel 12 tiene que valer más que un nivel 8");
+  if (!(p(2) > p(1))) throw new Error("la escalera tiene que ser monótona");
+  if (!(p(8) > p(1) * 20)) throw new Error("un ítem difícil no se compensa con veinte fáciles");
+
+  // El peso también se aplica al castigo: adivinar en un nivel alto cuesta más.
+  const f = (n) => calificar({ banda: "PRIMARIA", nivel: n, acc: 0, rtMs: 1000 }).puntos;
+  if (!(f(8) < f(1))) throw new Error("fallar en nivel 8 tiene que restar más que en nivel 1");
+});
+
 caso("la escalera de D-017 son DOCE niveles, no diez", () => {
   // Este caso empezó afirmando 1..10 y estaba mal: rechazaba N11 y N12, que son
   // exactamente los de PRO según D-017. El criterio de F3 lo cazó al listar

@@ -53,7 +53,11 @@ const archivos = execFileSync("git", ["ls-files", "--cached", "--others", "--exc
   .map((s) => s.trim())
   .filter(Boolean)
   .filter((f) => /\.(astro|tsx|jsx|ts|js|mjs|html|svelte|vue)$/.test(f))
-  .filter((f) => !/^(node_modules|dist|\.astro|audits\/telemetria-infantil\.mjs)/.test(f));
+  // `audits/` entero, no solo este archivo. Nada de ahí se sirve a un
+  // navegador, y `audits/pruebas-auditores.mjs` TIENE que contener la cadena del
+  // beacon: es el caso que demuestra que este auditor bloquea. Excluirse solo a
+  // sí mismo dejaba que la prueba de que funciona lo hiciera fallar.
+  .filter((f) => !/^(node_modules|dist|\.astro|audits\/)/.test(f));
 
 if (archivos.length === 0) {
   console.error("✗ telemetria-infantil — 0 archivos escaneados.");

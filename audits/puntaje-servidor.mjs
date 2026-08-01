@@ -19,7 +19,7 @@
 // `motor-puntuacion.mjs`, que compara la fórmula contra D-010. Aquí solo se
 // vigila de dónde sale el número.
 
-import { archivos, leer, informar } from "./lib/repo.mjs";
+import { archivos, leer, informar, RAIZ } from "./lib/repo.mjs";
 
 /** Endpoints: lo que corre en el servidor. */
 const ES_SERVIDOR = /(\/api\/|\/functions\/|worker|server|\.server\.|durable)/i;
@@ -66,6 +66,64 @@ for (const archivo of fuentes) {
     }
   }
 }
+
+
+// --- 2. El motor no viaja al navegador (criterio #32 de F3) ----------------
+//
+// La otra mitad de "el servidor califica": si la fórmula de D-010 se empaqueta
+// en el JavaScript del cliente, cualquiera la lee, la entiende y sabe
+// exactamente qué mandar. No es que el cliente pudiera puntuar — es que le
+// entregamos el mapa.
+//
+// Se mira el JS que de verdad se sirve, no los imports del código fuente: un
+// `import type` desaparece al compilar y un import normal no. La diferencia solo
+// se ve en `dist`.
+import { readdirSync, statSync } from "node:fs";
+
+const FIRMAS_DEL_MOTOR = [
+  [/2\s*\*\s*acc\s*-\s*1/, "la fórmula HSHS de D-010"],
+  [/kinder-precision/, "la regla de kinder (D-024)"],
+  [/1\.6\s*,\s*nivel\s*-\s*1|Math\.pow\(\s*1\.6/, "el valor del ítem 10 × 1.6^(n−1)"],
+];
+
+function jsDeCliente(dir, salida = []) {
+  let entradas;
+  try {
+    entradas = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return salida;
+  }
+  for (const e of entradas) {
+    const ruta = `${dir}/${e.name}`;
+    // `_worker.js` es el servidor. Lo que viaja al navegador es todo lo demás.
+    if (e.isDirectory()) {
+      if (e.name === "_worker.js") continue;
+      jsDeCliente(ruta, salida);
+    } else if (e.name.endsWith(".js") || e.name.endsWith(".mjs")) {
+      salida.push(ruta);
+    }
+  }
+  return salida;
+}
+
+const bundles = jsDeCliente(`${RAIZ}apps/web/dist`);
+for (const b of bundles) {
+  const t = leer(b.slice(RAIZ.length)) ?? "";
+  for (const [re, que] of FIRMAS_DEL_MOTOR) {
+    if (re.test(t)) {
+      problemas.push(
+        `${b.slice(RAIZ.length)}: ${que} está en el bundle de CLIENTE. ` +
+          "Criterio #32 de F3 y mc-29 impl. 12: la fórmula en el navegador es el mapa " +
+          "para saber qué mandar. El motor se queda en el servidor.",
+      );
+    }
+  }
+}
+notas.push(
+  bundles.length > 0
+    ? `${bundles.length} archivo(s) de JS de cliente revisados, ninguno con la fórmula`
+    : "no hay dist/ construido: el motor en el cliente NO se comprobó en esta corrida",
+);
 
 if (endpoints === 0) {
   notas.push("todavía no hay endpoints de servidor con puntaje; el auditor espera al primero");

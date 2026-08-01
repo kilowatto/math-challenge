@@ -25,5 +25,20 @@
   // Los intentos crudos van aquí, no a D1 (mc-32 riesgo #1).
   "analytics_engine_datasets": [
     { "binding": "ATTEMPTS_AE", "dataset": "math-challenge-attempts-ae" }
+  ],
+
+  // Una sesión de reto = una instancia. NUNCA una global: un Durable Object es
+  // de un solo hilo, así que uno global pondría todos los retos del producto
+  // detrás de una cola (mc-32). `audits/do-por-entidad.mjs` lo hace cumplir.
+  "durable_objects": {
+    "bindings": [
+      { "name": "SESION_RETO_DO", "class_name": "SesionReto" }
+    ]
+  },
+
+  // SQLite y no el almacenamiento clásico de clave-valor: es el que Cloudflare
+  // recomienda para objetos nuevos y el único con `new_sqlite_classes`.
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["SesionReto"] }
   ]
 }

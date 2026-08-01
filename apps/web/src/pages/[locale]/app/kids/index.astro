@@ -73,17 +73,35 @@
  *  · **Cero cronómetro**, cero puntos, cero racha. Nada que cuente antes de
  *    entrar (D-024, D-045).
  */
-import { LOCALES, DEFAULT_LOCALE, t, type Locale } from "../../../i18n";
+import { LOCALES, DEFAULT_LOCALE, t, type Locale } from "../../../../i18n";
 import {
   COOKIE_HOGAR,
   leerCookies,
   leerDispositivoDelHogar,
-} from "../../../lib/sesiones";
-import "../../../styles/fonts.css";
-import "../../../styles/tokens.css";
-import "../../../styles/bandas.css";
+} from "../../../../lib/sesiones";
+import "../../../../styles/fonts.css";
+import "../../../../styles/tokens.css";
+import "../../../../styles/bandas.css";
 
 export const prerender = false;
+
+/**
+ * ─── Por qué esta pantalla vive bajo `[locale]/` y no bajo `/app/` ──────────
+ *
+ * **MEDIDO:** cualquier página bajo `src/pages/app/` sin segmento de locale
+ * devuelve **404**, porque la configuración de i18n de Astro espera locale en
+ * toda ruta. La primera versión estaba en `/app/kids/` y el guardián de D-012
+ * funcionaba perfectamente —`Location: /app/signin`, `no-store`, `Vary: cookie`—
+ * **sobre un estado 404 que ningún navegador sigue**. La tablet sin marcar se
+ * quedaba en «no encontrado» en vez de ir a la puerta del adulto.
+ *
+ * Se comprobó contra `wrangler dev`: `/es-MX/app/perfil-nuevo/` daba 302 y
+ * `/app/kids/` y `/app/signin` daban 404, con el mismo código dentro.
+ *
+ * Y no lleva `getStaticPaths`: Astro lo IGNORA en páginas bajo demanda y avisa
+ * de ello. El locale sale de `Astro.params`, validado como en el resto del sitio.
+ */
+
 
 /**
  * Nunca en caché, en ningún intermediario.
@@ -98,7 +116,20 @@ Astro.response.headers.set("vary", "cookie");
 Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
 Astro.response.headers.set("referrer-policy", "same-origin");
 
-const SIGNIN = "/app/signin";
+// Función y no constante: `locale` se resuelve más abajo, y una constante
+// aquí lo leía antes de existir — 500 en la única pantalla que un niño abre.
+// El locale de la URL, disponible ANTES de tocar la base de datos.
+//
+// Dos intentos anteriores fallaron por lo mismo —una constante que leía algo
+// declarado más abajo— y los dos daban 500 en la única pantalla que abre un
+// niño. `Astro.params` existe desde la primera línea; `localeDeLaCasa()` no,
+// porque necesita los perfiles, y los perfiles necesitan la base.
+//
+// Además es lo correcto para esta puerta: si el dispositivo no está marcado no
+// hay perfiles que consultar, así que el idioma de la cuenta no se puede saber.
+// El de la URL es el único que existe en ese momento.
+const localeUrl = String(Astro.params.locale ?? "en");
+const SIGNIN = `/${localeUrl}/app/signin`;
 
 /**
  * La negativa, con sus propias cabeceras.
@@ -131,15 +162,30 @@ const SIGNIN = "/app/signin";
  * atrapa `astro check`.** Se comprueba corriendo la página, o leyendo el
  * `.mjs` compilado.
  */
-const aLaPuertaDelAdulto = () =>
-  new Response(null, {
-    status: 302,
-    headers: {
-      location: SIGNIN,
-      "cache-control": "no-store, private",
-      vary: "cookie",
-    },
-  });
+const aLaPuertaDelAdulto = () => {
+  // ── MEDIDO: un `new Response(null, {status: 302})` devuelto desde el bloque
+  // de guiones de una PÁGINA sale con estado **404**, conservando las cabeceras.
+  //
+  //     HTTP/1.1 404 Not Found
+  //     Location: /app/signin
+  //     Vary: cookie
+  //
+  // O sea, la peor combinación posible: las cabeceras correctas sobre un estado
+  // que ningún navegador sigue. La tablet de la casa se quedaba en «no
+  // encontrado» en vez de ir a la puerta del adulto.
+  //
+  // `Astro.redirect()` sí produce un 302 de verdad, y las cabeceras se le
+  // añaden encima — que era justo lo que el comentario anterior daba por
+  // imposible. Se comprobó de las dos formas contra `wrangler dev`.
+  const r = Astro.redirect(SIGNIN, 302);
+  // `no-store` porque la respuesta depende de `mc_h`: un 302 cacheado por un
+  // intermediario seguiría mandando a la puerta del adulto DESPUÉS de que el
+  // papá marcara el dispositivo, y el síntoma —«la tablet ya no reconoce a los
+  // niños»— no apuntaría nunca a una caché.
+  r.headers.set("cache-control", "no-store, private");
+  r.headers.set("vary", "cookie");
+  return r;
+};
 
 /**
  * A dónde lleva tocar una cara: al PIN de tres imágenes (D-012, `mc-25`).

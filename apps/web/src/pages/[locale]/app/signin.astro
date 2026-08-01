@@ -1,0 +1,147 @@
+---
+/**
+ * `/app/signin` — la puerta del adulto. Criterio #117, D-012.
+ *
+ * ─── Existe porque `/app/kids` necesita a dónde mandar, y no había nada ────
+ *
+ * D-012 dice que `/app/kids` **no renderiza una sola cara** si el dispositivo no
+ * trae `mc_h`, y que en ese caso manda aquí — **nunca a un formulario dirigido a
+ * un niño**. Esa redirección se escribió antes que su destino, así que apuntaba
+ * a un 404: la tablet que no está marcada como de la casa se quedaba en «no
+ * encontrado», que para el papá parece que la aplicación se rompió.
+ *
+ * ─── Qué NO es esta pantalla ───────────────────────────────────────────────
+ *
+ * **No es un formulario de inicio de sesión todavía.** No hay ruta de entrada
+ * construida (eso es lo que falta de #112), así que esto explica dónde está la
+ * persona y la manda a registrarse o a la portada. Poner aquí un formulario que
+ * no funciona sería peor que no ponerlo.
+ *
+ * **No pide nada de un niño.** Es superficie de adulto: tipografía del sistema
+ * en los controles, blancos de 44px, y ni una palabra dirigida a un menor.
+ *
+ * ─── El locale ─────────────────────────────────────────────────────────────
+ *
+ * Esta ruta NO lleva locale en el camino, porque la redirección de `/app/kids`
+ * tampoco lo lleva —el dispositivo del hogar no sabe en qué idioma está la
+ * cuenta hasta que hay sesión—. Se toma de `Accept-Language`, y si no coincide
+ * con ninguno de los siete, `en`. Es el único sitio del producto donde el idioma
+ * se adivina, y se adivina porque la alternativa es no decir nada.
+ */
+import Base from "../../../layouts/Base.astro";
+import { LOCALES, t, type Locale } from "../../../i18n";
+import { ruta } from "../../../i18n/rutas";
+
+export const prerender = false;
+
+/**
+ * ─── Por qué esta pantalla vive bajo `[locale]/` y no bajo `/app/` ──────────
+ *
+ * **MEDIDO:** cualquier página bajo `src/pages/app/` sin segmento de locale
+ * devuelve **404**, porque la configuración de i18n de Astro espera locale en
+ * toda ruta. La primera versión estaba en `/app/kids/` y el guardián de D-012
+ * funcionaba perfectamente —`Location: /app/signin`, `no-store`, `Vary: cookie`—
+ * **sobre un estado 404 que ningún navegador sigue**. La tablet sin marcar se
+ * quedaba en «no encontrado» en vez de ir a la puerta del adulto.
+ *
+ * Se comprobó contra `wrangler dev`: `/es-MX/app/perfil-nuevo/` daba 302 y
+ * `/app/kids/` y `/app/signin` daban 404, con el mismo código dentro.
+ *
+ * Y no lleva `getStaticPaths`: Astro lo IGNORA en páginas bajo demanda y avisa
+ * de ello. El locale sale de `Astro.params`, validado como en el resto del sitio.
+ */
+
+
+/** El locale del encabezado, validado contra la lista cerrada. */
+function localeDelNavegador(): Locale {
+  const cabecera = Astro.request.headers.get("accept-language") ?? "";
+  for (const trozo of cabecera.split(",")) {
+    const etiqueta = trozo.split(";")[0].trim();
+    // Coincidencia exacta primero: `pt-BR` y `pt-PT` son locales distintos y
+    // quedarse con el primer `pt` que aparezca los confundiría.
+    const exacto = LOCALES.find((l) => l.toLowerCase() === etiqueta.toLowerCase());
+    if (exacto) return exacto;
+    const idioma = etiqueta.split("-")[0].toLowerCase();
+    const parcial = LOCALES.find((l) => l.toLowerCase().startsWith(idioma));
+    if (parcial) return parcial;
+  }
+  return "en";
+}
+
+const locale = localeDelNavegador();
+const m = t(locale);
+
+// No se indexa: es una pantalla de estado, no contenido.
+Astro.response.headers.set("x-robots-tag", "noindex");
+Astro.response.headers.set("cache-control", "no-store, private");
+---
+
+<Base locale={locale} seccion={null} title={m.signinTitle} description={m.signinLead}>
+  <article class="signin">
+    <h1>{m.signinTitle}</h1>
+    <p class="lead">{m.signinLead}</p>
+    <p class="muted">{m.signinDeviceWhy}</p>
+
+    <div class="acciones">
+      <a class="boton" href={ruta(locale, "registro-padre")}>{m.signinCreateAccount}</a>
+      <a class="secundario" href={`/${locale}/`}>{m.signinBackHome}</a>
+    </div>
+  </article>
+
+  <style>
+    .signin {
+      max-width: var(--measure);
+      margin-inline: auto;
+      padding-block: calc(var(--space) * 3);
+    }
+    h1 {
+      font-family: var(--font-marca);
+      font-weight: var(--weight-title);
+      font-size: var(--text-xl);
+      color: var(--color-text-brand);
+      margin-block-end: var(--space);
+    }
+    .lead {
+      font-family: var(--font-marca);
+      font-size: var(--text-lg);
+      line-height: var(--leading-body);
+      margin-block-end: var(--space);
+    }
+    .muted {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      line-height: var(--leading-body);
+    }
+    .acciones {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space);
+      margin-block-start: calc(var(--space) * 2);
+    }
+    /* Superficie de adulto: 44px es el mínimo de HIG, muy por encima de los
+       24px de WCAG 2.2. Tipografía del sistema en los controles (D-036). */
+    .boton, .secundario {
+      display: inline-flex;
+      align-items: center;
+      min-block-size: var(--tap-primaria);
+      padding-inline: calc(var(--space) * 1.5);
+      font-family: var(--font-sistema);
+      font-size: var(--text-base);
+      border-radius: var(--radius);
+      text-decoration: none;
+    }
+    .boton {
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+      font-weight: var(--weight-subtitle);
+    }
+    .secundario {
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+    .boton:focus-visible, .secundario:focus-visible {
+      outline: 3px solid var(--color-text);
+      outline-offset: 2px;
+    }
+  </style>
+</Base>

@@ -29,5 +29,21 @@
   "statusHeading": "Situação",
   "status": "Em construção. Ainda sem versão pública.",
   "sponsor": "Um projeto da Ignia, sobre Cloudflare.",
-  "repoLink": "Código aberto, AGPL-3.0"
+  "repoLink": "Código aberto, AGPL-3.0",
+  "signupParentTitle": "Crie a conta da sua família",
+  "signupParentLead": "Uma conta para o adulto. Cada criança é um perfil dentro dela — nunca um usuário, nunca um e-mail próprio.",
+  "signupTeacherTitle": "Crie a conta da sua turma",
+  "signupTeacherLead": "Uma conta para você. Seus alunos entram como perfis; não se cadastram e nunca digitam o nome.",
+  "signupLearnerTitle": "Crie sua conta",
+  "signupLearnerLead": "Para você, que aprende matemática por conta própria. A mesma conta, os mesmos dois campos.",
+  "signupEmail": "E-mail",
+  "signupPassword": "Senha",
+  "signupPasskeyCta": "Continuar com uma chave de acesso",
+  "signupPasswordCta": "Criar conta",
+  "signupPasswordHint": "Oito caracteres ou mais. Sem regras de maiúscula e número: o que importa é o comprimento, e essas regras só fazem as pessoas anotarem a senha num papel.",
+  "signupTwoFields": "Dois campos. Esse é o formulário inteiro.",
+  "signupWhyTwo": "Todo o resto é pedido depois, no momento em que faz falta e onde dá para explicar por quê. Ir de quatro campos para três aumentou os cadastros em cerca de metade em 40.000 formulários.",
+  "signupHaveAccount": "Já tem conta?",
+  "signupSignIn": "Entrar",
+  "signupNoChildData": "Nunca pedimos o nome, o e-mail, a foto nem a data de nascimento de uma criança."
 }

@@ -25,6 +25,7 @@ import CodigoAbierto from "../../../components/paginas/CodigoAbierto.astro";
 import Investigacion from "../../../components/paginas/Investigacion.astro";
 import Niveles from "../../../components/paginas/Niveles.astro";
 import Origen from "../../../components/paginas/Origen.astro";
+import Registro from "../../../components/paginas/Registro.astro";
 
 export function getStaticPaths() {
   return LOCALES.flatMap((locale) =>
@@ -56,9 +57,19 @@ const PAGINAS: Record<Seccion, typeof Arquitectura> = {
   "investigacion": Investigacion,
   "niveles": Niveles,
   "origen": Origen,
+  // Las tres puertas comparten componente: lo que cambia es la URL y el texto
+  // (D-026). El componente recibe `seccion` y saca de ahi su copia y su intent.
+  "registro-padre": Registro,
+  "registro-maestro": Registro,
+  "registro-aprendo": Registro,
 };
 
 const Pagina = PAGINAS[seccion];
 ---
 
-<Pagina locale={locale} />
+<!--
+  `seccion` viaja al componente ademas de `locale`. Las cinco paginas de
+  contenido la ignoran; las tres puertas de registro la NECESITAN, porque es lo
+  unico que las distingue entre si (D-026: mismo formulario, distinta puerta).
+-->
+<Pagina locale={locale} seccion={seccion} />

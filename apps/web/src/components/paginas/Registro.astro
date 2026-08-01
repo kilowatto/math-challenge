@@ -1,0 +1,271 @@
+---
+/**
+ * Las tres puertas de registro. Criterios #111, #112 de F2 · D-026, D-038.
+ *
+ * ─── Un componente, tres URLs ──────────────────────────────────────────────
+ *
+ * `/{locale}/registro-padre/`, `/{locale}/registro-maestro/`,
+ * `/{locale}/registro-aprendo/` — con el segmento en el idioma de cada locale
+ * (D-049): `anmeldung-eltern`, `cadastro-responsavel`, `inscription-parent`.
+ *
+ * **Lo que cambia entre las tres es la URL y el texto. El formulario es el
+ * mismo, byte a byte.** `signup_intent` sale de POR DÓNDE entró la persona
+ * —intención observada, no declarada— y por eso no hay un tercer campo que
+ * pregunte "¿eres papá o maestro?": ese campo costaría una conversión medible a
+ * cambio de un dato menos fiable que el que ya tenemos.
+ *
+ * ─── Dos campos, y el segundo desaparece si hay passkey ────────────────────
+ *
+ * D-026 fija dos. Con passkey (D-038) son **un campo y un gesto**: el correo, y
+ * el autenticador del sistema operativo. La contraseña solo se pinta cuando el
+ * navegador dice que no tiene autenticador de plataforma, y **se cae en
+ * silencio** — sin "tu navegador no soporta llaves de acceso", que en el primer
+ * contacto con el producto le echa la culpa al aparato de quien llega, y en
+ * Android de gama baja va a pasar mucho.
+ *
+ * La detección corre en el cliente. El servidor pinta los DOS campos y el
+ * script esconde la contraseña si detecta passkey: al revés —esconderla por
+ * defecto y mostrarla si falla— dejaría a quien navega sin JavaScript con un
+ * formulario que no se puede enviar.
+ *
+ * ─── Lo que esta pantalla NO tiene, a propósito ────────────────────────────
+ *
+ *  · **Ninguna casilla marcada de antemano, y ninguna de marketing.** El
+ *    criterio #111 lo dice con esas palabras.
+ *  · **Ningún carrusel.** NN/g lo desaconseja por nombre y midió que no mejora
+ *    el desempeño en la tarea. No hay `step-1-of-3` en ninguna parte.
+ *  · **Ningún dato de un niño.** Aquí se crea la cuenta del ADULTO. El perfil
+ *    del hijo llega después, en su propia pantalla, y ni ahí se pide nombre
+ *    real, correo, foto ni fecha de nacimiento (línea roja #2).
+ *
+ * ─── Móvil primero, y PWA primero ──────────────────────────────────────────
+ *
+ * Una sola columna que nunca pasa de `--measure`. Los controles miden al menos
+ * `--tap-primaria` (44px, el mínimo de HIG) porque esta es superficie de adulto;
+ * el mínimo de WCAG 2.2 es 24px y se supera de sobra. `inputmode` y
+ * `autocomplete` puestos para que el teclado del teléfono llegue correcto a la
+ * primera — en un formulario de dos campos, un teclado equivocado es una
+ * fracción enorme del trabajo total.
+ */
+import Base from "../../layouts/Base.astro";
+import { t, type Locale } from "../../i18n";
+import type { Seccion } from "../../i18n/rutas";
+
+interface Props {
+  locale: Locale;
+  seccion: Extract<Seccion, "registro-padre" | "registro-maestro" | "registro-aprendo">;
+}
+const { locale, seccion } = Astro.props as Props;
+
+/**
+ * Puerta → textos e intención. `intent` es lo que se guarda en
+ * `users.signup_intent`, y coincide con el CHECK de la migración 0003.
+ */
+const PUERTAS = {
+  "registro-padre": { titulo: "signupParentTitle", lead: "signupParentLead", intent: "PADRE" },
+  "registro-maestro": { titulo: "signupTeacherTitle", lead: "signupTeacherLead", intent: "MAESTRO" },
+  "registro-aprendo": { titulo: "signupLearnerTitle", lead: "signupLearnerLead", intent: "ADULTO_APRENDE" },
+} as const;
+
+const m = t(locale);
+const puerta = PUERTAS[seccion];
+const titulo = m[puerta.titulo];
+const lead = m[puerta.lead];
+---
+
+<Base locale={locale} seccion={seccion} title={titulo} description={lead}>
+  <article class="registro">
+    <h1>{titulo}</h1>
+    <p class="lead">{lead}</p>
+
+    <form method="post" action="/api/registro" id="form-registro" novalidate>
+      <!--
+        La intención NO es un campo que alguien llene: es un `hidden` que sale de
+        la URL por la que entró. El auditor `signup-dos-campos` no lo cuenta —los
+        `hidden` están excluidos por el criterio #111— y aquí eso es correcto,
+        porque nadie lo escribe ni lo ve.
+      -->
+      <input type="hidden" name="intent" value={puerta.intent} />
+
+      <div class="campo">
+        <label for="correo">{m.signupEmail}</label>
+        <input
+          type="email"
+          id="correo"
+          name="correo"
+          required
+          autocomplete="username webauthn"
+          inputmode="email"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <div class="campo" id="campo-clave">
+        <label for="clave">{m.signupPassword}</label>
+        <input
+          type="password"
+          id="clave"
+          name="clave"
+          required
+          minlength="8"
+          maxlength="64"
+          autocomplete="new-password"
+        />
+        <p class="pista" id="pista-clave">{m.signupPasswordHint}</p>
+      </div>
+
+      <button type="submit" id="enviar">{m.signupPasswordCta}</button>
+    </form>
+
+    <p class="dos-campos"><strong>{m.signupTwoFields}</strong></p>
+    <p class="muted">{m.signupWhyTwo}</p>
+    <p class="muted">{m.signupNoChildData}</p>
+  </article>
+
+  <style>
+    /* Una sola columna, móvil primero. Nada crece más allá de --measure porque
+       una línea larga de más se lee peor, y esta pantalla la lee alguien que
+       está decidiendo si sigue. */
+    .registro {
+      max-width: var(--measure);
+      margin-inline: auto;
+      padding-block: calc(var(--space) * 2);
+    }
+
+    /* D-036: el título en la tipografía de la marca. El naranja de Ignia da
+       3.03:1 sobre blanco, así que SOLO sirve aquí, a tamaño grande, donde el
+       umbral aplicable es 3:1 — nunca en el texto del formulario. */
+    h1 {
+      font-family: var(--font-marca);
+      font-weight: var(--weight-title);
+      font-size: var(--text-xl);
+      color: var(--color-text-brand);
+      margin-block-end: var(--space);
+    }
+
+    .lead {
+      font-family: var(--font-marca);
+      font-size: var(--text-lg);
+      line-height: var(--leading-body);
+      color: var(--color-text);
+      margin-block-end: calc(var(--space) * 2);
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--space) * 1.5);
+    }
+
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--space) * 0.5);
+    }
+
+    /* D-036: los controles en la tipografía del sistema. Un campo con
+       tipografía ajena se siente web, y mc-22 documenta que los adolescentes
+       abandonan sin poder decir por qué. */
+    label {
+      font-family: var(--font-sistema);
+      font-weight: var(--weight-subtitle);
+      color: var(--color-text);
+    }
+
+    input {
+      font-family: var(--font-sistema);
+      /* 16px o más: por debajo de eso Safari en iOS hace zoom al enfocar, y ese
+         zoom deja el formulario a medias fuera de la pantalla. */
+      font-size: var(--text-base);
+      min-height: var(--tap-primaria);
+      padding-inline: calc(var(--space) * 0.75);
+      color: var(--color-text);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+    }
+
+    input:focus-visible {
+      outline: 3px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    button {
+      font-family: var(--font-sistema);
+      font-size: var(--text-base);
+      font-weight: var(--weight-subtitle);
+      min-height: var(--tap-primaria);
+      padding-inline: calc(var(--space) * 1.5);
+      color: var(--color-on-accent);
+      background: var(--color-accent);
+      border: 0;
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--color-accent-hover); }
+    button:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+
+    .pista, .muted {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      line-height: var(--leading-body);
+    }
+
+    .dos-campos {
+      margin-block-start: calc(var(--space) * 2);
+      font-family: var(--font-marca);
+      color: var(--color-text);
+    }
+  </style>
+
+  <script>
+    /**
+     * Passkey primero, y la caída es SILENCIOSA (D-038).
+     *
+     * Si el dispositivo tiene autenticador de plataforma, se esconde el campo de
+     * contraseña y el botón cambia de texto. Si no lo tiene, no pasa nada: la
+     * página ya venía con los dos campos pintados por el servidor.
+     *
+     * Ese orden importa. Pintar solo el correo y añadir la contraseña por
+     * JavaScript dejaría a quien navega sin JS con un formulario imposible de
+     * enviar, y `mc-33` documenta que el JavaScript falla más veces de las que
+     * nadie cree en el dispositivo de referencia.
+     *
+     * Lo que NO se hace: decirle a nadie que su navegador no soporta llaves de
+     * acceso. En el primer contacto con el producto eso le echa la culpa a su
+     * aparato, y en Android de gama baja va a pasar mucho.
+     */
+    const campoClave = document.getElementById("campo-clave");
+    const clave = document.getElementById("clave") as HTMLInputElement | null;
+    const enviar = document.getElementById("enviar");
+
+    async function hayPasskey(): Promise<boolean> {
+      if (!("PublicKeyCredential" in window)) return false;
+      const PKC = window.PublicKeyCredential as unknown as {
+        isUserVerifyingPlatformAuthenticatorAvailable?: () => Promise<boolean>;
+      };
+      if (typeof PKC.isUserVerifyingPlatformAuthenticatorAvailable !== "function") return false;
+      try {
+        return await PKC.isUserVerifyingPlatformAuthenticatorAvailable();
+      } catch {
+        // Un autenticador que lanza es un autenticador que no hay. No se
+        // reintenta ni se avisa: se sigue por contraseña.
+        return false;
+      }
+    }
+
+    void hayPasskey().then((disponible) => {
+      if (!disponible || !campoClave || !clave || !enviar) return;
+      campoClave.hidden = true;
+      // `required` se quita además de esconder: un campo `required` invisible
+      // bloquea el envío con un mensaje del navegador que apunta a algo que no
+      // se ve, y es de los errores de formulario más difíciles de diagnosticar.
+      clave.required = false;
+      clave.disabled = true;
+      enviar.textContent = enviar.dataset.passkey ?? enviar.textContent;
+    });
+  </script>
+</Base>

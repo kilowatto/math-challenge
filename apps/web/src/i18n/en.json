@@ -29,5 +29,21 @@
   "statusHeading": "Status",
   "status": "In construction. No public release yet.",
   "sponsor": "A project by Ignia, running on Cloudflare.",
-  "repoLink": "Open source, AGPL-3.0"
+  "repoLink": "Open source, AGPL-3.0",
+  "signupParentTitle": "Create your family account",
+  "signupParentLead": "One account for the grown-up. Each child is a profile inside it — never a user, never an email address of their own.",
+  "signupTeacherTitle": "Create your classroom account",
+  "signupTeacherLead": "One account for you. Your students join as profiles; they never sign up, and they never type their name.",
+  "signupLearnerTitle": "Create your account",
+  "signupLearnerLead": "For you, learning maths for yourself. Same account, same two fields.",
+  "signupEmail": "Email",
+  "signupPassword": "Password",
+  "signupPasskeyCta": "Continue with a passkey",
+  "signupPasswordCta": "Create account",
+  "signupPasswordHint": "At least 8 characters. No uppercase-and-a-number rules: length is what matters, and those rules just produce passwords people write down.",
+  "signupTwoFields": "Two fields. That is the whole form.",
+  "signupWhyTwo": "Everything else is asked later, in the moment it is needed, where we can explain why. Going from four fields to three raised completions by about half in 40,000 forms.",
+  "signupHaveAccount": "Already have an account?",
+  "signupSignIn": "Sign in",
+  "signupNoChildData": "We never ask for a child's name, email, photo or date of birth."
 }

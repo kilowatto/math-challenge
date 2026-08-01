@@ -29,5 +29,21 @@
   "statusHeading": "État",
   "status": "En construction. Pas encore de version publique.",
   "sponsor": "Un projet d'Ignia, sur Cloudflare.",
-  "repoLink": "Code ouvert, AGPL-3.0"
+  "repoLink": "Code ouvert, AGPL-3.0",
+  "signupParentTitle": "Créez le compte de votre famille",
+  "signupParentLead": "Un compte pour l'adulte. Chaque enfant est un profil à l'intérieur — jamais un utilisateur, jamais une adresse e-mail à lui.",
+  "signupTeacherTitle": "Créez le compte de votre classe",
+  "signupTeacherLead": "Un compte pour vous. Vos élèves entrent comme profils ; ils ne s'inscrivent pas et n'écrivent jamais leur nom.",
+  "signupLearnerTitle": "Créez votre compte",
+  "signupLearnerLead": "Pour vous, qui apprenez les mathématiques pour vous-même. Le même compte, les mêmes deux champs.",
+  "signupEmail": "E-mail",
+  "signupPassword": "Mot de passe",
+  "signupPasskeyCta": "Continuer avec une clé d'accès",
+  "signupPasswordCta": "Créer le compte",
+  "signupPasswordHint": "Huit caractères au minimum. Aucune règle de majuscule ni de chiffre : c'est la longueur qui compte, et ces règles ne font qu'obliger les gens à noter leur mot de passe.",
+  "signupTwoFields": "Deux champs. C'est tout le formulaire.",
+  "signupWhyTwo": "Tout le reste est demandé plus tard, au moment où c'est nécessaire et où l'on peut en expliquer la raison. Passer de quatre champs à trois a augmenté les inscriptions d'environ la moitié sur 40 000 formulaires.",
+  "signupHaveAccount": "Vous avez déjà un compte ?",
+  "signupSignIn": "Se connecter",
+  "signupNoChildData": "Nous ne demandons jamais le nom, l'e-mail, la photo ni la date de naissance d'un enfant."
 }

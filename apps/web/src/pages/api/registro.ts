@@ -1,0 +1,220 @@
+/**
+ * `POST /api/registro` — nace la cuenta de un ADULTO. Criterios #111, #112, #113.
+ *
+ * ─── Lo que este endpoint no acepta, aunque se lo manden ───────────────────
+ *
+ * **Nada de un niño.** No hay campo para el nombre del hijo, ni para su edad, ni
+ * para su foto. El perfil del niño se crea después, en su propia pantalla, y ni
+ * ahí se pide nombre real ni fecha de nacimiento (línea roja #2). Si alguien
+ * manda esos campos por curl, se ignoran: no se leen del cuerpo.
+ *
+ * **Ningún campo que el formulario no tenga.** Se leen exactamente tres cosas —
+ * correo, contraseña e intención— y la intención no la escribe nadie: viene del
+ * `hidden` que la puerta puso, y se valida contra la lista cerrada. Un `intent`
+ * inventado no crea una cuenta con un rol raro; falla.
+ *
+ * ─── Las tres cosas que hace, en orden, y por qué ese orden ────────────────
+ *
+ *  1. Valida. Barato, y sin tocar la base.
+ *  2. **Hashea antes de consultar si el correo existe.** Ver `MISMO_TIEMPO`.
+ *  3. Escribe usuario + contraseña, abre sesión, responde con `Set-Cookie`.
+ *
+ * ─── Por qué la respuesta no dice si el correo ya existía ──────────────────
+ *
+ * Un "ese correo ya está registrado" convierte el formulario en un oráculo:
+ * cualquiera puede preguntarle a la aplicación si una dirección tiene cuenta.
+ * En un producto para familias eso es decir quién usa un producto infantil, que
+ * es exactamente el tipo de dato que `mc-25` protege.
+ *
+ * Así que las dos ramas —correo nuevo y correo repetido— devuelven **la misma
+ * forma de respuesta**, y las dos pagan el mismo costo de CPU: el hash se
+ * calcula SIEMPRE, incluso cuando ya se sabe que no se va a guardar. Sin eso, la
+ * rama del correo repetido volvería 36 ms antes y el oráculo seguiría ahí,
+ * medible con un cronómetro.
+ *
+ * Lo que sí ocurre es distinto: al correo nuevo se le abre sesión; al repetido,
+ * no. Quien ya tiene cuenta recibe la misma pantalla y un correo —cuando el
+ * envío exista— diciéndole que alguien intentó registrarse con su dirección.
+ */
+import type { APIRoute } from "astro";
+import { hashear, largoValido, LARGO_MINIMO, LARGO_MAXIMO } from "../../lib/passwords";
+import { abrirSesionAdulto } from "../../lib/sesiones";
+
+export const prerender = false;
+
+/** Las tres puertas de D-026. Cerrada a propósito: coincide con el CHECK de 0003. */
+const INTENCIONES = new Set(["PADRE", "MAESTRO", "ADULTO_APRENDE"]);
+
+/**
+ * Validación de correo deliberadamente laxa.
+ *
+ * No se valida el correo con una expresión regular estricta, y eso es una
+ * decisión, no una omisión: las direcciones válidas del mundo real son mucho más
+ * raras que cualquier regex razonable, y rechazar una dirección legítima en el
+ * primer campo de un formulario de dos es el peor sitio posible para
+ * equivocarse. Se exige lo mínimo indiscutible —una arroba con algo a cada lado,
+ * sin espacios— y la verificación de verdad la hace el correo que se envía.
+ */
+const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface Env {
+  DB: D1Database;
+  SESSION_KV: KVNamespace;
+}
+
+/** Respuesta común. Nunca dice si el correo existía (ver el encabezado). */
+function respuesta(cookies: string[] = [], estado = 200) {
+  const h = new Headers({ "content-type": "application/json; charset=utf-8" });
+  for (const c of cookies) h.append("set-cookie", c);
+  return new Response(JSON.stringify({ ok: true }), { status: estado, headers: h });
+}
+
+function error(motivo: string, estado = 400) {
+  return new Response(JSON.stringify({ ok: false, motivo }), {
+    status: estado,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
+}
+
+export const POST: APIRoute = async ({ request, locals }) => {
+  const env = (locals as any).runtime?.env as Env | undefined;
+  if (!env?.DB || !env?.SESSION_KV) return error("sin_bindings", 503);
+
+  // ── 0-RTT y por qué este endpoint lo rechaza ──────────────────────────────
+  //
+  // La zona tiene 0-RTT activo (verificado en `audits/live.mjs`: «0-RTT activo,
+  // max early data 14336»), y eso es bueno: ahorra un viaje completo de red en
+  // el dispositivo de referencia, un Android de gama baja sobre 4G lento.
+  //
+  // Pero **early data es replicable por diseño**. Un atacante en la ruta puede
+  // capturar los bytes del 0-RTT y reenviarlos; TLS 1.3 no lo impide, y la RFC
+  // 8470 dice literalmente que el servidor no debe procesar en early data nada
+  // que no sea idempotente. Crear una cuenta no lo es.
+  //
+  // Cloudflare marca esas peticiones con `Early-Data: 1`. Se responde **425 Too
+  // Early**, que es el código que la RFC 8470 define para esto: el navegador
+  // reintenta solo, ya con el apretón de manos completo, y el usuario no ve
+  // nada. Se pierde el ahorro de un viaje en la ÚNICA petición del registro que
+  // escribe; el resto del sitio —que es todo lectura— lo conserva entero.
+  if (request.headers.get("early-data") === "1") {
+    return new Response(JSON.stringify({ ok: false, motivo: "reintenta" }), {
+      status: 425,
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
+  // Se acepta `application/x-www-form-urlencoded` porque el formulario funciona
+  // SIN JavaScript: `<form method="post">` manda eso, y `mc-33` documenta que
+  // el JavaScript falla más de lo que nadie cree en el dispositivo de
+  // referencia. JSON se acepta además, para el camino con script.
+  let correo = "", clave = "", intent = "";
+  const tipo = request.headers.get("content-type") ?? "";
+  try {
+    if (tipo.includes("application/json")) {
+      const j = (await request.json()) as Record<string, unknown>;
+      correo = String(j.correo ?? "");
+      clave = String(j.clave ?? "");
+      intent = String(j.intent ?? "");
+    } else {
+      const f = await request.formData();
+      correo = String(f.get("correo") ?? "");
+      clave = String(f.get("clave") ?? "");
+      intent = String(f.get("intent") ?? "");
+    }
+  } catch {
+    return error("cuerpo_ilegible");
+  }
+
+  correo = correo.trim().toLowerCase();
+  if (!CORREO.test(correo) || correo.length > 254) return error("correo_invalido");
+  if (!INTENCIONES.has(intent)) return error("intencion_invalida");
+  if (!largoValido(clave)) {
+    return error(`clave_fuera_de_rango:${LARGO_MINIMO}-${LARGO_MAXIMO}`);
+  }
+
+  // ── MISMO_TIEMPO ──────────────────────────────────────────────────────────
+  // El hash se calcula ANTES de mirar si el correo existe, y se calcula siempre.
+  // Es lo que hace que las dos ramas cuesten lo mismo. Invertir estas dos líneas
+  // —consultar primero y hashear solo si hace falta— reabre el oráculo de
+  // enumeración de cuentas con una diferencia de ~36 ms, medible por la red.
+  const hash = await hashear(clave);
+
+  const ya = await env.DB.prepare("SELECT id FROM users WHERE email = ?")
+    .bind(correo)
+    .first<{ id: string }>();
+
+  if (ya) {
+    // Misma forma, mismo costo, ninguna sesión. Quien ya tiene cuenta no
+    // aprende nada nuevo, y quien está probando direcciones tampoco.
+    return respuesta();
+  }
+
+  const ahora = Math.floor(Date.now() / 1000);
+  const userId = crypto.randomUUID();
+
+  // Los cuatro datos derivados de la petición, ninguno preguntado (migración
+  // 0003). Cloudflare ya sabe el país y la zona horaria de quien se registra;
+  // preguntárselos sería cobrarle un campo por un dato que ya tenemos.
+  const cf = (request as any).cf as { country?: string; timezone?: string } | undefined;
+  const pais = typeof cf?.country === "string" ? cf.country : null;
+  const zona = typeof cf?.timezone === "string" ? cf.timezone : null;
+  // `EU` manda a la base europea (D-042). Se deriva del país y **una vez escrita
+  // no se cambia sola**: mover datos de menores entre jurisdicciones es un
+  // problema legal, no técnico.
+  const region = pais && PAISES_UE.has(pais) ? "EU" : "GLOBAL";
+
+  // El locale sale de la URL de la que vino el formulario, no de
+  // `Accept-Language`: si alguien está leyendo la puerta en alemán, su cuenta
+  // nace en alemán aunque su teléfono esté en inglés.
+  const locale = localeDelReferente(request.headers.get("referer"));
+
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT INTO users (id, email, email_verified, locale, is_learner, created_at, updated_at, country, timezone, data_region, signup_intent) " +
+        "VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ).bind(userId, correo, locale, intent === "ADULTO_APRENDE" ? 1 : 0, ahora, ahora, pais, zona, region, intent),
+    env.DB.prepare(
+      "INSERT INTO user_password (user_id, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?)",
+    ).bind(userId, hash, ahora, ahora),
+  ]);
+
+  const { cookie } = await abrirSesionAdulto(env.SESSION_KV, {
+    userId,
+    creadaEn: ahora,
+    intent: intent as "PADRE" | "MAESTRO" | "ADULTO_APRENDE",
+  });
+
+  return respuesta([cookie], 201);
+};
+
+/**
+ * Los 27 de la Unión Europea, para `data_region` (D-042).
+ *
+ * No incluye Reino Unido —salió— ni Suiza ni Noruega, que tienen sus propios
+ * regímenes. Es una lista de países, no una geolocalización: `mc-25` distingue
+ * las dos cosas, y aquí solo se usa para decidir en qué base vive el dato.
+ */
+const PAISES_UE = new Set([
+  "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR",
+  "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK",
+]);
+
+const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
+
+/**
+ * El locale de la página desde la que se envió el formulario.
+ *
+ * Se lee del `Referer`, que puede faltar o venir manipulado — por eso se valida
+ * contra la lista cerrada y cae a `en` si no coincide. Un locale inventado en
+ * `users.locale` rompería el CHECK de la migración 0001 y tiraría el registro
+ * entero por un encabezado que nadie controla.
+ */
+function localeDelReferente(referer: string | null): string {
+  if (!referer) return "en";
+  try {
+    const primero = new URL(referer).pathname.split("/").filter(Boolean)[0];
+    return LOCALES.includes(primero) ? primero : "en";
+  } catch {
+    return "en";
+  }
+}

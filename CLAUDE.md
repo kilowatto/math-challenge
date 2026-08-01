@@ -104,8 +104,24 @@ coma; `pt-PT` y `pt-BR` son dos locales distintos. Ver
 - **Quien crea un recurso escribe su renglón en la bitácora de
   `infrastructure.md` en el mismo PR.** Un recurso creado y no documentado es un
   recurso que nadie va a poder borrar dentro de un año.
-- Despliegue automático al mergear a `main`. `wrangler` solo para migraciones,
-  secretos y diagnóstico.
+- **No hay despliegue automático. Tú despliegas.** Este proyecto no usa CI, así
+  que nada ocurre al mergear a `main`: el sitio sigue sirviendo la versión
+  anterior hasta que alguien corre `wrangler deploy`. Esta línea decía lo
+  contrario y era falsa — se descubrió al mergear S2 y ver cuatro páginas nuevas
+  en 404 con `main` ya actualizado.
+
+  ```
+  cd apps/web && npx wrangler deploy --env-file /tmp/vacio.env
+  ```
+
+  El `--env-file` vacío no es superstición: wrangler carga `.env` solo, y el
+  `CLOUDFLARE_API_TOKEN` de Workers AI que vive ahí **eclipsa** su sesión OAuth y
+  hace fallar el despliegue con `Authentication error [code: 10000]`.
+
+- **Tras desplegar, verifica.** `node audits/live.mjs`. Los primeros segundos
+  dan 404 intermitentes en rutas nuevas: es propagación del manifest de assets
+  entre nodos, no un archivo faltante — se midió en F0 y se confirmó asentado al
+  minuto.
 - **Nunca commitees un secreto.** `wrangler secret put` o el dashboard.
 
 ---

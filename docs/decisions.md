@@ -1289,6 +1289,185 @@ default.
 
 ---
 
+## D-041 — iPad es primera clase, y la orientación no se bloquea · 2026-08-01
+
+**Decisión del dueño:** el iPad y el teléfono se diseñan **los dos como primera
+clase**, no uno derivado del otro. En iPad la experiencia se optimiza para
+**horizontal**, y **vertical sigue funcionando con dignidad** — no se bloquea.
+
+### Por qué no se bloquea, con los dos motivos separados
+
+El dueño pidió al principio que la orientación fuera siempre horizontal. No se
+hace, y por dos razones independientes que se sostienen solas:
+
+**1. En iPad es técnicamente imposible.** iOS y iPadOS **ignoran el campo
+`orientation` del manifest**: WebKit lo reconoce y no lo aplica, y la Screen
+Orientation API no permite bloquear. No es difícil, no existe la forma. Hay
+además casos reportados en iPadOS 26 donde **incluso apps nativas** que declaran
+solo horizontal aparecen en vertical si el bloqueo del dispositivo está apagado.
+
+**2. Violaría WCAG 2.2 AA.** El criterio **1.3.4 Orientation** prohíbe restringir
+el contenido a una sola orientación *salvo que sea esencial*. Una app de
+matemáticas no califica: quien tiene el iPad en un soporte fijo, o montado en una
+silla de ruedas, quedaría fuera. Este proyecto se comprometió con AA (`mc-38`, y
+los criterios de cierre de F11), y `orientation: landscape` en el manifest —que
+Android sí respeta— sería una violación real en Android sin arreglar nada en iPad.
+
+**Lo que se hace en su lugar:** horizontal es donde vive la experiencia buena;
+vertical se reduce a una columna y funciona. El auditor comprueba **las dos**.
+
+### Lo que iPad primera clase obliga, y que el teléfono no obligaba
+
+- **Multitarea.** Split View y Stage Manager son uso normal en un aula, no una
+  excepción. La interfaz aguanta a un tercio, la mitad y dos tercios de ancho.
+- **Teclado físico y ratón.** Con Magic Keyboard el iPad es un equipo de
+  escritorio: navegación completa por teclado con foco visible (WCAG 2.1.1 y
+  2.4.7), y estados de *hover* que **nunca escondan función** — existen con
+  trackpad y no existen con el dedo.
+- **Apple Pencil.** Nada puede depender de un gesto que el Pencil no hace.
+- **Áreas seguras** y el indicador de inicio: un blanco táctil correcto en
+  teléfono puede quedar mal colocado en tablet.
+- **88 px en kinder también en iPad.** El mínimo de `mc-20` no se relaja porque
+  haya más pantalla; se relaja al revés, hay sitio de sobra.
+
+**Cómo se hace cumplir:** `audits/ipad-usabilidad.mjs`, determinista y bloqueando.
+La tabla de reglas vive en `docs/guia-de-estilo.md`.
+
+**Investigación relacionada:** `mc-20`, `mc-38`, `mc-33`, `mc-21`. Enmienda D-031
+añadiendo iPad como plataforma de primera clase junto a Android, iOS y Windows.
+
+---
+
+## D-042 — La base europea se crea ahora, el enrutamiento después · 2026-08-01
+
+**Decisión del dueño:** se crea `math-challenge-db-eu` con jurisdicción **EU**
+desde ya, y el enrutamiento por país se implementa cuando haga falta.
+
+**Por qué las dos mitades por separado.** La jurisdicción de D1 **se fija al
+crear la base y no se puede cambiar** — `math-challenge-db` es WNAM para
+siempre. Crear la base europea después no la hace europea retroactivamente para
+los datos que ya se escribieron, y mover datos de menores entre jurisdicciones no
+es un problema técnico sino legal, que es justo lo que GDPR-K mira con lupa.
+
+Crear la base hoy compra una opción irreversible por casi nada; el enrutamiento
+es trabajo que se puede diferir sin perder nada.
+
+**Quien la cree escribe su renglón en `docs/infrastructure.md` en el mismo PR.**
+
+---
+
+## D-043 — Los grupos se llaman `child_group` y `adult_club` · 2026-08-01
+
+**Decisión del dueño:** en el esquema, `child_group` / `child_group_membership` /
+`adult_club`. En inglés, como manda CLAUDE.md.
+
+Resuelve una contradicción entre tres documentos que un agente levantó al
+detallar F2: D-027 escribió `grupo_infantil`/`club_adulto`, el master-plan dice
+`classroom`, y CLAUDE.md manda que el código vaya en inglés.
+
+**Se conserva lo único que D-027 protege de verdad: dos estructuras separadas**,
+no una con un campo de tipo. Los nombres en español de D-027 eran conceptuales.
+
+`classroom` se descarta porque presupone escuela, y D-027 creó la estructura
+precisamente para que la usen también los papás.
+
+---
+
+## D-044 — El dueño de un grupo se verifica sin SMS · 2026-08-01
+
+**Decisión del dueño:** se cambia el requisito de teléfono verificado de D-027.
+**Cloudflare no ofrece SMS**, y meter un proveedor externo de pago sería la
+primera dependencia externa del proyecto para una fase que ni siquiera es del MVP.
+
+En su lugar, la barrera se apoya en lo que sí controlamos y que D-027 ya había
+puesto: **cada niño lo aprueba su propio padre**, sin chat en ninguna dirección,
+y el dueño del grupo ve solo alias, puntos y racha.
+
+**Esto NO cierra T-5.** Sigue sin haber verificación de identidad del adulto que
+abre un grupo; lo que se quita es una barrera que no podíamos implementar, no el
+problema. T-5 sigue en ruta crítica y sigue siendo decisión pendiente del dueño.
+
+Enmienda D-027.
+
+---
+
+## D-045 — En kinder el tiempo se mide, y el puntaje nunca lo ve · 2026-08-01
+
+**Decisión del dueño:** el sello de tiempo existe en kinder como **señal
+derivada** que va a Analytics Engine para detectar patrones imposibles, y
+**la fórmula de puntuación de kinder no lo toca jamás**.
+
+Resuelve una tensión entre D-024 —"sin reloj visible ni invisible"— y `mc-29`
+tier 0, que sugiere conservar la señal para anti-trampa. La lectura que queda:
+D-024 prohíbe que el tiempo **puntúe** o se **muestre**, no que exista.
+
+El niño no siente ningún reloj: no lo ve, no lo oye, y no le cuesta puntos.
+Precisa D-024 sin enmendarla.
+
+---
+
+## D-046 — La ubicación es opcional, y la edad no limita el nivel · 2026-08-01
+
+**Decisión del dueño**, dos partes:
+
+**La prueba de ubicación es opcional.** El niño juega de inmediato en el nivel
+que sugiere su edad, con un botón de recalibrar. `mc-45` documenta que cada paso
+antes del primer valor real cuesta activación, y una prueba es el paso más caro
+que existe.
+
+**Cuando la ubicación contradice fuerte a la edad, se muestra tal cual.** Un niño
+de 5 años que ubica en N5 juega N5, con el tema visual de kinder. Es D-002
+aplicado sin peros —la edad manda el tema, la ubicación manda la dificultad— y es
+lo que distingue a este producto de los que atan el nivel al grado escolar.
+
+Se descartó pedir confirmación al padre: añade una pantalla en el momento de
+mayor abandono, y suavizar el salto habría contradicho D-002 de frente.
+
+---
+
+## D-047 — Offline: precisión sin tablero, y modo avión · 2026-08-01
+
+**Decisión del dueño**, dos partes, y la segunda es un requisito nuevo.
+
+**Un intento offline en banda cronometrada puntúa solo por precisión y no cuenta
+para el tablero.** Sin servidor no hay reloj confiable (`mc-33` impl. 7), así que
+`d − RT` no se puede calcular con integridad. Nadie pierde el trabajo hecho en el
+metro, y **un puntaje no verificable nunca compite contra uno verificado**.
+
+**Modo avión.** El padre o el usuario adulto puede **descargar retos por
+adelantado** para jugar sin conexión — el caso literal que dio el dueño es un
+vuelo. Implica:
+
+- Elegir cuánto se descarga y que quepa en el presupuesto de precaché (`mc-42`
+  pone ≤5 MB de audio en la primera instalación; esto es aparte y se suma).
+- Una cola de intentos que sincroniza al volver la conexión, sin perder nada.
+- Que la cola **no guarde intentos crudos en D1** al sincronizar (`mc-32` riesgo
+  #1) ni texto libre de un niño (línea roja #3).
+- Que la descarga sea explícita: nada se baja solo, porque el mercado objetivo
+  paga sus datos.
+
+Es criterio de F3 (motor y cola) y de F5 (qué contenido cabe).
+
+---
+
+## D-048 — En «cuál sobra», toda elección autorada vale acierto · 2026-08-01
+
+**Decisión del dueño:** si un ítem de «cuál sobra» tiene varias respuestas
+defendibles y el autor las registró, **todas valen `acc = 1`**.
+
+Es lo que hace valioso al formato: «sobra el 8 porque es par» y «sobra el 9
+porque no está en la tabla del 2» son las dos buen razonamiento, y un producto
+que castiga la segunda enseña a adivinar lo que el autor pensaba en vez de a
+razonar.
+
+El ítem guarda **una justificación por opción correcta**, y Larry explica la que
+el niño eligió — no la que el autor puso primero.
+
+No enmienda D-010: `acc` sigue siendo 1 o 0. Lo que cambia es cuántas opciones
+producen un 1.
+
+---
+
 ## Tensiones abiertas que el dueño debe resolver
 
 Estas salieron de la investigación. Cuatro ya se cerraron con decisiones; se

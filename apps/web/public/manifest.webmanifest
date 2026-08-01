@@ -1,20 +1,15 @@
 {
   "name": "Math Challenge",
   "short_name": "Math Challenge",
-  "description": "De contar patos a topología algebraica. Un juego de retos matemáticos de los 4 años al matemático profesional.",
+  "description": "De contar patos a topolog\u00eda algebraica. Un juego de retos matem\u00e1ticos de los 4 a\u00f1os al matem\u00e1tico profesional.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
-
   "display": "standalone",
-
   "background_color": "#FFFFFF",
   "theme_color": "#F36B1C",
-
-  "orientation": "any",
   "lang": "en",
   "dir": "ltr",
-
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -35,6 +30,8 @@
       "purpose": "maskable"
     }
   ],
-
-  "categories": ["education", "games"]
+  "categories": [
+    "education",
+    "games"
+  ]
 }

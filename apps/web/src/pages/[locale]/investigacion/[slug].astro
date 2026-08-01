@@ -1,0 +1,819 @@
+---
+import Base from "../../../layouts/Base.astro";
+import { LOCALES, isLocale, type Locale } from "../../../i18n";
+import {
+  loadCorpus,
+  loadBodies,
+  trimBody,
+  linkCrossReferences,
+  markUnverified,
+  blocksText,
+  leadOf,
+  countWords,
+  FAQ_MIN_PAIRS,
+  type ResearchDoc,
+  type CategoryKey,
+} from "../../../lib/corpus";
+
+/**
+ * /{locale}/investigacion/{slug}/ — una de las 47 investigaciones (S1).
+ *
+ * Es la página que D-033 llama "la estrategia": se publican las investigaciones
+ * completas, **incluidas las que contradicen al producto**, con sus fuentes,
+ * sus limitaciones y sus marcas `[unverified]` **visibles**. `mc-48` §1
+ * documenta por qué eso no es un gesto de transparencia sino el activo: la
+ * credibilidad viene de declarar los límites, y prácticamente ningún
+ * competidor lo hace (`mc-14`).
+ *
+ * ─── Las cuatro reglas con las que está escrita ────────────────────────────
+ *
+ * 1. **Ninguna cifra se escribe a mano.** Palabras, fuentes, marcas
+ *    `[unverified]` y el total del corpus se cuentan en el build sobre los
+ *    archivos reales (plan §4.9). Publicar "45 investigaciones, 152,000
+ *    palabras" —lo que dicen hoy D-033 y `mc-48`— en la página que presume
+ *    rigor sería el error más caro posible: el conteo real es otro.
+ *
+ * 2. **Todo lo que va en el JSON-LD se pinta desde la MISMA variable.**
+ *    `headline` es el `<h1>`; `abstract` son los bloques del resumen;
+ *    `citation[].name` es la lista de fuentes; los `name` de las migas son las
+ *    migas. Las tres partes del Markdown que se duplicarían se recortan del
+ *    cuerpo compilado (`trimBody`). Es la regla dura de `mc-48` §3: si el
+ *    esquema no coincide con lo visible, Google puede ignorar el marcado
+ *    entero — no ese campo, el marcado entero, en las 329 páginas.
+ *
+ * 3. **Las marcas `[unverified]` y la advertencia de método van arriba y sin
+ *    JavaScript.** El plan §4.4 lo dice sin matiz: esconderlas en un acordeón
+ *    gris destruye exactamente el diferenciador. Si desaparecen con el JS
+ *    apagado, desaparecen para parte de los rastreadores.
+ *
+ * 4. **Ningún locale recibe una traducción falsa.** Los 47 documentos están
+ *    escritos en inglés con resumen ejecutivo también en español. Las siete
+ *    rutas existen —el resto del sitio está en siete y dejar cinco en 404
+ *    partiría el `hreflang`— y cada una **declara en la página** en qué idioma
+ *    está el cuerpo que está leyendo, con `inLanguage` diciendo la verdad.
+ *
+ * Tipografía: D-036 — títulos y cuerpo en `--font-marca`, migas y controles en
+ * `--font-sistema`. El naranja `#F36B1C` solo aparece en el `<h1>` (2.5rem, el
+ * umbral aplicable es 3:1 y da 3.03:1) y como elemento gráfico.
+ */
+
+// ---------------------------------------------------------------------------
+// Datos: los 47 documentos, leídos de docs/research/ en el build.
+// ---------------------------------------------------------------------------
+
+const DOCS = loadCorpus();
+const BODIES = loadBodies();
+
+export function getStaticPaths() {
+  const docs = loadCorpus();
+  return LOCALES.flatMap((locale) =>
+    docs.map((doc) => ({ params: { locale, slug: doc.slug } })),
+  );
+}
+
+const { locale: rawLocale, slug } = Astro.params;
+if (!isLocale(rawLocale)) return Astro.redirect("/en/");
+const locale: Locale = rawLocale;
+
+const doc = DOCS.find((d) => d.slug === slug);
+if (!doc) return Astro.redirect(`/${locale}/investigacion/`);
+
+const site = "https://math.kilowatto.com";
+const path = `investigacion/${doc.slug}/`;
+const url = `${site}/${locale}/${path}`;
+const hrefFor = (s: string) => `/${locale}/investigacion/${s}/`;
+
+// ---------------------------------------------------------------------------
+// El idioma del documento, y cómo se dice sin mentir.
+//
+// Los 47 documentos son originales en inglés y traen resumen ejecutivo también
+// en español. No hay versión francesa, portuguesa ni alemana, y no se va a
+// fabricar una: `mc-48` §3 y D-033 piden declarar el idioma, no simularlo.
+//
+// Consecuencia para el esquema: `inLanguage` del artículo dice "en" en los
+// siete locales, porque es la verdad. El `inLanguage` del `WebPage` lo pone
+// `Base.astro` con el locale de la ruta, que también es cierto: la navegación,
+// las migas y este aviso sí están en el idioma de la ruta.
+// ---------------------------------------------------------------------------
+
+const ARTICLE_LANG = "en";
+const SUMMARY_LANG: Record<Locale, "es" | "en"> = {
+  "en": "en",
+  "es-MX": "es",
+  "es-ES": "es",
+  "fr-FR": "en",
+  "pt-BR": "en",
+  "pt-PT": "en",
+  "de-DE": "en",
+};
+const summaryLang = SUMMARY_LANG[locale];
+const summary = doc.summary[summaryLang];
+const abstract = blocksText(summary);
+const lead = leadOf(summary);
+
+/**
+ * Los bloques del resumen agrupados en corridas del mismo tipo, para pintarlos
+ * **en su orden original**.
+ *
+ * No es cosmética: `abstract` concatena los bloques en orden, y el auditor
+ * comprueba que esa cadena aparezca en el texto visible. Pintar primero todos
+ * los párrafos y luego todas las viñetas coincidiría por casualidad mientras
+ * ningún resumen intercalara los dos — y dejaría de coincidir el día que uno lo
+ * haga, en una página que ya nadie estaría mirando.
+ */
+const summaryRuns: Array<{ kind: "p" | "li"; items: string[] }> = [];
+for (const b of summary) {
+  const last = summaryRuns[summaryRuns.length - 1];
+  if (last && last.kind === b.kind) last.items.push(b.text);
+  else summaryRuns.push({ kind: b.kind, items: [b.text] });
+}
+
+// ---------------------------------------------------------------------------
+// Cifras del corpus, todas contadas aquí. Ninguna es una constante escrita.
+//
+//   node --experimental-strip-types <script que importe corpus.ts>
+//   → documentos 47 · palabras 157230 · fuentes numeradas 778
+// ---------------------------------------------------------------------------
+
+const TOTAL_DOCS = DOCS.length;
+const TOTAL_WORDS = DOCS.reduce((a, d) => a + d.words, 0);
+const abstractWords = countWords(abstract);
+
+// Vecinos por número de tema: enlazado interno gratis y navegable sin JS.
+const idx = DOCS.findIndex((d) => d.id === doc.id);
+const prev: ResearchDoc | undefined = DOCS[idx - 1];
+const next: ResearchDoc | undefined = DOCS[idx + 1];
+
+// ---------------------------------------------------------------------------
+// Cuerpo compilado por el pipeline de Markdown de Astro, recortado y enlazado.
+// ---------------------------------------------------------------------------
+
+const loader = BODIES[doc.file];
+if (!loader) throw new Error(`investigacion: sin cuerpo compilado para ${doc.file}`);
+const mod = await loader();
+const compiled = await mod.compiledContent();
+
+const bySlug = new Map(DOCS.map((d) => [d.id, d.slug] as const));
+const UNVERIFIED_ANCHOR = "verificacion";
+
+let body = trimBody(compiled, doc.file);
+body = linkCrossReferences(body, bySlug, doc.id, hrefFor);
+
+// ---------------------------------------------------------------------------
+// Textos de la página, en los siete locales.
+//
+// Van aquí y no en `src/i18n/paginas/` a propósito: ese directorio lo comparten
+// las páginas de producto y este encargo solo escribe dos archivos. Cuando la
+// ruta hub de S1 exista, estas llaves deberían mudarse ahí — están agrupadas
+// para que mudarlas sea copiar un objeto.
+//
+// Ninguno de estos textos afirma nada sobre el producto ni sobre resultados de
+// aprendizaje (D-033 lo prohíbe): describen el documento y su estado de
+// verificación, que es lo único que esta página puede sostener.
+// ---------------------------------------------------------------------------
+
+interface Copy {
+  breadcrumbHome: string;
+  breadcrumbResearch: string;
+  /** Título del `<title>`/`description` no: ver más abajo, ambos salen del documento. */
+  categoryLabel: Record<CategoryKey, string>;
+  metaDate: string;
+  metaWords: string;
+  metaSources: string;
+  summaryHeading: string;
+  /** Aviso de idioma. `{lang}` se sustituye por el nombre del idioma del cuerpo. */
+  langNoticeSame: string;
+  langNoticeSummaryEs: string;
+  langNoticeOther: string;
+  verifyHeading: string;
+  verifyNone: string;
+  verifyCount: string;
+  verifyWhat: string;
+  methodHeading: string;
+  method: string;
+  legal: string;
+  openHeading: string;
+  openIntro: string;
+  sourcesHeading: string;
+  sourcesNone: string;
+  corpusNote: string;
+  prevLabel: string;
+  nextLabel: string;
+  /** Nombre accesible de la navegación anterior/siguiente. Tiene que ser
+   *  DISTINTO del de las migas: dos <nav> con el mismo nombre accesible es la
+   *  violación `landmark-unique` de axe, y se vio fallar antes de esta llave. */
+  neighboursLabel: string;
+  repoLabel: string;
+}
+
+const CATEGORY_LABELS: Record<Locale, Record<CategoryKey, string>> = {
+  "en": {
+    pedagogia: "Pedagogy",
+    producto: "Product, engine and content",
+    gamificacion: "Gamification, competition and identity",
+    interfaz: "Interface by age band and device",
+    plataforma: "Platform, security and business",
+  },
+  "es-MX": {
+    pedagogia: "Pedagogía",
+    producto: "Producto, motor y contenido",
+    gamificacion: "Gamificación, competencia e identidad",
+    interfaz: "Interfaz por banda de edad y dispositivo",
+    plataforma: "Plataforma, seguridad y negocio",
+  },
+  "es-ES": {
+    pedagogia: "Pedagogía",
+    producto: "Producto, motor y contenido",
+    gamificacion: "Gamificación, competencia e identidad",
+    interfaz: "Interfaz por banda de edad y dispositivo",
+    plataforma: "Plataforma, seguridad y negocio",
+  },
+  "fr-FR": {
+    pedagogia: "Pédagogie",
+    producto: "Produit, moteur et contenu",
+    gamificacion: "Ludification, compétition et identité",
+    interfaz: "Interface par tranche d’âge et appareil",
+    plataforma: "Plateforme, sécurité et activité",
+  },
+  "pt-BR": {
+    pedagogia: "Pedagogia",
+    producto: "Produto, motor e conteúdo",
+    gamificacion: "Gamificação, competição e identidade",
+    interfaz: "Interface por faixa etária e dispositivo",
+    plataforma: "Plataforma, segurança e negócio",
+  },
+  "pt-PT": {
+    pedagogia: "Pedagogia",
+    producto: "Produto, motor e conteúdo",
+    gamificacion: "Gamificação, competição e identidade",
+    interfaz: "Interface por faixa etária e dispositivo",
+    plataforma: "Plataforma, segurança e negócio",
+  },
+  "de-DE": {
+    pedagogia: "Pädagogik",
+    producto: "Produkt, Engine und Inhalte",
+    gamificacion: "Gamification, Wettbewerb und Identität",
+    interfaz: "Oberfläche nach Altersgruppe und Gerät",
+    plataforma: "Plattform, Sicherheit und Geschäft",
+  },
+};
+
+const COPY: Record<Locale, Omit<Copy, "categoryLabel">> = {
+  "en": {
+    breadcrumbHome: "Home",
+    breadcrumbResearch: "Research",
+    metaDate: "Published",
+    metaWords: "words",
+    metaSources: "cited sources",
+    summaryHeading: "Executive summary",
+    langNoticeSame: "This document was written in English. It is published here in full, unedited.",
+    langNoticeSummaryEs: "This document was written in English; its executive summary also exists in Spanish, and that is the version shown above. The body below is the English original — it has not been translated, and no machine translation is offered in its place.",
+    langNoticeOther: "This document has not been translated into the language of this page. It is published in its original language, English, in full. Showing you the real text is the point; a machine translation of a source-cited research document would not be citable.",
+    verifyHeading: "Verification status",
+    verifyNone: "This document carries no [unverified] flag. Every claim in it is tied to a numbered source below.",
+    verifyCount: "Claims in this document that the author could not confirm against a primary source, flagged in the text and repeated here:",
+    verifyWhat: "[unverified] means the claim is stated in the research but was not confirmed against a primary source in the session that produced it. It is published rather than removed, because a research corpus that hides its gaps is not verifiable.",
+    methodHeading: "How this research was produced",
+    method: "The 47 documents were produced on 2026-07-31 by independent agents, each instructed not to invent citations and to flag as [unverified] anything it could not confirm against a primary source. The session's web-search quota ran out mid-way, and later agents worked by direct fetch against primary sources. Several sites (ftc.gov, ico.org.uk) block automated fetching, which is why certain legal claims are flagged on purpose.",
+    legal: "This is research, not legal, medical or financial advice. Nothing here claims a learning outcome for Math Challenge; no such study exists yet.",
+    openHeading: "Open questions this document leaves for the owner",
+    openIntro: "These are unanswered on purpose. They are listed, not resolved — turning them into a FAQ would mean inventing answers the document does not contain.",
+    sourcesHeading: "Sources",
+    sourcesNone: "This document cites repository files and other research documents rather than a numbered source list.",
+    corpusNote: "One of {docs} research documents, {words} words in total, counted at build time from the files themselves.",
+    prevLabel: "Previous",
+    nextLabel: "Next",
+    repoLabel: "Read this document in the repository",
+    neighboursLabel: "Other research documents",
+  },
+  "es-MX": {
+    breadcrumbHome: "Inicio",
+    breadcrumbResearch: "Investigación",
+    metaDate: "Publicado",
+    metaWords: "palabras",
+    metaSources: "fuentes citadas",
+    summaryHeading: "Resumen ejecutivo",
+    langNoticeSame: "Este documento se escribió en inglés y se publica completo, sin editar.",
+    langNoticeSummaryEs: "Este documento se escribió en inglés; su resumen ejecutivo también existe en español, y esa es la versión de arriba. El cuerpo de abajo es el original en inglés — no está traducido, y no se ofrece una traducción automática en su lugar.",
+    langNoticeOther: "Este documento no está traducido al idioma de esta página. Se publica completo en su idioma original, inglés.",
+    verifyHeading: "Estado de verificación",
+    verifyNone: "Este documento no lleva ninguna marca [unverified]. Cada afirmación está atada a una fuente numerada de abajo.",
+    verifyCount: "Afirmaciones que el autor no pudo confirmar contra una fuente primaria, marcadas en el texto y repetidas aquí:",
+    verifyWhat: "[unverified] quiere decir que la afirmación está en la investigación pero no se confirmó contra una fuente primaria en la sesión que la produjo. Se publica en vez de borrarse, porque un corpus que esconde sus huecos no es verificable.",
+    methodHeading: "Cómo se produjo esta investigación",
+    method: "Los 47 documentos se hicieron el 2026-07-31 por agentes independientes, cada uno con instrucción explícita de no inventar citas y de marcar como [unverified] lo que no pudiera confirmar contra una fuente primaria. La cuota de búsqueda web de la sesión se agotó a media investigación y los agentes posteriores trabajaron por descarga directa contra fuentes primarias. Varios sitios (ftc.gov, ico.org.uk) bloquean la descarga automatizada, y por eso ciertas afirmaciones legales están marcadas a propósito.",
+    legal: "Esto es investigación, no asesoría legal, médica ni financiera. Nada aquí reclama un resultado de aprendizaje de Math Challenge; ese estudio todavía no existe.",
+    openHeading: "Preguntas que este documento le deja abiertas al dueño",
+    openIntro: "Están sin responder a propósito. Se listan, no se resuelven — convertirlas en preguntas frecuentes obligaría a inventar respuestas que el documento no tiene.",
+    sourcesHeading: "Fuentes",
+    sourcesNone: "Este documento cita archivos del repositorio y otras investigaciones, no una lista numerada de fuentes.",
+    corpusNote: "Uno de {docs} documentos de investigación, {words} palabras en total, contadas en el build sobre los archivos mismos.",
+    prevLabel: "Anterior",
+    nextLabel: "Siguiente",
+    repoLabel: "Leer este documento en el repositorio",
+    neighboursLabel: "Otros documentos de investigación",
+  },
+  "es-ES": {
+    breadcrumbHome: "Inicio",
+    breadcrumbResearch: "Investigación",
+    metaDate: "Publicado",
+    metaWords: "palabras",
+    metaSources: "fuentes citadas",
+    summaryHeading: "Resumen ejecutivo",
+    langNoticeSame: "Este documento se escribió en inglés y se publica completo, sin editar.",
+    langNoticeSummaryEs: "Este documento se escribió en inglés; su resumen ejecutivo también existe en español, y esa es la versión de arriba. El cuerpo de abajo es el original en inglés — no está traducido, y no se ofrece una traducción automática en su lugar.",
+    langNoticeOther: "Este documento no está traducido al idioma de esta página. Se publica completo en su idioma original, inglés.",
+    verifyHeading: "Estado de verificación",
+    verifyNone: "Este documento no lleva ninguna marca [unverified]. Cada afirmación está atada a una fuente numerada de abajo.",
+    verifyCount: "Afirmaciones que el autor no pudo confirmar contra una fuente primaria, marcadas en el texto y repetidas aquí:",
+    verifyWhat: "[unverified] quiere decir que la afirmación está en la investigación pero no se confirmó contra una fuente primaria en la sesión que la produjo. Se publica en vez de borrarse, porque un corpus que esconde sus huecos no es verificable.",
+    methodHeading: "Cómo se produjo esta investigación",
+    method: "Los 47 documentos se hicieron el 2026-07-31 por agentes independientes, cada uno con instrucción explícita de no inventar citas y de marcar como [unverified] lo que no pudiera confirmar contra una fuente primaria. La cuota de búsqueda web de la sesión se agotó a media investigación y los agentes posteriores trabajaron por descarga directa contra fuentes primarias. Varios sitios (ftc.gov, ico.org.uk) bloquean la descarga automatizada, y por eso ciertas afirmaciones legales están marcadas a propósito.",
+    legal: "Esto es investigación, no asesoría legal, médica ni financiera. Nada aquí reclama un resultado de aprendizaje de Math Challenge; ese estudio todavía no existe.",
+    openHeading: "Preguntas que este documento le deja abiertas al dueño",
+    openIntro: "Están sin responder a propósito. Se listan, no se resuelven — convertirlas en preguntas frecuentes obligaría a inventar respuestas que el documento no tiene.",
+    sourcesHeading: "Fuentes",
+    sourcesNone: "Este documento cita archivos del repositorio y otras investigaciones, no una lista numerada de fuentes.",
+    corpusNote: "Uno de {docs} documentos de investigación, {words} palabras en total, contadas en el build sobre los archivos mismos.",
+    prevLabel: "Anterior",
+    nextLabel: "Siguiente",
+    repoLabel: "Leer este documento en el repositorio",
+    neighboursLabel: "Otros documentos de investigación",
+  },
+  "fr-FR": {
+    breadcrumbHome: "Accueil",
+    breadcrumbResearch: "Recherche",
+    metaDate: "Publié",
+    metaWords: "mots",
+    metaSources: "sources citées",
+    summaryHeading: "Résumé exécutif",
+    langNoticeSame: "Ce document a été rédigé en anglais. Il est publié ici intégralement, sans modification.",
+    langNoticeSummaryEs: "Ce document a été rédigé en anglais ; son résumé exécutif existe aussi en espagnol.",
+    langNoticeOther: "Ce document n’est pas traduit dans la langue de cette page. Il est publié intégralement dans sa langue d’origine, l’anglais. Vous montrer le texte réel est le but : une traduction automatique d’un document de recherche sourcé ne serait pas citable.",
+    verifyHeading: "État de vérification",
+    verifyNone: "Ce document ne porte aucune mention [unverified]. Chaque affirmation renvoie à une source numérotée ci-dessous.",
+    verifyCount: "Affirmations que l’auteur n’a pas pu confirmer auprès d’une source primaire, signalées dans le texte et reprises ici :",
+    verifyWhat: "[unverified] signifie que l’affirmation figure dans la recherche mais n’a pas été confirmée auprès d’une source primaire lors de la session qui l’a produite. Elle est publiée plutôt que supprimée : un corpus qui cache ses lacunes n’est pas vérifiable.",
+    methodHeading: "Comment cette recherche a été produite",
+    method: "Les 47 documents ont été produits le 2026-07-31 par des agents indépendants, chacun avec la consigne de ne pas inventer de citations et de signaler par [unverified] tout ce qu’il ne pouvait pas confirmer auprès d’une source primaire. Le quota de recherche web de la session s’est épuisé en cours de route et les agents suivants ont travaillé par récupération directe des sources primaires. Plusieurs sites (ftc.gov, ico.org.uk) bloquent la récupération automatisée, d’où certaines affirmations juridiques signalées à dessein.",
+    legal: "Ceci est de la recherche, pas un conseil juridique, médical ou financier. Rien ici ne revendique un résultat d’apprentissage pour Math Challenge ; cette étude n’existe pas encore.",
+    openHeading: "Questions que ce document laisse ouvertes",
+    openIntro: "Elles restent sans réponse à dessein. Elles sont listées, pas résolues — en faire une FAQ obligerait à inventer des réponses que le document ne contient pas.",
+    sourcesHeading: "Sources",
+    sourcesNone: "Ce document cite des fichiers du dépôt et d’autres recherches, pas une liste numérotée de sources.",
+    corpusNote: "L’un des {docs} documents de recherche, {words} mots au total, comptés à la compilation à partir des fichiers eux-mêmes.",
+    prevLabel: "Précédent",
+    nextLabel: "Suivant",
+    repoLabel: "Lire ce document dans le dépôt",
+    neighboursLabel: "Autres documents de recherche",
+  },
+  "pt-BR": {
+    breadcrumbHome: "Início",
+    breadcrumbResearch: "Pesquisa",
+    metaDate: "Publicado",
+    metaWords: "palavras",
+    metaSources: "fontes citadas",
+    summaryHeading: "Resumo executivo",
+    langNoticeSame: "Este documento foi escrito em inglês e é publicado aqui na íntegra, sem edição.",
+    langNoticeSummaryEs: "Este documento foi escrito em inglês; seu resumo executivo também existe em espanhol.",
+    langNoticeOther: "Este documento não está traduzido para o idioma desta página. Ele é publicado na íntegra no idioma original, inglês. Mostrar o texto real é o objetivo: uma tradução automática de um documento de pesquisa com fontes citadas não seria citável.",
+    verifyHeading: "Estado de verificação",
+    verifyNone: "Este documento não traz nenhuma marca [unverified]. Cada afirmação está ligada a uma fonte numerada abaixo.",
+    verifyCount: "Afirmações que o autor não conseguiu confirmar contra uma fonte primária, marcadas no texto e repetidas aqui:",
+    verifyWhat: "[unverified] significa que a afirmação está na pesquisa mas não foi confirmada contra uma fonte primária na sessão que a produziu. É publicada em vez de removida, porque um corpus que esconde suas lacunas não é verificável.",
+    methodHeading: "Como esta pesquisa foi produzida",
+    method: "Os 47 documentos foram produzidos em 2026-07-31 por agentes independentes, cada um com instrução de não inventar citações e de marcar como [unverified] o que não pudesse confirmar contra uma fonte primária. A cota de busca na web da sessão se esgotou no meio do caminho e os agentes seguintes trabalharam por download direto de fontes primárias. Vários sites (ftc.gov, ico.org.uk) bloqueiam download automatizado, e por isso certas afirmações jurídicas estão marcadas de propósito.",
+    legal: "Isto é pesquisa, não aconselhamento jurídico, médico ou financeiro. Nada aqui reivindica um resultado de aprendizagem do Math Challenge; esse estudo ainda não existe.",
+    openHeading: "Perguntas que este documento deixa em aberto",
+    openIntro: "Ficam sem resposta de propósito. São listadas, não resolvidas — transformá-las em FAQ exigiria inventar respostas que o documento não tem.",
+    sourcesHeading: "Fontes",
+    sourcesNone: "Este documento cita arquivos do repositório e outras pesquisas, não uma lista numerada de fontes.",
+    corpusNote: "Um de {docs} documentos de pesquisa, {words} palavras no total, contadas na compilação a partir dos próprios arquivos.",
+    prevLabel: "Anterior",
+    nextLabel: "Próximo",
+    repoLabel: "Ler este documento no repositório",
+    neighboursLabel: "Outros documentos de pesquisa",
+  },
+  "pt-PT": {
+    breadcrumbHome: "Início",
+    breadcrumbResearch: "Investigação",
+    metaDate: "Publicado",
+    metaWords: "palavras",
+    metaSources: "fontes citadas",
+    summaryHeading: "Resumo executivo",
+    langNoticeSame: "Este documento foi escrito em inglês e é publicado aqui na íntegra, sem edição.",
+    langNoticeSummaryEs: "Este documento foi escrito em inglês; o seu resumo executivo também existe em espanhol.",
+    langNoticeOther: "Este documento não está traduzido para a língua desta página. É publicado na íntegra na língua original, inglês. Mostrar-lhe o texto real é o objectivo: uma tradução automática de um documento de investigação com fontes citadas não seria citável.",
+    verifyHeading: "Estado de verificação",
+    verifyNone: "Este documento não traz qualquer marca [unverified]. Cada afirmação está ligada a uma fonte numerada abaixo.",
+    verifyCount: "Afirmações que o autor não conseguiu confirmar contra uma fonte primária, marcadas no texto e repetidas aqui:",
+    verifyWhat: "[unverified] significa que a afirmação está na investigação mas não foi confirmada contra uma fonte primária na sessão que a produziu. É publicada em vez de removida, porque um corpus que esconde as suas lacunas não é verificável.",
+    methodHeading: "Como esta investigação foi produzida",
+    method: "Os 47 documentos foram produzidos a 2026-07-31 por agentes independentes, cada um com instrução de não inventar citações e de marcar como [unverified] o que não pudesse confirmar contra uma fonte primária. A quota de pesquisa na web da sessão esgotou-se a meio e os agentes seguintes trabalharam por descarregamento directo de fontes primárias. Vários sítios (ftc.gov, ico.org.uk) bloqueiam o descarregamento automatizado, e por isso certas afirmações jurídicas estão marcadas de propósito.",
+    legal: "Isto é investigação, não aconselhamento jurídico, médico ou financeiro. Nada aqui reivindica um resultado de aprendizagem do Math Challenge; esse estudo ainda não existe.",
+    openHeading: "Perguntas que este documento deixa em aberto",
+    openIntro: "Ficam sem resposta de propósito. São listadas, não resolvidas — transformá-las numa FAQ exigiria inventar respostas que o documento não tem.",
+    sourcesHeading: "Fontes",
+    sourcesNone: "Este documento cita ficheiros do repositório e outras investigações, não uma lista numerada de fontes.",
+    corpusNote: "Um de {docs} documentos de investigação, {words} palavras no total, contadas na compilação a partir dos próprios ficheiros.",
+    prevLabel: "Anterior",
+    nextLabel: "Seguinte",
+    repoLabel: "Ler este documento no repositório",
+    neighboursLabel: "Outros documentos de investigação",
+  },
+  "de-DE": {
+    breadcrumbHome: "Start",
+    breadcrumbResearch: "Forschung",
+    metaDate: "Veröffentlicht",
+    metaWords: "Wörter",
+    metaSources: "zitierte Quellen",
+    summaryHeading: "Zusammenfassung",
+    langNoticeSame: "Dieses Dokument wurde auf Englisch verfasst und wird hier vollständig und unverändert veröffentlicht.",
+    langNoticeSummaryEs: "Dieses Dokument wurde auf Englisch verfasst; seine Zusammenfassung existiert auch auf Spanisch.",
+    langNoticeOther: "Dieses Dokument ist nicht in die Sprache dieser Seite übersetzt. Es wird vollständig in seiner Originalsprache Englisch veröffentlicht. Genau das ist der Punkt: Eine maschinelle Übersetzung eines quellenbelegten Forschungsdokuments wäre nicht zitierfähig.",
+    verifyHeading: "Prüfstatus",
+    verifyNone: "Dieses Dokument trägt keine [unverified]-Markierung. Jede Aussage ist an eine nummerierte Quelle unten gebunden.",
+    verifyCount: "Aussagen, die der Autor nicht gegen eine Primärquelle bestätigen konnte — im Text markiert und hier wiederholt:",
+    verifyWhat: "[unverified] heißt: Die Aussage steht in der Forschung, wurde aber in der Sitzung, die sie erzeugt hat, nicht gegen eine Primärquelle bestätigt. Sie wird veröffentlicht statt entfernt, denn ein Korpus, das seine Lücken verbirgt, ist nicht überprüfbar.",
+    methodHeading: "Wie diese Forschung entstanden ist",
+    method: "Die 47 Dokumente entstanden am 2026-07-31 durch unabhängige Agenten, jeder mit der ausdrücklichen Anweisung, keine Zitate zu erfinden und alles als [unverified] zu markieren, was sich nicht gegen eine Primärquelle bestätigen ließ. Das Websuche-Kontingent der Sitzung war zur Hälfte erschöpft; spätere Agenten arbeiteten mit direktem Abruf von Primärquellen. Mehrere Seiten (ftc.gov, ico.org.uk) blockieren automatisierten Abruf — deshalb sind bestimmte rechtliche Aussagen bewusst markiert.",
+    legal: "Dies ist Forschung, keine Rechts-, Medizin- oder Finanzberatung. Nichts hier behauptet ein Lernergebnis für Math Challenge; eine solche Studie gibt es noch nicht.",
+    openHeading: "Fragen, die dieses Dokument offen lässt",
+    openIntro: "Sie bleiben bewusst unbeantwortet. Sie werden aufgelistet, nicht gelöst — sie zu einer FAQ zu machen hieße, Antworten zu erfinden, die das Dokument nicht enthält.",
+    sourcesHeading: "Quellen",
+    sourcesNone: "Dieses Dokument zitiert Repository-Dateien und andere Forschungsdokumente statt einer nummerierten Quellenliste.",
+    corpusNote: "Eines von {docs} Forschungsdokumenten, insgesamt {words} Wörter, beim Build aus den Dateien selbst gezählt.",
+    prevLabel: "Zurück",
+    nextLabel: "Weiter",
+    repoLabel: "Dieses Dokument im Repository lesen",
+    neighboursLabel: "Weitere Forschungsdokumente",
+  },
+};
+
+const c = COPY[locale];
+const categoryLabel = CATEGORY_LABELS[locale][doc.category];
+
+const langNotice =
+  locale === "en"
+    ? c.langNoticeSame
+    : summaryLang === "es"
+      ? c.langNoticeSummaryEs
+      : c.langNoticeOther;
+
+const corpusNote = c.corpusNote
+  .replace("{docs}", String(TOTAL_DOCS))
+  .replace("{words}", TOTAL_WORDS.toLocaleString(locale));
+
+// Las marcas [unverified] del cuerpo se vuelven visibles y apuntan al panel.
+body = markUnverified(body, UNVERIFIED_ANCHOR, c.verifyHeading);
+
+const repoUrl = `https://github.com/kilowatto/math-challenge/blob/main/docs/research/${doc.file}`;
+
+// ---------------------------------------------------------------------------
+// JSON-LD por capas.
+//
+// Capa 1 · ScholarlyArticle — siempre. Es el tipo que un sistema de citas
+//          prefiere consumir (`mc-48` §3).
+// Capa 2 · BreadcrumbList — siempre, y con migas visibles de verdad.
+// Capa 3 · FAQPage — SOLO si el documento tiene pares pregunta-respuesta
+//          reales. Ver `faqPairs` en corpus.ts: hoy ningún documento llega al
+//          mínimo, así que hoy este nodo no se emite en ninguna de las 329
+//          páginas, y eso es el comportamiento correcto. Las 47 secciones
+//          "Open questions for the project owner" NO cuentan: son preguntas
+//          sin respuesta, y `FAQPage` exige `acceptedAnswer`. Inventarla sería
+//          exactamente el marcado que no coincide con lo visible.
+//
+// Estructura idéntica en los siete locales (`mc-48` §3: nada de un @type en
+// alemán y otro en español). Lo único que cambia por locale es el idioma del
+// contenido de los campos, que es justo lo que se pide.
+//
+// Ningún @id de este grafo apunta fuera de él, igual que en arquitectura.astro,
+// para que el auditor `jsonld-valid` pueda resolverlos sin salir del bloque.
+// ---------------------------------------------------------------------------
+
+const article: Record<string, unknown> = {
+  "@type": "ScholarlyArticle",
+  "@id": `${url}#article`,
+  url,
+  name: doc.title,
+  headline: doc.title,
+  description: lead,
+  abstract,
+  // La verdad, no el locale de la ruta: el cuerpo está en inglés en las siete.
+  inLanguage: ARTICLE_LANG,
+  datePublished: doc.date,
+  dateModified: doc.date,
+  wordCount: doc.words,
+  keywords: [doc.id, categoryLabel],
+  author: { "@type": "Organization", name: "Ignia", url: "https://ignia.cloud" },
+  publisher: { "@type": "Organization", name: "Ignia", url: "https://ignia.cloud" },
+};
+if (doc.sources.length) {
+  article.citation = doc.sources.map((s) => ({
+    "@type": "CreativeWork",
+    name: s.name,
+    ...(s.url ? { url: s.url } : {}),
+  }));
+}
+
+const graph: Array<Record<string, unknown>> = [
+  article,
+  {
+    "@type": "BreadcrumbList",
+    "@id": `${url}#breadcrumb`,
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: c.breadcrumbHome, item: `${site}/${locale}/` },
+      { "@type": "ListItem", position: 2, name: c.breadcrumbResearch, item: `${site}/${locale}/investigacion/` },
+      { "@type": "ListItem", position: 3, name: categoryLabel, item: url },
+      { "@type": "ListItem", position: 4, name: doc.title, item: url },
+    ],
+  },
+];
+
+if (doc.faq.length >= FAQ_MIN_PAIRS) {
+  graph.push({
+    "@type": "FAQPage",
+    "@id": `${url}#faq`,
+    inLanguage: ARTICLE_LANG,
+    mainEntity: doc.faq.map((q) => ({
+      "@type": "Question",
+      name: q.question,
+      acceptedAnswer: { "@type": "Answer", text: q.answer },
+    })),
+  });
+}
+
+const jsonLd = { "@context": "https://schema.org", "@graph": graph };
+---
+
+<Base locale={locale} path={path} title={doc.title} description={lead}>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <nav class="migas" aria-label={c.breadcrumbResearch}>
+    <a href={`/${locale}/`}>{c.breadcrumbHome}</a>
+    <span aria-hidden="true">›</span>
+    <a href={`/${locale}/investigacion/`}>{c.breadcrumbResearch}</a>
+    <span aria-hidden="true">›</span>
+    <span>{categoryLabel}</span>
+  </nav>
+
+  <h1>{doc.title}</h1>
+
+  <p class="meta">
+    <span class="id">{doc.id}</span>
+    {" · "}{c.metaDate}: <time datetime={doc.date}>{doc.date}</time>
+    {" · "}{doc.words.toLocaleString(locale)}{" "}{c.metaWords}
+    {doc.sources.length ? <>{" · "}{doc.sources.length}{" "}{c.metaSources}</> : null}
+  </p>
+
+  {/* El resumen ejecutivo, pintado desde los MISMOS bloques que van en
+      `abstract`. Va arriba, a tamaño de cuerpo, sin acordeón. */}
+  <section class="resumen" lang={summaryLang} aria-labelledby="resumen-h">
+    <h2 id="resumen-h">{c.summaryHeading}</h2>
+    {summaryRuns.map((run) =>
+      run.kind === "li" ? (
+        <ul>{run.items.map((t) => <li>{t}</li>)}</ul>
+      ) : (
+        run.items.map((t) => <p>{t}</p>)
+      ),
+    )}
+    <p class="meta">{abstractWords.toLocaleString(locale)}{" "}{c.metaWords}</p>
+  </section>
+
+  {/* Aviso de idioma. Nunca hay traducción automática ni texto vacío: la página
+      dice en qué idioma está lo que sigue (D-033, encargo S1). */}
+  <p class="aviso">{langNotice}</p>
+
+  {/* ─── Panel de verificación ───────────────────────────────────────────
+      D-033 y plan §4.4: esto va VISIBLE y arriba. Es lo que hace citable la
+      investigación en vez de sospechosa. Sin JavaScript, sin acordeón. */}
+  <section class="verificacion" id={UNVERIFIED_ANCHOR} aria-labelledby="verificacion-h">
+    <h2 id="verificacion-h">{c.verifyHeading}</h2>
+    {doc.unverified.length === 0 ? (
+      <p>{c.verifyNone}</p>
+    ) : (
+      <>
+        <p>{c.verifyCount}</p>
+        <ol class="marcas" lang={ARTICLE_LANG}>
+          {doc.unverified.map((u) => <li>{u.sentence}</li>)}
+        </ol>
+      </>
+    )}
+    <p>{c.verifyWhat}</p>
+    <h3>{c.methodHeading}</h3>
+    <p>{c.method}</p>
+    <p class="legal">{c.legal}</p>
+  </section>
+
+  {/* El cuerpo del documento, completo. `set:html` sobre HTML que produjo el
+      pipeline de Markdown de Astro a partir de un archivo de este repositorio:
+      no hay entrada de usuario en ninguna parte de esta ruta. */}
+  <div class="documento" lang={ARTICLE_LANG} set:html={body} />
+
+  <h2>{c.sourcesHeading}</h2>
+  {doc.sources.length === 0 ? (
+    <p>{c.sourcesNone}</p>
+  ) : (
+    <ol class="fuentes">
+      {doc.sources.map((s) => (
+        <li value={s.n}>
+          {/* Sin `nofollow`: enlazar a la fuente primaria es lo que hace
+              comprobable la cita, y `mc-48` §2 pone la verificabilidad del
+              lado de la Trustworthiness. Un corpus que cita y esconde el
+              enlace pide que le crean. */}
+          {s.url ? <a href={s.url} rel="noopener">{s.name}</a> : <span>{s.name}</span>}
+        </li>
+      ))}
+    </ol>
+  )}
+
+  {doc.openQuestions.length > 0 && (
+    <section class="abiertas" aria-labelledby="abiertas-h">
+      <h2 id="abiertas-h">{c.openHeading}</h2>
+      <p>{c.openIntro}</p>
+      <ul lang={ARTICLE_LANG}>
+        {doc.openQuestions.map((q) => <li>{q}</li>)}
+      </ul>
+    </section>
+  )}
+
+  <nav class="vecinos" aria-label={c.neighboursLabel}>
+    {prev ? (
+      <a class="vecino" href={hrefFor(prev.slug)} rel="prev">
+        <span class="dir">← {c.prevLabel}</span>
+        <span class="tit">{prev.title}</span>
+      </a>
+    ) : <span></span>}
+    {next ? (
+      <a class="vecino next" href={hrefFor(next.slug)} rel="next">
+        <span class="dir">{c.nextLabel} →</span>
+        <span class="tit">{next.title}</span>
+      </a>
+    ) : <span></span>}
+  </nav>
+
+  <p class="corpus">
+    {corpusNote}{" "}
+    <a href={repoUrl} rel="noopener">{c.repoLabel}</a>
+  </p>
+</Base>
+
+<style>
+  /* Migas y navegación: voz del sistema (D-036). */
+  .migas, .vecinos, .corpus {
+    font-family: var(--font-sistema);
+    font-size: var(--text-xs);
+  }
+  .migas {
+    color: var(--color-text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-end: 2rem;
+  }
+  /* WCAG 2.5.8 */
+  .migas a { display: inline-flex; align-items: center; min-block-size: var(--tap-min); }
+
+  /* El naranja de Ignia a 2.5rem: texto grande, umbral 3:1, da 3.03:1. En un
+     párrafo sería una violación de WCAG — de ahí que el token se llame
+     --color-accent y no --color-text (docs/guia-de-estilo.md). */
+  h1 { color: var(--color-accent); font-weight: var(--weight-subtitle); }
+
+  .meta { color: var(--color-text-muted); font-size: var(--text-xs); }
+  .meta .id {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    letter-spacing: normal;
+  }
+
+  .resumen { margin-block: 2rem; }
+  .resumen h2 { margin-block-start: 0; }
+  .resumen p, .resumen li { max-inline-size: var(--measure); }
+  .resumen > p:not(.meta) { font-size: var(--text-lg); color: var(--color-text-brand); }
+  .resumen ul { padding-inline-start: 1.25rem; }
+  .resumen li { margin-block-end: 0.6rem; max-inline-size: var(--measure); }
+
+  /* El aviso de idioma y el panel de verificación NO son notas al pie: son
+     media razón de que esta página sea citable (mc-48 §1, plan §4.4). Se
+     marcan con superficie y borde, a tamaño de cuerpo, nunca colapsados. */
+  .aviso, .verificacion {
+    background: var(--color-surface);
+    border-inline-start: 3px solid var(--color-accent);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    max-inline-size: var(--measure);
+  }
+  .aviso { margin-block: 1.5rem; }
+  .verificacion { margin-block: 1.5rem 2.5rem; }
+  .verificacion h2 { margin-block-start: 0; font-size: var(--text-lg); }
+  .verificacion h3 { font-size: var(--text-base); margin-block-start: 1.5rem; }
+  .verificacion p:last-child { margin-block-end: 0; }
+  .verificacion .marcas { padding-inline-start: 1.25rem; }
+  .verificacion .marcas li { margin-block-end: 0.75rem; }
+  .legal { color: var(--color-text-muted); font-size: var(--text-xs); }
+
+  /* Cuerpo del documento --------------------------------------------------- */
+  .documento :global(h2) { margin-block-start: 2.75rem; font-size: var(--text-xl); }
+  .documento :global(h3) { margin-block-start: 2rem; font-size: var(--text-lg); }
+  .documento :global(h4) { margin-block-start: 1.5rem; font-size: var(--text-base); }
+  .documento :global(p),
+  .documento :global(li) { max-inline-size: var(--measure); }
+  .documento :global(ul),
+  .documento :global(ol) { padding-inline-start: 1.25rem; }
+  .documento :global(li) { margin-block-end: 0.5rem; }
+
+  /* Las tablas son buena parte del valor de estos documentos. El cuerpo de la
+     página nunca se desplaza en horizontal: la tabla se desplaza dentro de su
+     propio contenedor. */
+  .documento :global(table) {
+    display: block;
+    overflow-x: auto;
+    max-inline-size: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-xs);
+    margin-block: 1.25rem;
+  }
+  .documento :global(th),
+  .documento :global(td) {
+    border: 1px solid var(--color-border);
+    padding: 0.4rem 0.6rem;
+    text-align: start;
+    vertical-align: top;
+  }
+  .documento :global(th) { background: var(--color-surface); }
+
+  .documento :global(blockquote) {
+    margin: 1.5rem 0;
+    padding-inline-start: 1rem;
+    border-inline-start: 3px solid var(--color-border);
+    color: var(--color-text-muted);
+  }
+
+  .documento :global(pre) {
+    font-size: var(--text-xs);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    max-inline-size: 100%;
+  }
+  .documento :global(code) {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    letter-spacing: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* La marca [unverified], visible. Texto en --color-text-brand-warm (4.58:1
+     sobre claro) sobre superficie, con subrayado: nunca en naranja plano, que
+     da 3.03:1 y no alcanza para texto de cuerpo. */
+  .documento :global(a.nv) {
+    color: var(--color-text-brand-warm);
+    background: var(--color-surface);
+    border-block-end: 2px solid var(--color-accent);
+    border-radius: 3px;
+    padding: 0 0.2rem;
+    font-family: var(--font-sistema);
+    font-size: 0.85em;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .fuentes {
+    padding-inline-start: 1.75rem;
+    max-inline-size: var(--measure);
+    font-size: var(--text-xs);
+  }
+  .fuentes li { margin-block-end: 0.6rem; }
+  .fuentes a { display: inline-flex; align-items: center; min-block-size: var(--tap-min); }
+
+  .abiertas { margin-block-start: 3rem; }
+  .abiertas ul { padding-inline-start: 1.25rem; max-inline-size: var(--measure); }
+  .abiertas li { margin-block-end: 0.6rem; }
+
+  .vecinos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-block-start: 3rem;
+    padding-block-start: 1.5rem;
+    border-block-start: 1px solid var(--color-border);
+  }
+  .vecino {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-block-size: var(--tap-min);
+    max-inline-size: 20rem;
+  }
+  .vecino.next { text-align: end; }
+  .vecino .dir { color: var(--color-text-muted); }
+
+  .corpus {
+    margin-block-start: 2rem;
+    color: var(--color-text-muted);
+    max-inline-size: var(--measure);
+  }
+</style>

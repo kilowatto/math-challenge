@@ -261,7 +261,7 @@ export const CARTAS = [
       "jerarquía tipográfica que no distingue lo importante; una misma pantalla sirviendo a dos bandas con " +
       "necesidades opuestas.",
     ciega_a: "Kinder — tiene auditor propio. Rendimiento — lo cubre `red-lenta`.",
-    cita: ["D-017", "D-031", "mc-21", "mc-22", "mc-23", "mc-38", "mc-43"],
+    cita: ["D-017", "D-031", "D-036", "D-041", "mc-20", "mc-21", "mc-22", "mc-23", "mc-38", "mc-43"],
     alcance: [...INTERFAZ, ...TEXTOS],
   },
   // --- Uno por locale (D-022, D-032) --------------------------------------

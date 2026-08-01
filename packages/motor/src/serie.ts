@@ -22,14 +22,41 @@
  *     retiene mucho mejor que vista dos veces hoy.
  */
 
-import type { Item } from "./item.ts";
+import type { Item, Variacion } from "./item.ts";
 
 export interface PasoDeSerie {
   item: Item;
-  /** `true` si este paso se muestra resuelto, sin pedir respuesta (`mc-04`). */
+  /**
+   * Cuánto ejemplo se muestra, de 1 a 0 (`mc-04` §3).
+   *
+   * **Se desvanece con la pericia, y eso NO es un detalle de presentación.** El
+   * efecto del ejemplo trabajado **se invierte** cuando el alumno ya sabe: a un
+   * experto, mirar la solución le estorba en vez de ayudarle, porque tiene que
+   * mapear el método ajeno sobre el suyo. Un ejemplo que no se desvanece deja de
+   * enseñar y empieza a molestar.
+   *
+   *   1.0  la solución entera, sin pedir respuesta
+   *   0.5  los primeros pasos resueltos, el último lo hace el alumno
+   *   0.0  sin ejemplo: práctica
+   */
+  ejemplo: number;
+  /** `true` mientras haya algo de ejemplo. Comodidad para la pantalla. */
   ejemploTrabajado: boolean;
   /** Qué cambió respecto al paso anterior. `null` solo en el primero. */
-  variacion: string | null;
+  variacion: Variacion | null;
+}
+
+/**
+ * Cuánto ejemplo toca, según lo que el perfil ya sabe de esa habilidad.
+ *
+ * `skillState` va de 0 (nunca la ha tocado) a 1 (la domina). Los cortes no son
+ * finos a propósito: tres escalones se pueden explicar a un maestro y un
+ * gradiente continuo no.
+ */
+export function ejemploSegunPericia(skillState: number): number {
+  if (skillState <= 0.2) return 1;
+  if (skillState <= 0.6) return 0.5;
+  return 0;
 }
 
 export interface Serie {
@@ -55,8 +82,15 @@ export const MAX_SEGUIDOS = 2;
  */
 export function armarSerie(
   porHabilidad: Record<string, Item[]>,
-  yaVistas: Set<string> = new Set(),
+  /**
+   * Lo que el perfil sabe de cada habilidad, de 0 a 1. Una habilidad ausente
+   * vale 0: nunca la ha tocado, así que abre con el ejemplo completo.
+   */
+  pericia: Record<string, number> | Set<string> = {},
 ): Serie {
+  // Un `Set` de habilidades vistas sigue funcionando: se lee como pericia 1.
+  const skill = (h: string): number =>
+    pericia instanceof Set ? (pericia.has(h) ? 1 : 0) : (pericia[h] ?? 0);
   const pendientes = new Map<string, Item[]>();
   for (const [h, items] of Object.entries(porHabilidad)) {
     if (items.length > 0) pendientes.set(h, [...items]);
@@ -88,15 +122,17 @@ export function armarSerie(
 
     if (!habilidades.includes(elegida)) habilidades.push(elegida);
 
-    // mc-04: la PRIMERA vez que aparece una habilidad no vista, se muestra
-    // resuelta. Resolver desde cero una habilidad nueva gasta la memoria de
-    // trabajo en buscar el método en vez de en aprenderlo.
-    const primeraVez = !yaVistas.has(elegida) && !conEjemplo.has(elegida);
-    if (primeraVez) conEjemplo.add(elegida);
+    // mc-04: el ejemplo aparece la primera vez que se toca la habilidad EN ESTA
+    // serie, y su cantidad depende de la pericia. A quien ya domina no se le
+    // muestra nada, porque el efecto se invierte con la pericia (mc-04 §3).
+    const primeraVezAqui = !conEjemplo.has(elegida);
+    const cuanto = primeraVezAqui ? ejemploSegunPericia(skill(elegida)) : 0;
+    if (primeraVezAqui) conEjemplo.add(elegida);
 
     pasos.push({
       item,
-      ejemploTrabajado: primeraVez,
+      ejemplo: cuanto,
+      ejemploTrabajado: cuanto > 0,
       variacion: pasos.length === 0 ? null : item.variacion,
     });
 
@@ -122,18 +158,33 @@ export function validarSerie(serie: Serie): string[] {
     return p;
   }
 
-  // 1. Intercalado (mc-05)
-  let seguidos = 1;
-  for (let i = 1; i < serie.pasos.length; i++) {
-    const misma = serie.pasos[i].item.habilidad === serie.pasos[i - 1].item.habilidad;
-    seguidos = misma ? seguidos + 1 : 1;
-    if (seguidos > MAX_SEGUIDOS && serie.habilidades.length > 1) {
-      p.push(
-        `${seguidos} ítems seguidos de ${serie.pasos[i].item.habilidad} (paso ${i + 1}). ` +
-          `mc-05: el bloque da fluidez que se evapora. El tope es ${MAX_SEGUIDOS} cuando hay ` +
-          "más de una habilidad disponible.",
-      );
-      break;
+  // 1. Intercalado por habilidad Y por formato (mc-05, criterio #44).
+  //
+  // El criterio dice «ni de la misma habilidad ni del mismo modelo». Son dos
+  // bloques distintos: cinco sumas seguidas bloquean el tema, y cinco «toca la
+  // respuesta» seguidos bloquean la ESTRATEGIA aunque los temas varíen — el
+  // niño deja de elegir cómo resolver y solo elige qué tocar.
+  for (const eje of ["habilidad", "formato"] as const) {
+    // Para la habilidad se mira `serie.habilidades`, que dice qué había
+    // DISPONIBLE; para el formato, cuántos distintos aparecen. La diferencia
+    // importa: una serie de cuatro ítems todos de K01 con K03 disponible es un
+    // bloque evitable, y contar solo lo que aparece la daría por buena — que es
+    // exactamente lo que hizo esta comprobación en su primera versión.
+    const disponibles = eje === "habilidad"
+      ? serie.habilidades.length
+      : new Set(serie.pasos.map((x) => x.item.formato)).size;
+    if (disponibles < 2) continue;
+    let seguidos = 1;
+    for (let i = 1; i < serie.pasos.length; i++) {
+      seguidos = serie.pasos[i].item[eje] === serie.pasos[i - 1].item[eje] ? seguidos + 1 : 1;
+      if (seguidos > MAX_SEGUIDOS) {
+        p.push(
+          `${seguidos} ítems seguidos con ${eje} "${serie.pasos[i].item[eje]}" (paso ${i + 1}). ` +
+            `mc-05: el bloque da fluidez que se evapora. El tope es ${MAX_SEGUIDOS} mientras ` +
+            `haya más de un ${eje} disponible.`,
+        );
+        break;
+      }
     }
   }
 
@@ -154,7 +205,9 @@ export function validarSerie(serie: Serie): string[] {
   // 3. Variación explícita (mc-02)
   const sinVariacion = serie.pasos
     .map((x, i) => ({ x, i }))
-    .filter(({ x, i }) => i > 0 && !x.ejemploTrabajado && (x.variacion === null || x.variacion === ""));
+    .filter(({ x, i }) =>
+      i > 0 && !x.ejemploTrabajado &&
+      (!x.variacion || !x.variacion.varia || !x.variacion.constante || !x.variacion.por_que));
   if (sinVariacion.length > 0) {
     p.push(
       `${sinVariacion.length} paso(s) sin eje de variación declarado (el primero, el ` +
@@ -164,7 +217,7 @@ export function validarSerie(serie: Serie): string[] {
   }
 
   // 4. Propósito (mc-36)
-  const sinProposito = serie.pasos.filter((x) => !x.item.proposito?.trim());
+  const sinProposito = serie.pasos.filter((x) => !x.item.proposito);
   if (sinProposito.length > 0) {
     p.push(`${sinProposito.length} ítem(s) sin propósito declarado (mc-36)`);
   }

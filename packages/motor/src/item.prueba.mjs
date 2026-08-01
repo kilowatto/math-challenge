@@ -2,7 +2,7 @@
 // Casos del ítem y de la serie — criterios #38, #43, #44, #45, #46, #47 de F3.
 
 import { calificarRespuesta, validarItem } from "./item.ts";
-import { armarSerie, validarSerie, proximoRepaso, tocaRepasar, MAX_SEGUIDOS } from "./serie.ts";
+import { armarSerie, validarSerie, proximoRepaso, tocaRepasar, MAX_SEGUIDOS, ejemploSegunPericia } from "./serie.ts";
 
 let fallos = 0, corridos = 0;
 function caso(nombre, fn) {
@@ -21,13 +21,15 @@ const ITEM = {
     { valor: 1, causa: "error.resto" },
     { valor: 8, causa: "error.conto_el_primero_dos_veces" },
   ],
-  proposito: "sumar contando desde el primero",
+  proposito: "interpretar",
   contexto: "los patos del lago de Larry",
   variacion: null,
 };
 
+const VAR = { varia: "el sumando mayor", constante: "la estrategia", por_que: "aísla el número del método" };
+
 const item = (id, habilidad, extra = {}) => ({
-  ...ITEM, id, habilidad, variacion: "cambia el sumando mayor", ...extra,
+  ...ITEM, id, habilidad, variacion: VAR, ...extra,
 });
 
 console.log("\n== ítem y serie — criterios #38, #43, #44, #46, #47 de F3 ==\n");
@@ -77,9 +79,33 @@ caso("un enunciado con espacios es texto disfrazado de clave", () => {
   if (!p.some((x) => x.includes("clave de mensaje"))) throw new Error(p.join(" | "));
 });
 
-caso("un ítem sin propósito no pasa (mc-36, #47)", () => {
-  const p = validarItem({ ...ITEM, proposito: "" });
-  if (!p.some((x) => x.includes("proposito"))) throw new Error(p.join(" | "));
+caso("el propósito tiene que ser uno de los CINCO de Swan (mc-36, #47)", () => {
+  for (const malo of ["", "practicar sumas", "calcular", "que aprendan"]) {
+    const p = validarItem({ ...ITEM, proposito: malo });
+    if (!p.some((x) => x.includes("Swan"))) throw new Error(`«${malo}» pasó`);
+  }
+  // «cálculo pelón» no es algo que alguien escriba: es lo que queda cuando el
+  // campo admite cualquier cosa. Con cinco opciones cerradas hay que decidir.
+  for (const bueno of ["clasificar", "interpretar", "evaluar", "crear", "analizar"]) {
+    if (validarItem({ ...ITEM, proposito: bueno }).length) throw new Error(`«${bueno}» falló`);
+  }
+});
+
+caso("la variación es ESTRUCTURA con sus tres campos, no una cadena (mc-02, #46)", () => {
+  for (const campo of ["varia", "constante", "por_que"]) {
+    const rota = { ...VAR, [campo]: "" };
+    const p = validarItem({ ...ITEM, variacion: rota });
+    if (!p.some((x) => x.includes(campo))) throw new Error(`falta ${campo} y pasó`);
+  }
+});
+
+caso("«toma N al azar» NO se puede expresar en el esquema (#46)", () => {
+  // No hay dónde escribir qué varía si nadie lo decidió. Esa imposibilidad es
+  // el punto: un campo opcional se rellena con "aleatorio" y vuelve el problema.
+  const claves = Object.keys(VAR).sort();
+  if (JSON.stringify(claves) !== JSON.stringify(["constante", "por_que", "varia"])) {
+    throw new Error(`la variación admite ${claves.join(", ")}`);
+  }
 });
 
 caso("un error igual a la respuesta correcta no pasa", () => {
@@ -121,22 +147,45 @@ caso("una serie bloqueada por tema NO pasa la validación", () => {
 });
 
 // --- Ejemplo trabajado (#43, mc-04) -----------------------------------------
-caso("una habilidad NUEVA se abre con ejemplo trabajado (mc-04)", () => {
-  const s = armarSerie({ K11: [item("c1", "K11"), item("c2", "K11")] }, new Set());
-  es(s.pasos[0].ejemploTrabajado, true, "el primero");
-  es(s.pasos[1].ejemploTrabajado, false, "el segundo ya se practica");
+caso("una habilidad NUEVA se abre con ejemplo COMPLETO (mc-04)", () => {
+  const s = armarSerie({ K11: [item("c1", "K11"), item("c2", "K11")] }, {});
+  es(s.pasos[0].ejemplo, 1, "el primero, entero");
+  es(s.pasos[1].ejemplo, 0, "el segundo ya se practica");
 });
 
-caso("una habilidad YA VISTA no repite el ejemplo trabajado", () => {
+caso("el ejemplo SE DESVANECE con la pericia — el efecto se invierte (mc-04 §3, #43)", () => {
+  es(ejemploSegunPericia(0), 1, "sin pericia: la solución entera");
+  es(ejemploSegunPericia(0.3), 0.5, "a medias: los primeros pasos");
+  es(ejemploSegunPericia(0.9), 0, "con pericia: ninguno");
+  // A un experto, mirar la solución ajena le estorba: tiene que mapearla sobre
+  // la suya. Un ejemplo que no se desvanece deja de enseñar y empieza a molestar.
+  const experto = armarSerie({ K11: [item("e1", "K11"), item("e2", "K11")] }, { K11: 0.9 });
+  if (experto.pasos.some((x) => x.ejemploTrabajado)) throw new Error("le mostró ejemplo a un experto");
+});
+
+caso("un Set de habilidades vistas se sigue leyendo como pericia 1", () => {
   const s = armarSerie({ K11: [item("d1", "K11"), item("d2", "K11")] }, new Set(["K11"]));
   if (s.pasos.some((x) => x.ejemploTrabajado)) throw new Error("repitió el ejemplo");
+});
+
+caso("el intercalado también mira el FORMATO, no solo la habilidad (#44)", () => {
+  // Cinco «toca la respuesta» seguidos bloquean la ESTRATEGIA aunque el tema
+  // cambie: el niño deja de elegir cómo resolver y solo elige qué tocar.
+  const pasos = [
+    { item: item("a", "K01", { formato: "flash" }), ejemplo: 0, ejemploTrabajado: false, variacion: VAR },
+    { item: item("b", "K03", { formato: "toca_la_respuesta" }), ejemplo: 0, ejemploTrabajado: false, variacion: VAR },
+    { item: item("c", "K07", { formato: "toca_la_respuesta" }), ejemplo: 0, ejemploTrabajado: false, variacion: VAR },
+    { item: item("d", "K10", { formato: "toca_la_respuesta" }), ejemplo: 0, ejemploTrabajado: false, variacion: VAR },
+  ];
+  const p = validarSerie({ pasos, habilidades: ["K01", "K03", "K07", "K10"] });
+  if (!p.some((x) => x.includes("formato"))) throw new Error(p.join(" | ") || "no vio el bloque de formato");
 });
 
 // --- Variación explícita (#46, mc-02) ---------------------------------------
 caso("un paso sin eje de variación declarado NO pasa (mc-02)", () => {
   const s = armarSerie({
     K01: [item("e1", "K01"), { ...item("e2", "K01"), variacion: null }],
-  }, new Set(["K01"]));
+  }, { K01: 1 });
   const p = validarSerie(s);
   if (!p.some((x) => x.includes("variación"))) throw new Error(p.join(" | ") || "no lo detectó");
 });
@@ -145,7 +194,7 @@ caso("una serie bien armada pasa limpia", () => {
   const s = armarSerie({
     K01: [item("f1", "K01"), item("f2", "K01")],
     K03: [item("g1", "K03"), item("g2", "K03")],
-  }, new Set(["K01", "K03"]));
+  }, { K01: 1, K03: 1 });
   const p = validarSerie(s);
   if (p.length) throw new Error(p.join(" | "));
 });

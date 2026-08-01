@@ -50,6 +50,7 @@
 import Base from "../../layouts/Base.astro";
 import { t, type Locale } from "../../i18n";
 import type { Seccion } from "../../i18n/rutas";
+import { idiomaWidget } from "../../lib/turnstile";
 
 interface Props {
   locale: Locale;
@@ -69,6 +70,22 @@ const PUERTAS = {
 
 const m = t(locale);
 const puerta = PUERTAS[seccion];
+
+/**
+ * La site key de Turnstile es PÚBLICA por diseño: viaja en el HTML y la ve
+ * cualquiera que abra el inspector. Por eso es una variable y no un secreto —
+ * tratarla como secreto sería teatro, y guardarla con `wrangler secret put`
+ * impediría leerla aquí, que es donde hace falta.
+ *
+ * El widget es el de `kilowatto` (D-054): un widget de Turnstile pertenece a una
+ * lista de hostnames, no a un proyecto, y math.kilowatto.com vive dentro de
+ * kilowatto.com.
+ *
+ * Si no está configurada, el widget NO se pinta. No se pinta un widget roto que
+ * parezca protección: el servidor rechaza igual, y lo hace con un motivo que se
+ * puede leer en el registro.
+ */
+const siteKey = (import.meta.env.TURNSTILE_SITE_KEY as string | undefined) ?? "";
 const titulo = m[puerta.titulo];
 const lead = m[puerta.lead];
 ---
@@ -115,6 +132,30 @@ const lead = m[puerta.lead];
         />
         <p class="pista" id="pista-clave">{m.signupPasswordHint}</p>
       </div>
+
+      {siteKey && (
+        <>
+          {/*
+            Turnstile. Es defensa de bots sobre un formulario de ADULTO — no
+            verifica edad, no recoge biometría y no bloquea el navegador, así que
+            no cruza la línea roja #1 (D-054). Que nunca aparezca en una
+            superficie de niño lo vigila `audits/turnstile-solo-adulto.mjs`, no
+            esta promesa.
+
+            El campo que inyecta es un `<input type="hidden">`, así que no cuenta
+            como uno de los dos campos de D-026 — y `signup-dos-campos` excluye
+            los `hidden` por el criterio #111, no por casualidad.
+          */}
+          <div
+            class="cf-turnstile"
+            data-sitekey={siteKey}
+            data-language={idiomaWidget(locale)}
+            data-theme="auto"
+            data-size="flexible"
+          />
+          <script is:inline async src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer />
+        </>
+      )}
 
       <button type="submit" id="enviar">{m.signupPasswordCta}</button>
     </form>

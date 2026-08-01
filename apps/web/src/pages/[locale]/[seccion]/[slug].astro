@@ -8,6 +8,7 @@ import {
   loadTranslatedRaw,
   loadTranslatedBodies,
   translatedSummaryBlocks,
+  translatedTitle,
   SOURCES_IDS_POR_LOCALE,
   RESUMEN_EN_IDS_POR_LOCALE,
   trimBody,
@@ -60,16 +61,19 @@ import {
  *    partiría el `hreflang`— y cada una **declara en la página** en qué idioma
  *    está el cuerpo que está leyendo, con `inLanguage` diciendo la verdad.
  *
- *    Desde el 2026-08-01 esto ya no significa "siempre inglés": `es-MX`,
- *    `es-ES` y `fr-FR` tienen cuerpo traducido y auditado contra el original
- *    (`LOCALES_TRADUCCION_VERIFICADA` en `corpus.ts`), y esta página lo usa
- *    cuando existe, con `langNoticeTranslated` diciendo exactamente qué se
- *    verificó (cifras, URLs, citas) y qué no (prosa revisada por un hablante
- *    nativo — todavía pendiente, AGENTS.md §9). `pt-BR`, `pt-PT` y `de-DE`
- *    siguen sirviendo el original en inglés: su traducción existe en el
- *    repositorio pero su estructura de encabezados no es consistente entre
- *    los 47 archivos, y esta página nunca muestra algo que no pudo verificar
- *    de forma mecánica que coincide con la fuente.
+ *    Desde el 2026-08-01 esto ya no significa "siempre inglés". Los seis
+ *    locales tienen cuerpo traducido, pero **quién se publica se decide por
+ *    documento, no por locale**: `corpus-verificado.json` lo escribe
+ *    `audits/corpus-integridad.mjs`, que compara cada traducción contra su
+ *    original —cifras leídas con la convención del locale, URLs, marcadores de
+ *    cita, marcas `[unverified]`— y solo lista las que coinciden.
+ *
+ *    Es por documento porque `langNoticeTranslated` **afirma** que se verificó.
+ *    Con una lista por locale esa afirmación era falsa para todo documento con
+ *    hallazgo dentro de un locale aprobado, y `de-DE/mc-36` es el caso que lo
+ *    obliga: dejó `2,500` a la inglesa, que en alemán se lee 2.5. El que no
+ *    pasa se publica en inglés y lo dice. Lo que sigue sin verificar es la
+ *    prosa: ningún hablante nativo humano la ha revisado (AGENTS.md §9).
  *
  * Tipografía: D-036 — títulos y cuerpo en `--font-marca`, migas y controles en
  * `--font-sistema`. El naranja `#F36B1C` solo aparece en el `<h1>` (2.5rem, el
@@ -118,12 +122,10 @@ const hrefFor = (s: string) => ruta(locale, "investigacion", s);
 // ---------------------------------------------------------------------------
 // Cuerpo compilado por el pipeline de Markdown de Astro, recortado y enlazado.
 //
-// Desde el 2026-08-01, `es-MX`, `es-ES` y `fr-FR` tienen el CUERPO completo
-// traducido y auditado (`audits/corpus-integridad.mjs`: cifras, URLs,
-// marcadores de cita y `[unverified]` verificados contra el original) — ver
-// `LOCALES_TRADUCCION_VERIFICADA` en `corpus.ts`. Los demás locales (`pt-BR`,
-// `pt-PT`, `de-DE`) siguen sin cuerpo verificable de forma consistente entre
-// sus 47 archivos y se publican en su idioma original, inglés, como antes.
+// Los seis locales destino tienen cuerpo traducido; se sirve el de los
+// documentos que `audits/corpus-integridad.mjs --manifiesto` verificó contra el
+// original (cifras, URLs, marcadores de cita, `[unverified]`). El resto se
+// publica en inglés, y la nota de idioma lo dice. Ver `corpus-verificado.json`.
 // ---------------------------------------------------------------------------
 
 const bySlug = new Map(DOCS.map((d) => [d.id, d.slug] as const));
@@ -216,6 +218,20 @@ const translatedSummary: SummaryBlock[] | null = effectiveHasTranslation && tran
 const summary = translatedSummary ?? doc.summary[summaryLang];
 const abstract = blocksText(summary);
 const lead = leadOf(summary);
+
+/**
+ * El titular. Sale del archivo que se está sirviendo, no del original.
+ *
+ * Sin esto la página alemana declaraba `inLanguage: "de-DE"` con un `<h1>` en
+ * inglés — porque `doc.title` se parsea del original. El esquema y lo visible
+ * coincidían (los dos en inglés), así que `mc-48` §3 no se rompía; lo que no
+ * coincidía era el idioma declarado con el texto que declaraba.
+ *
+ * Se usa en las cuatro partes que tienen que decir lo mismo: el `<h1>`, el
+ * `<title>`, `headline` del esquema y la última miga de pan. Separarlas es
+ * exactamente cómo `mc-48` §3 dice que se invalida el marcado entero.
+ */
+const titulo = (effectiveHasTranslation && translatedRaw ? translatedTitle(translatedRaw) : null) ?? doc.title;
 
 /**
  * Los bloques del resumen agrupados en corridas del mismo tipo, para pintarlos
@@ -605,8 +621,8 @@ const article: Record<string, unknown> = {
   "@type": "ScholarlyArticle",
   "@id": `${url}#article`,
   url,
-  name: doc.title,
-  headline: doc.title,
+  name: titulo,
+  headline: titulo,
   description: lead,
   abstract,
   // La verdad, no el locale de la ruta por defecto: "en" salvo que el cuerpo
@@ -637,7 +653,7 @@ const graph: Array<Record<string, unknown>> = [
       { "@type": "ListItem", position: 1, name: c.breadcrumbHome, item: `${site}/${locale}/` },
       { "@type": "ListItem", position: 2, name: c.breadcrumbResearch, item: `${site}${ruta(locale, "investigacion")}` },
       { "@type": "ListItem", position: 3, name: categoryLabel, item: url },
-      { "@type": "ListItem", position: 4, name: doc.title, item: url },
+      { "@type": "ListItem", position: 4, name: titulo, item: url },
     ],
   },
 ];
@@ -658,7 +674,7 @@ if (doc.faq.length >= FAQ_MIN_PAIRS) {
 const jsonLd = { "@context": "https://schema.org", "@graph": graph };
 ---
 
-<Base locale={locale} seccion="investigacion" slug={doc.slug} title={doc.title} description={lead}>
+<Base locale={locale} seccion="investigacion" slug={doc.slug} title={titulo} description={lead}>
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
   <nav class="migas" aria-label={c.breadcrumbResearch}>
@@ -669,7 +685,7 @@ const jsonLd = { "@context": "https://schema.org", "@graph": graph };
     <span>{categoryLabel}</span>
   </nav>
 
-  <h1>{doc.title}</h1>
+  <h1>{titulo}</h1>
 
   <p class="meta">
     <span class="id">{doc.id}</span>

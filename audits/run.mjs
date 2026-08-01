@@ -60,6 +60,14 @@ const ACTIVE = [
   // porque ese modo falla ABIERTO: el sitio seguiría prometiendo verificación
   // sobre un archivo que ya cambió.
   ["corpus-manifiesto",      "el manifiesto del corpus traducido está al día", "D-033, D-022, mc-48 §3"],
+
+  // S0 ya tiene sitio: estos dos se escribieron y corrían por su cuenta, pero
+  // nadie los movió aquí — quedaron en PENDING diciendo "cuando haya sitio"
+  // con el sitio ya desplegado (2026-08-01). Un auditor listo que no vigila
+  // cada commit es exactamente el mismo error que dejó F0 cerrada con el
+  // 0-RTT sin verificar: no basta con que exista, tiene que estar en el gancho.
+  ["jsonld-valid",           "JSON-LD válido y coincidente con la página",     "S0 §59, mc-48 §3, D-022"],
+  ["hreflang-recip",         "hreflang recíproco entre los 7 + x-default",     "S0 §59, mc-48 §3"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -68,8 +76,6 @@ const PENDING = [
   ["axe-a11y",          "axe-core sin violaciones",                  "F2 · cuando haya interfaz"],
   ["contrast",          "contraste 4.5:1 texto, 3:1 gráficos",       "F2 · cuando haya interfaz"],
   ["touch-targets",     "24px WCAG / 44px HIG / 88px kinder",        "F2 · cuando haya interfaz"],
-  ["jsonld-valid",      "JSON-LD válido y coincidente con la página","S0 · cuando haya sitio"],
-  ["hreflang-recip",    "hreflang recíproco entre los 7 + x-default","S0 · cuando haya sitio"],
   ["precache-budget",   "≤5 MB de audio en la primera instalación",  "F5 · cuando haya audio"],
 ];
 

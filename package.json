@@ -23,6 +23,7 @@
     "audit:i18n": "node audits/i18n-complete.mjs",
     "audit:migrations": "node audits/migrations.mjs",
     "audit:bundle": "node audits/bundle-budget.mjs",
+    "audit:perf": "node audits/perf-vitals.mjs",
     "db:migrate:local": "wrangler d1 migrations apply math-challenge-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply math-challenge-db --remote"
   },
@@ -32,6 +33,7 @@
     "ajv-formats": "^3.0.1",
     "axe-core": "^4.12.1",
     "happy-dom": "^20.11.1",
+    "lighthouse": "^13.4.1",
     "typescript": "^5.7.2",
     "wrangler": "^4.100.0"
   }

@@ -52,7 +52,7 @@ CREATE TABLE users (
 CREATE INDEX idx_users_email_active ON users (email) WHERE deleted_at IS NULL;
 
 -- ---------------------------------------------------------------------------
--- user_passkeys — WebAuthn, el camino principal (D-035)
+-- user_passkeys — WebAuthn, el camino principal (D-038)
 -- ---------------------------------------------------------------------------
 -- Un usuario puede tener varias: teléfono, laptop, llave física. Registrar una
 -- segunda es lo que evita que perder el teléfono signifique perder la cuenta.
@@ -81,7 +81,7 @@ CREATE TABLE user_passkeys (
 CREATE INDEX idx_passkeys_user ON user_passkeys (user_id);
 
 -- ---------------------------------------------------------------------------
--- user_password — el respaldo, no el camino principal (D-035)
+-- user_password — el respaldo, no el camino principal (D-038)
 -- ---------------------------------------------------------------------------
 -- PRIMARY KEY sobre user_id: máximo una contraseña por usuario. Existe porque
 -- el soporte de passkeys en 2026 es bueno pero no universal, y porque el

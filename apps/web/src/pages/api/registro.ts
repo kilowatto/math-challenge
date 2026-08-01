@@ -40,6 +40,8 @@ import type { APIRoute } from "astro";
 import { hashear, largoValido, LARGO_MINIMO, LARGO_MAXIMO } from "../../lib/passwords";
 import { abrirSesionAdulto } from "../../lib/sesiones";
 import { verificar as verificarTurnstile, CAMPO_TOKEN } from "../../lib/turnstile";
+import { consultarLimite } from "../../lib/ratelimiter";
+import { anotarPaso } from "../../lib/embudo";
 
 export const prerender = false;
 
@@ -63,6 +65,10 @@ interface Env {
   SESSION_KV: KVNamespace;
   /** Secreto de Turnstile. Se sube con `wrangler secret put`, nunca se commitea. */
   TURNSTILE_SECRET_KEY?: string;
+  /** El limitador de tasa (criterio #113). Turnstile NO es uno. */
+  RATE_LIMITER?: DurableObjectNamespace;
+  /** El embudo de activación. Mide al ADULTO, nunca a un niño (D-037). */
+  FUNNEL_AE?: AnalyticsEngineDataset;
 }
 
 /** Respuesta común. Nunca dice si el correo existía (ver el encabezado). */
@@ -158,6 +164,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
   );
   if (!veredicto.ok) return error(`turnstile:${veredicto.motivo}`, veredicto.motivo === "no_configurado" ? 503 : 403);
 
+  // ── El límite de tasa, DESPUÉS de Turnstile ──────────────────────────────
+  // Ese orden importa: un bot que no pasa Turnstile no debe gastar una consulta
+  // al Durable Object. Y Turnstile NO es un limitador — dice «esto parece una
+  // persona», no «esta persona ya lo intentó cuarenta veces».
+  const ip = request.headers.get("cf-connecting-ip") ?? "sin-ip";
+  const limite = await consultarLimite(env.RATE_LIMITER, "registro", ip);
+  if (!limite.permitido) {
+    return new Response(JSON.stringify({ ok: false, motivo: "demasiados_intentos" }), {
+      status: 429,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "retry-after": String(limite.esperaS),
+      },
+    });
+  }
+
   // ── MISMO_TIEMPO ──────────────────────────────────────────────────────────
   // El hash se calcula ANTES de mirar si el correo existe, y se calcula siempre.
   // Es lo que hace que las dos ramas cuesten lo mismo. Invertir estas dos líneas
@@ -209,6 +231,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     creadaEn: ahora,
     intent: intent as "PADRE" | "MAESTRO" | "ADULTO_APRENDE",
   });
+
+  // El embudo: un adulto creó una cuenta. Sin identificador de nadie — ver
+  // `lib/embudo.ts`. No lanza, así que no puede impedir el registro.
+  anotarPaso(env.FUNNEL_AE, "registro", { pais, locale, intent });
 
   return respuesta([cookie], 201);
 };

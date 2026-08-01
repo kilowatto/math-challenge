@@ -25,6 +25,7 @@ import type { APIRoute } from "astro";
 import { verificar, hashear, largoValido } from "../../lib/passwords";
 import { abrirSesionAdulto } from "../../lib/sesiones";
 import { verificar as verificarTurnstile, CAMPO_TOKEN } from "../../lib/turnstile";
+import { consultarLimite } from "../../lib/ratelimiter";
 
 export const prerender = false;
 
@@ -32,6 +33,10 @@ interface Env {
   DB: D1Database;
   SESSION_KV: KVNamespace;
   TURNSTILE_SECRET_KEY?: string;
+  /** El limitador de tasa (criterio #113). Turnstile NO es uno. */
+  RATE_LIMITER?: DurableObjectNamespace;
+  /** El embudo de activación. Mide al ADULTO, nunca a un niño (D-037). */
+  FUNNEL_AE?: AnalyticsEngineDataset;
 }
 
 /**
@@ -96,6 +101,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
   );
   if (!veredicto.ok) {
     return error(`turnstile:${veredicto.motivo}`, veredicto.motivo === "no_configurado" ? 503 : 403);
+  }
+
+  // ── El límite de tasa, DESPUÉS de Turnstile ──────────────────────────────
+  // Ese orden importa: un bot que no pasa Turnstile no debe gastar una consulta
+  // al Durable Object. Y Turnstile NO es un limitador — dice «esto parece una
+  // persona», no «esta persona ya lo intentó cuarenta veces».
+  const ip = request.headers.get("cf-connecting-ip") ?? "sin-ip";
+  const limite = await consultarLimite(env.RATE_LIMITER, "entrar", ip);
+  if (!limite.permitido) {
+    return new Response(JSON.stringify({ ok: false, motivo: "demasiados_intentos" }), {
+      status: 429,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        // `Retry-After` en segundos: es lo que un cliente educado respeta, y lo
+        // que convierte un 429 en información en vez de en una pared muda.
+        "retry-after": String(limite.esperaS),
+      },
+    });
   }
 
   const fila = await env.DB.prepare(

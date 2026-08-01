@@ -1,4 +1,4 @@
-// Las 23 cartas de la flota adversarial (D-032, fase F1).
+// Las 28 cartas de la flota adversarial (D-032, fase F1).
 //
 // Una "carta" es el encargo de un auditor: qué caza, qué puede citar, y sobre
 // qué archivos despierta. No es un prompt suelto — es lo que hace que la regla 1
@@ -12,7 +12,7 @@
 // medio de una revisión.
 //
 // `alcance` decide cuándo despierta. Un cambio solo de documentación no debe
-// despertar al auditor de PWA en iOS: 23 llamadas de LLM por revisión tienen
+// despertar al auditor de PWA en iOS: 28 llamadas de LLM por revisión tienen
 // costo, y D-032 nombra ese costo como el riesgo conocido de la flota.
 
 /** Las ocho líneas que no se cruzan (CLAUDE.md). Citables como LR-1..LR-8. */
@@ -47,7 +47,7 @@ const SERVICIO = [/^apps\/web\/public\/(sw\.js|manifest\.webmanifest)$/, /^apps\
  * caza     · qué busca. Instrucciones para ENCONTRAR la violación, no para
  *            aprobar (D-032 lo dice literal: "instruidos para encontrar la
  *            violación y no para aprobar").
- * ciega_a  · qué NO es asunto suyo. Sin esto, 23 auditores reportan lo mismo y
+ * ciega_a  · qué NO es asunto suyo. Sin esto, 28 auditores reportan lo mismo y
  *            la flota se vuelve ruido — el riesgo que D-032 nombra.
  * cita     · ids que tiene autoridad para invocar (LR-n, D-0nn, mc-nn)
  * alcance  · regexes de ruta; si el diff no toca ninguno, el auditor no corre
@@ -63,7 +63,7 @@ export const CARTAS = [
       "niño aunque hoy no se llene; una pantalla de pago que aparece en un flujo de práctica; un contador " +
       "que penaliza borrar. Busca la línea cruzada, no la intención de quien la escribió.",
     ciega_a:
-      "Estética, rendimiento, ortografía, y todo lo que no sea una de las ocho líneas. Otros 22 auditores " +
+      "Estética, rendimiento, ortografía, y todo lo que no sea una de las ocho líneas. Otros 27 auditores " +
       "cubren eso.",
     cita: ["LR-1", "LR-2", "LR-3", "LR-4", "LR-5", "LR-6", "LR-7", "LR-8", "D-013", "D-014", "D-016", "D-020", "D-021"],
     alcance: TODO,
@@ -239,6 +239,100 @@ export const CARTAS = [
     cita: ["D-030", "mc-32", "mc-33"],
     alcance: SERVICIO,
   },
+  // --- Personalidad nativa por plataforma (D-031, D-036, D-041) -----------
+  // `pwa-ios`/`pwa-android`, arriba, cazan mecánica de instalación —lo que
+  // rompe si el navegador no coopera. Estas cinco cazan lo que las anteriores
+  // no pueden ver aunque el código sea perfecto: que la interfaz SE VEA y SE
+  // SIENTA de la plataforma. `band-typography.mjs` (determinista) ya comprobó
+  // que el CSS declara la fuente correcta, pero por escrito admite que no
+  // comprueba "cómo se ve" — es exactamente el hueco que este grupo cierra:
+  // un enlace sin `color`/`text-decoration` propios pasa cualquier auditor
+  // determinista y de todas formas se ve azul-subrayado, como una página web
+  // sin diseñar, no como un control nativo.
+  {
+    id: "nativo-ios",
+    titulo: "Personalidad nativa — iOS",
+    caza:
+      "Interfaz que no se lee como Human Interface Guidelines en un iPhone. En concreto: un control (enlace, " +
+      "botón, campo) sin color/decoración propios que caiga al azul-subrayado por default del navegador; " +
+      "radios que no sean los 10-12pt de HIG; sombra en un botón (HIG no la usa, la jerarquía es de color); " +
+      "la barra de pestañas inferior sin material translúcido o sin respetar `env(safe-area-inset-bottom)`; " +
+      "tipografía de marca (Raleway) en un control de sistema en vez de la fuente del sistema (D-036); el " +
+      "elemento activo marcado con una píldora en vez de con color de texto (esa es la seña de Android, no " +
+      "la de iOS).",
+    ciega_a:
+      "Android, Windows, macOS. Mecánica de instalación (`beforeinstallprompt`, almacenamiento, service " +
+      "worker) — eso es `pwa-ios`. iPad específicamente — eso es `nativo-ipad`. Si el problema existiría " +
+      "igual en un navegador de escritorio sin táctil, no es tuyo.",
+    cita: ["D-031", "D-036", "mc-33", "mc-47"],
+    alcance: [...INTERFAZ, ...TEXTOS],
+  },
+  {
+    id: "nativo-ipad",
+    titulo: "Personalidad nativa — iPad, primera clase",
+    caza:
+      "Lo que D-041 obliga y el teléfono no obligaba. En concreto: `orientation: landscape` forzado en el " +
+      "manifest (rompe Android, y vertical tiene que funcionar con dignidad, no bloquearse); una interfaz que " +
+      "no aguante Split View/Stage Manager a un tercio o a la mitad de ancho; un estado *hover* que ESCONDA " +
+      "una función en vez de ser un añadido sobre lo que ya funciona con el dedo; navegación que no se pueda " +
+      "completar por teclado físico con foco visible (WCAG 2.1.1/2.4.7); un gesto que Apple Pencil no puede " +
+      "hacer del que algo dependa; un blanco táctil de 88px de kinder relajado por 'hay más pantalla' — D-041 " +
+      "dice lo contrario, se relaja al revés.",
+    ciega_a:
+      "Lo que ya cubre `audits/ipad-usabilidad.mjs` (determinista) sobre orientación/desbordamiento. " +
+      "Preocupaciones de iPhone puro (pantalla chica, una sola mano) — eso es `nativo-ios`. Si el problema " +
+      "desaparecería en un iPhone, no es tuyo.",
+    cita: ["D-041", "D-031", "mc-20", "mc-21", "mc-33", "mc-38"],
+    alcance: [...INTERFAZ, ...TEXTOS],
+  },
+  {
+    id: "nativo-android",
+    titulo: "Personalidad nativa — Android, Material 3",
+    caza:
+      "Interfaz que no se lee como Material 3. En concreto: radios que no sean cápsula (20dp en controles, " +
+      "100px en la píldora del elemento activo); sombra en un botón relleno (M3 expresa jerarquía con color, " +
+      "no con elevación de sombra); el elemento activo de la navegación marcado solo con color de texto (esa " +
+      "es la seña de iOS, no la de Android — aquí lleva píldora detrás del ícono); un ícono de instalación " +
+      "sin variante *maskable* (Android recorta al 80% central); tipografía de marca en un control de sistema " +
+      "en vez de Roboto (D-036); navegación que ignore el botón/gesto atrás del sistema.",
+    ciega_a:
+      "iOS, Windows, macOS. Mecánica de instalación (`beforeinstallprompt`, íconos, gestos del sistema) — " +
+      "eso es `pwa-android`. Si el problema existiría igual en un navegador de escritorio, no es tuyo.",
+    cita: ["D-031", "D-036", "mc-33", "mc-47"],
+    alcance: [...INTERFAZ, ...TEXTOS],
+  },
+  {
+    id: "nativo-windows",
+    titulo: "Personalidad nativa — Windows, Fluent",
+    caza:
+      "Interfaz que no se lee como Fluent. En concreto: radios grandes o de cápsula donde Fluent usa 4px; el " +
+      "elemento activo sin la línea de acento que lo subraya (la seña de Fluent, distinta de la píldora de " +
+      "Android y del color-de-texto de iOS); tipografía de marca en un control de sistema en vez de Segoe UI " +
+      "Variable (D-036); una interfaz que asuma táctil-primero (blancos de 88px, gestos de swipe) donde " +
+      "Windows es predominantemente teclado y mouse — sin que eso relaje el mínimo WCAG de 24px, que sigue " +
+      "aplicando siempre.",
+    ciega_a:
+      "iOS, Android, macOS. Integración de escritorio (barra de tareas, ventana) — no hay auditor propio " +
+      "todavía; repórtalo igual si lo encuentras, pero no es el foco de esta carta.",
+    cita: ["D-031", "D-036", "mc-33"],
+    alcance: [...INTERFAZ, ...TEXTOS],
+  },
+  {
+    id: "nativo-macos",
+    titulo: "Personalidad nativa — macOS",
+    caza:
+      "Interfaz que no se lee como macOS. En concreto: una barra de navegación inferior pintada en macOS " +
+      "(la navegación vive arriba; el borde de abajo es del Dock, no de la app — `plataformas.css` ya la " +
+      "apaga con `display: none` para este `data-platform`, así que si aparece es una regresión, no una " +
+      "superficie nueva sin cubrir); radios que no sean los 6px compactos de macOS; controles dimensionados " +
+      "para el dedo en vez de para el cursor; tipografía de marca en un control de sistema en vez de SF Pro " +
+      "(D-036); ausencia de estado *hover* en un elemento donde el mouse es la entrada primaria.",
+    ciega_a:
+      "iOS/iPad (comparten motor con macOS pero D-041 los trata distinto — un iPad con marca táctil no es " +
+      "esta carta, es `nativo-ipad`). Windows, Android.",
+    cita: ["D-031", "D-036", "mc-33"],
+    alcance: [...INTERFAZ, ...TEXTOS],
+  },
   {
     id: "red-lenta",
     titulo: "Rendimiento en red lenta",
@@ -289,9 +383,9 @@ export const CARTAS = [
 /** Índice por id, para `--solo`. */
 export const POR_ID = new Map(CARTAS.map((c) => [c.id, c]));
 
-if (CARTAS.length !== 23) {
+if (CARTAS.length !== 28) {
   throw new Error(
-    `D-032 pide 23 auditores adversariales; cartas.mjs define ${CARTAS.length}. ` +
+    `D-032 pide 28 auditores adversariales; cartas.mjs define ${CARTAS.length}. ` +
       `Si el número cambia a propósito, cámbialo también en decisions.md y en run.mjs.`,
   );
 }

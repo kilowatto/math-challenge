@@ -100,6 +100,9 @@ for (const prueba of [
   "packages/motor/src/puntuacion.prueba.mjs",
   "packages/motor/src/sesion.prueba.mjs",
   "packages/motor/src/numeros.prueba.mjs",
+  "packages/motor/src/item.prueba.mjs",
+  "packages/motor/src/offline.prueba.mjs",
+  "packages/motor/src/rollup.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

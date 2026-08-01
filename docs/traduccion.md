@@ -299,6 +299,46 @@ original y apareció en la traducción.
 
 ---
 
+## 9bis. Dos defectos que encontró la flota adversarial, y uno que no se pudo automatizar
+
+Corrida del 2026-08-01 sobre `docs/research/` — 23 auditores, 0 bloqueantes, 2 que
+reportan, $0.759. Los dos hallazgos eran ciertos y se verificaron a mano antes de
+actuar.
+
+**1. El traductor alteró una cita textual de una fuente.** En
+`es-ES/mc-46`, el original dice
+
+> *"winners are not selected by chance but instead chosen **based on** some
+> measurable criteria"* [1]
+
+y la traducción escribió **`with base on`**, calco literal de «con base en». No es
+estilo: es una cita de una fuente citada, alterada, con nuestro nombre encima —
+exactamente la clase de error que la regla 1 del prompt existe para impedir, y
+que `corpus-integridad` no atrapa porque solo vigila números, URLs, `[unverified]`
+e identificadores. **Arreglado.**
+
+**2. El resumen etiquetado `(EN)` está en español en 23 de 143 traducciones.**
+El prompt del traductor dice, textualmente: *"Translate BOTH into the target
+locale, keeping both headings' structure"*. Y eso hace: traduce el resumen inglés
+al idioma destino y le deja el encabezado `## Executive summary (EN)`. El
+resultado es una sección que promete inglés y entrega otra cosa.
+
+Es un defecto **de diseño del prompt, no del modelo**. Al reanudar hay que elegir:
+o el encabezado se traduce también (`## Zusammenfassung`), o el resumen inglés se
+deja en inglés. Yo haría lo segundo: un lector alemán que quiere comprobar una
+cifra contra la fuente inglesa agradece tener el resumen original a mano.
+
+**3. Lo que NO se pudo automatizar, y por qué se dice.** Intenté añadir a
+`corpus-integridad` una comprobación de citas textuales —que lo entrecomillado en
+inglés sobreviva intacto— y **marcó 162 de 143 documentos**: el extractor cruzaba
+comillas no relacionadas y capturaba párrafos enteros. Se revirtió sin publicarlo.
+
+Un auditor con esa proporción de ruido se apaga en una semana, y entonces no
+vigila nada. Queda como trabajo pendiente: hace falta delimitar la cita por su
+marcador de fuente (`[1]`) y no por comillas sueltas.
+
+---
+
 ## 10. Lo que falta construir
 
 **El bucle de reintento con retroalimentación no existe.** Es lo único que

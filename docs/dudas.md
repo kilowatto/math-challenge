@@ -260,6 +260,47 @@ el archivo. Es barato comprobarlo y caro no hacerlo.
 
 ---
 
+## 14. El naranja de Ignia falla el umbral de GRÁFICO sobre la superficie real
+
+**El hecho.** `audits/contrast.mjs` corrió por primera vez —llevaba escrito y en
+la lista de pendientes— y encontró tres pares que no pasan:
+
+```
+--color-accent      (#F36B1C) sobre --color-surface (#F7F7F8) — 2.83:1, exige 3:1  (gráfico)
+--color-text-muted  (#727476) sobre --color-surface (#F7F7F8) — 4.38:1, exige 4.5:1 (texto)
+--color-text-brand-warm (#CE4912) sobre --color-surface (#F7F7F8) — 4.28:1, exige 4.5:1 (texto)
+```
+
+**Por qué el primero es distinto de lo que ya sabíamos.** CLAUDE.md dice que
+`#F36B1C` da **3.03:1 sobre blanco** y por eso no sirve para texto normal, pero sí
+para títulos grandes, botones y gráficos. Eso es cierto **sobre blanco puro**. La
+superficie real del sitio no es blanca, es `#F7F7F8`, y contra ella el mismo
+naranja da **2.83:1** — por debajo del 3:1 que exige un elemento gráfico o un
+control. O sea: el color de la marca no alcanza ni para el uso que teníamos por
+bueno.
+
+**Lo que asumí.** Nada: no toqué la paleta. Cambiar el color de la marca es
+decisión del dueño, no mía, y `contrast` sigue en la lista de pendientes en vez de
+bloquear cada commit.
+
+**Las salidas, con su costo:**
+
+1. **Oscurecer el naranja** solo para bordes y controles —un `--color-accent-borde`
+   más oscuro— y dejar `#F36B1C` para superficies grandes donde no aplica umbral.
+   Es lo que hacen casi todas las marcas con naranja. Conserva la identidad.
+2. **Aclarar la superficie a blanco puro.** Recupera el 3.03:1 documentado, pero
+   `#F7F7F8` está ahí para que las tarjetas se distingan del fondo.
+3. **Aceptarlo y anularlo por escrito**, que es lo que permite D-032. Yo no lo
+   haría: es el color del producto entero y el umbral de 3:1 existe para que un
+   borde se vea con luz de sol en un teléfono de gama baja, que es exactamente
+   nuestro dispositivo de referencia.
+
+Mi recomendación es la 1. `--color-text-muted` y `--color-text-brand-warm` se
+arreglan solos oscureciéndolos un paso, y ésos sí los haría sin preguntar si me
+dices que sí a la 1.
+
+---
+
 **Cómo se contesta esto.** Preferentemente en preguntas de opción múltiple —
 cada entrada de arriba ya tiene mi recomendación, así que basta con confirmarla o
 cambiarla. Lo que se decida va a `docs/decisions.md` con fecha, y la entrada

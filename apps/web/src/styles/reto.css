@@ -1,0 +1,211 @@
+/**
+ * La pantalla de reto de kinder. Todo de tocar, nada de escribir.
+ *
+ * Los números de aquí no son gusto:
+ *
+ *  · **88 px de blanco táctil.** Un niño de cuatro años necesita ~23.7 mm para
+ *    acertar el 90% de las veces, contra los ~9 mm de un adulto (plan §9,
+ *    `mc-20`). WCAG 2.5.8 pide 24 px y la HIG de Apple 44; para kinder ninguno
+ *    de los dos alcanza.
+ *  · **Arrastrar no existe.** A los 4-6 años arrastrar es medibledamente más
+ *    lento y más propenso a error que tocar, y esa diferencia desaparece hacia
+ *    los 7-10. Los cinco formatos son de tocar.
+ *  · **Sin reloj a la vista.** D-024: en kinder no hay cronómetro, ni puntuado
+ *    ni visible. `flash_ms` es exposición del estímulo, no un reloj: no puntúa,
+ *    no se muestra y no corre hacia atrás.
+ */
+
+.reto {
+  /* El tamaño mínimo de blanco para kinder. Un número, un sitio. */
+  --tap-kinder: 88px;
+
+  max-inline-size: 46rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+  font-family: var(--font-marca);
+}
+
+/* El enunciado. Grande, porque a los cuatro años el texto de adulto no se lee. */
+.reto h1 {
+  font-size: clamp(1.75rem, 6vw, 2.5rem);
+  line-height: 1.2;
+  margin: 0 0 1.5rem;
+  text-wrap: balance;
+}
+
+/* --- Los blancos táctiles ------------------------------------------------- */
+
+.opciones {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--tap-kinder), 1fr));
+  gap: 1rem;
+}
+
+.opcion {
+  /* 88px en las dos direcciones, no solo en alto. */
+  min-inline-size: var(--tap-kinder);
+  min-block-size: var(--tap-kinder);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: var(--font-sistema);
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-weight: 600;
+
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 3px solid var(--color-border);
+  border-radius: 1rem;
+  cursor: pointer;
+
+  /* Sin transición de tamaño: un blanco que se encoge al tocarlo se falla. */
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.opcion:hover { border-color: var(--color-accent); }
+
+/* Teclado físico — en iPad con Magic Keyboard esto es uso normal (D-041). */
+.opcion:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 3px;
+}
+
+/* El estado elegido usa forma Y color, nunca solo color: ~8% de los niños
+   varones tiene deficiencia de visión del color (mc-38). */
+.opcion[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  border-width: 5px;
+  background: var(--color-surface);
+}
+
+/* --- Contar tocando ------------------------------------------------------- */
+
+.contables {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.contable {
+  min-inline-size: var(--tap-kinder);
+  min-block-size: var(--tap-kinder);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  background: none;
+  border: 3px dashed var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Ya contado: cambia el borde y añade una marca, no solo el color. */
+.contable[aria-pressed="true"] {
+  border-style: solid;
+  border-color: var(--color-accent);
+  opacity: 0.55;
+}
+
+/* --- El marco de diez ----------------------------------------------------- */
+
+.marco {
+  display: grid;
+  grid-template-columns: repeat(5, var(--tap-kinder));
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  justify-content: center;
+}
+
+.casilla {
+  min-block-size: var(--tap-kinder);
+  border: 3px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: none;
+  cursor: pointer;
+  font-size: 2rem;
+}
+
+.casilla[aria-pressed="true"] {
+  background: var(--color-surface);
+  border-color: var(--color-accent);
+}
+
+/* --- Flash: exposición, NO reloj ------------------------------------------ */
+/*
+ * `flash_ms` controla cuánto se ve el estímulo. No es un cronómetro: no cuenta
+ * hacia atrás, no se muestra, y no entra en el puntaje (D-024). Por eso no hay
+ * ninguna regla de animación que dibuje una barra o un número decreciendo.
+ */
+.flash {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  font-size: 3rem;
+  min-block-size: 6rem;
+  align-items: center;
+}
+
+.flash[data-visible="false"] { visibility: hidden; }
+
+/* --- La retroalimentación (mc-11) ----------------------------------------- */
+/*
+ * Nombra el error y da el siguiente paso. Nunca elogia la capacidad ("¡qué
+ * listo eres!") ni muestra un marcador desnudo: Kluger y DeNisi documentan que
+ * la retroalimentación mal dada EMPEORA el desempeño, así que "hay feedback" no
+ * es el criterio.
+ */
+.veredicto {
+  margin-block-start: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  border-inline-start: 6px solid var(--color-border);
+  font-size: 1.125rem;
+  line-height: 1.5;
+}
+
+.veredicto[data-acierto="1"] { border-inline-start-color: var(--color-accent); }
+
+/* El error no se pinta de rojo. Larry nunca avergüenza (línea roja #7), y el
+   rojo de error es la señal cultural de "hiciste algo malo". */
+.veredicto[data-acierto="0"] {
+  border-inline-start-color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.veredicto .causa { font-weight: 600; margin: 0 0 0.35rem; }
+.veredicto .siguiente { margin: 0; color: var(--color-text-muted); }
+
+/* --- Vertical digno (D-041) ----------------------------------------------- */
+/*
+ * Horizontal es lo óptimo y vertical tiene que funcionar. No se bloquea la
+ * orientación: iOS ignora el `orientation` del manifest y bloquearla donde sí
+ * se aplica violaría WCAG 2.2 AA 1.3.4 — deja fuera a quien tiene el
+ * dispositivo en un soporte fijo.
+ */
+@media (orientation: portrait) {
+  .marco { grid-template-columns: repeat(5, minmax(var(--tap-kinder), 1fr)); }
+  .reto { padding-inline: 1rem; }
+}
+
+@media (orientation: landscape) and (min-inline-size: 900px) {
+  .opciones { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+}
+
+/* Split View de iPad: el tercio son ~320 px y nada puede exigir más. */
+@media (max-width: 400px) {
+  .marco { grid-template-columns: repeat(5, 1fr); }
+  .marco .casilla { min-inline-size: 0; }
+}
+
+/* Quien pidió menos movimiento, menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  .opcion { transition: none; }
+}

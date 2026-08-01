@@ -210,6 +210,13 @@ const CASOS = [
     contenido: "export const DECIMAL = ',';\n",
     espera: "separador fuera",
   },
+  {
+    auditor: "ipad-usabilidad",
+    que: "un min-width de 900px sin acotar por media query",
+    archivo: "apps/web/src/styles/prueba-ancho.css",
+    contenido: ".panel { min-width: 900px; }\n",
+    espera: "Split View",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

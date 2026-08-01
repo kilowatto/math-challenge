@@ -1,0 +1,98 @@
+---
+/**
+ * /{locale}/reto-demo/ — los cinco formatos táctiles, visibles y tocables.
+ *
+ * Es una superficie de DEMOSTRACIÓN, no el reto real: no hay sesión, no se
+ * puntúa nada y no se registra ningún intento. Existe porque el criterio #39 de
+ * F3 pide que los cinco formatos «respondan de verdad», y eso no se puede
+ * comprobar leyendo código — hacen falta `audits/touch-targets.mjs` en 88 px y
+ * `audits/axe-a11y.mjs` limpio sobre una página que exista.
+ *
+ * **Sin telemetría** (D-037, línea roja #2): esta página no incluye el beacon.
+ * `audits/telemetria-infantil.mjs` bloquea si aparece.
+ *
+ * **Sin texto libre** (línea roja #3): los cinco formatos son tocar o elegir.
+ * No hay ni un `<input type="text">`.
+ */
+import Base from "../../layouts/Base.astro";
+import Formatos from "../../components/reto/Formatos.astro";
+import { LOCALES, isLocale, type Locale } from "../../i18n";
+import "../../styles/reto.css";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+
+/**
+ * Los números se escriben con la convención del locale y con nada más.
+ *
+ * Se calcula en el SERVIDOR y viaja como texto ya formateado: el módulo del
+ * motor no cruza al cliente, que es lo que `audits/puntaje-servidor.mjs` exige.
+ */
+import { formatear } from "../../../../../packages/motor/src/numeros.ts";
+const opciones = (ns: number[]) => ns.map((n) => formatear(n, locale));
+
+const DEMOS = [
+  { formato: "toca_la_respuesta" as const, titulo: "3 + 4", opciones: opciones([7, 12, 1, 8]) },
+  { formato: "cual_sobra" as const, titulo: "¿Cuál sobra?", opciones: opciones([2, 4, 7, 8]) },
+  { formato: "toca_para_contar" as const, titulo: "Toca cada pato", opciones: [], cantidad: 6 },
+  { formato: "arma_el_numero" as const, titulo: "Arma el 7", opciones: [], cantidad: 10 },
+  { formato: "flash" as const, titulo: "¿Cuántos eran?", opciones: opciones([3, 4, 5]), cantidad: 4 },
+];
+---
+
+<Base
+  locale={locale}
+  seccion={null}
+  title="Formatos de reto — Math Challenge"
+  description="Los cinco formatos táctiles de kinder: tocar la respuesta, contar, flash, armar el número y cuál sobra."
+>
+  <div class="reto">
+    <h1>Los cinco formatos</h1>
+    <p class="muted">
+      Demostración. No hay sesión, no se puntúa y no se registra nada.
+    </p>
+
+    {DEMOS.map((d) => (
+      <section>
+        <h2>{d.titulo}</h2>
+        <Formatos
+          formato={d.formato}
+          opciones={d.opciones}
+          cantidad={d.cantidad}
+          etiquetaGrupo={d.titulo}
+        />
+      </section>
+    ))}
+  </div>
+
+  <script>
+    // Alternar `aria-pressed`. Sin marco, sin dependencias, y con delegación:
+    // 26 blancos táctiles con un solo escuchador.
+    //
+    // `aria-pressed` y no una clase: un lector de pantalla anuncia el estado, y
+    // una clase de CSS no le dice nada a nadie.
+    document.querySelectorAll(".opciones, .contables, .marco").forEach((grupo) => {
+      grupo.addEventListener("click", (e) => {
+        const b = (e.target as HTMLElement).closest("button");
+        if (!b || !grupo.contains(b)) return;
+        const unaSola = grupo.classList.contains("opciones");
+        if (unaSola) {
+          grupo.querySelectorAll("button").forEach((o) => o.setAttribute("aria-pressed", "false"));
+        }
+        b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+      });
+    });
+
+    // El flash: exposición del estímulo, NO un reloj. Se esconde una vez y no
+    // vuelve; no cuenta hacia atrás, no se muestra y no puntúa (D-024).
+    document.querySelectorAll<HTMLElement>(".flash").forEach((f) => {
+      const ms = Number(f.dataset.ms ?? 500);
+      setTimeout(() => f.setAttribute("data-visible", "false"), ms);
+    });
+  </script>
+</Base>

@@ -2,9 +2,14 @@
 /**
  * Raíz. Redirige al locale del navegador, o a en si no reconocemos ninguno.
  *
- * Se hace con <meta refresh> y no con un 301 porque el sitio es estático y no
- * hay Worker en la ruta todavía. Cuando exista (S0), esto pasa a ser un 302
- * server-side leyendo Accept-Language, que es más rápido y no parpadea.
+ * Se hace con `location.replace` y no con `<meta refresh>`: el meta es
+ * violación CRÍTICA de WCAG 2.2.1 (axe: `meta-refresh`), porque un refresco
+ * retardado le quita la página de debajo a quien la está leyendo despacio.
+ *
+ * Tampoco se hace con un 302 en `_redirects`, que sería más rápido: una regla
+ * fija manda a todo el mundo al mismo locale, y aquí se elige el del navegador.
+ * Cuando haya Worker en la ruta esto pasa a ser un 302 leyendo Accept-Language,
+ * que es lo mejor de los dos.
  *
  * Nunca se sirve contenido en la raíz sin prefijo de locale: con
  * prefixDefaultLocale activo, `/` sin idioma rompería el ciclo de hreflang.
@@ -20,7 +25,15 @@ import { LOCALES, DEFAULT_LOCALE } from "../i18n";
     <title>Math Challenge</title>
     <link rel="canonical" href={`https://math.kilowatto.com/${DEFAULT_LOCALE}/`} />
     <meta name="robots" content="noindex" />
-    <meta http-equiv="refresh" content={`0; url=/${DEFAULT_LOCALE}/`} />
+    {/* SIN `<meta http-equiv="refresh">`. axe lo marca como `meta-refresh`
+        [critical] y WCAG 2.2.1 prohíbe un refresco retardado de menos de 20
+        horas: a quien lee despacio o con lector de pantalla, la página se le va
+        de debajo mientras la está leyendo.
+
+        Lo que hacía el meta lo hace el guion de abajo con `location.replace`,
+        que además elige el locale del navegador en vez de mandar a todos a
+        inglés. Y sin JavaScript queda el enlace del cuerpo, que es la salida
+        accesible: una página con un enlace visible, no una que se mueve sola. */}
     <script is:inline define:vars={{ LOCALES, DEFAULT_LOCALE }}>
       // Coincidencia exacta primero (es-MX), luego por idioma base (es -> es-MX).
       const pick = () => {

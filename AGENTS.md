@@ -1,3 +1,34 @@
+## CERRADO Y DESPLEGADO — 2026-08-01, tarde
+
+Traducción, cableado y despliegue: **terminados**. PR #174 mergeado a `main`
+(`ddedf3f`), desplegado a `math.kilowatto.com` (versión `e7b6728f`),
+verificado con `node audits/live.mjs` (22/22) y con `curl` directo contra una
+página traducida en producción. No queda trabajo de traducción pendiente de
+esta sesión.
+
+**Manifiesto al momento de desplegar** (`apps/web/src/lib/corpus-verificado.json`,
+regenerable con `node audits/corpus-integridad.mjs --manifiesto`): es-MX 44/47,
+es-ES 38/47, fr-FR 29/47, pt-BR 41/47, pt-PT 41/47, de-DE 37/47 — 230/282.
+**Este número se mueve** sin que el contenido cambie, porque el propio
+`audits/corpus-integridad.mjs` sigue recibiendo ajustes de otras sesiones
+(qué cuenta como literal protegido vs. número). No lo tomes como el techo real
+de calidad — vuelve a correr el manifiesto antes de citar una cifra.
+
+**Lo que queda en rojo y NO es trabajo de traducción:**
+1. Números dentro de `## Executive summary (EN)` — intacto por decisión
+   confirmada del dueño (ver más abajo). Nunca va a pasar el auditor tal como
+   está, salvo que se le enseñe a excluir esa sección.
+2. Huecos del propio auditor, verificados uno por uno contra el original por
+   los agentes de reparación: identificadores WCAG/CFR/guideline sin
+   palabra-gatillo adyacente, números ≥1.000.000 con agrupación por puntos
+   que colisiona con el regex de literales de versión, títulos de fuente
+   citados textualmente que no se pueden reformatear.
+
+Si retomas esto, es trabajo de `audits/corpus-integridad.mjs`, no de
+`docs/research/`.
+
+---
+
 ## Estado real — 2026-08-01 (actualizado, no confiar en la tabla de §2 más abajo)
 
 **Los seis locales están 100% traducidos.** `node scripts/medir-traduccion.mjs`

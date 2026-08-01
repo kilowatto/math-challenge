@@ -183,12 +183,34 @@ export function calificar(intento: Intento): Veredicto {
   // con menos puntos que si no hubiera contestado.
   const rtSeg = Math.min(intento.rtMs / 1000, d);
 
-  const puntos = a * (d - rtSeg) * (2 * acc - 1);
+  // ── El peso por dificultad, que faltaba (bug #189) ────────────────────────
+  //
+  // `valor` se calculaba y **solo llegaba a `detalle` como metadato**: nunca
+  // multiplicaba. El resultado es que un ítem de nivel 12 valía exactamente lo
+  // mismo que uno de nivel 1, y por tanto **moler nivel 1 era estrictamente
+  // dominante** — más ítems por minuto, mismos puntos por ítem.
+  //
+  // D-010 lo prohíbe con esas palabras: «Un problema de nivel 8 vale ~268
+  // puntos, comparable a 30 sumas de nivel 1. **Ninguna estrategia domina el
+  // tablero.**» Y la proporción confirma la lectura: `1.6^7 = 26.8`, que es
+  // exactamente ese «comparable a 30».
+  //
+  // Se normaliza contra el nivel 1 en vez de multiplicar por `valor` a secas.
+  // D-010 fija la PROPORCIÓN y no dice nada de la escala absoluta; con `valor`
+  // crudo, un acierto rápido de nivel 8 daría ~4,000 puntos contra los ~15 de
+  // hoy, o sea un cambio de escala de 268× que nadie decidió. Normalizado, la
+  // proporción es la que D-010 pide y la escala de HSHS se queda donde estaba.
+  //
+  // KINDER no cambia: ahí `valor * acc` ya usaba el peso, y sus ítems viven en
+  // los niveles 1-3 (D-017), así que la escala nunca se disparó.
+  const pesoDificultad = valor / valorDelItem(1);
+
+  const puntos = pesoDificultad * a * (d - rtSeg) * (2 * acc - 1);
 
   return {
     puntos,
     regla: "hshs",
-    detalle: { valor, acc, d, a, rtSeg },
+    detalle: { valor, acc, d, a, rtSeg, pesoDificultad },
   };
 }
 

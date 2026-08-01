@@ -13,7 +13,7 @@ import type { APIRoute } from "astro";
  */
 export const prerender = false;
 
-export const GET: APIRoute = async ({ locals }) => {
+export const GET: APIRoute = async ({ locals, request }) => {
   const env = (locals as any)?.runtime?.env;
   const started = Date.now();
 
@@ -31,6 +31,17 @@ export const GET: APIRoute = async ({ locals }) => {
     report.ingest = { ok: true, ...pong, d1Tables: tables };
   } catch (err) {
     report.ingest = { ok: false, error: String(err) };
+  }
+
+  // La sesión de reto, contra el Durable Object REAL. Solo si se pide con
+  // ?sesion=1: es una escritura, y un chequeo de salud que escribe en cada
+  // sondeo de monitoreo crearía una sesión por minuto para siempre.
+  if (new URL(request.url).searchParams.get("sesion") === "1") {
+    try {
+      report.sesion = await env.INGEST.pruebaDeHumoSesion(String(Date.now()));
+    } catch (err) {
+      report.sesion = { ok: false, error: String(err) };
+    }
   }
 
   // D1 directo desde web, para distinguir "falla el binding" de "falla el RPC".

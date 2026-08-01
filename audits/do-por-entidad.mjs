@@ -72,9 +72,37 @@ for (const archivo of fuentes) {
   }
 }
 
+
+// --- Los DO declarados, no solo los usados ---------------------------------
+//
+// La primera versión solo miraba llamadas a `idFromName(...)`, así que informaba
+// "todavía no hay Durable Objects" con uno declarado en `wrangler.jsonc` y su
+// clase exportada. Un auditor que no ve el recurso que vigila no lo vigila: la
+// declaración llega siempre antes que la primera llamada, y es el momento en que
+// alguien decide si el reparto va a ser por entidad o no.
+const configs = archivos(/wrangler\.(jsonc?|toml)$/);
+const declarados = [];
+for (const c of configs) {
+  const t = leer(c) ?? "";
+  for (const m of t.matchAll(/"class_name"\s*:\s*"([^"]+)"/g)) declarados.push({ archivo: c, clase: m[1] });
+  for (const m of t.matchAll(/class_name\s*=\s*"([^"]+)"/g)) declarados.push({ archivo: c, clase: m[1] });
+}
+
+for (const { archivo, clase } of declarados) {
+  // Una clase con nombre de "todo el producto" delata el reparto antes de que
+  // exista la primera llamada.
+  if (NOMBRE_GLOBAL.test(clase)) {
+    problemas.push(
+      `${archivo}: el Durable Object \`${clase}\` tiene nombre de instancia única. ` +
+        "mc-32: el identificador es la entidad — una sesión, un grupo, un club.",
+    );
+  }
+}
+
 notas.unshift(
-  usosDeDO > 0
-    ? `${usosDeDO} uso(s) de Durable Objects, ninguno global`
+  declarados.length > 0
+    ? `${declarados.length} Durable Object(s) declarado(s): ${declarados.map((d) => d.clase).join(", ")}` +
+      ` · ${usosDeDO} uso(s) de reparto, ninguno global`
     : "todavía no hay Durable Objects; el auditor está listo para el primero (F3)",
 );
 

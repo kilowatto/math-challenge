@@ -15,10 +15,11 @@
  */
 
 import { WorkerEntrypoint } from "cloudflare:workers";
-import { calificar, pareceImposible, type Veredicto } from "../../../packages/motor/src/puntuacion";
+import { calificar, pareceImposible, type Veredicto } from "../../../packages/motor/src/puntuacion.ts";
 
 interface Env {
   DB: D1Database;
+  SESION_RETO_DO: DurableObjectNamespace;
   ATTEMPTS_AE: AnalyticsEngineDataset;
 }
 
@@ -118,6 +119,60 @@ export class Ingest extends WorkerEntrypoint<Env> {
     return { ...veredicto, imposible };
   }
 
+  /**
+   * Prueba de humo de la sesión, contra la instancia REAL de producción.
+   *
+   * Existe porque el criterio #33 de F3 pide la evidencia, no la afirmación:
+   * *"dos envíos idénticos, un solo punto"*. Los 14 casos del módulo puro corren
+   * sin infraestructura y no prueban que el Durable Object persista, ni que su
+   * hilo único serialice, ni que el estado sobreviva a una llamada.
+   *
+   * Usa una sesión con nombre propio —`humo:<marca>`— para no tocar ninguna
+   * real, y **no escribe a Analytics Engine**: pasa `skillId` vacío y una banda
+   * de adulto, así que ningún dato de niño ni ninguna métrica falsa entra al
+   * conjunto. Es de solo lectura para todo lo que importa.
+   */
+  async pruebaDeHumoSesion(marca: string): Promise<{
+    dosEnviosUnPunto: boolean;
+    puntosTrasUno: number;
+    puntosTrasDos: number;
+    segundoMarcadoRepetido: boolean;
+    rtIgual: boolean;
+    cortarConItemServido: boolean;
+    cortarSinItemServido: boolean;
+  }> {
+    const id = this.env.SESION_RETO_DO.idFromName(`humo:${marca}`);
+    const sesion = this.env.SESION_RETO_DO.get(id) as unknown as {
+      iniciar(b: string): Promise<{ ok: true; nueva: boolean }>;
+      servirItem(i: { orden: number; itemId: string; nivel: number }): Promise<{ servidoEn: number }>;
+      responderItem(r: { orden: number; eleccion: string }, c: boolean, x: { itemId: string; skillId: string; locale: string }): Promise<any>;
+      puedeCortar(): Promise<{ seguro: boolean; contestadas: number; puntos: number }>;
+    };
+
+    await sesion.iniciar("SERIO");
+    const cortarVacio = (await sesion.puedeCortar()).seguro;
+
+    await sesion.servirItem({ orden: 1, itemId: "humo", nivel: 8 });
+    const cortarServido = (await sesion.puedeCortar()).seguro;
+
+    const ctx = { itemId: "humo", skillId: "", locale: "en" };
+    const uno = await sesion.responderItem({ orden: 1, eleccion: "bien" }, true, ctx);
+    const trasUno = (await sesion.puedeCortar()).puntos;
+
+    const dos = await sesion.responderItem({ orden: 1, eleccion: "bien" }, true, ctx);
+    const trasDos = (await sesion.puedeCortar()).puntos;
+
+    return {
+      dosEnviosUnPunto: trasUno === trasDos,
+      puntosTrasUno: trasUno,
+      puntosTrasDos: trasDos,
+      segundoMarcadoRepetido: dos.repetida === true,
+      rtIgual: uno.rtMs === dos.rtMs,
+      cortarConItemServido: cortarServido,
+      cortarSinItemServido: cortarVacio,
+    };
+  }
+
   /** Sin ruta pública: cualquier petición directa se rechaza. */
   override async fetch(): Promise<Response> {
     return new Response("math-challenge-ingest: solo accesible por RPC", {
@@ -125,5 +180,9 @@ export class Ingest extends WorkerEntrypoint<Env> {
     });
   }
 }
+
+// El Durable Object de la sesión de reto. Se exporta desde aquí porque Workers
+// exige que la clase viva en el mismo módulo de entrada que la declara.
+export { SesionReto } from "./sesion-do.ts";
 
 export default Ingest;

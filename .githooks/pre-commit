@@ -20,6 +20,26 @@ if ! node audits/run.mjs; then
   exit 1
 fi
 
+# ¿Y quién vigila a los auditores? Trece de ellos se escribieron ANTES que el
+# código que vigilan, así que "pasa en verde" no distingue entre "no hay nada
+# malo" y "el auditor está roto". Esto escribe una violación de cada regla,
+# comprueba que el auditor bloquea, y la borra. Cuesta segundos.
+#
+# Va en el gancho y no en un archivo que alguien corre a mano porque el modo de
+# fallo que evita es exactamente el que nadie va a ir a buscar: un auditor que
+# deja de atrapar lo suyo sigue diciendo ✓ todos los días.
+echo
+echo "── ¿los auditores atrapan lo que dicen? (CLAUDE.md § Git, regla 3)"
+
+if ! node audits/pruebas-auditores.mjs >/dev/null 2>&1; then
+  node audits/pruebas-auditores.mjs 2>&1 | tail -20
+  echo
+  echo "✗ un auditor pasó en verde con su propia violación delante."
+  exit 1
+fi
+
+echo "  ✓ cada auditor con caso bloqueó, y por la razón correcta"
+
 # La flota adversarial NO corre aquí: 23 llamadas de LLM por commit son el ruido
 # que D-032 teme. Pero su cableado sí se verifica, porque cuesta milisegundos y
 # porque una carta rota se descubriría, si no, en medio de una revisión de PR.

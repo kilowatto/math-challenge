@@ -1,0 +1,204 @@
+/**
+ * La personalidad por plataforma. D-031, criterio #128 de F2.
+ *
+ * ─── Qué cambia y qué NO ───────────────────────────────────────────────────
+ *
+ * Cambia la FORMA: radios, elevación, dónde vive la navegación, cómo se marca
+ * lo activo, qué peso tienen los controles. No cambia el color de marca, ni la
+ * tipografía de la marca, ni un solo texto. Ignia sigue siendo Ignia en las
+ * cinco plataformas; lo que se adapta es el idioma de la interfaz.
+ *
+ * `data-platform` lo escribe el SERVIDOR en el `<html>` — nunca JavaScript.
+ * `docs/guia-de-estilo.md`: «una detección en JS fallaría justo en la primera
+ * pintura, que es donde importa».
+ *
+ * ─── Lo que un PWA puede y no puede ────────────────────────────────────────
+ *
+ * No puede instanciar un `UIButton` ni un `MaterialButton`. Puede adoptar su
+ * lenguaje —radio, elevación, altura, dónde vive la navegación— y usar la
+ * tipografía del sistema, que sí es la real (D-036). Decir «controles nativos»
+ * sería mentir sobre lo que la plataforma permite; esto es la personalidad
+ * nativa, que es lo que `mc-22` mide cuando dice que los adolescentes abandonan
+ * porque «se siente web».
+ */
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Base común: la navegación como barra inferior en táctil.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* `--safe-*` es lo que separa una PWA de una página. Sin esto, la barra inferior
+   queda debajo del indicador de inicio de un iPhone y de la barra de gestos de
+   Android: se ve, no se puede tocar. */
+:root {
+  --safe-abajo: env(safe-area-inset-bottom, 0px);
+  --safe-arriba: env(safe-area-inset-top, 0px);
+  --nav-alto: 56px;
+}
+
+/* La barra inferior solo existe donde la plataforma la espera (Android e iOS).
+   No es una consulta de ancho: un iPad en horizontal es ancho y la sigue
+   queriendo abajo, y una ventana estrecha de escritorio no. */
+[data-platform="android"] .barra-inferior,
+[data-platform="ios"] .barra-inferior {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  padding-block-end: var(--safe-abajo);
+  background: var(--color-surface);
+  border-block-start: 1px solid var(--color-border);
+  font-family: var(--font-sistema);
+}
+
+/* Y el cuerpo deja hueco para ella, o el último párrafo queda debajo. */
+[data-platform="android"] main,
+[data-platform="ios"] main {
+  padding-block-end: calc(var(--nav-alto) + var(--safe-abajo) + var(--space));
+}
+
+[data-platform="android"] .barra-inferior a,
+[data-platform="ios"] .barra-inferior a,
+[data-platform="android"] .barra-inferior [aria-current],
+[data-platform="ios"] .barra-inferior [aria-current] {
+  flex: 1 1 0;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-block-size: var(--nav-alto);
+  padding-block: 6px;
+  font-size: 0.75rem;
+  text-decoration: none;
+  color: var(--color-text-muted);
+}
+
+/* En escritorio la barra inferior no se pinta: la navegación va arriba, que es
+   donde vive en Windows y en macOS, y el borde de abajo es de la barra de tareas
+   o del Dock. */
+[data-platform="macos"] .barra-inferior,
+[data-platform="windows"] .barra-inferior,
+[data-platform="otro"] .barra-inferior {
+  display: none;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   ANDROID — Material 3
+   ───────────────────────────────────────────────────────────────────────────
+   Lo característico de M3 y lo que se adopta: esquinas MUY redondeadas (los
+   botones son cápsulas de 20dp), sin sombras en los controles —la elevación se
+   expresa con color, no con sombra—, y el elemento activo de la barra de
+   navegación lleva una «píldora» detrás del icono.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+[data-platform="android"] {
+  /* Cápsula. Es la forma que hace que un botón se lea como Material 3. */
+  --radius: 20px;
+  --radius-control: 100px;
+}
+
+[data-platform="android"] .acciones > * {
+  border-radius: var(--radius-control);
+  /* M3 no usa sombra en botones rellenos: la jerarquía es de color. */
+  box-shadow: none;
+  /* 40dp es la altura de un botón M3; se sube al mínimo táctil del producto. */
+  min-block-size: max(40px, var(--tap-primaria));
+  letter-spacing: 0.01em;
+}
+
+/* La píldora del elemento activo — la seña de identidad de la barra de
+   navegación de M3. */
+[data-platform="android"] .barra-inferior [aria-current] {
+  color: var(--color-text);
+}
+[data-platform="android"] .barra-inferior [aria-current] .icono {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  border-radius: 100px;
+  padding-inline: 16px;
+  padding-block: 3px;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   iOS / iPadOS — Human Interface Guidelines
+   ───────────────────────────────────────────────────────────────────────────
+   Lo característico de HIG: radios moderados (10-12pt), la barra de pestañas
+   translúcida con desenfoque, y el color de acento marcando lo activo con
+   TEXTO, no con una píldora. Los botones no llevan sombra.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+[data-platform="ios"] {
+  --radius: 12px;
+  --radius-control: 12px;
+}
+
+[data-platform="ios"] .acciones > * {
+  border-radius: var(--radius-control);
+  box-shadow: none;
+  /* 44pt es el mínimo de HIG y coincide con `--tap-primaria`. */
+  min-block-size: var(--tap-primaria);
+  font-weight: 600;
+}
+
+/* El material translúcido de la barra de pestañas. Con respaldo: si el
+   navegador no soporta `backdrop-filter`, queda opaca — que es correcto, no
+   degradado. */
+[data-platform="ios"] .barra-inferior {
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+}
+@supports (backdrop-filter: blur(20px)) {
+  [data-platform="ios"] .barra-inferior { backdrop-filter: blur(20px) saturate(180%); }
+}
+
+[data-platform="ios"] .barra-inferior [aria-current] {
+  color: var(--color-text-brand);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   WINDOWS — Fluent
+   ───────────────────────────────────────────────────────────────────────────
+   Radios pequeños (4px), y el acento como una línea que subraya lo activo.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+[data-platform="windows"] {
+  --radius: 4px;
+  --radius-control: 4px;
+}
+
+[data-platform="windows"] .acciones > * {
+  border-radius: var(--radius-control);
+  min-block-size: var(--tap-primaria);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   macOS
+   ───────────────────────────────────────────────────────────────────────────
+   Radios de 6px, controles compactos. La navegación se queda arriba: en un Mac
+   el borde inferior es del Dock.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+[data-platform="macos"] {
+  --radius: 6px;
+  --radius-control: 6px;
+}
+
+[data-platform="macos"] .acciones > * {
+  border-radius: var(--radius-control);
+  min-block-size: var(--tap-primaria);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   OTRO — Linux, ChromeOS, lo que venga
+   ───────────────────────────────────────────────────────────────────────────
+   Se queda con los valores de `tokens.css`. No hay convención de plataforma que
+   respetar, y la guía de estilo dice lo mismo de la tipografía: «Raleway se
+   queda: no hay convención de plataforma que respetar».
+   ─────────────────────────────────────────────────────────────────────────── */
+
+[data-platform="otro"] {
+  /* Deliberadamente vacío. El bloque existe para que el auditor pueda
+     comprobar que las cinco plataformas están contempladas, y para que quien
+     lea este archivo vea que la ausencia es una decisión y no un olvido. */
+}

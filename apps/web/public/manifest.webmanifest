@@ -1,7 +1,7 @@
 {
   "name": "Math Challenge",
   "short_name": "Math Challenge",
-  "description": "De contar patos a topolog\u00eda algebraica. Un juego de retos matem\u00e1ticos de los 4 a\u00f1os al matem\u00e1tico profesional.",
+  "description": "De contar patos a topología algebraica. Un juego de retos matemáticos de los 4 años al matemático profesional.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -33,5 +33,12 @@
   "categories": [
     "education",
     "games"
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "id": "math-challenge",
+      "url": "https://math.kilowatto.com/manifest.webmanifest"
+    }
   ]
 }

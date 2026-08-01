@@ -22,7 +22,7 @@
 // generados con el mismo modelo que usa el motor confirman lo que el motor ya
 // cree. Eso es diseño de la simulación, y `mc-13` habla de ello.
 
-import { archivos, leer, informar, existe, SOLO_PRODUCTO, palabra } from "./lib/repo.mjs";
+import { archivos, leer, informar, existe, SOLO_PRODUCTO, palabra, sinComentarios } from "./lib/repo.mjs";
 
 const ES_ADAPTATIVO = palabra("adaptativ\\w*", "adaptive", "cat_?engine", "irt", "elo", "theta", "knowledge_?tracing", "bkt", "dkt");
 const ES_SIMULACION = /(simulacion|simulation|simular|simulate|synthetic|sintetic)/i;
@@ -32,7 +32,10 @@ const problemas = [];
 const notas = [];
 
 const motores = fuentes.filter((f) => {
-  const t = leer(f) ?? "";
+  // Sin comentarios: `bandas.ts` dice «eso lo hace el motor adaptativo (D-002,
+  // mc-44)» en el párrafo escrito precisamente para aclarar que ESE archivo no
+  // es uno — mapea edad a tema visual y no adapta nada. Ver `sinComentarios`.
+  const t = sinComentarios(leer(f) ?? "");
   return ES_ADAPTATIVO.test(f) || ES_ADAPTATIVO.test(t);
 });
 

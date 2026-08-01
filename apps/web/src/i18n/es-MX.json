@@ -28,5 +28,6 @@
   "research": "Cuarenta y siete investigaciones, unas 157,000 palabras, con fuentes citadas y limitaciones declaradas — incluidos los pasajes donde la evidencia contradice a este producto.",
   "statusHeading": "Estado",
   "status": "En construcción. Todavía no hay versión pública.",
-  "sponsor": "Un proyecto de Ignia, sobre Cloudflare."
+  "sponsor": "Un proyecto de Ignia, sobre Cloudflare.",
+  "repoLink": "Código abierto, AGPL-3.0"
 }

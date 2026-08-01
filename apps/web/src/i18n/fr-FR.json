@@ -28,5 +28,6 @@
   "research": "Quarante-sept études, environ 157 000 mots, avec sources citées et limites déclarées — y compris les passages où les données contredisent ce produit.",
   "statusHeading": "État",
   "status": "En construction. Pas encore de version publique.",
-  "sponsor": "Un projet d'Ignia, sur Cloudflare."
+  "sponsor": "Un projet d'Ignia, sur Cloudflare.",
+  "repoLink": "Code ouvert, AGPL-3.0"
 }

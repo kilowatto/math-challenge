@@ -83,7 +83,7 @@ instructions audio/vidéo (34 %) [6]. Une étude de validité de la loi de Fitts
 a trouvé que le temps de mouvement était « significativement plus élevé pour
 le glisser-déposer que pour le tap » spécifiquement chez les enfants de 4-6
 ans, l'écart disparaissant vers 7-10 ans — le déficit est lié à l'âge et se
-referme vers le CP.
+referme vers le CP [4].
 
 ### 2. Pourquoi le glisser-déposer pose problème, et ce qui fonctionne à la place
 
@@ -397,7 +397,7 @@ contrôles adultes cachés.
 1. Hourcade, J.P., Bederson, B.B., Druin, A., Guimbretière, F. (2004).
    "Differences in pointing task performance between preschool children and
    adults using mice." ACM TOCHI. https://dl.acm.org/doi/10.1145/1035575.1035577
-2. ResearchGate summary of Hourcade et al. (2004), citing 23.7mm target /
+2. ResearchGate summary of Hourcade et al. (2004), citing 23,7mm target /
    90% accuracy for 4-year-olds.
    https://www.researchgate.net/publication/220286166_Differences_in_pointing_task_performance_between_preschool_children_and_adults_using_mice
 3. Vatavu, R.-D., Cramariuc, G., Schipor, D.M. "Touch interaction for children

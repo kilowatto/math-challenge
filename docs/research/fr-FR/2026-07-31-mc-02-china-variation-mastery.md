@@ -4,8 +4,8 @@
 
 ## Résumé exécutif (FR)
 
-- L'« enseignement avec variation » (bianshi jiaoxue, 变式教学), développé par Gu Lingyuan dans le district de Qingpu, à Shanghai (depuis les années 1980), distingue la **variation conceptuelle** (mettre en contraste des exemples/contre-exemples pour révéler les traits essentiels) et la **variation procédurale** (des séquences où l'on change un élément à la fois, en gardant le reste invariant) [1][2][7].
-- Les « deux fondamentaux » (connaissances + compétences de base) constituent le principe curriculaire chinois depuis les années 1960 (influence soviétique) ; ils expliquent l'accent mis sur le calcul rapide et précis [3].
+- L'« enseignement avec variation » (bianshi jiaoxue, 变式教学), développé par Gu Lingyuan dans le district de Qingpu, à Shanghai (depuis les années 80), distingue la **variation conceptuelle** (mettre en contraste des exemples/contre-exemples pour révéler les traits essentiels) et la **variation procédurale** (des séquences où l'on change un élément à la fois, en gardant le reste invariant) [1][2][7].
+- Les « deux fondamentaux » (connaissances + compétences de base) constituent le principe curriculaire chinois depuis les années 60 (influence soviétique) ; ils expliquent l'accent mis sur le calcul rapide et précis [3].
 - Depuis 2022, le curriculum officiel a évolué vers les « quatre fondamentaux » (+ idées et expérience de l'activité mathématique) et six compétences clés, incluant des exigences formelles de « formulation de problèmes » (problem-posing) par tranches de niveau [4][9].
 - Le modèle de « maîtrise » (mastery) de Shanghai a été exporté vers l'Angleterre via le NCETM/Maths Hubs à partir de 2014 ; le gouvernement anglais a investi 76 millions de livres sterling dans « Teaching for Mastery » [5][8].
 - L'évaluation officielle (Sheffield Hallam/DfE, 2019) a constaté des **effets positifs en Key Stage 1** mais **aucune preuve quantifiable en Key Stage 2**, et aucun changement dans l'attitude des élèves — un tableau plus nuancé que le récit « nous avons importé la méthode chinoise et ça a marché » [6][8].

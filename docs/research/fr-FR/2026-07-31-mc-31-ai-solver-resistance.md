@@ -129,8 +129,8 @@ géométrie algébrique et théorie des catégories, des problèmes qui prennent
 chacun plusieurs heures à des experts, avec une tranche supérieure « Tier 4 »
 demandant plusieurs jours d'effort expert — conçu pour continuer à tester les
 systèmes de pointe à mesure que les benchmarks plus faciles saturent [11].
-C'est bien au-dessus de tout ce qu'une application d'entraînement du primaire
-à l'université assignerait, mais cela compte pour l'ambition de Math Challenge
+C'est bien au-dessus de tout ce qu'une application d'entraînement K-12/université
+assignerait, mais cela compte pour l'ambition de Math Challenge
 d'atteindre un contenu de niveau doctorat : quelque part entre « série
 d'exercices difficile » et « problème de recherche ouvert », les solveurs
 cessent d'être fiables, et cette frontière mérite d'être connue précisément

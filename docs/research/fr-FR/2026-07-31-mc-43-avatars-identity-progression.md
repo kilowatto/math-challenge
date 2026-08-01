@@ -124,7 +124,7 @@ mot entre ces cinq langues [19]).
 
 Roblox est l'étude de cas disposant du plus fort investissement disponible :
 vérification d'âge obligatoire depuis janvier 2026, chat restreint à des
-groupes segmentés par âge, et malgré cela « plus de 1 600 modérateurs » plus
+groupes segmentés par âge, encore avec "1,600+ moderators" plus
 un filtrage piloté par IA ; une enquête de 2020 a décrit les efforts de
 retrait comme un jeu de « chat contre souris » avec du contenu sexuel qui
 réapparaît ; un rapport de 2024 a relié des incidents réels de prédation à
@@ -201,7 +201,7 @@ d'avantage net par rapport aux leçons sans agent ; les agents présentés
 comme co-apprenants renforcent plus fidèlement le sentiment d'efficacité
 personnelle ; la représentation statique ou animée reste une question
 ouverte et contradictoire [9]. Cela converge avec l'histoire de la recherche
-sur Sesame Street elle-même : les études de l'ETS de 1970-1971 ont trouvé que
+sur Sesame Street elle-même : les études de l'ETS de 1970-71 ont trouvé que
 les spectateurs les plus assidus apprenaient davantage, quel que soit leur
 désavantage de départ, et une analyse économique de 2019 (Kearney & Levine)
 l'a qualifiée de « peut-être la plus grande intervention de la petite enfance,

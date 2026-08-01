@@ -118,7 +118,7 @@ L'affirmation honnête qui en découle : **un club de parents est sûr précisé
 
 ### 7. Pourquoi deux systèmes et non un avec un indicateur
 
-`grupo_infantil` (qui couvre la classe de l'enseignant et le club de parents, avec des règles de sécurité identiques) et `club_adulto` (avec défis et gages) doivent être des **structures séparées dans la base de données**, pas une table avec un champ `type`.
+`grupo_infantil` (qui couvre la classe de l'enseignant et le club de parents, avec des règles de sécurité identiques) et `club_adulto` (avec défis et gages) doivent être des **structures séparées dans la base de données**, pas une table avec un champ `tipo`.
 
 La raison n'est pas de modélisation mais de mode de défaillance. Avec une seule table, le jour où quelqu'un ajoute du texte libre, des messages ou du téléversement d'images « aux clubs », cette fonctionnalité atterrit par défaut aussi sur les groupes d'enfants, et la protection dépend du fait que celui qui écrit ce code se souvienne de la règle. Avec deux structures, ajouter du texte libre au club des adultes **ne peut pas** toucher les enfants même si personne ne se souvient de rien. C'est la différence entre une convention et un verrou.
 

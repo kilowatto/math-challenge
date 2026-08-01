@@ -775,6 +775,18 @@ escritorio más completa.
 
 ## D-032 — La flota de 35 auditores · 2026-07-31
 
+> **Enmendada el 2026-08-01: los adversariales son 28, no 23.** Se añadieron seis
+> cartas de locale —una por idioma— cuando el corpus traducido empezó a
+> servirse: sin ellas, 242 documentos en seis lenguas no tenían quien los mirara
+> con hostilidad en su propio idioma, y el auditor determinista de integridad
+> comprueba cifras y enlaces, no si un párrafo alemán dice lo que el original
+> decía.
+>
+> El número vive escrito a mano en `audits/adversarial/prueba.mjs` y **no
+> derivado de `CARTAS.length`**, que sería una prueba incapaz de fallar. Existe
+> para que añadir una carta obligue a tocar esta decisión — que es lo que acaba
+> de pasar: la prueba bloqueó un commit hasta que alguien vino a escribir esto.
+
 **Decisión del dueño:** el despliegue lleva auditores adversariales, sin miedo a
 que sean muchos. Son **38**, en dos clases:
 

@@ -1,0 +1,99 @@
+---
+/**
+ * Las marcas contextuales. Criterio #121 · D-026, `mc-45` §3.
+ *
+ * ─── Qué es una marca y por qué no es un tutorial ──────────────────────────
+ *
+ * D-026 se llama «Registro de 2 campos y **onboarding contextual**». La segunda
+ * mitad es esto: lo que no cabe en dos campos **se explica en el momento en que
+ * hace falta**, donde se puede decir por qué, y no en un carrusel al entrar.
+ *
+ * `mc-45` §3: una anotación al lado de lo que explica, no un diálogo encima.
+ * Nada tocable dentro salvo el descarte, para que no compita con la tarea.
+ *
+ * ─── Los nombres no coincidían, y hay que decirlo ──────────────────────────
+ *
+ * El criterio #121 nombra dos marcas: `age-vs-difficulty` y `profile-not-user`.
+ * La migración 0003 declara otros cinco códigos: `PRIMER_PERFIL`,
+ * `PRIMER_RETO`, `LIMITE_PANTALLA`, `TABLERO_OPTIN`, `SEGUNDO_DISPOSITIVO`.
+ *
+ * **No son la misma lista y no se contradicen: son dos ejes.** Los de la
+ * migración son **cuándo** se dispara —momentos del ciclo de vida—; los del
+ * criterio son **qué dice** la marca. Dos marcas distintas pueden salir en el
+ * mismo momento, y es justo lo que pasa al crear el primer perfil.
+ *
+ * Se guarda el código de la MIGRACIÓN, porque su `CHECK` es lo que impide
+ * inventar uno. Es la misma decisión que D-051 tomó con el consentimiento:
+ * manda el catálogo que tiene gobierno.
+ *
+ * ─── Una vez por usuario, y el descarte se guarda ──────────────────────────
+ *
+ * `contextual_marks` tiene `PRIMARY KEY (user_id, mark_code)`, así que una marca
+ * se muestra una vez. Y el descarte guarda **qué hizo**: aceptó, rechazó, o
+ * cerró sin decidir. Las tres son respuestas distintas, y tratarlas igual es
+ * cómo se acaba insistiendo.
+ */
+import { t, type Locale } from "../i18n";
+
+/** Los cinco momentos. Coinciden con el CHECK de la migración 0003. */
+export type CodigoDeMarca =
+  | "PRIMER_PERFIL"
+  | "PRIMER_RETO"
+  | "LIMITE_PANTALLA"
+  | "TABLERO_OPTIN"
+  | "SEGUNDO_DISPOSITIVO";
+
+interface Props {
+  locale: Locale;
+  codigo: CodigoDeMarca;
+  /** Qué dice. Un momento puede llevar más de una. */
+  texto: string;
+}
+const { locale, codigo, texto } = Astro.props as Props;
+const m = t(locale);
+---
+
+<aside class="marca" data-marca={codigo}>
+  <p>{texto}</p>
+  {/*
+    El descarte es un formulario, no un botón con JavaScript: sin script tiene
+    que poder cerrarse igual, y `mc-33` documenta que el JavaScript falla más de
+    lo que nadie cree en el dispositivo de referencia.
+  */}
+  <form method="post" action="/api/marca" class="descartar">
+    <input type="hidden" name="codigo" value={codigo} />
+    <input type="hidden" name="respuesta" value="CERRO" />
+    <button type="submit" aria-label={m.markDismiss}>{m.markDismiss}</button>
+  </form>
+</aside>
+
+<style>
+  /* Una anotación al lado, no un diálogo encima (`mc-45` §3). La raya lateral
+     la separa del texto sin robar ancho ni empujar nada. */
+  .marca {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space);
+    margin-block: var(--space);
+    padding-inline-start: var(--space);
+    border-inline-start: 3px solid var(--color-accent);
+    font-family: var(--font-sistema);
+    font-size: var(--text-xs);
+    line-height: var(--leading-body);
+    color: var(--color-text-muted);
+  }
+  .marca p { margin: 0; flex: 1 1 auto; }
+  .descartar { flex: 0 0 auto; margin: 0; }
+  /* 24px es el mínimo de WCAG 2.5.8 y basta: es un control secundario dentro de
+     una anotación, no la acción de la pantalla. */
+  .descartar button {
+    min-block-size: var(--tap-min);
+    min-inline-size: var(--tap-min);
+    background: none;
+    border: 0;
+    color: var(--color-text-muted);
+    font-family: var(--font-sistema);
+    cursor: pointer;
+  }
+  .descartar button:focus-visible { outline: 2px solid var(--color-text); outline-offset: 2px; }
+</style>

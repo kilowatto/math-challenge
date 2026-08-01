@@ -134,6 +134,13 @@ comprobar(
 );
 
 // --- La flota completa ---------------------------------------------------
+// D-032 decía 23. Son 28 desde que se añadieron las seis cartas de locale —
+// una por idioma— para que el corpus traducido tuviera quien lo mirara con
+// hostilidad en cada lengua. La decisión está enmendada con esa razón.
+//
+// El número sigue escrito a mano y no derivado de `CARTAS.length`, que sería
+// una prueba que no puede fallar: existe justamente para que añadir una carta
+// obligue a tocar la decisión, y no al revés.
 comprobar("D-032 pide 28 adversariales", CARTAS.length, 28);
 comprobar("cada carta tiene al menos una cita", CARTAS.every((c) => c.cita.length > 0), true);
 comprobar("cada carta declara de qué es ciega", CARTAS.every((c) => c.ciega_a?.length > 20), true);

@@ -253,6 +253,19 @@ for (let i = 0; alias.length < CUANTOS_ALIAS && i < CUANTOS_ALIAS * 4; i++) {
         <h1>{titulo}</h1>
       <p class="lead">{lead}</p>
 
+    {/*
+      Las DOS marcas que F2 puede encender (criterio #121). Las otras tres viven
+      en F4, F9 y F10: se disparan al primer reto, al configurar el límite de
+      pantalla y al marcar un segundo dispositivo, y **F2 no las puede
+      encender** — decirlo importa, porque «las cinco en verde» sería una
+      aserción en tono seguro que nadie puede re-ejecutar.
+
+      Las dos van aquí y no en un carrusel al entrar: es el momento en que hacen
+      falta y donde se puede explicar por qué (D-026, `mc-45` §3).
+    */}
+    <Marca locale={locale} codigo="PRIMER_PERFIL" texto={m.markProfileNotUser} />
+    <Marca locale={locale} codigo="PRIMER_PERFIL" texto={m.markAgeVsDifficulty} />
+
       {/*
         Marca contextual 2 de D-026, `profile-not-user`. Va anclada al formulario
         porque es donde el adulto busca el correo del niño y no lo encuentra.

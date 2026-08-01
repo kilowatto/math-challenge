@@ -1,0 +1,62 @@
+---
+/**
+ * `/{locale}/app/perfil-nuevo/` — la puerta del padre. Criterio #114.
+ *
+ * ─── Por qué NO va en el router de secciones ───────────────────────────────
+ *
+ * Las tres puertas de registro (`Registro.astro`) viven en el router de
+ * `[seccion]` y eso es correcto: son públicas, y tienen que ser encontrables en
+ * los siete idiomas con su `hreflang` y su entrada en el sitemap.
+ *
+ * Esta no. Es una pantalla **posterior al inicio de sesión**, donde un adulto
+ * crea el perfil de su hijo. Meterla en el router de secciones la publicaría en
+ * el sitemap y le pondría `hreflang` recíproco — o sea, invitaría a Google a
+ * indexar una página que solo tiene sentido con una sesión abierta, y que sin
+ * ella redirige. Una URL indexada que siempre redirige es un error de SEO y,
+ * peor, una pista pública de dónde vive la superficie de la familia.
+ *
+ * Por eso vive bajo `/{locale}/app/`, con `noindex`, y el locale sigue en la
+ * ruta porque el texto es distinto en cada uno (D-022).
+ *
+ * ─── Sin sesión no se pinta ────────────────────────────────────────────────
+ *
+ * Se redirige a la puerta de registro del MISMO locale — nunca a la de `en`,
+ * porque alguien que llegó leyendo alemán y acaba en inglés cree que se rompió
+ * algo. Y nunca a un formulario dirigido a un niño: aquí solo entra un adulto.
+ */
+import { LOCALES, isLocale, type Locale } from "../../../i18n";
+import { ruta } from "../../../i18n/rutas";
+import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../../lib/sesiones";
+import PerfilNuevo from "../../../components/paginas/PerfilNuevo.astro";
+
+// Lee cookies, así que la sirve el Worker en cada petición. Con `prerender`
+// puesto se generaría una página estática que nunca vería una sesión.
+export const prerender = false;
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale: rawLocale } = Astro.params;
+if (!isLocale(rawLocale)) return Astro.redirect("/en/");
+const locale: Locale = rawLocale;
+
+// `any` a propósito: los tipos de los bindings de Cloudflare no están generados
+// en este paquete, y declarar `KVNamespace` aquí a mano sería una segunda
+// definición que se separa de la real.
+const env = (Astro.locals as any).runtime?.env;
+
+// Sin binding no se adivina: se manda a registrarse. Fallar hacia «no tienes
+// sesión» es lo seguro; fallar hacia «pasa» dejaría crear perfiles de niño sin
+// adulto detrás, que es la forma exacta de la línea roja #2.
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(
+      env.SESSION_KV,
+      leerCookies(Astro.request.headers.get("cookie"))[COOKIE_ADULTO],
+    )
+  : null;
+
+if (!sesion) return Astro.redirect(ruta(locale, "registro-padre"));
+---
+
+<PerfilNuevo locale={locale} />

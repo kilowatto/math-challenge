@@ -1,0 +1,589 @@
+/* Los cinco temas visuales de D-017, como una CAPA de tokens sobre tokens.css
+ * ==========================================================================
+ *
+ * Criterios #123, #125, #126, #127 de F2.
+ *
+ * Qué es esto y qué NO es. No son cinco hojas de estilo: son cinco bloques que
+ * **redefinen tokens ya existentes**. Ni un color nuevo se declara aquí — todo
+ * sale de `--ignia-*` y de los `--color-*` de `tokens.css`. Un tema que declara
+ * su propia paleta deja de ser un tema y pasa a ser un segundo producto, y en
+ * seis meses nadie sabe cuál de los dos es el bueno.
+ *
+ * ─── Dónde viven `data-band` y `data-theme` ────────────────────────────────
+ *
+ * Los dos van en `<html>`, escritos **por el servidor** desde el perfil activo
+ * (estas rutas son `prerender = false`). Nunca desde JavaScript: un tema que se
+ * pinta después del primer render es el destello blanco que ve un niño de cuatro
+ * años en un Android de gama baja sobre 4G lento, que es el dispositivo de
+ * referencia (master-plan §3.1, `mc-47`).
+ *
+ * `data-theme` vale `light` o `dark` y se emite **solo si la persona eligió**.
+ * Su ausencia es "automático". Los selectores de abajo NO dicen
+ * `:not([data-theme])` sino `:not([data-theme="light"])`, y la diferencia
+ * importa: con `:not([data-theme])`, un `data-theme="auto"` escrito en `<html>`
+ * por descuido sacaba a SECUNDARIA, SERIO y PRO del tema de noche **sin que
+ * nada fallara** — la pantalla salía clara y el error solo se veía mirándola.
+ * Escrito como "todo lo que no sea claro", el único valor que apaga el default
+ * de banda es el único que debe apagarlo, y el archivo deja de depender de un
+ * contrato que ninguna herramienta puede hacer cumplir.
+ *
+ * (El `data-theme="auto"` que se ve en `Registro.astro` es del widget de
+ * Turnstile, va en un `div` y no tiene nada que ver con esto; por eso los
+ * selectores de abajo exigen `data-band` en el MISMO elemento y no pueden
+ * confundirse con él.)
+ *
+ * ─── El mapa de herencia: quién hereda de quién, y por qué ─────────────────
+ *
+ *   tokens.css :root  ──►  la base. Es el tema del sitio público y del adulto en
+ *                          claro. Todas las bandas parten de aquí y solo escriben
+ *                          las diferencias.
+ *
+ *   KINDER (4-6)      ──►  hereda la paleta de la base y reescribe la
+ *                          tipografía entera. Es la banda que más se aparta:
+ *                          nunca Light, numerales 24-32 px, blancos de 88 px
+ *                          (`mc-20`). No hereda de ninguna otra banda.
+ *
+ *                          **Hereda la paleta de la base, no "la paleta clara".**
+ *                          KINDER y PRIMARIA no declaran ni un `--color-*`, así
+ *                          que en un dispositivo con el sistema en oscuro el
+ *                          `@media (prefers-color-scheme: dark)` de `tokens.css`
+ *                          les da la paleta de noche. No es una decisión de
+ *                          diseño de nadie: es lo que hace hoy la base, y este
+ *                          archivo no puede desactivar una `@media` de otro
+ *                          archivo sin duplicar la paleta clara entera. El
+ *                          arreglo va en `tokens.css` y está en el informe.
+ *
+ *   PRIMARIA (7-11)   ──►  hereda la paleta de la base y **baja el volumen de
+ *                          KINDER**: problema 18-20 px y etiquetas 16 px, "más
+ *                          chico y menos gritón que los numerales de 24-32 px de
+ *                          KINDER" (`mc-21` §194-196). Blancos de 48 px.
+ *
+ *   SECUNDARIA (12-17)──►  hereda la ESTRUCTURA de PRIMARIA y **rompe con la
+ *                          paleta**: oscuro por defecto (`mc-22` §35, §75 — el
+ *                          modo oscuro dejó de ser preferencia y es expectativa).
+ *                          Densidad intermedia: más contenido que un niño, menos
+ *                          que una app de productividad (`mc-22` §76). Blancos de
+ *                          44 px (HIG), no 48: a esta edad la motricidad ya es
+ *                          adulta y un botón de niño se lee como condescendencia,
+ *                          que es lo que `mc-22` §29 documenta que hace abandonar.
+ *
+ *   SERIO (adulto)    ──►  hereda el OSCURO de SECUNDARIA y sube la densidad:
+ *                          menos aire, radios más chicos, medida más larga.
+ *                          `mc-23` §45: las herramientas de sesión larga —IDEs,
+ *                          Jupyter, editores de LaTeX— convergen en oscuro
+ *                          primero y alta densidad de información.
+ *
+ *   PRO (Jr / prof.)  ──►  hereda SERIO **entero** y añade dos cosas y nada más:
+ *                          numerales monoespaciados de ancho fijo, para que una
+ *                          matriz o una tabla alineen columnas (`mc-23` §45), y
+ *                          el escalón final de densidad. No es un tema distinto
+ *                          de SERIO, es SERIO con el volumen de densidad arriba;
+ *                          por eso comparten bloque y PRO solo escribe deltas.
+ *
+ * ─── El naranja, otra vez ──────────────────────────────────────────────────
+ *
+ * `#F36B1C` da **3.03:1 sobre blanco**: títulos grandes, botones y gráficos, y
+ * jamás texto normal (`guia-de-estilo.md`, `audits/contrast.mjs`). Aquí no hay ni
+ * un uso de `--color-accent` como color de texto. En oscuro el mismo naranja
+ * sube a 5.88:1 sobre `#16181A` y ahí sí puede llevar texto normal — que es la
+ * casualidad afortunada de que las tres bandas que `mc-22` y `mc-23` quieren en
+ * oscuro son justo donde la marca se ve mejor.
+ *
+ * ─── Lo que este archivo NO hace, dicho de frente ──────────────────────────
+ *
+ *  · **No toca `--tracking-readable`.** `guia-de-estilo.md` cita `mc-21` con
+ *    0.12em entre letras y el token vale 0.012em, diez veces menos. Las tres
+ *    cifras de `mc-21` (1.5×, 0.12em, 0.16em) son **exactamente** las de WCAG 2.1
+ *    SC 1.4.12 «Text Spacing», que no pide aplicarlas sino **tolerarlas**. Cuál
+ *    de las dos lecturas vale está abierto en `docs/dudas.md` § «El espaciado de
+ *    dislexia», y cambiar el token sin resolverlo altera el tipo de todo el sitio
+ *    a partir de una coma decimal que nadie verificó. Lo que sí se aplica aquí es
+ *    lo que las dos lecturas comparten: **interlineado ≥1.5 en las cinco
+ *    bandas**, medida de línea dentro de 45-100 caracteres, y alineado a la
+ *    izquierda.
+ *  · **No arregla el tema del usuario cuando el sistema está en oscuro, y eso
+ *    deja el contrato de `data-theme` a medias.** `tokens.css` mete la paleta de
+ *    noche dentro de un `@media (prefers-color-scheme: dark)` sin condición de
+ *    atributo, y una `@media` de otro archivo no se puede desactivar desde aquí
+ *    sin volver a escribir la paleta clara entera —lo que dejaría dos copias del
+ *    mismo tema y duplicaría en el informe de `contrast.mjs` los tres fallos que
+ *    la paleta clara ya tiene abiertos en `docs/dudas.md` § #14. O sea:
+ *    `data-theme="dark"` funciona en las cinco bandas, y `data-theme="light"`
+ *    funciona en todas **salvo** cuando el sistema del dispositivo está en
+ *    oscuro, donde se ignora en silencio. El arreglo es de una línea y va en
+ *    `tokens.css`; está escrito literal en el informe.
+ *  · **No se importa solo.** Hoy la única página que lo carga es
+ *    `pages/app/kids/index.astro`; toda pantalla de banda nueva tiene que hacer
+ *    `import "../styles/bandas.css"` **después** de `tokens.css`. El orden
+ *    importa: varios selectores de aquí empatan en especificidad con `:root` y
+ *    ganan por orden de origen. Una pantalla que emita `data-band` y no importe
+ *    este archivo se ve exactamente como la base y no falla nada — es el modo de
+ *    romperlo que no deja rastro.
+ */
+
+/* ==========================================================================
+ * 1 · La paleta de noche
+ *
+ * Un solo bloque para los cuatro casos que la usan, en vez de repetirla en tres
+ * bandas: si un valor cambia, cambia una vez.
+ *
+ * **`:not([data-theme="light"])` es cómo gana el usuario.** No hay competencia
+ * de especificidad que resolver ni un `!important` que explicar: si la persona
+ * pidió claro, el default de la banda **no puede** aplicarse porque el selector
+ * deja de casar. Es la única forma de que "el usuario manda" sea una propiedad
+ * estructural y no una convención que la próxima regla rompe.
+ *
+ * Se niega el valor `light` y no la presencia del atributo, a propósito. Con
+ * `:not([data-theme])` cualquier valor inesperado —un `"auto"`, un `""`, un
+ * `"system"`— apagaba el tema de noche de tres bandas enteras sin romper nada
+ * que se pudiera auditar. Aquí lo único que lo apaga es lo único que significa
+ * "quiero claro".
+ *
+ * Los cuatro neutros de noche no vienen del PDF de Ignia: son derivados y están
+ * declarados como tales en `guia-de-estilo.md` § «Neutros derivados» y en la
+ * paleta de `audits/brand-image.mjs`. Se consumen por NOMBRE con el hex como
+ * respaldo, para que el día que `tokens.css` los nombre (va en el informe) este
+ * archivo no haya que tocarlo.
+ *
+ * Dicho sin adorno, porque la cabecera de arriba promete que aquí no se declara
+ * ningún color: **`--ignia-fondo-oscuro`, `--ignia-superficie-oscura` y
+ * `--ignia-texto-oscuro` no existen todavía en `tokens.css`, así que hoy lo que
+ * se pinta es el respaldo en hex.** Los tres valores son idénticos a los del
+ * bloque `prefers-color-scheme: dark` de `tokens.css` —comprobado— y los tres
+ * están en la paleta de `brand-image.mjs`, así que no son colores nuevos; pero
+ * mientras los tokens no existan hay **dos copias del mismo número en dos
+ * archivos**, y cambiar una sin la otra no rompe ninguna prueba. Es la razón por
+ * la que declarar esos tres tokens está pedido en el informe.
+ * ========================================================================== */
+
+[data-band][data-theme="dark"],
+[data-band="SECUNDARIA"]:not([data-theme="light"]),
+[data-band="SERIO"]:not([data-theme="light"]),
+[data-band="PRO"]:not([data-theme="light"]) {
+  /* Que los controles nativos, las barras de desplazamiento y el teclado del
+     sistema salgan oscuros también. Sin esto, un `<select>` nativo se pinta
+     blanco sobre fondo negro y el que se ve mal es el producto, no el navegador. */
+  color-scheme: dark;
+
+  --color-bg: var(--ignia-fondo-oscuro, #16181A);
+  --color-surface: var(--ignia-superficie-oscura, #1F2224);
+  --color-border: var(--ignia-gris-600);           /* 3.79:1 sobre el fondo ✓ */
+
+  --color-text: var(--ignia-texto-oscuro, #ECEDEE); /* 15.19:1 ✓ */
+  --color-text-muted: var(--ignia-gris-400);        /* 7.29:1 ✓ */
+
+  /* Aquí el naranja de la marca SÍ lleva texto normal: 5.88:1 sobre el fondo de
+     noche, contra 3.03:1 sobre blanco. Es el mismo hex; cambió el fondo. */
+  --color-text-brand: var(--ignia-naranja);         /* 5.88:1 ✓ */
+  --color-text-brand-warm: var(--ignia-naranja-claro); /* 8.72:1 ✓ */
+
+  --color-accent: var(--ignia-naranja);
+  --color-accent-hover: var(--ignia-naranja-claro);
+  --color-on-accent: var(--ignia-negro);            /* 6.93:1 ✓ */
+}
+
+/* ==========================================================================
+ * 2 · KINDER — 4 a 6 años (D-017, `mc-20`)
+ *
+ * La banda donde los números no son gusto. Un niño de cuatro años acierta el 90%
+ * de los toques a partir de 23.7 mm (Hourcade et al. 2004, `mc-20` §34), que son
+ * ~88 px CSS: 2.5 veces el mínimo de adulto de Apple. Y `mc-20` §219-223 pide
+ * numerales de 24-32 px mínimo con **alto grosor de trazo**, porque a esta edad
+ * el numeral es el contenido y se discrimina de un vistazo, no se lee.
+ * ========================================================================== */
+
+[data-band="KINDER"] {
+  /* --- Pesos: NUNCA Light -------------------------------------------------
+   * `--weight-title` vale 300 en la base y eso contradice de frente el grosor de
+   * trazo de `mc-20`. En KINDER el piso es Medium y no hay excepción — es la
+   * única banda donde la guía de estilo dice literalmente "no es negociable". */
+  --weight-title: 500;
+  --weight-subtitle: 500;
+  --weight-body: 500;
+
+  /* --- La escala, corrida hacia arriba ------------------------------------
+   * `--text-xs` sube de 14 px a 16 px: por debajo de 16 px iOS Safari hace zoom
+   * al enfocar un campo, y 16 px es además el piso de cuerpo de `mc-21` §164. */
+  --text-xs: 1rem;      /* 16px */
+  --text-base: 1.25rem; /* 20px */
+  --text-lg: 1.5rem;    /* 24px */
+  --text-xl: 2rem;      /* 32px */
+  --text-2xl: 2.75rem;  /* 44px */
+
+  /* --- Los tres tamaños que los componentes van a pedir por nombre --------- */
+  --text-problema: var(--text-xl);   /* 32px */
+  --text-etiqueta: var(--text-base); /* 20px */
+
+  /* 24-32 px exactos: el mínimo de `mc-20` en el extremo chico y su máximo en el
+     grande. `clamp` con `6vw` en medio para que en un Split View de iPad a un
+     tercio (~320 px) siga cayendo en 24 y no se desborde (D-041). */
+  --text-numeral: clamp(1.5rem, 6vw, 2rem);
+  --weight-numeral: 700;
+
+  /* El numeral en la voz del SISTEMA, y esto es deliberado. La guía de estilo
+     dice que en KINDER manda el grosor de trazo por encima de su propia tabla de
+     tipografías: "Medium o Bold antes que la cara del sistema si esta resulta
+     más delgada". Aquí pasa lo contrario y por un motivo medido — la Raleway
+     autohospedada se declara en `fonts.css` como `font-weight: 300 500`, así que
+     **hoy un 700 en Raleway no existe**: el navegador lo recorta a 500 o lo
+     falsifica. Roboto Bold y SF Pro Bold sí son negritas reales en cada
+     plataforma, y el criterio de `mc-20` es el trazo, no la marca. El arreglo de
+     una línea en `fonts.css` va en el informe; el archivo woff2 ya trae el eje
+     `wght` de 100 a 900, medido — solo está mal declarado. */
+  --font-numeral: var(--font-sistema);
+
+  /* --- Blanco táctil ------------------------------------------------------
+   * Redefinir `--tap-min` (y no inventar `--tap-banda`) hace que TODO lo que ya
+   * usa `var(--tap-min)` —incluida la regla de `button` de `tokens.css`— suba a
+   * 88 px sin tocar un componente. **No se relaja en iPad porque haya pantalla
+   * de sobra** (D-041): el dedo de cinco años es el mismo dedo. */
+  --tap-min: var(--tap-kinder); /* 88px */
+
+  /* --- Aire y forma ------------------------------------------------------- */
+  --space: 1.5rem;
+  --radius: 1rem;
+  --leading-body: 1.7;
+  --measure: 45ch; /* el extremo corto de los 45-100 de `mc-21` §164 */
+}
+
+/* Los blancos táctiles, declarados también sobre el elemento y no solo en el
+   token. Dos razones: `min-block-size` declarado es más robusto que un blanco
+   que llega al piso por `padding` + caja de línea —si Raleway no carga, la caja
+   de línea cambia de alto—, y `audits/touch-targets.mjs` sabe leer esto y no
+   sabe leer un token redefinido fuera de `:root`.
+
+   `select` está en la lista y `textarea` NO, y la diferencia es deliberada.
+   `touch-targets.mjs` cuenta a los dos como blancos táctiles, pero la regla de
+   `tokens.css` que reparte `--tap-min` solo nombra `button`, `a[role="button"]`
+   y los `input` de tipo botón: un `<select>` no lo tocaba nadie, en ninguna
+   banda. Un `<textarea>` en una banda de niño es una violación de la línea roja
+   #3 y tiene que hacer ruido rojo en `child-free-text.mjs`, no salir con el
+   tamaño correcto y pasar desapercibido. Darle buen aspecto a lo que debe
+   fallar es cómo un auditor se queda sin trabajo que hacer. */
+[data-band="KINDER"] button,
+[data-band="KINDER"] [role="button"],
+[data-band="KINDER"] select,
+[data-band="KINDER"] summary {
+  min-block-size: var(--tap-kinder);
+  min-inline-size: var(--tap-kinder);
+}
+
+/* ==========================================================================
+ * 3 · PRIMARIA — 7 a 11 años (D-017, `mc-21`)
+ *
+ * `mc-21` §194-196: sans-serif redondeada, 18-20 px de base para el texto del
+ * problema y 16 px mínimo para la etiqueta secundaria — "más chico y menos
+ * gritón que los numerales de 24-32 px de KINDER". La frase importa: PRIMARIA no
+ * es KINDER con menos aire, es KINDER bajado de volumen a propósito, porque a
+ * los siete años el niño ya lee y un tamaño de kinder empieza a sobrar.
+ * ========================================================================== */
+
+[data-band="PRIMARIA"] {
+  /* Medium para títulos, Regular para cuerpo (guia-de-estilo § Las otras bandas).
+     Light sigue fuera: a esta edad se está aprendiendo a leer. */
+  --weight-title: 500;
+  --weight-subtitle: 500;
+  --weight-body: 400;
+
+  --text-xs: 1rem;       /* 16px — el mínimo de etiqueta de `mc-21`, y el de iOS */
+  --text-base: 1.125rem; /* 18px */
+  --text-lg: 1.25rem;    /* 20px */
+  --text-xl: 1.75rem;    /* 28px */
+  --text-2xl: 2.25rem;   /* 36px */
+
+  /* 18-20 px exactos, los dos extremos de `mc-21`. */
+  --text-problema: clamp(1.125rem, 2.5vw, 1.25rem);
+  --text-etiqueta: 1rem; /* 16px, el mínimo explícito */
+  --text-numeral: var(--text-problema);
+
+  /* 500, no 600. Este valor decía 600 y **no existía**: `fonts.css` declara la
+     Raleway variable como `font-weight: 300 500`, así que el navegador recorta
+     cualquier petición fuera de ese rango al extremo más cercano — un 600 en
+     Raleway se pinta hoy exactamente igual que un 500, sin aviso ni error. Es
+     el mismo defecto que en KINDER se resolvió sacando el numeral a la voz del
+     sistema; aquí no hace falta salir de la marca, porque `--weight-body` en
+     PRIMARIA vale 400 y 500 ya es un escalón real de grosor sobre el cuerpo.
+     Se escribe el peso que se renderiza, para que nadie lea "600" en el CSS y
+     crea que está viendo un Semibold. */
+  --weight-numeral: 500;
+  --font-numeral: var(--font-marca);
+
+  --tap-min: var(--tap-primaria); /* 48px */
+
+  --space: 1.25rem;
+  --radius: 12px;
+  --leading-body: 1.6;  /* ≥1.5, `mc-21` §164 */
+  --measure: 58ch;      /* dentro de 45-100 */
+}
+
+[data-band="PRIMARIA"] button,
+[data-band="PRIMARIA"] [role="button"],
+[data-band="PRIMARIA"] select,
+[data-band="PRIMARIA"] summary {
+  min-block-size: var(--tap-primaria);
+  min-inline-size: var(--tap-primaria);
+}
+
+/* ==========================================================================
+ * 4 · SECUNDARIA — 12 a 17 años (D-017, `mc-22`)
+ *
+ * Oscuro por defecto — el bloque §1 ya lo hizo. Lo que queda aquí es lo que
+ * `mc-22` §29 y §76 documentan como lo que hace abandonar a un adolescente sin
+ * que sepa decir por qué: texto denso, condescendencia, cualquier cosa que se
+ * lea "para niños", y **tipos chicos** (tienen vista perfecta pero escanean
+ * demasiado rápido para enfocar tipo pequeño). Así que la densidad sube respecto
+ * de PRIMARIA, pero el tamaño de cuerpo NO baja de 16 px.
+ * ========================================================================== */
+
+[data-band="SECUNDARIA"] {
+  /* Regular en los tres, y Light NO entra todavía aunque la base la use para
+     títulos. El comentario anterior decía "Light entra por primera vez" y el
+     código ponía 400, que es Regular: se corrige el texto, no el número, y por
+     una razón. SECUNDARIA es la primera banda que sale oscura por defecto, y
+     un trazo fino claro sobre fondo oscuro se engorda ópticamente y pierde
+     definición en las pantallas baratas del dispositivo de referencia
+     (`mc-47`); Raleway Light a tamaño de título es justo donde eso se nota.
+     La jerarquía aquí la hace el TAMAÑO —32 / 24 / 16 px—, no el peso, que es
+     además lo que `mc-22` §29 pide al hablar de formato escaneable. */
+  --weight-title: 400;
+  --weight-subtitle: 400;
+  --weight-body: 400;
+
+  --text-xs: 1rem;       /* 16px — no se baja: "tiny fonts" es repelente (`mc-22` §29) */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.5rem;     /* 24px */
+  --text-2xl: 2rem;      /* 32px */
+
+  --text-problema: var(--text-lg);
+  --text-etiqueta: var(--text-xs);
+  --text-numeral: var(--text-lg);
+  --weight-numeral: 500;
+  --font-numeral: var(--font-marca);
+
+  /* 44 px, el mínimo de la HIG de Apple, y no los 48 de PRIMARIA. La motricidad
+     ya es de adulto; un blanco de niño en esta banda es exactamente la señal
+     "esto es para niños" que `mc-22` §29 lista como repelente. Es la misma cifra
+     que `audits/touch-targets.mjs` fija para SECUNDARIA.
+
+     **`--tap-secundaria` no existe en `tokens.css` a día de hoy**, así que lo
+     que está en vigor son los 44 px del respaldo. Se escribe con `var()` para
+     que el día que se declare —está pedido en el informe, al lado de
+     `--tap-primaria` y `--tap-kinder`— este archivo no haya que tocarlo, y para
+     que la cifra quede entonces bajo la vigilancia de `touch-targets.mjs`, que
+     solo sabe leer tokens de `:root`. Mientras tanto el respaldo es el valor
+     seguro: si el token nunca llega, no pasa nada. */
+  --tap-min: var(--tap-secundaria, 44px);
+
+  /* Aire ENTRE bloques, no menos contenido: `mc-22` §76 pide densidad intermedia
+     con espacio en blanco entre trozos, no una pantalla vacía. */
+  --space: 1rem;
+  --radius: 10px;
+  --leading-body: 1.55;
+  --measure: 66ch;
+}
+
+[data-band="SECUNDARIA"] button,
+[data-band="SECUNDARIA"] [role="button"],
+[data-band="SECUNDARIA"] select,
+[data-band="SECUNDARIA"] summary {
+  min-block-size: var(--tap-secundaria, 44px);
+  min-inline-size: var(--tap-secundaria, 44px);
+}
+
+/* ==========================================================================
+ * 5 y 6 · SERIO y PRO — adulto y Jr/profesional (D-017, `mc-23`)
+ *
+ * Comparten todo salvo dos cosas, así que comparten bloque: duplicar SERIO para
+ * escribir PRO es cómo se acaba con dos temas que divergen en el cuarto cambio.
+ *
+ * `mc-23` §45: las herramientas de sesión larga convergen en oscuro primero,
+ * alta densidad por pantalla (varios paneles, poco espacio en blanco frente a
+ * una app de consumo), numerales monoespaciados para alinear tablas y matrices,
+ * y acentos apagados reservados al ESTADO —error, activo, seleccionado— y no a
+ * la decoración. Y §45 cierra con la advertencia que justifica este archivo
+ * entero: los dos registros "no deben compartir los tokens de espaciado y color
+ * por defecto de una librería de componentes" si el adulto ha de leerse como un
+ * producto creíble y no como la app de niños repintada.
+ * ========================================================================== */
+
+[data-band="SERIO"],
+[data-band="PRO"] {
+  /* Aquí sí Raleway Light en títulos: es el registro de herramienta, y el
+     cuerpo se queda en Regular. */
+  --weight-title: 300;
+  --weight-subtitle: 400;
+  --weight-body: 400;
+
+  --text-xs: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.375rem;   /* 22px */
+  --text-2xl: 1.75rem;   /* 28px — un h1 de 40px come pantalla que aquí es densidad */
+
+  --text-problema: var(--text-lg);
+  --text-etiqueta: var(--text-xs);
+  --text-numeral: var(--text-lg);
+  --weight-numeral: 500;
+  --font-numeral: var(--font-marca);
+
+  /* `--tap-min` NO se toca: se queda en los 24 px de WCAG 2.2 AA 2.5.8, que es
+     el piso que `audits/touch-targets.mjs` fija para SERIO, JR y PRO. Subirlo
+     "porque se ve mejor" sería una opinión de diseño disfrazada de
+     accesibilidad, y además pelearía con la densidad que pide `mc-23` §75. */
+
+  --space: 0.75rem;
+  --radius: 8px;
+  --leading-body: 1.5;  /* el piso de `mc-21`; por debajo no se baja en ninguna banda */
+  --measure: 76ch;      /* dentro de 45-100 */
+}
+
+/* PRO = SERIO más dos deltas, y nada más. */
+[data-band="PRO"] {
+  /* 1. Numerales de ancho fijo. Sin esto, una columna de resultados o una matriz
+     no alinea, y `mc-23` §45 lo nombra como parte del vocabulario que separa
+     "herramienta seria" de "app de juguete". `--font-mono` es el tercer token de
+     familia que ya existe en `tokens.css` y resuelve a la monoespaciada de cada
+     sistema (SF Mono, Cascadia) antes que a una elegida por nosotros. */
+  --font-numeral: var(--font-mono);
+
+  /* 2. El último escalón de densidad. */
+  --space: 0.625rem;
+  --radius: 6px;
+  --measure: 84ch; /* sigue dentro de 45-100 */
+}
+
+/* ==========================================================================
+ * 7 · Lo que vale en las cinco bandas
+ * ========================================================================== */
+
+/* --- Dislexia, la parte que las dos lecturas comparten (`mc-21` §160-165) ---
+ *
+ * Alineado a la izquierda: el texto justificado abre "ríos" de espacio blanco
+ * entre palabras que un lector disléxico sigue con la vista en lugar de la
+ * línea. `start` y no `left` porque es la propiedad lógica; hoy los siete
+ * locales son de izquierda a derecha, y el día que no lo sean esto no habrá que
+ * revisarlo.
+ *
+ * El interlineado ≥1.5 y la medida de 45-100 caracteres ya están puestos banda
+ * por banda arriba, en `--leading-body` y `--measure`. El espaciado entre letras
+ * y palabras NO se toca: ver la cabecera y `docs/dudas.md`. */
+[data-band] p,
+[data-band] li,
+[data-band] dd,
+[data-band] figcaption {
+  text-align: start;
+}
+
+/* Sin cursivas ni versalitas en el cuerpo — pero SOLO donde se está aprendiendo
+ * a leer. `mc-21` documenta el parámetro para 7-11 años y `mc-20` vale de sobra
+ * para KINDER; el énfasis se lleva al peso, que no deforma la letra.
+ *
+ * **Y por eso no se aplica a SECUNDARIA, SERIO ni PRO**, aunque el parámetro de
+ * dislexia sea igual de cierto a los treinta años: en esas bandas la cursiva no
+ * es énfasis, es NOTACIÓN — una variable matemática se compone en cursiva por
+ * convención (ISO 80000-2), y apagarla ahí no mejora la lectura, cambia lo que
+ * dice la fórmula. Es la clase de regla global que se ve inofensiva y rompe el
+ * contenido tres fases después.
+ *
+ * **Apagar la cursiva obliga a dar un sustituto que de verdad se vea, y ahí
+ * estaba el error.** Estas reglas pedían `font-weight: 600` en las dos bandas.
+ * En Raleway, declarada `font-weight: 300 500` en `fonts.css`, un 600 se recorta
+ * a 500. En PRIMARIA el cuerpo es 400 y 500 sí es un escalón visible; en KINDER
+ * el cuerpo YA es 500 —`mc-20` no deja bajar de Medium— así que el resultado era
+ * el peor posible: `<em>` perdía la cursiva y no ganaba nada, quedando pintado
+ * exactamente igual que el texto que lo rodea. El énfasis no se atenuaba: se
+ * borraba, y con él la información que llevaba.
+ *
+ * Por eso KINDER sale a la voz del sistema con 700, que es el mismo movimiento
+ * —y el mismo motivo— por el que el numeral de KINDER no está en Raleway:
+ * Roboto Bold y SF Pro Bold son negritas reales en toda plataforma y el criterio
+ * de `mc-20` §219-223 es el grosor de trazo, no la marca. El cambio de familia
+ * dentro de la frase es aquí una ventaja, no un defecto: es una segunda señal
+ * además del peso, y el sustituto de una cursiva tiene que notarse.
+ *
+ * `dd` y `figcaption` entran en la lista porque ya estaban en la regla de
+ * alineado de arriba: dos listas distintas para "el cuerpo de texto" es cómo se
+ * acaba con una definición diciendo una cosa y la otra diciendo otra. */
+[data-band="KINDER"] p em, [data-band="KINDER"] p i,
+[data-band="KINDER"] li em, [data-band="KINDER"] li i,
+[data-band="KINDER"] dd em, [data-band="KINDER"] dd i,
+[data-band="KINDER"] figcaption em, [data-band="KINDER"] figcaption i {
+  font-style: normal;
+  font-family: var(--font-sistema);
+  font-weight: 700;
+}
+
+[data-band="PRIMARIA"] p em, [data-band="PRIMARIA"] p i,
+[data-band="PRIMARIA"] li em, [data-band="PRIMARIA"] li i,
+[data-band="PRIMARIA"] dd em, [data-band="PRIMARIA"] dd i,
+[data-band="PRIMARIA"] figcaption em, [data-band="PRIMARIA"] figcaption i {
+  font-style: normal;
+  /* 500 y no 600: es el techo real de la Raleway de hoy, y sobre el cuerpo de
+     400 de esta banda ya es un escalón que se ve. */
+  font-weight: 500;
+}
+
+[data-band="KINDER"] p, [data-band="KINDER"] li,
+[data-band="KINDER"] dd, [data-band="KINDER"] figcaption,
+[data-band="PRIMARIA"] p, [data-band="PRIMARIA"] li,
+[data-band="PRIMARIA"] dd, [data-band="PRIMARIA"] figcaption {
+  font-variant-caps: normal;
+}
+
+/* --- Numerales -------------------------------------------------------------
+ * La clase que los componentes de reto piden por nombre. `tabular-nums` fija el
+ * ancho de cada cifra para que un marcador que pasa de 9 a 10 no empuje lo que
+ * tiene al lado, y `lining-nums` evita que un 3 o un 7 bajen de la línea base —
+ * en un numeral que un niño de cuatro años tiene que reconocer de un vistazo,
+ * una cifra descendente parece otra cifra. */
+[data-band] .numeral {
+  font-family: var(--font-numeral);
+  font-size: var(--text-numeral);
+  font-weight: var(--weight-numeral);
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: 1.2;
+}
+
+/* --- Controles: el tipo del control es el de la banda, nunca el del navegador
+ *
+ * Dos cosas distintas y las dos importan.
+ *
+ * 1. **Los campos, por el zoom de iOS.** Por debajo de 16 px iOS Safari hace
+ *    zoom al enfocar un campo y deja al usuario dentro de una página ampliada de
+ *    la que tiene que salir a mano. `--text-base` vale 16 px o más en las cinco
+ *    bandas, así que pedirlo es cumplir el piso.
+ *
+ * 2. **`button` estaba fuera de la lista, y ese era el agujero.** Un `<button>`
+ *    no hereda `font-size` de `body`: el agente de usuario le pone su propio
+ *    `font: 400 13.333px Arial`, y `tokens.css` solo le cambia la FAMILIA. O sea
+ *    que hasta aquí un botón de KINDER medía 88 px de alto —el piso de `mc-20`,
+ *    correctísimo— y llevaba dentro una etiqueta de 13.3 px, que es más chica que
+ *    el mínimo de cuerpo de cualquier banda y la mitad de lo que esa banda usa
+ *    para todo lo demás. El blanco táctil estaba bien y el texto no, y ningún
+ *    auditor lo veía porque `touch-targets.mjs` mide el alto de la caja, no el
+ *    tipo de la etiqueta. `[role="button"]` entra por lo mismo: un `div` con rol
+ *    de botón sí hereda, pero dejarlo fuera de la lista invita a que la próxima
+ *    variante se olvide.
+ *
+ * `:where()` mantiene la especificidad en cero para que cualquier componente
+ * pueda pasarle encima sin pelear. Va un `:where()` por elemento y no uno solo
+ * con la lista dentro, a propósito: el analizador de CSS de `touch-targets.mjs`
+ * parte la lista de selectores por comas **antes** de mirar paréntesis, así que
+ * `:where(a, b)` le deja un selector suelto `b` sin el ancestro `[data-band]` —
+ * una regla global que nadie escribió. Escrito así, cada rama conserva su
+ * ancestro y el auditor ve lo mismo que el navegador. (El defecto del analizador
+ * va en el informe; esto es no dárselo de comer.)
+ *
+ * (En KINDER y PRIMARIA `input` y `textarea` no deberían tener a quién aplicar:
+ * **ningún niño escribe texto libre** en ninguna superficie del producto — línea
+ * roja #3. Están escritos para las bandas de adulto y como red por si un campo
+ * aparece donde no debe; que no aparezca lo vigila `audits/child-free-text.mjs`,
+ * no esta regla.) */
+[data-band] :where(button),
+[data-band] :where([role="button"]),
+[data-band] :where(input),
+[data-band] :where(select),
+[data-band] :where(textarea) {
+  font-size: var(--text-base);
+}

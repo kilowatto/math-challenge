@@ -797,6 +797,29 @@ export function loadTranslatedBodies(): Record<
  * no un error: un documento sin traducción todavía es un estado válido
  * mientras el corpus no llega a 100% en los seis locales.
  */
+/**
+ * El H1 del documento traducido, o `null` si no lo tiene.
+ *
+ * Existe porque sin esto una página alemana declaraba `inLanguage: "de-DE"` con
+ * un titular en inglés: el `<h1>` salía de `doc.title`, que se parsea del
+ * ORIGINAL, y no del archivo que se está sirviendo. `mc-48` §3 pide que el
+ * esquema coincida con lo visible, y coincidía —los dos en inglés—, pero el
+ * idioma declarado no coincidía con ninguno de los dos.
+ *
+ * Devuelve el H1 del archivo traducido tal cual, **sin comparar con el
+ * original**. Que 38 de los 47 títulos alemanes sigan en inglés no es un error
+ * que este archivo deba corregir: es lo que esa traducción dice, y publicar su
+ * propio título es más honesto que fabricar uno.
+ */
+export function translatedTitle(raw: string): string | null {
+  for (const line of raw.split("\n")) {
+    const m = /^#\s+(.+?)\s*$/.exec(line);
+    if (m) return plain(m[1]);
+    if (line.trim() && !line.startsWith("<!--")) break;
+  }
+  return null;
+}
+
 export function translatedSummaryBlocks(raw: string, locale: string): SummaryBlock[] | null {
   const headings = RESUMEN_HEADING_POR_LOCALE[locale];
   if (!headings) return null;

@@ -96,10 +96,13 @@ for (const [name, what, enforces] of ACTIVE) {
 // `--experimental-strip-types` porque el motor es TypeScript y la prueba es
 // JavaScript: se ejecuta el MISMO archivo que se despliega, no una copia
 // compilada que podría diferir.
-{
+for (const prueba of [
+  "packages/motor/src/puntuacion.prueba.mjs",
+  "packages/motor/src/sesion.prueba.mjs",
+]) {
   const r = spawnSync(
     "node",
-    ["--experimental-strip-types", "--no-warnings", "packages/motor/src/puntuacion.prueba.mjs"],
+    ["--experimental-strip-types", "--no-warnings", prueba],
     { stdio: "inherit" },
   );
   if (r.status !== 0) failed++;

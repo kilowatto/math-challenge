@@ -160,6 +160,49 @@ es justamente lo que `ipad-usabilidad` declara que **no** puede comprobar.
 **Lo que asumí.** Que sigo construyendo, y que esto queda anotado como el hueco
 más grande que tiene hoy el proyecto.
 
+## 9. JR y PRO cubren los mismos niveles con parámetros distintos
+
+**El hecho.** D-017 dice `PRO | Jr / profesional | N11–N12` — una sola fila para
+las dos. D-010 les da parámetros **distintos**: JR con `d=30, a=0.8`, PRO con
+`d=20, a=1.0`. Los dos documentos son correctos por separado y juntos no deciden
+nada: dado un ítem de N11, no hay regla que diga si se puntúa como JR o como PRO.
+
+**Lo que asumí.** Codifiqué las dos bandas con el mismo rango `N11–N12`, que es
+lo que literalmente dicen los documentos, y `audits/tabla-bandas.mjs` lo cruza
+contra ellos en cada commit. No inventé una regla de desempate.
+
+**La duda real.** ¿Qué distingue a un JR de un PRO — el ítem, el perfil, o el
+modo de juego? Mi lectura es que **es el perfil**, no el ítem: el mismo problema
+de olimpiada vale distinto según quién lo resuelve, igual que un tiempo de 100 m
+se juzga distinto en juvenil que en absoluto. Si es así, la banda sale del perfil
+y el nivel del ítem, y no hay conflicto — pero eso hay que escribirlo, porque hoy
+un lector honesto de D-010 y D-017 no puede deducirlo.
+
+**Bloquea F4**, no F3: el motor ya funciona con cualquiera de las dos lecturas.
+
+---
+
+## 10. El motor rechazaba dos de los doce niveles y las pruebas lo aprobaban
+
+**El hecho.** Escribí `valorDelItem` rechazando por encima de N10, y escribí un
+caso que afirmaba «fuera de la escalera 1..10 de D-017, lanza». El caso pasaba.
+D-017 dice **doce** niveles, y N11–N12 son precisamente los de PRO.
+
+**Cómo se encontró.** No por una prueba: leyendo el criterio de aceptación de
+F3 antes de cerrarlo, que lista `N12 = 1,759` como vector. Si hubiera cerrado el
+criterio por criterio propio —que es lo que el texto de cada sub-issue advierte
+que no se haga— el bug habría sobrevivido hasta que alguien creara contenido de
+PRO.
+
+**No es una duda, es una advertencia.** La anoto aquí porque el patrón importa:
+**una prueba escrita por quien escribió el código codifica el mismo error.** Los
+19 casos del motor los escribí yo contra mi propia lectura de D-010, y uno de
+ellos estaba defendiendo un bug. Los vectores que salvaron el día no eran míos:
+venían del criterio, escrito antes y por otra pasada.
+
+**Lo que asumí.** Que los criterios de aceptación se leen enteros antes de tocar
+nada, y que los vectores numéricos que traigan se copian a las pruebas tal cual.
+
 ---
 
 **Cómo se contesta esto.** Preferentemente en preguntas de opción múltiple —

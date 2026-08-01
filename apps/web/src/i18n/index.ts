@@ -39,32 +39,11 @@ export function t(locale: Locale) {
 }
 
 /**
- * Convenciones matemáticas por locale.
+ * Convenciones matemáticas por locale — reexportadas.
  *
- * Esto es lo que hace que "cinco idiomas" sea falso y "siete locales" verdadero.
- * Todavía no lo consume ninguna pantalla — el motor de reto es F3 — pero vive
- * aquí desde F0 para que nadie escriba un formateador de números asumiendo que
- * "es" es una sola cosa.
- *
- * Fuente: mc-34. Escala corta = billón es 10^9; larga = 10^12.
+ * La tabla vive en `packages/motor/src/convenciones.ts` desde que el motor la
+ * necesitó: `packages/` no puede depender de `apps/`. Se reexporta aquí para que
+ * todo lo que ya la importaba de `~/i18n` siga funcionando, y para que siga
+ * habiendo un solo lugar donde está escrita.
  */
-export const MATH_CONVENTIONS: Record<Locale, {
-  decimal: "." | ",";
-  grouping: "," | "." | " ";
-  listSeparator: "," | ";";
-  division: "÷" | ":";
-  multiplication: "×" | "·";
-  scale: "corta" | "larga";
-  longDivision: "anglo" | "anglo-esparsa" | "potencia" | "ecuacion";
-}> = {
-  // México es el ÚNICO país hispano con punto decimal (mc-34 §1).
-  "es-MX": { decimal: ".", grouping: ",", listSeparator: ",", division: "÷", multiplication: "×", scale: "larga", longDivision: "anglo-esparsa" },
-  "es-ES": { decimal: ",", grouping: ".", listSeparator: ";", division: "÷", multiplication: "×", scale: "larga", longDivision: "potencia" },
-  "en":    { decimal: ".", grouping: ",", listSeparator: ",", division: "÷", multiplication: "×", scale: "corta", longDivision: "anglo" },
-  "fr-FR": { decimal: ",", grouping: " ", listSeparator: ";", division: ":", multiplication: "×", scale: "larga", longDivision: "potencia" },
-  // Brasil es la excepción del portugués: escala corta, y división a la europea.
-  "pt-BR": { decimal: ",", grouping: ".", listSeparator: ";", division: "÷", multiplication: "×", scale: "corta", longDivision: "potencia" },
-  "pt-PT": { decimal: ",", grouping: ".", listSeparator: ";", division: ":", multiplication: "×", scale: "larga", longDivision: "potencia" },
-  // Alemania usa punto medio para multiplicar: × se confunde con la variable x.
-  "de-DE": { decimal: ",", grouping: ".", listSeparator: ";", division: ":", multiplication: "·", scale: "larga", longDivision: "ecuacion" },
-};
+export { MATH_CONVENTIONS } from "../../../../packages/motor/src/convenciones.ts";

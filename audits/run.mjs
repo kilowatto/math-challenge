@@ -99,6 +99,7 @@ for (const [name, what, enforces] of ACTIVE) {
 for (const prueba of [
   "packages/motor/src/puntuacion.prueba.mjs",
   "packages/motor/src/sesion.prueba.mjs",
+  "packages/motor/src/numeros.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

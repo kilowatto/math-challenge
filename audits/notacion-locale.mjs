@@ -27,7 +27,10 @@ import { archivos, leer, informar, SOLO_PRODUCTO } from "./lib/repo.mjs";
 const fuentes = archivos(/\.(ts|tsx|js|jsx|mjs|astro|svelte|vue)$/).filter((f) => SOLO_PRODUCTO.test(f));
 
 /** El archivo que TIENE derecho a declarar las convenciones. */
-const FUENTE_DE_VERDAD = "apps/web/src/i18n/index.ts";
+// La tabla se mudó a packages/motor cuando el motor la necesitó: packages/ no
+// puede depender de apps/. i18n la reexporta, así que los dos son legítimos.
+const FUENTE_DE_VERDAD = "packages/motor/src/convenciones.ts";
+const REEXPORTA = "apps/web/src/i18n/index.ts";
 
 const problemas = [];
 const notas = [];
@@ -36,7 +39,7 @@ let usanLaTabla = 0;
 for (const archivo of fuentes) {
   const texto = leer(archivo) ?? "";
   const lineas = texto.split("\n");
-  const esLaFuente = archivo === FUENTE_DE_VERDAD;
+  const esLaFuente = archivo === FUENTE_DE_VERDAD || archivo === REEXPORTA;
 
   if (/MATH_CONVENTIONS/.test(texto) && !esLaFuente) usanLaTabla++;
 
@@ -94,7 +97,7 @@ notas.push(
     ? `${usanLaTabla} archivo(s) consumen MATH_CONVENTIONS`
     : "todavía nadie consume MATH_CONVENTIONS; existe desde F0 para que nadie escriba otra",
 );
-notas.push("la tabla vive en apps/web/src/i18n/index.ts, con las siete filas y su fuente (mc-34)");
+notas.push(`la tabla vive en ${FUENTE_DE_VERDAD}, con las siete filas y su fuente (mc-34)`);
 
 informar({
   nombre: "notacion-locale",

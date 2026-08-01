@@ -72,7 +72,7 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 | `math-challenge-attempts-ae` | Analytics Engine dataset | Per-attempt telemetry (high-cardinality, high-volume) | Telemetría por intento (alta cardinalidad, alto volumen) | `ATTEMPTS_AE` |
 | `math-challenge-vitals-ae` | Analytics Engine dataset | Field Core Web Vitals (LCP/CLS/INP/TTFB/FCP); never written from a child surface | Core Web Vitals de campo; jamás se escribe desde una superficie de niño (D-037) | `VITALS_AE` |
 | `math-challenge-tutor-usage-ae` | Analytics Engine dataset | Tutor usage/cost telemetry (per-child, per-model) | Telemetría de uso/costo del tutor (por niño, por modelo) | `TUTOR_AE` |
-| `math-challenge-turnstile-signup` | Turnstile widget | Bot defense on signup/login forms | Defensa contra bots en formularios de registro/inicio de sesión | (site key/secret via env) |
+| `kilowatto` ⚠️ sin prefijo, ver D-054 | Turnstile widget | Bot defense on signup forms. REUSED: a Turnstile widget belongs to a hostname list, not to a project, and math.kilowatto.com lives inside kilowatto.com | Defensa contra bots en el formulario de registro. REUSADO: un widget de Turnstile pertenece a una lista de hostnames, no a un proyecto, y math.kilowatto.com vive dentro de kilowatto.com | `TURNSTILE_SITE_KEY` (público, var) · `TURNSTILE_SECRET_KEY` (secreto) |
 | `math-challenge-web-analytics` | Web Analytics site | Privacy-first RUM for the PWA | RUM respetuoso de la privacidad para la PWA | (JS snippet, no binding) |
 | `math-challenge-secrets` | Secrets Store | Holds `ANTHROPIC_API_KEY` and other third-party credentials | Contiene `ANTHROPIC_API_KEY` y otras credenciales de terceros | via `wrangler secret put` |
 

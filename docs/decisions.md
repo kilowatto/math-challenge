@@ -1696,3 +1696,47 @@ El auditor protege la regla correcta contra el caso contrario al nuestro (perder
 datos de un menor sin querer); aquí perderlos **es** el objetivo. Resolver esa
 tensión toca un guardián de línea roja y no se hace de paso. Sale en la migración
 `0005` con el mecanismo decidido antes.
+
+---
+
+## D-054 — El widget de Turnstile se reusa: pertenece al dominio, no al proyecto · 2026-08-01
+
+**Decisión del dueño, con su razón:** *"se reusa porque math. está dentro de
+kilowatto.com"*. El widget se llama **`kilowatto`** y no
+`math-challenge-turnstile-signup`.
+
+**Por qué esto NO es una excepción a la regla del prefijo, sino un límite de
+ella.** `CLAUDE.md` dice «todo objeto lleva prefijo `math-challenge-`, sin
+excepción, ni en pruebas», y esa regla existe para que dentro de un año alguien
+pueda mirar la cuenta de Cloudflare y saber qué objeto es de qué proyecto, para
+poder borrarlo sin miedo.
+
+Un widget de Turnstile no encaja en ese modelo: **está atado a una lista de
+hostnames, no a un proyecto.** El widget de `kilowatto.com` cubre
+`math.kilowatto.com` porque es el mismo dominio. Crear un segundo widget para el
+subdominio no daría aislamiento — daría dos widgets sobre el mismo dominio y una
+lista de hostnames duplicada que se desincroniza.
+
+**Lo que esta decisión cuesta, dicho aquí para que no sorprenda:**
+
+- **Las analíticas de Turnstile son compartidas.** El tráfico de bots contra el
+  registro de Math Challenge se ve mezclado con el del resto de `kilowatto.com`.
+  Si algún día hace falta separarlos, hará falta el segundo widget.
+- **La lista de hostnames es compartida.** Quien la edite para otro sitio de
+  `kilowatto.com` puede dejar fuera a `math.kilowatto.com` sin notarlo, y el
+  síntoma sería que nadie puede registrarse.
+- **`audits/cf-prefix.mjs` no lo vigila** — hoy no conoce los widgets de
+  Turnstile, así que no hay un auditor que se queje ni que lo permita. Queda
+  como hueco conocido.
+
+**Lo que NO cambia:** el `secret key` sigue siendo secreto y se captura con
+`./scripts/set-keys.sh --solo TURNSTILE --remote`, que lo lee sin eco. El `site
+key` es público por diseño —viaja en el HTML— y va como variable, no como
+secreto.
+
+**Y la línea roja que esto roza y no cruza:** Turnstile es defensa de bots sobre
+un formulario de **adulto**. No verifica edad, no recoge biometría y no bloquea
+el navegador. La línea roja #1 prohíbe cámara, micrófono, biometría y navegador
+bloqueado — nada de eso ocurre aquí. Lo que sí hay que impedir mecánicamente es
+que el widget aparezca alguna vez en una superficie de niño, y para eso se
+escribe `audits/turnstile-solo-adulto.mjs` en este mismo PR.

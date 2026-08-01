@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 # set-keys.sh — captura llaves de API sin que toquen el historial ni git
 #
-# Uso:   ./scripts/set-keys.sh          capturar en .env local
-#        ./scripts/set-keys.sh --remote capturar y además subir a Cloudflare
+# Uso:   ./scripts/set-keys.sh                    todas las llaves
+#        ./scripts/set-keys.sh --remote           todas, y además a Cloudflare
+#        ./scripts/set-keys.sh --solo TURNSTILE   solo las que casen con el texto
+#        ./scripts/set-keys.sh --solo TURNSTILE --remote
+#
+# Ninguna llave se sobrescribe sin querer: un Enter en blanco SALTA y deja
+# intacta la que ya estuviera. `--solo` existe porque pedir las cinco para poner
+# una es la clase de fricción que hace que alguien acabe pegando la llave a mano
+# en un archivo, que es justo lo que este script evita.
 #
 # Por qué existe: pegar una llave en el chat, en un commit o en la línea de
 # comandos la quema. Este script la lee sin eco, la escribe solo en .env (que
@@ -16,7 +23,14 @@ cd "$(dirname "$0")/.."
 
 ENV_FILE=".env"
 REMOTE=false
-[[ "${1:-}" == "--remote" ]] && REMOTE=true
+SOLO=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --remote) REMOTE=true; shift ;;
+    --solo)   SOLO="${2:-}"; shift 2 ;;
+    *) echo "✗ argumento desconocido: $1"; exit 1 ;;
+  esac
+done
 
 # --- Fallar cerrado: si .env no está ignorado, no se escribe nada ----------
 if ! git check-ignore -q "$ENV_FILE" 2>/dev/null; then
@@ -65,6 +79,14 @@ skipped=0
 
 for entry in "${KEYS[@]}"; do
   IFS='|' read -r name purpose where <<< "$entry"
+
+  # `--solo` filtra por subcadena, sin distinguir mayúsculas: `--solo turnstile`
+  # y `--solo TURNSTILE_SECRET_KEY` hacen lo mismo.
+  if [[ -n "$SOLO" ]]; then
+    shopt -s nocasematch
+    [[ "$name" == *"$SOLO"* ]] || { shopt -u nocasematch; continue; }
+    shopt -u nocasematch
+  fi
 
   existing=""
   if grep -q "^${name}=" "$ENV_FILE" 2>/dev/null; then

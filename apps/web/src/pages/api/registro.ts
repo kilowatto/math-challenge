@@ -39,6 +39,7 @@
 import type { APIRoute } from "astro";
 import { hashear, largoValido, LARGO_MINIMO, LARGO_MAXIMO } from "../../lib/passwords";
 import { abrirSesionAdulto } from "../../lib/sesiones";
+import { verificar as verificarTurnstile, CAMPO_TOKEN } from "../../lib/turnstile";
 
 export const prerender = false;
 
@@ -60,6 +61,8 @@ const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 interface Env {
   DB: D1Database;
   SESSION_KV: KVNamespace;
+  /** Secreto de Turnstile. Se sube con `wrangler secret put`, nunca se commitea. */
+  TURNSTILE_SECRET_KEY?: string;
 }
 
 /** Respuesta común. Nunca dice si el correo existía (ver el encabezado). */
@@ -107,7 +110,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // SIN JavaScript: `<form method="post">` manda eso, y `mc-33` documenta que
   // el JavaScript falla más de lo que nadie cree en el dispositivo de
   // referencia. JSON se acepta además, para el camino con script.
-  let correo = "", clave = "", intent = "";
+  let correo = "", clave = "", intent = "", tokenTurnstile = "";
   const tipo = request.headers.get("content-type") ?? "";
   try {
     if (tipo.includes("application/json")) {
@@ -115,11 +118,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       correo = String(j.correo ?? "");
       clave = String(j.clave ?? "");
       intent = String(j.intent ?? "");
+      tokenTurnstile = String(j[CAMPO_TOKEN] ?? "");
     } else {
       const f = await request.formData();
       correo = String(f.get("correo") ?? "");
       clave = String(f.get("clave") ?? "");
       intent = String(f.get("intent") ?? "");
+      tokenTurnstile = String(f.get(CAMPO_TOKEN) ?? "");
     }
   } catch {
     return error("cuerpo_ilegible");
@@ -131,6 +136,27 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!largoValido(clave)) {
     return error(`clave_fuera_de_rango:${LARGO_MINIMO}-${LARGO_MAXIMO}`);
   }
+
+  // ── Turnstile, y falla CERRADO ────────────────────────────────────────────
+  //
+  // Se verifica DESPUÉS de validar la forma del cuerpo —no vale la pena gastar
+  // una llamada de red en algo que ya se sabe malformado— y ANTES de hashear,
+  // porque hashear cuesta 36 ms de CPU y un bot no debería costarnos eso.
+  //
+  // Sin `TURNSTILE_SECRET_KEY` configurado se RECHAZA. Seguir sin comprobar
+  // sería el modo que D-032 nombra por su nombre: una defensa que se apaga sola
+  // cuando falta su llave no es una defensa, es un adorno. Hoy el costo de
+  // fallar cerrado es cero —el registro no ha salido— y obliga a que la llave
+  // esté puesta antes del lanzamiento.
+  //
+  // `CF-Connecting-IP` la pone el borde y el cliente NO puede falsificarla, a
+  // diferencia de `X-Forwarded-For`, que cualquiera puede escribir.
+  const veredicto = await verificarTurnstile(
+    tokenTurnstile,
+    env.TURNSTILE_SECRET_KEY,
+    request.headers.get("cf-connecting-ip"),
+  );
+  if (!veredicto.ok) return error(`turnstile:${veredicto.motivo}`, veredicto.motivo === "no_configurado" ? 503 : 403);
 
   // ── MISMO_TIEMPO ──────────────────────────────────────────────────────────
   // El hash se calcula ANTES de mirar si el correo existe, y se calcula siempre.

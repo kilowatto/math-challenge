@@ -59,6 +59,16 @@ const ACTIVE = [
   // flota. Se corre a mano. Lo que sí bloquea es que su manifiesto envejezca,
   // porque ese modo falla ABIERTO: el sitio seguiría prometiendo verificación
   // sobre un archivo que ya cambió.
+  // Los dos que esperaban «cuando haya interfaz» (#129). Ya la hay, y los dos
+  // pasan sobre el repo de hoy — comprobado antes de moverlos, no después.
+  //
+  // `contrast` se queda en PENDING y NO es un olvido: reporta tres pares de la
+  // paleta CLARA por debajo de su umbral, incluido el naranja de Ignia a 2.83:1
+  // sobre la superficie real. Está en docs/dudas.md §14 y es decisión del dueño
+  // —cambia la paleta de marca—, no una corrección de implementación.
+  // Activarlo hoy bloquearía cada commit por una decisión que no es del código.
+  ["axe-a11y",               "axe-core sin violaciones",                     "WCAG 2.2 AA, mc-38"],
+  ["touch-targets",          "24px WCAG / 44px HIG / 88px kinder",           "mc-20, WCAG 2.5.8"],
   ["passkey-rp-id",          "el rp.id de las passkeys no se toca",          "D-038, #112, #263"],
   ["turnstile-solo-adulto",   "Turnstile jamás delante de un niño",           "línea roja #1, D-054, #113"],
   ["corpus-manifiesto",      "el manifiesto del corpus traducido está al día", "D-033, D-022, mc-48 §3"],
@@ -75,9 +85,7 @@ const ACTIVE = [
 // --- Deterministas: esperando la fase que los habilita -------------------
 const PENDING = [
   ["cwv-budget",        "INP ≤150ms, LCP ≤2.5s, CLS ≤0.1 — datos de CAMPO", "D-037 · cuando el beacon lleve semanas recolectando"],
-  ["axe-a11y",          "axe-core sin violaciones",                  "F2 · cuando haya interfaz"],
   ["contrast",          "contraste 4.5:1 texto, 3:1 gráficos",       "F2 · cuando haya interfaz"],
-  ["touch-targets",     "24px WCAG / 44px HIG / 88px kinder",        "F2 · cuando haya interfaz"],
   ["precache-budget",   "≤5 MB de audio en la primera instalación",  "F5 · cuando haya audio"],
 ];
 

@@ -110,3 +110,53 @@ export function claveDeMagnitud(exponente: 9 | 12, locale: Locale): string {
   if (exponente === 9) return escala === "corta" ? "magnitud.billion" : "magnitud.milMillones";
   return escala === "corta" ? "magnitud.trillion" : "magnitud.billon";
 }
+
+/**
+ * Lee un número escrito por una persona en su locale. La mitad que falta.
+ *
+ * **`Intl` formatea pero no parsea** (`mc-34` impl. 2), y ese hueco es de los
+ * que no se ven hasta producción: un adulto en `de-DE` teclea `1543,2` y
+ * `Number("1543,2")` da `NaN`; teclea `1.543` queriendo decir mil quinientos
+ * cuarenta y tres y `Number` da uno coma cinco cuatro tres. Las dos formas de
+ * fallar producen un número plausible o un error silencioso, nunca un aviso.
+ *
+ * **En kinder no aplica: no hay teclado** (D-012). Esto existe para la vía
+ * adulta, donde sí se escribe.
+ *
+ * Devuelve `null` si no se puede leer, en vez de `NaN`: `null` obliga a
+ * decidir qué hacer y `NaN` se propaga en silencio hasta un puntaje.
+ */
+export function parsear(texto: string, locale: Locale): number | null {
+  const c = MATH_CONVENTIONS[locale];
+  const limpio = String(texto).trim();
+  if (limpio === "") return null;
+
+  // Los grupos de millares son de TRES dígitos. Sin comprobarlo, "1.2.3" en
+  // alemán se lee como 123 quitando los puntos — y 1.2.3 no es un número, es
+  // una versión o una fecha mal escrita. Lo encontró el caso de basura de la
+  // propia prueba, no un usuario.
+  const sep = c.grouping === " " ? "[\\s\\u00a0\\u202f\\u2009]" : `\\${c.grouping}`;
+  const dec = `\\${c.decimal}`;
+  const FORMA = new RegExp(`^[+-]?\\d{1,3}(${sep}\\d{3})*(${dec}\\d+)?$|^[+-]?\\d+(${dec}\\d+)?$`);
+  if (!FORMA.test(limpio)) return null;
+
+  // Los separadores de millares se quitan; el decimal se normaliza a punto.
+  // El orden importa: quitar primero el decimal dejaría "1.543,2" irreconocible.
+  const millares = c.grouping === " " ? /[\s\u00a0\u202f\u2009]/g : new RegExp(`\\${c.grouping}`, "g");
+  let normalizado = limpio.replace(millares, "");
+  if (c.decimal === ",") normalizado = normalizado.replace(",", ".");
+
+  // Tras normalizar solo puede quedar signo, dígitos y UN punto. Cualquier otra
+  // cosa —una coma sobrante, una letra, dos puntos— es entrada que no se
+  // entiende, y adivinar qué quiso decir es peor que decir que no se entiende.
+  if (!/^[+-]?\d+(\.\d+)?$/.test(normalizado)) return null;
+
+  const n = Number(normalizado);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Ida y vuelta: lo que se formatea en un locale se vuelve a leer igual. */
+export function esRedonda(n: number, locale: Locale, decimales?: number): boolean {
+  const leido = parsear(formatear(n, locale, decimales), locale);
+  return leido !== null && Math.abs(leido - (decimales === undefined ? n : Number(n.toFixed(decimales)))) < 1e-9;
+}

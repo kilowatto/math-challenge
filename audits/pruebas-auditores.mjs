@@ -196,6 +196,20 @@ const CASOS = [
     contenido: "export function perfil(keystroke_intervals: number[]) {\n  return keystroke_intervals.reduce((a, b) => a + b, 0);\n}\n",
     espera: "biométrico",
   },
+  {
+    auditor: "notacion-locale",
+    que: "toLocaleString con un locale de idioma sin región",
+    archivo: "apps/web/src/lib/prueba-intl.ts",
+    contenido: "export const f = (n: number) => n.toLocaleString('es');\n",
+    espera: "sin región",
+  },
+  {
+    auditor: "notacion-locale",
+    que: "un separador decimal declarado fuera de MATH_CONVENTIONS",
+    archivo: "apps/web/src/lib/prueba-sep.ts",
+    contenido: "export const DECIMAL = ',';\n",
+    espera: "separador fuera",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

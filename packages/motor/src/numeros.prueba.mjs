@@ -7,6 +7,7 @@
 
 import {
   formatear, signo, separadorDeLista, formatearLista, operacion, claveDeMagnitud,
+  parsear, esRedonda,
 } from "./numeros.ts";
 
 let fallos = 0;
@@ -126,6 +127,42 @@ caso("los siete locales tienen convención, ninguno cae en un valor por omisión
   for (const l of ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"]) {
     const s = formatear(1234.5, l, 1);
     if (!s || s.includes("undefined")) throw new Error(`${l} dio «${s}»`);
+  }
+});
+
+// --- Leer lo que una persona escribe (mc-34 impl. 2) ------------------------
+caso("Intl formatea pero NO parsea: un alemán teclea 1543,2 (mc-34 impl. 2)", () => {
+  es(parsear("1543,2", "de-DE"), 1543.2, "de-DE");
+  // La trampa: Number("1543,2") da NaN, y Number("1.543") da 1.543 cuando la
+  // persona quiso decir mil quinientos cuarenta y tres.
+  es(parsear("1.543", "de-DE"), 1543, "millares alemanes");
+  es(parsear("1.543", "en"), 1.543, "decimal inglés — el MISMO texto, otro número");
+});
+
+caso("los millares se quitan antes que el decimal, o «1.543,2» queda irreconocible", () => {
+  es(parsear("1.543,2", "de-DE"), 1543.2);
+  es(parsear("1,543.2", "es-MX"), 1543.2);
+  es(parsear("1 543,2", "fr-FR"), 1543.2, "espacio fino francés");
+});
+
+caso("lo que no se entiende devuelve null, nunca NaN", () => {
+  for (const malo of ["", "  ", "mil quinientos", "12,,3", "1.2.3", "abc", "1,2,3.4.5"]) {
+    const r = parsear(malo, "de-DE");
+    if (r !== null) throw new Error(`«${malo}» dio ${r} en vez de null`);
+  }
+  // null obliga a decidir; NaN se propaga en silencio hasta un puntaje.
+});
+
+caso("los negativos se leen", () => {
+  es(parsear("-1.543,2", "de-DE"), -1543.2);
+  es(parsear("-1,543.2", "es-MX"), -1543.2);
+});
+
+caso("ida y vuelta en los siete locales: lo que se escribe se vuelve a leer", () => {
+  for (const l of ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"]) {
+    for (const n of [0, 1, 1234.5, -9876.25, 1000000]) {
+      if (!esRedonda(n, l, 2)) throw new Error(`${l}: ${n} no sobrevivió la ida y vuelta`);
+    }
   }
 });
 

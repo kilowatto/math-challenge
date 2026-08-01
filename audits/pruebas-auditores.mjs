@@ -169,6 +169,32 @@ const CASOS = [
     espera: "4 campos",
   },
   {
+    auditor: "signup-dos-campos",
+    que: "el MISMO formulario en un componente que no se llama registro",
+    // El punto ciego que se midió: reconocer las pantallas solo por el nombre
+    // del archivo dejaba pasar cuatro campos dentro de un `TwoFieldForm.astro`,
+    // que es justo el nombre que el plan de F2 proponía.
+    archivo: "apps/web/src/components/CampoDobleParaPrueba.astro",
+    contenido:
+      "---\n---\n<form>\n" +
+      '  <input name="a" autocomplete="username webauthn" />\n' +
+      '  <input name="b" autocomplete="new-password" />\n' +
+      '  <input name="c" />\n' +
+      '  <input name="d" />\n' +
+      "</form>\n",
+    espera: "4 campos",
+  },
+  {
+    auditor: "signup-dos-campos",
+    que: "un selector de fecha en la pantalla que crea el perfil del nino",
+    // Linea roja #2: un <input type="date"> TIENE dia, y el dia no se pide.
+    // D-053 dejo solo el año. Antes de este caso, los tres auditores que
+    // deberian haberlo visto pasaban en verde.
+    archivo: "apps/web/src/components/PerfilParaPrueba.astro",
+    contenido: '---\n---\n<input type="date" name="nacimiento" />\n',
+    espera: "type=\"date\"",
+  },
+  {
     auditor: "band-typography",
     que: "una familia tipográfica literal en vez del token",
     archivo: "apps/web/src/styles/prueba-tipografia.css",

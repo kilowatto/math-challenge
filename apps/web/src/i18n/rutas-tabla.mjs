@@ -20,6 +20,9 @@ export const SEGMENTOS = {
     "codigo-abierto": "open-source",
     "niveles": "levels",
     "origen": "origin",
+    "registro-padre": "signup-parent",
+    "registro-maestro": "signup-teacher",
+    "registro-aprendo": "signup-learner",
   },
   "es-MX": {
     "investigacion": "investigacion",
@@ -27,6 +30,9 @@ export const SEGMENTOS = {
     "codigo-abierto": "codigo-abierto",
     "niveles": "niveles",
     "origen": "origen",
+    "registro-padre": "registro-padre",
+    "registro-maestro": "registro-maestro",
+    "registro-aprendo": "registro-aprendo",
   },
   "es-ES": {
     "investigacion": "investigacion",
@@ -34,6 +40,9 @@ export const SEGMENTOS = {
     "codigo-abierto": "codigo-abierto",
     "niveles": "niveles",
     "origen": "origen",
+    "registro-padre": "registro-padre",
+    "registro-maestro": "registro-maestro",
+    "registro-aprendo": "registro-aprendo",
   },
   "fr-FR": {
     "investigacion": "recherche",
@@ -41,6 +50,9 @@ export const SEGMENTOS = {
     "codigo-abierto": "open-source",
     "niveles": "niveaux",
     "origen": "origine",
+    "registro-padre": "inscription-parent",
+    "registro-maestro": "inscription-enseignant",
+    "registro-aprendo": "inscription-apprendre",
   },
   "pt-BR": {
     "investigacion": "pesquisa",
@@ -48,6 +60,9 @@ export const SEGMENTOS = {
     "codigo-abierto": "codigo-aberto",
     "niveles": "niveis",
     "origen": "origem",
+    "registro-padre": "cadastro-responsavel",
+    "registro-maestro": "cadastro-professor",
+    "registro-aprendo": "cadastro-aprender",
   },
   "pt-PT": {
     // pt-PT dice "investigação" donde Brasil dice "pesquisa": no es la misma
@@ -59,6 +74,9 @@ export const SEGMENTOS = {
     "codigo-abierto": "codigo-aberto",
     "niveles": "niveis",
     "origen": "origem",
+    "registro-padre": "registo-encarregado",
+    "registro-maestro": "registo-professor",
+    "registro-aprendo": "registo-aprender",
   },
   "de-DE": {
     "investigacion": "forschung",
@@ -66,11 +84,26 @@ export const SEGMENTOS = {
     "codigo-abierto": "quelloffen",
     "niveles": "stufen",
     "origen": "ursprung",
+    "registro-padre": "anmeldung-eltern",
+    "registro-maestro": "anmeldung-lehrkraft",
+    "registro-aprendo": "anmeldung-lernen",
   },
 };
 
 /** Las secciones, en el orden en que se declararon. */
 export const SECCIONES = Object.keys(SEGMENTOS["en"]);
+
+/**
+ * Las cinco secciones que existían ANTES de D-049, y solo ellas.
+ *
+ * Importa por una razón concreta: `redirecciones()` emite un 301 desde la URL
+ * vieja de cada sección, y una sección que nunca tuvo URL vieja no tiene de
+ * dónde redirigir. Sin esta lista, las tres puertas de registro generarían
+ * `/de-DE/registro-padre/ → /de-DE/anmeldung-eltern/` — un 301 desde una URL que
+ * jamás se publicó, o sea una regla que no puede acertar nunca y que alguien
+ * tendría que entender dentro de un año.
+ */
+const SECCIONES_PREVIAS_A_D049 = ["investigacion", "arquitectura", "codigo-abierto", "niveles", "origen"];
 
 /**
  * Las redirecciones 301 desde las URLs anteriores a D-049.
@@ -90,7 +123,7 @@ export const SECCIONES = Object.keys(SEGMENTOS["en"]);
 export function redirecciones() {
   const lineas = [];
   for (const [locale, tabla] of Object.entries(SEGMENTOS)) {
-    for (const seccion of SECCIONES) {
+    for (const seccion of SECCIONES_PREVIAS_A_D049) {
       const nuevo = tabla[seccion];
       if (nuevo === seccion) continue;
       if (seccion === "investigacion") {

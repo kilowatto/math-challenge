@@ -26,7 +26,19 @@ import { LOCALES, type Locale } from "./index";
 import { SEGMENTOS as TABLA } from "./rutas-tabla.mjs";
 
 /** Las secciones del sitio que tienen ruta propia. */
-export type Seccion = "investigacion" | "arquitectura" | "codigo-abierto" | "niveles" | "origen";
+export type Seccion =
+  | "investigacion"
+  | "arquitectura"
+  | "codigo-abierto"
+  | "niveles"
+  | "origen"
+  // Las tres puertas de D-026: mismo formulario, distinta URL y distinto texto.
+  // Viven en esta tabla y no en una propia para heredar hreflang, canonica y
+  // sitemap sin escribir nada — el registro tiene que ser encontrable en los
+  // siete idiomas igual que el resto del sitio.
+  | "registro-padre"
+  | "registro-maestro"
+  | "registro-aprendo";
 
 /**
  * El segmento de cada sección en cada locale.

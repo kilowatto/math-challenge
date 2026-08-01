@@ -29,5 +29,21 @@
   "statusHeading": "Stand",
   "status": "Im Aufbau. Noch keine öffentliche Version.",
   "sponsor": "Ein Projekt von Ignia, auf Cloudflare.",
-  "repoLink": "Quelloffen, AGPL-3.0"
+  "repoLink": "Quelloffen, AGPL-3.0",
+  "signupParentTitle": "Erstellen Sie Ihr Familienkonto",
+  "signupParentLead": "Ein Konto für die erwachsene Person. Jedes Kind ist ein Profil darin — nie ein Benutzerkonto, nie eine eigene E-Mail-Adresse.",
+  "signupTeacherTitle": "Erstellen Sie Ihr Klassenkonto",
+  "signupTeacherLead": "Ein Konto für Sie. Ihre Schülerinnen und Schüler kommen als Profile hinzu; sie melden sich nie selbst an und tippen nie ihren Namen.",
+  "signupLearnerTitle": "Erstellen Sie Ihr Konto",
+  "signupLearnerLead": "Für Sie, die Mathematik für sich selbst lernen. Dasselbe Konto, dieselben zwei Felder.",
+  "signupEmail": "E-Mail",
+  "signupPassword": "Passwort",
+  "signupPasskeyCta": "Mit einem Passkey fortfahren",
+  "signupPasswordCta": "Konto erstellen",
+  "signupPasswordHint": "Mindestens acht Zeichen. Keine Regeln zu Großbuchstaben und Ziffern: Es zählt die Länge, und solche Regeln führen nur dazu, dass Passwörter aufgeschrieben werden.",
+  "signupTwoFields": "Zwei Felder. Das ist das ganze Formular.",
+  "signupWhyTwo": "Alles Weitere wird später gefragt, genau dann, wenn es gebraucht wird und wo sich erklären lässt, warum. Von vier Feldern auf drei zu gehen erhöhte die Abschlüsse um etwa die Hälfte — gemessen an 40.000 Formularen.",
+  "signupHaveAccount": "Sie haben schon ein Konto?",
+  "signupSignIn": "Anmelden",
+  "signupNoChildData": "Wir fragen nie nach Name, E-Mail, Foto oder Geburtsdatum eines Kindes."
 }

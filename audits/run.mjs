@@ -103,6 +103,7 @@ for (const prueba of [
   "packages/motor/src/item.prueba.mjs",
   "packages/motor/src/offline.prueba.mjs",
   "packages/motor/src/rollup.prueba.mjs",
+  "packages/motor/src/banco.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

@@ -72,8 +72,16 @@ const ADVERSARIAL_COUNT = 23;
 console.log("Flota de auditores — D-032\n");
 
 let failed = 0;
+// `--experimental-strip-types` para todos: `tabla-bandas` importa el motor, que
+// es TypeScript, para cruzarlo contra las tablas de decisions.md. Se le pasa a
+// todos en vez de mantener una lista de cuáles lo necesitan — una lista así se
+// desincroniza el día que un auditor nuevo importe código de producto.
 for (const [name, what, enforces] of ACTIVE) {
-  const r = spawnSync("node", [`audits/${name}.mjs`], { stdio: "inherit" });
+  const r = spawnSync(
+    "node",
+    ["--experimental-strip-types", "--no-warnings", `audits/${name}.mjs`],
+    { stdio: "inherit" },
+  );
   if (r.status !== 0) failed++;
 }
 

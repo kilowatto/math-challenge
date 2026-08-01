@@ -767,7 +767,23 @@ try {
   hayHead = false;
 }
 
+/**
+ * El SQL sin comentarios ni espacios de más: el esquema que D1 va a aplicar de
+ * verdad. Dos versiones con el mismo desnudo aplican byte a byte lo mismo.
+ *
+ * Vive aquí arriba y no dentro del segundo bucle porque las DOS comprobaciones
+ * lo necesitan, y durante un rato solo lo tuvo una — con el resultado de que el
+ * auditor se contradecía consigo mismo. Ver el comentario de `soloDoc` abajo.
+ */
+const desnudo = (sql) =>
+  sql
+    .replace(/--[^\n]*/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
 let congeladas = 0;
+let soloDocumentadas = 0;
 if (hayHead) {
   for (const { archivo } of numerados) {
     let enHead;
@@ -788,7 +804,25 @@ if (hayHead) {
     // no hay nada que comparar.
     if (!existsSync(join(raiz, archivo))) continue;
     const enDisco = readFileSync(join(raiz, archivo), "utf8");
-    if (enHead !== enDisco) {
+    // **Solo documentación no es reescribir una migración.** Si el esquema
+    // desnudo es idéntico, lo que cambió son comentarios y D1 aplicaría lo
+    // mismo byte a byte.
+    //
+    // Esta línea faltaba y el auditor se contradecía consigo mismo: la
+    // comprobación de más abajo —la de "la tocaron N commits"— exime
+    // explícitamente los cambios solo de comentarios, con su razón escrita («un
+    // auditor que prohíbe documentar mejor lo ya escrito se apaga solo»), pero
+    // ESTA los bloqueaba antes de que pudieran llegar a ser un commit. El
+    // gancho corre pre-commit, así que el cambio nunca está en HEAD todavía: la
+    // exención de abajo era inalcanzable.
+    //
+    // Se descubrió corrigiendo dos citas falsas en `0001_identity.sql`, que
+    // atribuían el diseño de passkeys a D-035 —el proveedor de inferencia— en
+    // vez de a D-038. Corregir una cita falsa en un comentario es exactamente
+    // el caso que la exención existe para permitir.
+    const soloDoc = desnudo(enHead) === desnudo(enDisco);
+    if (enHead !== enDisco && soloDoc) soloDocumentadas++;
+    if (enHead !== enDisco && !soloDoc) {
       problemas.push(
         `${archivo}: editada después de haberse commiteado. D1 lleva el control por nombre de archivo, ` +
           `así que este cambio NO se va a aplicar al remoto: corrige con una migración nueva`,
@@ -804,16 +838,9 @@ if (hayHead) {
       // la línea `--   D-038  passkey primero, contraseña como respaldo`, y un
       // auditor que prohíbe documentar mejor lo ya escrito se apaga solo.
       //
-      // Lo que sí importa se sigue vigilando: `enHead !== enDisco` de arriba
-      // atrapa cualquier edición sin commitear, y el esquema desnudo se compara
-      // entre la primera versión y la actual.
-      const desnudo = (sql) =>
-        sql
-          .replace(/--[^\n]*/g, "")
-          .replace(/\/\*[\s\S]*?\*\//g, "")
-          .replace(/\s+/g, " ")
-          .trim();
-
+      // Lo que sí importa se sigue vigilando: el esquema desnudo se compara
+      // entre la primera versión y la actual, aquí, y entre HEAD y el disco,
+      // arriba. `desnudo` está definido una sola vez, fuera de los dos bucles.
       let primeraVersion = null;
       try {
         primeraVersion = execFileSync(
@@ -895,7 +922,11 @@ console.log(
   `✓ migration-safety — ${numerados.length} migración(es) ${rango}, ${vivas.size} tabla(s) vivas, ningún borrado destructivo`,
 );
 console.log(`  · ${totalSentencias} sentencia(s) leídas · ${reconstruccionesVistas} reconstrucción(es) de 12 pasos reconocidas`);
-console.log(`  · ${congeladas} ya commiteada(s) y sin editar después · todas nombradas en ${INFRA}`);
+console.log(
+  `  · ${congeladas} ya commiteada(s)` +
+    (soloDocumentadas ? `, ${soloDocumentadas} con comentarios editados y el esquema intacto` : " y sin editar después") +
+    ` · todas nombradas en ${INFRA}`,
+);
 if (anulaciones.length > 0) {
   console.log(`  · ${anulaciones.length} anulación(es) declarada(s) en los archivos:`);
   for (const a of anulaciones) console.log(`    ${a}`);

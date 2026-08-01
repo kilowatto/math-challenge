@@ -1,6 +1,6 @@
-# Singapore Math: CPA Progression, Bar Modelling, and the MOE Framework
+# Matemáticas de Singapur: Progresión CPA, Modelado de barras y el marco MOE
 
-> Math Challenge research — 2026-07-31 — topic 03
+> Investigación Math Challenge — 2026-07-31 — tema 03
 
 ## Resumen ejecutivo (ES)
 

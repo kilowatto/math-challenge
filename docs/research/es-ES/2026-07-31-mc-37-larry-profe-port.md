@@ -1,5 +1,5 @@
-# Larry Profe — porting Larry to Math Challenge
-> Math Challenge research — 2026-07-31 — topic 37
+# Larry Profe — portando Larry a Math Challenge
+> Investigación Math Challenge — 2026-07-31 — tema 37
 
 ## Resumen ejecutivo (ES)
 
@@ -8,10 +8,9 @@ Larry ya existe en IOS como copiloto EN/ES sobre Workers AI (`kimi-k2.6` → `gp
 El propietario ya decidió: Larry Profe usa la **API de Claude** con **enrutamiento por dificultad** (Haiku/Sonnet/Opus). El precedente más cercano en el repo no es el chat libre sino `src/larry/contador/explain.ts`: un hallazgo determinístico entra, un LLM lo explica en lenguaje natural sin recalcular nada, con fallback a plantilla. Larry Profe debe seguir exactamente ese patrón: el motor de calificación decide qué está bien o mal; Claude solo explica, en el idioma, la edad y el tono correctos, sin avergonzar al niño.
 
 ## Executive summary (EN)
+Larry-in-IOS se ejecuta en Workers AI (`@cf/moonshotai/kimi-k2.6` → `@cf/openai/gpt-oss-120b` → respuesta predefinida), con un protocolo artesanal de llamada a herramientas de JSON de una sola línea y un sumidero de auditoría D1 duradero. Nunca toca la API de Claude — Larry Profe sería la primera integración de Claude de este repositorio, no una reutilización de la infraestructura existente.
 
-Larry-in-IOS runs on Workers AI (`@cf/moonshotai/kimi-k2.6` → `@cf/openai/gpt-oss-120b` → canned reply), with a hand-rolled single-line-JSON tool-calling protocol and a durable D1 audit sink. It never touches the Claude API — Larry Profe would be this repo's first Claude integration, not a reuse of existing plumbing.
-
-The owner has decided Larry Profe uses the **Claude API** with **model routing by difficulty** (Haiku/Sonnet/Opus). The closest existing precedent is not the free-form chat endpoint but `src/larry/contador/explain.ts`: a deterministic-finding-in, LLM-explains-it-out pattern with a hard "never compute, only cite what's in the JSON" rule and a template fallback. Larry Profe should follow that shape: Math Challenge's own grading engine is the source of truth on correctness; Claude's only job is turning a structured verdict into a warm, age-appropriate, five-language explanation — never re-deriving the math itself.
+El propietario ha decidido que Larry Profe utilice la **Claude API** con **model routing by difficulty** (Haiku/Sonnet/Opus). El precedente más cercano no es el punto final de chat libre, sino `src/larry/contador/explain.ts`: un patrón de entrada determinista y salida explicada por LLM con una regla estricta «never compute, only cite what's in the JSON» y un fallback de plantilla. Larry Profe debe seguir esa forma: el motor de calificación propio de Math Challenge es la fuente de verdad sobre la corrección; la única tarea de Claude es convertir un veredicto estructurado en una explicación cálida, adecuada a la edad y en cinco idiomas — nunca volver a derivar la matemática en sí.
 
 ## What exists today — file paths and line references from this repo
 

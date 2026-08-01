@@ -1,6 +1,6 @@
 # Stack, protocolos y rendimiento real: qué está de verdad a la vanguardia sobre Cloudflare
 
-> Math Challenge research — 2026-07-31 — topic 47
+> Investigación Math Challenge — 2026-07-31 — tema 47
 
 ## Resumen ejecutivo (ES)
 
@@ -36,7 +36,7 @@ Tres hechos independientes, cada uno suficiente por sí solo.
 
 **Del lado del navegador.** Esto no es una limitación de Cloudflare sino del protocolo: la biblioteca cliente web *implementa un protocolo distinto al gRPC nativo* precisamente porque los navegadores no exponen las funciones de HTTP/2 que gRPC requiere [3]. En consecuencia gRPC-Web usa HTTP/1.1, *«lo cual cancela algunas de las ventajas de usar gRPC»*, y **el streaming de cliente y el bidireccional quedan fuera de alcance** [2].
 
-**Del lado de la infraestructura intermedia.** Cloudflare documenta en su propio blog que los trailers de HTTP —que gRPC necesita para el estado— *no estaban plenamente soportados* por su proxy de borde, y hay reportes de cuerpos y trailers de gRPC siendo removidos a través de túneles incluso con TLS+ALPN+h2 en el origen [10][11].
+**Del lado de la infraestructura intermedia.** Cloudflare documenta en su propio blog que los trailers de HTTP —que gRPC necesita para el estado— *no estaban plenamente soportados* por su proxy de borde, y hay informes de cuerpos y trailers de gRPC siendo removidos a través de túneles incluso con TLS+ALPN+h2 en el origen [10][11].
 
 **Conclusión.** No es que gRPC sea difícil aquí: es que el caso de uso que lo justificaría —streaming binario eficiente y bidireccional— es exactamente el que no está disponible ni en el runtime ni en el navegador. Lo que quedaría sería protobuf sobre HTTP/1.1 con un proxy extra: más piezas, más latencia, peor depuración y sin la ventaja.
 
@@ -61,7 +61,7 @@ Lo que gana, con números:
 
 ### 4. INP: la métrica que este producto está en riesgo de fallar
 
-Los umbrales de «bueno» en 2026: LCP bajo 2,5 s, CLS bajo 0,1, INP bajo 200 ms —y los sitios de más alto desempeño apuntan a **INP bajo 150 ms** [9].
+Los umbrales de «bueno» en 2026: LCP bajo 2,5 s, CLS bajo 0,1, INP bajo 200 ms —y los sitios de más alto rendimiento apuntan a **INP bajo 150 ms** [9].
 
 **El 43 % de los sitios falla el umbral de 200 ms de INP**, lo que la convierte en la vital más comúnmente fallada de 2026 [9]. La razón por la que es más difícil que las otras: **mide cada toque y cada clic, no solo el primero**, y el enemigo son las tareas largas del hilo principal —JavaScript pesado que impide al navegador responder cuando el usuario interactúa [9].
 

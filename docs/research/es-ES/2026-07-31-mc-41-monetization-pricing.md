@@ -1,6 +1,6 @@
-# Monetization and Pricing for Family Math Edtech — What Comparables Actually Charge, and What Regulators Actually Require
+# Monetización y precios para edtech de matemáticas familiar — lo que los comparables realmente cobran y lo que los reguladores realmente exigen
 
-> Math Challenge research — 2026-07-31 — topic 41
+> Investigación Math Challenge — 2026-07-31 — tema 41
 
 ## Resumen ejecutivo (ES)
 

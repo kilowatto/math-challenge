@@ -1,6 +1,6 @@
-# Geometry, Measurement, and Spatial Reasoning Across Ages
+# Geometría, medición y razonamiento espacial a lo largo de las edades
 
-> Math Challenge research — 2026-07-31 — topic 09
+> Investigación Math Challenge — 2026-07-31 — tema 09
 
 ## Resumen ejecutivo (ES)
 
@@ -17,18 +17,17 @@
 - Para Math Challenge: mapear Van Hiele a franjas de curso, priorizar tareas de arrastre autocalificables sobre demostración formal en edades tempranas, y diseñar cada tarea visual con alternativa audio‑táctil desde el inicio.
 
 ## Executive summary (EN)
-
-- Van Hiele's five levels of geometric thought (visualization, analysis, informal deduction, formal deduction, rigor) are **sequential and instruction-dependent, not age-dependent** [1][8].
-- Spatial reasoning is trainable: Uttal et al.'s (2013) meta-analysis of 217 studies found g=0,47 (g=0,61 for children under 13 years), transferring to untrained spatial tasks [2][3].
-- Uttal's intrinsic/extrinsic × static/dynamic 2×2 taxonomy is the most-cited frame for classifying which spatial skill an activity trains; more recent meta-analyses confirm spatial skill reliably correlates with math performance across ages [11][14].
-- Tangrams and pattern blocks have a millennia-old Chinese lineage; their documented value is shape composition/decomposition, congruence, area, and perimeter through direct manipulation [6][9].
-- Origami blends art and applied mathematics (fold geometry, Kawasaki's theorem) and is used for spatial visualization across education levels [9].
-- Dynamic geometry environments (GeoGebra, Cabri) show consistently positive effects on conceptual understanding and retention (up to g≈0,96 in a 29-study meta-analysis) — though short interventions and small classes inflate the effect, a possible Hawthorne effect [5][7].
-- Cabri-type software documents students shifting from visual to geometric strategies, but also the risk that dragging-and-seeing-it-hold substitutes for real mathematical justification [7].
-- Two-column proof has dominated US instruction since 1913; professional mathematical writing is narrative, and each format trades off differently by proof length [8].
-- Touchscreen-specific research already exists: the "Geometric Constructer" software (Italian secondary students) found finger-dragging changes geometric reasoning relative to mouse-dragging [12].
-- Mature accessible alternatives exist: multimodal apps for blind children, programmable tactile/haptic displays, and audio-tactile graphics with documented gains in spatial working memory [13][15][16].
-- For Math Challenge: map Van Hiele explicitly onto grade bands, prioritize auto-gradable drag tasks over formal proof at younger ages, and design an audio-tactile alternative for every visual task from day one.
+- Los cinco niveles de pensamiento geométrico de Van Hiele (visualización, análisis, deducción informal, deducción formal, rigor) son **secuenciales y dependientes de la instrucción, no dependientes de la edad** [1][8].  
+- El razonamiento espacial es entrenable: el meta‑análisis de Uttal et al. (2013) de 217 estudios encontró g=0,47 (g=0,61 para niños menores de 13 años), transfiriéndose a tareas espaciales no entrenadas [2][3].  
+- La taxonomía 2×2 intrínseca/extrínseca × estática/dinámica de Uttal es el marco más citado para clasificar qué habilidad espacial entrena una actividad; meta‑análisis más recientes confirman que la habilidad espacial se correlaciona de forma fiable con el rendimiento matemático a lo largo de las edades [11][14].  
+- Los tangrams y los bloques de patrones tienen una línea de origen china de varios milenios; su valor documentado es la composición/descomposición de formas, la congruencia, el área y el perímetro mediante manipulación directa [6][9].  
+- El origami combina arte y matemáticas aplicadas (geometría del plegado, teorema de Kawasaki) y se utiliza para la visualización espacial en todos los niveles educativos [9].  
+- Los entornos de geometría dinámica (GeoGebra, Cabri) muestran efectos consistentemente positivos en la comprensión conceptual y la retención (hasta g≈0,96 en un meta‑análisis de 29 estudios) — aunque intervenciones breves y clases pequeñas inflan el efecto, un posible efecto Hawthorne [5][7].  
+- El software tipo Cabri documenta que los estudiantes pasan de estrategias visuales a estrategias geométricas, pero también el riesgo de que arrastrar‑y‑ver‑sustituya la justificación matemática real [7].  
+- La demostración en dos columnas ha dominado la instrucción en EE. UU. desde 1913; la escritura matemática profesional es narrativa, y cada formato presenta compensaciones diferentes según la longitud de la demostración [8].  
+- Ya existe investigación específica sobre pantallas táctiles: el software «Geometric Constructer» (estudiantes italianos de secundaria) encontró que arrastrar con el dedo modifica el razonamiento geométrico en comparación con arrastrar con el ratón [12].  
+- Existen alternativas accesibles consolidadas: aplicaciones multimodales para niños ciegos, pantallas táctiles/hápticas programables y gráficos audio‑táctiles con ganancias documentadas en la memoria de trabajo espacial [13][15][16].  
+- Para Math Challenge: mapear Van Hiele explícitamente a los tramos de curso, priorizar tareas de arrastre auto‑evaluables sobre la demostración formal en edades más tempranas, y diseñar una alternativa audio‑táctil para cada tarea visual desde el primer día.
 
 ## Resultados
 
@@ -75,7 +74,7 @@ Un amplio cuerpo de investigación aplicada en interacción persona‑ordenador 
 3. **Priorizar cuatro tipos de ítems auto‑evaluables**, ordenados por coste de desarrollo: (a) pulsaciones de simetría/elemento distinto (más barato, funciona desde preinfantil), (b) descomposición de áreas en cuadrícula (puntuación por tolerancia), (c) arrastrar‑para‑construir con comprobación de invariantes (requiere un pequeño motor de restricciones geométricas), (d) estimación de ángulos con transportador arrastrable y banda de tolerancia — los cuatro cuentan con precedentes de producto o investigación [10][12][17].  
 4. **Evaluar el arrastrar‑para‑construir mediante comprobación de invariantes, no coincidencia de píxeles**: almacenar el objetivo como relaciones geométricas (p. ej., «estos dos segmentos permanecen paralelos bajo cualquier arrastre válido») y validar la configuración final contra ellas, tal como hacen los programas estilo GeoGebra/Cabri [7].  
 5. **Posponer la autoría de pruebas en dos columnas/narrativa hasta 9.º curso**, y ofrecer el formato de dos columnas como andamiaje por defecto (más verificable por máquina, más de 100 años de convención), habilitando la prueba narrativa como modo opcional «con tus propias palabras» posteriormente — esto también facilita una transición EN/ES/FR/PT/DE limpia, ya que los códigos de razonamiento en dos columnas («SAS», «Ángulos alternos internos») son una pequeña tabla de traducción, mientras que la prueba narrativa requiere traducción de oraciones completas [8].  
-6. **Etiquetar los ítems espaciales no‑prueba con la taxonomía 2×2 de Uttal** (intrínseco/extrínseco × estático/dinámico) para que la analítica informe en qué cuadrante de habilidad espacial es débil el niño, en lugar de un opaco «puntaje espacial» [11][14].  
+6. **Etiquetar los ítems espaciales no‑prueba con la taxonomía 2×2 de Uttal** (intrínseco/extrínseco × estático/dinámico) para que la analítica informe en qué cuadrante de habilidad espacial es débil el niño, en lugar de un opaco «puntuación espacial» [11][14].  
 7. **Lanzar manipulables de tangram/bloques de patrones como tipo de actividad independiente**, no solo como ilustración — la investigación los acredita específicamente para el aprendizaje de área, perímetro y congruencia, y un tablero de tangram de arrastrar‑y‑encajar auto‑evalúa fácilmente (coincidencia de silueta dentro de tolerancia) [6][9].  
 8. **Añadir un modo mini de origami/pliegue de papel** para la visualización espacial de primaria alta y secundaria media, emparejado con la unidad de tangram como combinación cultural China/Japón — sirve también como contenido localizable traducible en lugar de ejercicios abstractos [9].  
 9. **Diseñar una alternativa audio‑táctil para cada ítem visual de geometría desde el inicio**: descripción auditiva breve más señales de vibración (p. ej., un zumbido para «estos lados son iguales»), realizable con las API de vibración móvil estándar y el etiquetado ARIA, sin hardware especializado [13][16].  

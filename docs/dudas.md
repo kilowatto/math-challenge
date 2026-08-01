@@ -205,6 +205,61 @@ nada, y que los vectores numéricos que traigan se copian a las pruebas tal cual
 
 ---
 
+## 11. Un workflow de traducción terminó DESPUÉS de que D-050 la pausara
+
+**El hecho.** Un workflow lanzado antes de la decisión siguió corriendo 4.5 horas
+y terminó a las 04:56, con D-050 ya escrita. Dejó 47 archivos de `es-ES` en el
+árbol de trabajo, sin commitear, por **$2.56 medidos**.
+
+**Lo que asumí.** Que pausar es «no lanzar más», no «tirar lo que ya se pagó». Los
+commiteé después de comprobar tres cosas: que la integridad no empeora (10
+documentos con hallazgo antes y después), que el cambio es una mejora real —traduce
+los títulos, que la pasada anterior había dejado en inglés— y que arregla un error
+de fondo: el README decía «Desafío Matemático», y **el nombre del producto es
+nombre propio y no se traduce**.
+
+**La duda real.** ¿Fue correcto? El argumento en contra es que `es-ES` sube a 43 de
+47 mientras `es-MX` sigue en cero, y eso profundiza el desbalance de la duda §1: el
+mercado más grande sigue sin nada.
+
+---
+
+## 12. `es-MX` y `fr-FR` los bloqueó un clasificador de seguridad
+
+**El hecho.** De los nueve agentes del workflow, dos fallaron sin llegar a
+traducir: `traduce:es-MX` y `traduce:fr-FR`, los dos con
+`blocked by safety classifier: Stage 2 classifier error`. El propio mensaje dice
+que suele ser transitorio y que reintentar funciona.
+
+**Por qué importa más de lo que parece.** Son exactamente los dos locales que
+seguían en cero, y son los dos mercados grandes. No es que el trabajo saliera mal:
+es que no se intentó. Si no se anota, dentro de un mes la lectura será «esos dos
+son difíciles» cuando la verdad es «esos dos nunca corrieron».
+
+**Lo que asumí.** No reintenté: D-050 dice pausado, y reintentar sería lanzar
+traducción nueva, que es justo lo que la decisión prohíbe.
+
+---
+
+## 13. Un agente reportó un defecto que no existe
+
+**El hecho.** El mismo workflow reportó, con detalle convincente, que
+`de-DE/mc-48` tenía «7 literales perdidos, `WCAG 2.2` convertido a `WCAG 2,2`
+siete veces». Fui a comprobarlo: **`grep "WCAG 2,2"` no devuelve nada** y
+`corpus-integridad` da ese archivo por limpio, con sus 6 marcas `[unverified]`
+intactas.
+
+**Por qué lo dejo escrito aunque no haya nada que arreglar.** Es el mismo patrón
+que ya costó caro esta noche con `locale-pt-PT`: un agente describe un defecto
+plausible, con conteo exacto y explicación correcta de por qué sería grave —una
+versión de norma no es una cantidad y no lleva coma— y el defecto no está ahí. La
+explicación es buena; el hecho es falso.
+
+**Lo que asumí.** Que ningún reporte de un agente se actúa sin verificarlo contra
+el archivo. Es barato comprobarlo y caro no hacerlo.
+
+---
+
 **Cómo se contesta esto.** Preferentemente en preguntas de opción múltiple —
 cada entrada de arriba ya tiene mi recomendación, así que basta con confirmarla o
 cambiarla. Lo que se decida va a `docs/decisions.md` con fecha, y la entrada

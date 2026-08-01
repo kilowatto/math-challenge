@@ -1,6 +1,6 @@
-# Duolingo's Gamification System and the Research Behind Engagement Mechanics
+# Sistema de gamificación de Duolingo y la investigación detrás de los mecanismos de compromiso
 
-> Math Challenge research — 2026-07-31 — topic 16
+> Investigación Math Challenge — 2026-07-31 — tema 16
 
 ## Resumen ejecutivo (ES)
 

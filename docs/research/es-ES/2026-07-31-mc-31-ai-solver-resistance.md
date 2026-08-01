@@ -1,6 +1,6 @@
-# The Solver Threat: AI Math Assistance in 2026 and What Actually Resists It
+# La amenaza del solucionador: asistencia matemática IA en 2026 y qué lo frena realmente
 
-> Math Challenge research — 2026-07-31 — topic 31
+> Investigación Math Challenge — 2026-07-31 — tema 31
 
 ## Resumen ejecutivo (ES)
 

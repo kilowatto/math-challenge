@@ -49,6 +49,7 @@ const ACTIVE = [
   ["intercalado",            "las series intercalan, no agrupan por tema",   "D-018, mc-05"],
   ["adaptativo-simulacion",  "el motor adaptativo se simula antes de usarse","D-002, mc-13, mc-44"],
   ["retro-completa",         "toda causa de error tiene texto en los 7 locales","mc-11, línea roja #7, D-022"],
+  ["migration-safety",       "migraciones sin borrado destructivo",           "mc-32, D-013, D-032"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -60,7 +61,6 @@ const PENDING = [
   ["jsonld-valid",      "JSON-LD válido y coincidente con la página","S0 · cuando haya sitio"],
   ["hreflang-recip",    "hreflang recíproco entre los 7 + x-default","S0 · cuando haya sitio"],
   ["precache-budget",   "≤5 MB de audio en la primera instalación",  "F5 · cuando haya audio"],
-  ["migration-safety",  "migraciones sin borrado destructivo",       "F2 · cuando haya más de una"],
 ];
 
 // --- Adversariales con LLM: construidos en F1 ----------------------------

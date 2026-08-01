@@ -798,10 +798,44 @@ if (hayHead) {
       .split("\n")
       .filter(Boolean);
     if (commits.length > 1) {
-      problemas.push(
-        `${archivo}: la tocaron ${commits.length} commits (${commits.join(", ")}). ` +
-          `Una migración se escribe una vez; después solo se corrige con otra migración`,
-      );
+      // Un cambio SOLO DE COMENTARIOS no es reescribir una migración: el
+      // esquema que se aplica es idéntico byte a byte. Sin esta distinción el
+      // auditor marcó `0001_identity.sql` porque un commit posterior le añadió
+      // la línea `--   D-038  passkey primero, contraseña como respaldo`, y un
+      // auditor que prohíbe documentar mejor lo ya escrito se apaga solo.
+      //
+      // Lo que sí importa se sigue vigilando: `enHead !== enDisco` de arriba
+      // atrapa cualquier edición sin commitear, y el esquema desnudo se compara
+      // entre la primera versión y la actual.
+      const desnudo = (sql) =>
+        sql
+          .replace(/--[^\n]*/g, "")
+          .replace(/\/\*[\s\S]*?\*\//g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      let primeraVersion = null;
+      try {
+        primeraVersion = execFileSync(
+          "git",
+          ["show", `${commits[commits.length - 1]}:${archivo}`],
+          { cwd: raiz, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+        );
+      } catch {
+        primeraVersion = null;
+      }
+
+      const soloComentarios =
+        primeraVersion !== null && desnudo(primeraVersion) === desnudo(enDisco);
+
+      if (!soloComentarios) {
+        problemas.push(
+          `${archivo}: la tocaron ${commits.length} commits (${commits.join(", ")}) y el ESQUEMA ` +
+            `cambió entre el primero y ahora. Una migración se escribe una vez; después solo se ` +
+            `corrige con otra migración — D1 lleva el control por nombre de archivo, así que el ` +
+            `cambio no se aplica al remoto`,
+        );
+      }
     }
   }
 }

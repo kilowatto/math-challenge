@@ -89,7 +89,7 @@ pero no verificadas**.
 
 ### Soroban / ábaco y cálculo mental anzan (UCMAS, Aloha)
 
-El soroban entró a Japón desde China en el siglo XIV y se estandarizó a su
+El soroban entró a Japón desde China en el siglo 14 y se estandarizó a su
 forma moderna de 1 sobre 4 cuentas en los años 1940; todavía se enseña en las
 escuelas primarias japonesas como ayuda al cálculo mental [2]. **Anzan**
 (cálculo mental basado en ábaco, AMC) ejecuta las cuatro operaciones
@@ -127,7 +127,7 @@ pidieron verlo, existía solo en una versión que él había "chanced upon"
 personalmente — inverificable [3]. El consenso académico, representado aquí
 por el matemático S. G. Dani (IIT Bombay), es que el contenido comparte
 "practically nothing" con las matemáticas védicas reales: la notación
-decimal, central en varias técnicas, llegó a la India solo en el siglo XVI;
+decimal, central en varias técnicas, llegó a la India solo en el siglo 16;
 el sánscrito es lingüísticamente moderno, no del periodo védico; y el corpus
 védico no muestra rastro de las ideas matemáticas involucradas [3]. La
 objeción pedagógica de Dani: el libro enseña "a collection of methods without

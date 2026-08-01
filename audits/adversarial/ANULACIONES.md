@@ -61,18 +61,6 @@ escrito en el comentario del generador. Compartir archivo entre `any` y
 Se revisará cuando entre el arte definitivo de Recraft: si ese arte no respeta
 el área segura, esta anulación deja de valer y hay que borrarla.
 
-### `locale-fr-FR` · `apps/web/src/i18n/index.ts` · `D-005` · 2026-07-31 · Esteban
-
-Razón: el hallazgo es correcto y llega antes de tiempo. `MATH_CONVENTIONS` está
-definido y hoy no lo consume nadie porque **no existe todavía interfaz que
-muestre números** — el sitio actual es texto. La tabla es el contrato, no la
-implementación, y aplicarla exige el motor de reto.
-
-No se pierde: F3 lleva el criterio explícito de que la puntuación y los ítems se
-rendericen con la convención del locale, y F5 lo lleva para el banco de ítems.
-Esta anulación caduca cuando F3 arranque; si para entonces sigue sin aplicarse,
-el hallazgo vuelve a bloquear y con razón.
-
 ## Anulaciones retiradas
 
 ### ~~`pwa-android` · `apps/web/src/styles/fonts.css` · `D-031`~~ — RETIRADA 2026-07-31
@@ -87,3 +75,25 @@ cuerpo, `--font-sistema` para botones, campos y navegación. Se deja aquí el
 registro en vez de borrarlo, porque una anulación retirada cuenta la historia
 de por qué el código cambió — y esta fue la primera tensión que levantó la
 flota en vez de una persona.
+
+### ~~`locale-fr-FR` · `apps/web/src/i18n/index.ts` · `D-005`~~ — RETIRADA 2026-08-01
+
+Se anuló el 2026-07-31 porque el hallazgo era correcto y llegaba antes de tiempo:
+`MATH_CONVENTIONS` estaba definido y no lo consumía nadie, porque no había
+interfaz que mostrara números. La anulación **caducaba al arrancar F3**, con estas
+palabras: *"si para entonces sigue sin aplicarse, el hallazgo vuelve a bloquear y
+con razón"*.
+
+F3 arrancó y se aplicó. La tabla se mudó a `packages/motor/src/convenciones.ts`
+—`packages/` no puede depender de `apps/`, y el archivo de i18n importa JSON con
+sintaxis de Vite que Node en ESM rechaza— y `apps/web/src/i18n/index.ts` la
+reexporta, así que sigue habiendo un solo lugar donde está escrita.
+
+`packages/motor/src/numeros.ts` la consume: formatea, elige el signo de división
+y multiplicación por locale, y **parsea de vuelta**, que es la mitad que faltaba
+—`Intl` formatea pero no parsea (`mc-34` impl. 2), y un adulto en `de-DE` teclea
+`1543,2`. 14 casos, incluido el ejemplo literal de `mc-34`: `127 : 4 = 31,75` en
+alemán contra `127 ÷ 4 = 31.75` en inglés.
+
+**El hallazgo se arregló, no se dejó pasar**, y la anulación caducó según sus
+propios términos sin que nadie tuviera que acordarse.

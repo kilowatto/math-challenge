@@ -37,6 +37,51 @@ import { formatear } from "../../../../../packages/motor/src/numeros.ts";
 const opciones = (ns: number[]) => ns.map((n) => formatear(n, locale));
 
 /**
+ * Copy de la página, por locale. `titulo`/`descripcion`/`h1`/`lema` alimentan
+ * el `<title>`, `<meta description>` y el JSON-LD de `Base.astro`, que exige
+ * que ambos aparezcan literalmente en el `<body>` (mc-48 §3) — por eso
+ * `descripcion` está compuesta de las mismas frases que los títulos de cada
+ * ítem, no de un resumen libre: así la cobertura léxica nunca se rompe al
+ * traducir uno de los dos por separado.
+ */
+const COPY: Record<Locale, {
+  h1: string; lema: string;
+  qMas: string; qPato: string; qCompleta: string; qCuantos: string;
+}> = {
+  "en": {
+    h1: "The five formats", lema: "Demo. No session, no score, and nothing is recorded.",
+    qMas: "Which group has more?", qPato: "Tap each duck", qCompleta: "Complete to 7", qCuantos: "How many were there?",
+  },
+  "es-MX": {
+    h1: "Los cinco formatos", lema: "Demostración. No hay sesión, no se puntúa y no se registra nada.",
+    qMas: "¿Cuál grupo tiene más?", qPato: "Toca cada pato", qCompleta: "Completa hasta 7", qCuantos: "¿Cuántos eran?",
+  },
+  "es-ES": {
+    h1: "Los cinco formatos", lema: "Demostración. No hay sesión, no se puntúa y no se registra nada.",
+    qMas: "¿Cuál grupo tiene más?", qPato: "Toca cada pato", qCompleta: "Completa hasta 7", qCuantos: "¿Cuántos eran?",
+  },
+  "fr-FR": {
+    h1: "Les cinq formats", lema: "Démonstration. Pas de session, pas de score, rien n'est enregistré.",
+    qMas: "Quel groupe en a le plus ?", qPato: "Touche chaque canard", qCompleta: "Complète jusqu'à 7", qCuantos: "Combien y en avait-il ?",
+  },
+  "pt-BR": {
+    h1: "Os cinco formatos", lema: "Demonstração. Sem sessão, sem pontuação, nada é registrado.",
+    qMas: "Qual grupo tem mais?", qPato: "Toque em cada pato", qCompleta: "Complete até 7", qCuantos: "Quantos eram?",
+  },
+  "pt-PT": {
+    h1: "Os cinco formatos", lema: "Demonstração. Sem sessão, sem pontuação, nada fica registado.",
+    qMas: "Que grupo tem mais?", qPato: "Toca em cada pato", qCompleta: "Completa até 7", qCuantos: "Quantos eram?",
+  },
+  "de-DE": {
+    h1: "Die fünf Formate", lema: "Demo. Keine Sitzung, keine Wertung, nichts wird gespeichert.",
+    qMas: "Welche Gruppe hat mehr?", qPato: "Tippe jede Ente an", qCompleta: "Ergänze bis 7", qCuantos: "Wie viele waren es?",
+  },
+};
+const c = COPY[locale];
+const paginaTitulo = c.h1;
+const paginaDescripcion = `${c.h1}: 3 + 4, ${c.qMas} ${c.qPato}. ${c.qCompleta} ${c.qCuantos} ${c.lema}`;
+
+/**
  * Los ítems son del BANCO REAL, con su id, para que la respuesta se pueda
  * calificar de verdad contra `POST /api/reto`. Las opciones se ordenan de forma
  * estable —no al azar— para que la posición del acierto no cambie entre
@@ -46,10 +91,10 @@ const opciones = (ns: number[]) => ns.map((n) => formatear(n, locale));
  */
 const DEMOS = [
   { itemId: "k11-3-4", formato: "toca_la_respuesta" as const, titulo: "3 + 4", opciones: opciones([1, 7, 8, 12]) },
-  { itemId: "k07-2-8", formato: "cual_sobra" as const, titulo: "¿Cuál grupo tiene más?", opciones: opciones([2, 8]) },
-  { itemId: "k03-6", formato: "toca_para_contar" as const, titulo: "Toca cada pato", opciones: opciones([5, 6, 7]), cantidad: 6 },
-  { itemId: "k10-7-3", formato: "arma_el_numero" as const, titulo: "Completa hasta 7", opciones: opciones([3, 4, 7, 10]), cantidad: 10 },
-  { itemId: "k02-4", formato: "flash" as const, titulo: "¿Cuántos eran?", opciones: opciones([3, 4, 5]), cantidad: 4 },
+  { itemId: "k07-2-8", formato: "cual_sobra" as const, titulo: c.qMas, opciones: opciones([2, 8]) },
+  { itemId: "k03-6", formato: "toca_para_contar" as const, titulo: c.qPato, opciones: opciones([5, 6, 7]), cantidad: 6 },
+  { itemId: "k10-7-3", formato: "arma_el_numero" as const, titulo: c.qCompleta, opciones: opciones([3, 4, 7, 10]), cantidad: 10 },
+  { itemId: "k02-4", formato: "flash" as const, titulo: c.qCuantos, opciones: opciones([3, 4, 5]), cantidad: 4 },
 ];
 
 /** La retroalimentación del locale. Sin texto, no hay nada que mostrar. */
@@ -69,13 +114,13 @@ const RETRO: Record<Locale, typeof retro> = {
 <Base
   locale={locale}
   seccion={null}
-  title="Formatos de reto — Math Challenge"
-  description="Los cinco formatos táctiles de kinder: tocar la respuesta, contar, flash, armar el número y cuál sobra."
+  title={paginaTitulo}
+  description={paginaDescripcion}
 >
   <div class="reto">
-    <h1>Los cinco formatos</h1>
+    <h1>{c.h1}</h1>
     <p class="muted">
-      Demostración. No hay sesión, no se puntúa y no se registra nada.
+      {c.lema}
     </p>
 
     {DEMOS.map((d) => (

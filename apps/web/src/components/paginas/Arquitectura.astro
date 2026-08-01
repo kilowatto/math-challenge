@@ -1,6 +1,6 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { LOCALES, MATH_CONVENTIONS, isLocale, type Locale } from "../../i18n";
+import { MATH_CONVENTIONS, type Locale } from "../../i18n";
 import copy from "../../i18n/paginas/arquitectura.json";
 
 /**
@@ -31,12 +31,19 @@ import copy from "../../i18n/paginas/arquitectura.json";
  * del sistema porque son salida literal de un comando, no prosa ni control.
  */
 
-export function getStaticPaths() {
-  return LOCALES.map((locale) => ({ params: { locale } }));
+/**
+ * Es un COMPONENTE, no una página, desde D-049.
+ *
+ * La ruta la genera `src/pages/[locale]/[seccion]/index.astro`, que es quien
+ * conoce la tabla de segmentos y por tanto quien sabe que esta sección se sirve
+ * en `/de-DE/architektur/` y no en `/de-DE/arquitectura/`. Aquí solo se recibe el locale ya
+ * validado: quien enruta valida, y validar dos veces es tener dos verdades.
+ */
+interface Props {
+  locale: Locale;
 }
 
-const { locale } = Astro.params;
-if (!isLocale(locale)) return Astro.redirect("/en/");
+const { locale } = Astro.props;
 
 const COPY = copy as unknown as Record<Locale, typeof copy.en>;
 const c = COPY[locale];
@@ -291,7 +298,7 @@ const jsonLd = {
 };
 ---
 
-<Base locale={locale} path="arquitectura/" title={c.pageTitle} description={c.pageDescription}>
+<Base locale={locale} seccion="arquitectura" title={c.pageTitle} description={c.pageDescription}>
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
   <nav class="migas" aria-label={c.breadcrumbHere}>

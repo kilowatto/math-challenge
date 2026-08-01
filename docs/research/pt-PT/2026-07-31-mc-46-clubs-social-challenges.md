@@ -95,7 +95,7 @@ Em nenhuma das três existe um campo que responda a "o que acontece ao último?"
 
 **Comportamento à prova de falhas.** Se a chamada de moderação falhar ou expirar, a prenda **não se publica**. Mostra‑se que Larry não pôde revê‑la e oferece‑se a tentar novamente. Nunca se publica texto sem revisão sob qualquer condição de erro — o modo de falha barato é um utilizador irritado, o modo de falha caro é uma humilhação publicada que o produto prometeu que não poderia acontecer.
 
-**Encaminhamento e custo.** O volume é trivial comparado com o do tutor: uma chamada por prenda criada, não por tentativa. Haiku 4,5 basta para o caso claro, com escalada a Sonnet 5 quando o veredicto for de baixa confiança — o matiz entre “piada entre amigos” e “denigração” é exatamente onde um modelo pequeno se engana em ambas as direções. Com o encaminhamento de D-015 e o limite de gasto do AI Gateway, isto não move a agulha do orçamento.
+**Encaminhamento e custo.** O volume é trivial comparado com o do tutor: uma chamada por prenda criada, não por tentativa. Haiku 4.5 basta para o caso claro, com escalada a Sonnet 5 quando o veredicto for de baixa confiança — o matiz entre “piada entre amigos” e “denigração” é exatamente onde um modelo pequeno se engana em ambas as direções. Com o encaminhamento de D-015 e o limite de gasto do AI Gateway, isto não move a agulha do orçamento.
 
 **Falsos positivos e apelação.** Larry vai errar, e vai rejeitar piadas legítimas. Sem via de apelação, isso sente‑se como censura e é a queixa que vai chegar. Toda prenda rejeitada deve poder ser enviada a revisão humana com um toque, e essa fila necessita de dono e tempo de resposta comprometido — a mesma fila dos relatórios.
 

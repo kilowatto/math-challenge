@@ -1,15 +1,15 @@
 # School grades and math curricula across countries — toward one internal ladder
 > Math Challenge research — 2026-07-31 — topic 15
 
-## Resumen ejecutivo (ES)
+## Zusammenfassung (ES)
 
 Jedes Ziel­land (EE. UU., Vereinigtes Königreich, Mexiko, Spanien, Frankreich, Deutschland, Brasilien, Portugal, plus Singapur und Japan als Referenz) organisiert den Mathematikunterricht nach einer eigenen Logik: nach Domänen und Klassen (EE. UU.), nach „key stages“ und Jahren (Vereinigtes Königreich), nach campos formativos und fases (Mexiko, Reform 2022), nach competencias específicas und ciclos (Spanien, LOMLOE), nach „cycles“ und socle commun (Frankreich), nach Bildungsstandards und Klassenstufen mit früher Gymnasium/Hauptschule‑Verzweigung (Deutschland), nach unidades temáticas und anos (Brasilien, BNCC) und nach ciclos de aprendizagens essenciais (Portugal). Die typischen Einstiegs­alter pro Niveau sind recht vergleichbar (6 Jahre = 1. Klasse in fast allen Systemen), aber **der Zeitpunkt, zu dem ein Thema erscheint, unterscheidet sich um 1–3 Jahre zwischen den Ländern**: formale Brüche tauchen zwischen 6 und 9 Jahren auf, negative Zahlen zwischen 9 und 12 Jahren, und formale Algebra zwischen 10 und 14 Jahren, je nach Land. Deutschland teilt zusätzlich die Bildungswege (Gymnasium vs. Realschule/Hauptschule) bereits ab dem 10. Lebensjahr, was kein anderes Ziel­land so früh macht. Der zentrale Vorschlag dieses Dokuments ist eine **interne Leiter mit 11 Stufen, länderverneutral**, verankert an beherrschten Inhalten und nicht an Alter oder Schulstufe, mit Namen in 5 Sprachen und einer ungefähren länderspezifischen Äquivalenztabelle, um Eltern und Lehrkräften Kontext zu geben, ohne an einen bestimmten nationalen Lehrplan gebunden zu sein.
 
-## Executive summary (EN)
+## Zusammenfassung (EN)
 
 Jedes Ziel­land strukturiert den Mathematikunterricht nach einer eigenen Logik: domains-by-grade (US), key stages and years (UK), campos formativos and fases (Mexikos Reform 2022), competencias específicas and ciclos (Spanien LOMLOE), cycles and socle commun (Frankreich), Bildungsstandards and Klassenstufen mit früher Gymnasium/Hauptschule‑Verfolgung (Deutschland), unidades temáticas and anos (Brasiliens BNCC) und ciclos of aprendizagens essenciais (Portugal). Typische Einstiegs­alter liegen recht einheitlich (Alter 6 = Klasse/Jahr/año/klasse 1 fast überall), aber **das Alter, in dem dasselbe Thema erscheint, variiert um 1–3 Jahre zwischen den Ländern**: formale Brüche erscheinen im Alter von 6 bis 9, negative Zahlen von 9 bis 12 und formale Algebra von 10 bis 14. Deutschland teilt zusätzlich die Schülerwege (Gymnasium vs. Realschule/Hauptschule) bereits ab dem 10. Lebensjahr, früher als jedes andere Ziel­land. Der zentrale Vorschlag hier ist eine **11‑stufige interne Leiter, länderverneutral**, verankert an beherrschten Inhalten statt an Alter oder Schulstufe, mit Namen in 5 Sprachen und einer ungefähren länderspezifischen Äquivalenztabelle für Eltern‑/Lehrkräfte‑Kontext — ohne die Anwendung an einen einzigen nationalen Lehrplan zu binden.
 
-## Findings
+## Ergebnisse
 
 ### Vereinigte Staaten — Common Core State Standards für Mathematik (CCSSM)
 

@@ -4,7 +4,7 @@
 
 ## Resumo executivo (ES)
 
-- BKT (Corbett & Anderson 1995) modela o domínio de uma competência com quatro parâmetros — `P(L0)` mestria inicial, `P(T)` prob. de aprender, `P(G)` prob. de adivinhar, `P(S)` prob. de “deslizamento” — com valores de exemplo amplamente citados `P(L0)=0,36, P(T)=0,1, P(G)=0,3, P(S)=0,05` [1].
+- BKT (Corbett & Anderson 1995) modela o domínio de uma competência com quatro parâmetros — `P(L0)` mestria inicial, `P(T)` prob. de aprender, `P(G)` prob. de adivinhar, `P(S)` prob. de “deslizamento” — com valores de exemplo amplamente citados `P(L0)=0.36, P(T)=0.1, P(G)=0.3, P(S)=0.05` [1].
 - Cognitive Tutor (motor do MATHia) combina “model tracing” (regras de produção passo a passo) com knowledge tracing (domínio agregado por competência); são mecanismos distintos e frequentemente confundidos [2].
 - A evidência de eficácia é mista: o What Works Clearinghouse (2016) classifica o Cognitive Tutor Algebra I como “efeitos mistos” em álgebra (+4 pontos, intervalo -7 a +19) e “sem efeito discernível” no desempenho geral; Geometry obteve efeito potencialmente negativo (-8) [3].
 - O ensaio do RAND (Pane et al. 2014) não encontrou efeito no ano 1 e sim ~0,21 desvios‑padrão no ano 2 — a eficácia dependia da fidelidade de implementação [4].
@@ -44,7 +44,7 @@ e a atualização posterior online (por observação) usada pelo “Knowledge Tr
 - Se incorrecta: `P(Lj-1|Oj) = [P(Lj-1|Oj-1)·P(S)] / [P(Lj-1|Oj-1)·P(S) + (1−P(Lj-1|Oj-1))·(1−P(G))]`
 - Depois: `P(Lj|Oj) = P(Lj-1|Oj) + [1 − P(Lj-1|Oj)]·P(T)`
 
-Um conjunto de parâmetros amplamente usado (correspondente ao modelo ilustrativo de Baker et al. 2008, reproduzido na Fig. 3 de van de Sande) é `P(S)=0,05, P(G)=0,3, P(T)=0,1, P(L0)=0,36` [1]. Van de Sande também demonstra que o BKT só se comporta bem (monotonamente não degenerado) quando `P(G)+P(S) < 1`, e que a sua forma de cadeia de Markov oculta só é identificável até três parâmetros combinados, a menos que seja ajustada com o algoritmo recursivo por observação — um aviso publicado sobre o ajuste de parâmetros, não apenas um detalhe de implementação [1].
+Um conjunto de parâmetros amplamente usado (correspondente ao modelo ilustrativo de Baker et al. 2008, reproduzido na Fig. 3 de van de Sande) é `P(S)=0.05, P(G)=0.3, P(T)=0.1, P(L0)=0.36` [1]. Van de Sande também demonstra que o BKT só se comporta bem (monotonamente não degenerado) quando `P(G)+P(S) < 1`, e que a sua forma de cadeia de Markov oculta só é identificável até três parâmetros combinados, a menos que seja ajustada com o algoritmo recursivo por observação — um aviso publicado sobre o ajuste de parâmetros, não apenas um detalhe de implementação [1].
 
 ### 3. Evidência de eficácia — mista, não uniformemente positiva
 
@@ -86,13 +86,13 @@ A literatura mais ampla sobre Elo em aprendizagem adaptativa (Pelánek, “Appli
 
 5. **A estimativa da dificuldade do item é online por construção:** cada tentativa no item `i` ajusta a sua classificação de dificuldade, pelo que um item recém‑criado obtém uma dificuldade provisória após algumas respostas, sem necessidade de pré‑teste — a maior vantagem prática do Elo sobre BKT/DKT/PFA, que assumem uma taxonomia fixa e/ou um passo de ajuste em lote [1][7][9].
 
-6. **Taxa de sucesso alvo para a seleção de itens: 70–80 %, centrada perto de 75 %**, correspondendo ao alvo validado de .75 do Math Garden [9] e à literatura sobre dificuldade desejável [11]. Ao selecionar o próximo item para a habilidade `θ`, escolher entre os itens cuja dificuldade `β_i` coloca `expected(θ, β_i)` em `[0,70, 0,80]`; amostrar entre os 3–5 itens elegíveis de dificuldade mais próxima em vez de escolher sempre o único mais próximo, para evitar saltos visivelmente repetitivos.
+6. **Taxa de sucesso alvo para a seleção de itens: 70–80 %, centrada perto de 75 %**, correspondendo ao alvo validado de .75 do Math Garden [9] e à literatura sobre dificuldade desejável [11]. Ao selecionar o próximo item para a habilidade `θ`, escolher entre os itens cuja dificuldade `β_i` coloca `expected(θ, β_i)` em `[0.70, 0.80]`; amostrar entre os 3–5 itens elegíveis de dificuldade mais próxima em vez de escolher sempre o único mais próximo, para evitar saltos visivelmente repetitivos.
 
 7. **Esquema D1 mínimo por tentativa:** `attempt_id, learner_id, item_id, skill_id(s), timestamp, response_time_ms, time_limit_ms, correct, raw_score, learner_rating_before/after, item_difficulty_before/after, k_factor_used, context flags (input_method, hint_used), sequence_index_in_session`. Guardar as classificações antes/depois (não apenas o estado atual) torna o histórico auditável e reproduzível, e suporta comparações offline contra um experimento posterior BKT/PFA sem re‑instrumentação.
 
 8. **Separar a dificuldade do item dos metadados de dificuldade de conteúdo.** Guardar uma etiqueta de grau/nível atribuída pelo autor independentemente da classificação Elo ao vivo; usá‑la apenas como prior de arranque a frio (semente perto da classificação média dos itens com a mesma etiqueta), deixando a classificação ao vivo assumir após ~10 respostas — isto evita que um item mal etiquetado nunca seja encaminhado a utilizadores que revelariam a sua verdadeira dificuldade.
 
-9. **Objeto Durable para o caminho quente, D1 como o registo.** A atualização O(1) por evento do Elo encaixa num Objeto Durable que mantém a classificação ao vivo de um aprendiz (e uma partição das classificações quentes de itens), gravando cada tentativa como uma linha D1 apenas de anexar; isto evita corridas de leitura‑modificação‑escrita nas linhas de itens partilhadas que um design ingenuo apenas D1 sofre sob concorrência real.
+9. **Objeto Durable para o caminho quente, D1 como o registo.** A atualização O(1) por evento do Elo encaixa num Objeto Durable que mantém a classificação ao vivo de um aprendiz (e uma partição das classificações quentes de itens), gravando cada tentativa como uma linha D1 apenas de anexar; isto evita corridas de leitura‑modificação‑escrita nas linhas de itens partilhadas que um design ingénuo apenas D1 sofre sob concorrência real.
 
 10. **Adiar BKT/PFA/DKT para uma camada v2 de “domínio de competências”, não para a seleção de itens v1.** Quando existir história D1 suficiente, um lote noturno BKT/PFA por competência de granularidade fina pode alimentar painéis de domínio e sinais para os pais — uma superfície diferente da seleção em tempo real, e misturá‑los cedo arrisca repetir a armadilha de justiça DKT/BKT [5][6].
 

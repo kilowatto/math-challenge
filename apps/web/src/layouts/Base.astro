@@ -12,6 +12,7 @@ import Rum from "../components/Rum.astro";
  *     Cloudflare (D-033)
  */
 import { LOCALES, DEFAULT_LOCALE, t, type Locale } from "../i18n";
+import { ruta, type Seccion } from "../i18n/rutas";
 import "../styles/fonts.css";
 import "../styles/tokens.css";
 
@@ -21,43 +22,50 @@ interface Props {
   title: string;
   description: string;
   /**
-   * Ruta DESPUÉS del locale, con barra final. La portada pasa "" y
-   * /{locale}/origen/ pasa "origen/".
+   * Qué sección es esta página, o `null` para la portada.
    *
-   * Existe porque `canonical` y los `hreflang` estaban cableados a `/{locale}/`
-   * para toda página: con S2, `/en/origen/` declaraba `canonical` a `/en/` y
-   * sus siete alternates apuntaban a la portada. Eso no es un detalle de SEO —
-   * un canonical que señala otra URL le dice a Google que esta página no debe
-   * indexarse, y un grupo de hreflang que no cierra el ciclo se descarta entero
-   * (mc-48 §3, plan §3.2-§3.3, hueco H5).
+   * **Es una CLAVE, no una ruta**, y ese es el punto entero desde D-049. Antes
+   * este prop era `path`, una cadena como `"investigacion/"` que se pegaba igual
+   * en los siete locales:
    *
-   * Todavía NO es el "conjunto de locales en que la página existe" que pide el
-   * plan §3.3: hoy las cinco páginas existen en los 7, así que el conjunto es
-   * el mismo. Ese prop hace falta cuando S1 publique el corpus en menos de 7.
+   *     <link rel="alternate" hreflang="de-DE" href="…/de-DE/investigacion/" />
+   *
+   * Con segmentos traducidos esa línea declara una URL que **no existe** — la
+   * alemana es `/de-DE/forschung/`. Un grupo de hreflang que apunta a un 404 se
+   * descarta entero, y con él las siete variantes (mc-48 §3). No rompe ninguna
+   * página: rompe la indexación, en silencio, meses después.
+   *
+   * Por eso el layout ya no recibe la ruta armada. Recibe la clave y arma las
+   * siete con `ruta()`, que lee la única tabla de segmentos que existe.
    */
-  path?: string;
+  seccion?: Seccion | null;
+  /** Slug del documento, para las páginas de artículo del corpus. */
+  slug?: string;
 }
 
-const { locale, title, description, path = "" } = Astro.props;
+const { locale, title, description, seccion = null, slug } = Astro.props;
 const m = t(locale);
 const site = "https://math.kilowatto.com";
-const canonical = `${site}/${locale}/${path}`;
+
+/** La ruta de esta página en un locale dado. La portada es solo el prefijo. */
+const rutaEn = (l: Locale) => (seccion ? ruta(l, seccion, slug) : `/${l}/`);
+
+const canonical = `${site}${rutaEn(locale)}`;
 
 /**
  * Navegación del sitio abierto, en los 7 locales.
  *
- * Los `path` son segmentos invariantes en español, igual que los nombres de
- * archivo que ya crearon las páginas. Eso equivale a contestar la pregunta P5
- * del plan (§8) sin que el dueño la haya contestado: son URLs permanentes y
- * conviene cerrarla antes de publicar, no después con redirecciones eternas.
+ * Los enlaces se calculan con `ruta()`: en `de-DE` esta barra apunta a
+ * `/de-DE/forschung/` y en `fr-FR` a `/fr-FR/recherche/`. Cablearlos aquí sería
+ * el segundo lugar donde vive un segmento, y el que se olvidaría de actualizar.
  */
-const NAV = [
-  { path: "", label: m.navHome },
-  { path: "origen/", label: m.navOrigin },
-  { path: "niveles/", label: m.navLevels },
-  { path: "investigacion/", label: m.navResearch },
-  { path: "arquitectura/", label: m.navArchitecture },
-  { path: "codigo-abierto/", label: m.navOpen },
+const NAV: Array<{ seccion: Seccion | null; label: string }> = [
+  { seccion: null, label: m.navHome },
+  { seccion: "origen", label: m.navOrigin },
+  { seccion: "niveles", label: m.navLevels },
+  { seccion: "investigacion", label: m.navResearch },
+  { seccion: "arquitectura", label: m.navArchitecture },
+  { seccion: "codigo-abierto", label: m.navOpen },
 ];
 
 // JSON-LD. `name` y `description` vienen de las MISMAS variables que renderiza
@@ -107,9 +115,9 @@ const jsonLd = {
     {/* hreflang recíproco: cada página apunta a TODAS, incluida a sí misma.
         Sin la auto-referencia el ciclo no cierra y Google ignora el grupo. */}
     {LOCALES.map((l) => (
-      <link rel="alternate" hreflang={l} href={`${site}/${l}/${path}`} />
+      <link rel="alternate" hreflang={l} href={`${site}${rutaEn(l)}`} />
     ))}
-    <link rel="alternate" hreflang="x-default" href={`${site}/${DEFAULT_LOCALE}/${path}`} />
+    <link rel="alternate" hreflang="x-default" href={`${site}${rutaEn(DEFAULT_LOCALE)}`} />
 
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#F36B1C" />
@@ -161,9 +169,9 @@ const jsonLd = {
       <ul>
         {NAV.map((item) => (
           <li>
-            {item.path === path
+            {item.seccion === seccion && !slug
               ? <span aria-current="page">{item.label}</span>
-              : <a href={`/${locale}/${item.path}`}>{item.label}</a>}
+              : <a href={item.seccion ? ruta(locale, item.seccion) : `/${locale}/`}>{item.label}</a>}
           </li>
         ))}
       </ul>
@@ -181,7 +189,7 @@ const jsonLd = {
             <li>
               {l === locale
                 ? <span aria-current="true">{t(l).localeName}</span>
-                : <a href={`/${l}/${path}`} hreflang={l} lang={l}>{t(l).localeName}</a>}
+                : <a href={rutaEn(l)} hreflang={l} lang={l}>{t(l).localeName}</a>}
             </li>
           ))}
         </ul>

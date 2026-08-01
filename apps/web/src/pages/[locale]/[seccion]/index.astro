@@ -1,0 +1,64 @@
+---
+/**
+ * /{locale}/{segmento}/ — el enrutador de las cinco secciones del sitio (D-049).
+ *
+ * Por qué las cinco páginas viven detrás de UN archivo. Astro fija el segmento
+ * de una ruta en el nombre del archivo: `arquitectura.astro` solo puede servir
+ * `/…/arquitectura/`. Para que el segmento cambie por locale —`architektur` en
+ * alemán, `architecture` en francés— tiene que ser un parámetro, y dos archivos
+ * con un parámetro en la misma posición se pisan.
+ *
+ * Así que el segmento es el parámetro, esta ruta lo resuelve contra la tabla de
+ * `src/i18n/rutas.ts`, y cada sección vuelve a ser lo que siempre fue: un
+ * componente que se pinta. Lo único que se movió es quién decide la URL.
+ *
+ * **`getStaticPaths` es la lista completa de URLs del sitio.** 7 locales × 5
+ * secciones = 35 rutas, y ninguna se escribe a mano: salen de `SEGMENTOS`. Si
+ * mañana alguien añade una sección a la tabla y olvida el componente, esto
+ * revienta el build en vez de servir una página en blanco.
+ */
+import { LOCALES, isLocale, type Locale } from "../../../i18n";
+import { SEGMENTOS, type Seccion } from "../../../i18n/rutas";
+
+import Arquitectura from "../../../components/paginas/Arquitectura.astro";
+import CodigoAbierto from "../../../components/paginas/CodigoAbierto.astro";
+import Investigacion from "../../../components/paginas/Investigacion.astro";
+import Niveles from "../../../components/paginas/Niveles.astro";
+import Origen from "../../../components/paginas/Origen.astro";
+
+export function getStaticPaths() {
+  return LOCALES.flatMap((locale) =>
+    (Object.keys(SEGMENTOS[locale]) as Seccion[]).map((seccion) => ({
+      params: { locale, seccion: SEGMENTOS[locale][seccion] },
+      // La sección canónica viaja como prop, no se re-deduce del segmento. Con
+      // `es-MX` los dos coinciden y cualquier error de inversión sería
+      // invisible justo en el locale que más se prueba.
+      props: { seccion },
+    })),
+  );
+}
+
+const { locale: rawLocale } = Astro.params;
+const { seccion } = Astro.props as { seccion: Seccion };
+if (!isLocale(rawLocale)) return Astro.redirect("/en/");
+const locale: Locale = rawLocale;
+
+/**
+ * El mapa sección → componente.
+ *
+ * Está tipado como `Record<Seccion, …>`, así que añadir una sección a
+ * `SEGMENTOS` sin añadirla aquí **no compila**. Es la única comprobación que
+ * impide que la tabla de rutas y las páginas se separen sin que nadie lo note.
+ */
+const PAGINAS: Record<Seccion, typeof Arquitectura> = {
+  "arquitectura": Arquitectura,
+  "codigo-abierto": CodigoAbierto,
+  "investigacion": Investigacion,
+  "niveles": Niveles,
+  "origen": Origen,
+};
+
+const Pagina = PAGINAS[seccion];
+---
+
+<Pagina locale={locale} />

@@ -2,7 +2,7 @@
 
 > Math Challenge research — 2026-07-31 — topic 07
 
-## Resumen ejecutivo (ES)
+## Zusammenfassung (ES)
 
 - Für Siegler sind Brüche die „neue Grenze“ der numerischen Entwicklung: Man muss aufhören, Zähler und Nenner als zwei ganze Zahlen zu sehen und sie als **eine einzige Größe** auf der Zahlengeraden zu betrachten [1][2].
 - Frageskenntnisse im Alter von 10 Jahren sagen das Erreichen von Algebra und Mathematik im Alter von 16 Jahren voraus, wobei IQ, Arbeitsgedächtnis und Familieneinkommen kontrolliert werden – in den USA und im Vereinigten Königreich [3][4].
@@ -16,7 +16,7 @@
 - Es gibt bereits Kataloge ausführbarer „Malrules“, damit ein System eine falsche Antwort in einen benannten Fehlertyp einordnet – der Ansatz, den der KI‑Tutor von Math Challenge benötigt [16].
 - Zentrale Implikation: Die Diagnose bei Brüchen/Dezimalzahlen/Verhältnissen darf nicht nur „richtig/falsch“ sein; sie muss die Antwort einem kurzen Katalog benannter Fehlvorstellungen zuordnen, und der Tutor muss die Annahme benennen, nicht nur das korrekte Verfahren wiederholen.
 
-## Executive summary (EN)
+## Zusammenfassung (EN)
 
 - Brüche markieren den Punkt, an dem Kinder aufhören müssen, Zähler/Nenner als zwei ganze Zahlen zu behandeln, und beginnen, einen Bruch als eine einzige Größe auf einer Zahlengeraden zu sehen – Siegler's integrierte Theorie der numerischen Entwicklung [1][2].
 - Frageskenntnisse im Alter von 10 Jahren sagen eindeutig Algebra‑ und Gesamterfolge in Mathematik im Alter von 16 Jahren voraus, wobei IQ, Arbeitsgedächtnis und sozioökonomischer Status kontrolliert werden, in sowohl US‑ als auch UK‑Längsschnittkohorten [3][4].

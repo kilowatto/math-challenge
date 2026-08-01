@@ -18,18 +18,17 @@
 
 ## Resumo executivo (EN)
 
-- Japan's "structured problem-solving lesson" (*mondai kaiketsu gakushuu* / *mondaikaiketsu-gata jugyō*) follows four phases: *hatsumon* (key initial question), *kikan-shido* (monitored individual/group work), *neriage* ("kneading"/polishing — whole-class comparison of solutions), and *matome* (summary) [1][5].
-- Unlike US/German lessons where the teacher demonstrates a method first and students then apply it, Japanese students meet the hard problem *before* any explanation and invent their own solution methods first [4].
-- The TIMSS Video Study (NCES 99-074, 231 classrooms: 100 Germany, 50 Japan, 81 US) found US students spend 90% of working time practicing routine procedures, Germany 96%, versus only 41% in Japan — with 44% of Japanese student time spent inventing new solutions requiring conceptual thinking [4].
-- Average lesson content difficulty: Japan ≈ 9th-grade international level, US ≈ 7th-grade, Germany ≈ 8th-grade [4].
-- 53% of Japanese lessons included proofs vs. 10% in Germany and 0% in the US; independent US math-professor raters scored 39% of Japanese lessons "high quality" vs. 0% of US lessons (89% of US lessons scored "lowest") [4].
-- *Bansho* (deliberate, planned board-writing) keeps the entire lesson visible without erasing, letting the class visually compare multiple solution methods side by side; teachers plan a *bansho-keikaku* (board-writing plan) before the lesson [3][2].
-- *Jugyou kenkyuu* (Lesson Study) is the professional-development engine: teacher teams plan a "research lesson," observe it live, and discuss it collectively — including *kyozaikenkyu*, deep study of the instructional materials themselves [6][7].
-- Key institutions: University of Tsukuba (Masami Isoda / CRICED, translator of MEXT's official Course of Study), Tokyo Gakugei University (international Lesson Study hub via Project IMPULS), Hiroshima University (international cooperation via JICA) [8][9][10][11].
-- Mental-abacus (soroban/anzan) research shows consistent gains in arithmetic computation and visuospatial working memory, with neural-efficiency changes in fronto-parietal networks, but evidence for transfer to general math ability or intelligence is weak, and many studies are small, cross-sectional, and use passive control groups [12][13][14].
-- A 3-year Stanford RCT (Barner et al. 2015, n=204, ages 5-7) found mental-abacus training is achievable in standard classrooms and improves arithmetic tasks, but did not change basic cognitive abilities — initial spatial working memory predicted who benefited most [15].
-- Core implication for Math Challenge: the Japanese pedagogical payoff is not raw response speed but productive struggle on one hard problem followed by collective comparison of methods — this is in tension with gamified designs that reward only speed and immediate correctness.
-
+- A “aula estruturada de resolução de problemas” do Japão (*mondai kaiketsu gakushuu* / *mondaikaiketsu-gata jugyō*) segue quatro fases: *hatsumon* (pergunta inicial chave), *kikan-shido* (trabalho individual/grupo monitorizado), *neriage* (“amassar”/polimento — comparação de soluções em toda a turma), e *matome* (resumo) [1][5].
+- Ao contrário das aulas dos EUA/Alemanha, onde o professor demonstra primeiro um método e os estudantes depois o aplicam, os estudantes japoneses confrontam o problema difícil *antes* de qualquer explicação e inventam primeiro os seus próprios métodos de solução [4].
+- O TIMSS Video Study (NCES 99-074, 231 salas de aula: 100 Alemanha, 50 Japão, 81 EUA) constatou que os estudantes dos EUA dedicam 90 % do tempo de trabalho a praticar procedimentos de rotina, a Alemanha 96 %, contra apenas 41 % no Japão — com 44 % do tempo dos estudantes japoneses dedicado a inventar novas soluções que exigem pensamento conceptual [4].
+- Dificuldade média do conteúdo da aula: Japão ≈ nível internacional de 9th-grade, EUA ≈ 7th-grade, Alemanha ≈ 8th-grade [4].
+- 53 % das aulas japonesas incluíram demonstrações versus 10 % na Alemanha e 0 % nos EUA; avaliadores independentes, professores universitários de matemática dos EUA, classificaram 39 % das aulas japonesas como “alta qualidade” versus 0 % das aulas dos EUA (89 % das aulas dos EUA foram classificadas como “a mais baixa”) [4].
+- *Bansho* (escrita deliberada e planeada no quadro) mantém toda a aula visível sem apagar, permitindo à turma comparar visualmente múltiplos métodos de solução lado a lado; os professores planeiam um *bansho-keikaku* (plano de escrita no quadro) antes da aula [3][2].
+- *Jugyou kenkyuu* (Lesson Study) é o motor de desenvolvimento profissional: equipas de professores planeiam uma “aula de investigação”, observam‑na ao vivo e discutem‑na coletivamente — incluindo *kyozaikenkyu*, estudo aprofundado dos próprios materiais instrucionais [6][7].
+- Instituições chave: University of Tsukuba (Masami Isoda / CRICED, tradutor do Curso Oficial de Estudos do MEXT), Tokyo Gakugei University (centro internacional de Lesson Study através do Project IMPULS), Hiroshima University (cooperação internacional via JICA) [8][9][10][11].
+- A investigação sobre o ábaco mental (soroban/anzan) demonstra ganhos consistentes na computação aritmética e na memória de trabalho visuoespacial, com alterações de eficiência neural nas redes fronto‑parietais, mas a evidência de transferência para a capacidade matemática geral ou inteligência é fraca, e muitos estudos são pequenos, transversais e utilizam grupos de controlo passivos [12][13][14].
+- Um ensaio clínico randomizado de 3 anos da Stanford (Barner et al. 2015, n=204, idades 5-7) constatou que o treino de ábaco mental é viável em salas de aula padrão e melhora as tarefas aritméticas, mas não alterou as capacidades cognitivas básicas — a memória de trabalho espacial inicial previu quem beneficiou mais [15].
+- Implicação principal para o Math Challenge: o retorno pedagógico japonês não reside na velocidade bruta de resposta, mas na luta produtiva com um problema difícil seguida da comparação coletiva de métodos — o que está em tensão com designs gamificados que recompensam apenas a rapidez e a correção imediata.
 ## Constatações
 
 ### 1. Resolução estruturada de problemas (mondai kaiketsu gakushuu)
@@ -115,7 +114,7 @@ Um resumo de apoio do BPS Research Digest de um ensaio separado de 3 anos rela
 1. Deve o ecrã de "comparar soluções" ao estilo (*neriage*) ser apresentado a aprendizes individuais, ou reservado para desafios de grupo/sala de aula atribuídos pelo professor, onde existem múltiplas soluções reais de estudantes para comparar?
 2. Deve o soroban/anzan ser um módulo de primeira‑parte no lançamento, ou um complemento de objetivo ambicioso, dado o conjunto de evidências modesto e de âmbito restrito?
 3. Quanto conteúdo criado (problemas‑âncora com percursos de solução antecipados, à la *bansho‑keikaku*) é viável por tópico no lançamento, em comparação com depender totalmente de variantes geradas por IA?
-4. A calibração da escada de dificuldade contra o Curso de Estudos do MEXT (e os currículos nacionais equivalentes EN/FR/PT/DE) deve ser um requisito da versão 1, ou um refinamento pós‑lançamento?
+4. A calibração da escada de dificuldade contra o Curso de Estudos do MEXT (e os currículos nacionais equivalentes EN/FR/PT/DE) deve ser um requisito v1, ou um refinamento pós‑lançamento?
 
 ## Fontes
 

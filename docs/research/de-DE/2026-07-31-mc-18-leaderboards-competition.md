@@ -2,7 +2,7 @@
 
 > Math Challenge research — 2026-07-31 — topic 18
 
-## Resumen ejecutivo (ES)
+## Zusammenfassung (ES)
 
 - Leaderboards im Bildungsbereich haben **gemischte und positionsabhängige** Effekte: Sie motivieren Lernende, die nahe der Spitze stehen, demotivieren jedoch konsequent diejenigen, die am unteren Ende bleiben — die systematische Übersicht von 2023 zu Leaderboards in gamifizierten Umgebungen dokumentiert dieses Muster „von oben nach unten“ und fordert, den Effekt nach Position zu messen, nicht nur nach dem Klassendurchschnitt [1][2].
 - Die soziale Vergleichstheorie von Festinger (1954) erklärt den Mechanismus: Der Vergleich „nach oben“ kann je nach vorherigem Selbstwertgefühl motivieren oder entmutigen; der Vergleich „nach unten“ schützt die Stimmung, lehrt jedoch nichts. Ein Leaderboard ohne sorgfältiges Design maximiert den Aufwärtsvergleich für die Mehrheit der Gruppe [4].
@@ -15,7 +15,7 @@
 - „Sandbagging“ (absichtliche Leistungsabsenkung) und „Smurfing“ (neue Konten, um unter dem tatsächlichen Niveau zu spielen) sind bekannte Schwachstellen jeder Fähigkeits‑Matchmaking‑Methode; sie werden durch hohe RD/Volatilität bei neuen Konten gemindert, nicht durch manuelle Regeln.
 - Prodigy Math hat dokumentierte Kritik erhalten (Beschwerde bei der FTC von >20 Organisationen, Berichterstattung von NBC News und Financial Times) wegen Spielmechaniken, die den echten mathematischen Inhalt verwässern — eine direkte Warnung, nicht die Spielschicht das Lernen verschlingen zu lassen [14][15][16].
 
-## Executive summary (EN)
+## Zusammenfassung (EN)
 
 Leaderboards im Bildungsbereich erzeugen **positionsabhängige, nicht einheitliche, Effekte**: Sie unterstützen Lernende nahe der Spitze und schaden zuverlässig Lernenden am unteren Ende, die dazu neigen, sich zurückzuziehen — die systematische Übersicht von 2023 zu Leaderboards in gamifizierten Bildungskontexten beschreibt dies als ein „von oben nach unten“‑Muster und fordert, die Effekte nach Rangposition und nicht nach dem Klassendurchschnitt zu messen [1][2]. Christy und Fox (2014) fanden heraus, dass die soziale Vergleichskomponente eines Leaderboards die Stereotypbedrohung bei der mathematischen Leistung von Frauen in einem simulierten Klassenzimmer stärker beeinflusste — das Ranking selbst verändert das Verhalten [1]. Festingers (1954) soziale Vergleichstheorie liefert den Mechanismus: Aufwärtsvergleich kann je nach vorherigem Selbstwertgefühl motivieren oder demotivieren; Abwärtsvergleich schützt die Stimmung, lehrt jedoch nichts — ein naives Leaderboard maximiert den Aufwärtsvergleich für die Mehrheit jeder Gruppe [4]. Die Selbstbestimmungstheorie (Deci & Ryan) sagt voraus, dass als kontrollierend wahrgenommene Konkurrenz die intrinsische Motivation verdrängt, was die Grundlage dafür ist, jedes Ranking optional zu halten [5]. Johnson und Johnsons Metaanalysen (über 122 Studien) zeigten, dass kooperative Zielstrukturen konsequent bessere Leistungen und Peer‑Beziehungen erzielen als kompetitive und individualistische [6].
 

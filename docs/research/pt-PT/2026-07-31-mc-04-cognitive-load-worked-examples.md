@@ -17,18 +17,17 @@
 
 ## Resumo executivo (EN)
 
-- Cognitive Load Theory (CLT, John Sweller, UNSW): working memory is severely limited, long-term memory (schemas) is effectively unlimited; instruction should minimize extraneous load and protect germane (schema-building) load [1][13].
-- **Worked-example effect**: for novices, studying a worked example teaches more, faster, with fewer errors, than solving the same problem unaided (Sweller & Cooper, 1985) [1][2].
-- **Expertise reversal effect** (Kalyuga): as competence grows, the same scaffolding becomes redundant and can actively **harm** learning [3][4].
-- The fix is **fading** (Renkl): gradually moving from full example → one blank step → independent problem [5][6].
-- **Self-explanation prompts** (Chi) amplify the effect; combined with fading they produce medium-large gains on near **and** far transfer at no extra time cost (Atkinson, Renkl & Merrill, 2003) [6][14].
-- **Split-attention** and **redundancy** are design failures: separating diagram from text, or repeating information across two channels, wastes working memory [7].
-- **Goal-free effect**: "find as many values you can" instead of "solve for X" lowers means-ends search load [8].
-- CLT has real foundational problems: no validated measure of cognitive load exists (mostly single-item effort scales), and the theory has been through multiple replication crises [9].
-- Time pressure is **not neutral**: for roughly a third of learners (Ashcraft), timed testing is itself the origin of math anxiety, which consumes working memory like a secondary task [11][12].
-- Core implication: **speed-based scoring is not free** — while a concept is new, speed mostly measures prior automaticity, not understanding.
-- Design recommendation: full worked example for unfamiliar patterns, fade as the learner succeeds, and hold off timing until the pattern is consolidated.
-
+- Cognitive Load Theory (CLT, John Sweller, UNSW): a memória de trabalho é severamente limitada, a memória de longo prazo (esquemas) é efetivamente ilimitada; a instrução deve minimizar a carga extrínseca e proteger a carga germânica (de construção de esquemas) [1][13].
+- **Efeito do exemplo resolvido**: para novatos, estudar um exemplo resolvido ensina mais, mais rapidamente, com menos erros, do que resolver o mesmo problema sem ajuda (Sweller & Cooper, 1985) [1][2].
+- **Efeito de reversão da especialização** (Kalyuga): à medida que a competência cresce, o mesmo apoio torna‑se redundante e pode ativamente **prejudicar** a aprendizagem [3][4].
+- A solução é o **desvanecimento** (Renkl): passar gradualmente de exemplo completo → um passo em branco → problema independente [5][6].
+- **Indicações de auto‑explicação** (Chi) amplificam o efeito; combinadas com o desvanecimento produzem ganhos médio‑grandes na transferência próxima **e** distante sem custo adicional de tempo (Atkinson, Renkl & Merrill, 2003) [6][14].
+- **Atenção dividida** e **redundância** são falhas de design: separar o diagrama do texto, ou repetir a informação em dois canais, desperdiça a memória de trabalho [7].
+- **Efeito sem objetivo**: “encontre o maior número de valores que puder” em vez de “resolva para X” reduz a carga de procura de meios‑fins [8].
+- A CLT tem problemas de base reais: não existe uma medida validada da carga cognitiva (principalmente escalas de esforço de um único item), e a teoria passou por múltiplas crises de replicação [9].
+- A pressão de tempo **não é neutra**: para aproximadamente um terço dos aprendentes (Ashcraft), os testes cronometrados são eles próprios a origem da ansiedade matemática, que consome a memória de trabalho como uma tarefa secundária [11][12].
+- Implicação central: **a pontuação baseada na velocidade não é gratuita** — enquanto um conceito é novo, a velocidade mede sobretudo a automaticidade prévia, não a compreensão.
+- Recomendação de design: exemplo resolvido completo para padrões desconhecidos, desvanecer à medida que o aprendente tem sucesso, e adiar a cronometragem até que o padrão esteja consolidado.
 ## Constatações
 
 ### 1. Núcleo teórico: memória de trabalho, esquemas e três cargas

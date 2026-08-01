@@ -1438,8 +1438,16 @@ metro, y **un puntaje no verificable nunca compite contra uno verificado**.
 adelantado** para jugar sin conexión — el caso literal que dio el dueño es un
 vuelo. Implica:
 
-- Elegir cuánto se descarga y que quepa en el presupuesto de precaché (`mc-42`
-  pone ≤5 MB de audio en la primera instalación; esto es aparte y se suma).
+- **Cuánto se descarga: el nivel actual y el siguiente completos** (enmienda del
+  dueño, 2026-08-01). Se eligió sobre "un paquete por nivel" porque el caso que
+  importa es precisamente el que un solo nivel no cubre: el niño **avanza durante
+  el vuelo** y se queda sin contenido a diez mil metros, donde nadie puede
+  arreglarlo. Cuesta el doble de peso y hay que vigilar que el audio de los dos
+  niveles no reviente el presupuesto de precaché — el audio se comparte entre
+  niveles siempre que se pueda, y si no cabe, se baja el audio del nivel
+  siguiente y se conserva su contenido.
+- Que quepa en el presupuesto de precaché (`mc-42` pone ≤5 MB de audio en la
+  primera instalación; esto es aparte y se suma).
 - Una cola de intentos que sincroniza al volver la conexión, sin perder nada.
 - Que la cola **no guarde intentos crudos en D1** al sincronizar (`mc-32` riesgo
   #1) ni texto libre de un niño (línea roja #3).
@@ -1465,6 +1473,89 @@ el niño eligió — no la que el autor puso primero.
 
 No enmienda D-010: `acc` sigue siendo 1 o 0. Lo que cambia es cuántas opciones
 producen un 1.
+
+---
+
+## D-049 — El segmento de URL se traduce en cada locale · 2026-08-01
+
+**Decisión del dueño.** La ruta del corpus deja de ser `investigacion` en los
+siete locales y pasa a estar en el idioma de cada uno:
+
+| Locale | Segmento | URL de ejemplo |
+|--------|----------|----------------|
+| `en` | `research` | `/en/research/mc-05-spacing-retrieval-interleaving/` |
+| `es-MX` | `investigacion` | `/es-MX/investigacion/mc-05-…/` |
+| `es-ES` | `investigacion` | `/es-ES/investigacion/mc-05-…/` |
+| `fr-FR` | `recherche` | `/fr-FR/recherche/mc-05-…/` |
+| `pt-BR` | `pesquisa` | `/pt-BR/pesquisa/mc-05-…/` |
+| `pt-PT` | `investigacao` | `/pt-PT/investigacao/mc-05-…/` |
+| `de-DE` | `forschung` | `/de-DE/forschung/mc-05-…/` |
+
+**Por qué.** El idioma de la URL es una señal de coincidencia local — débil
+comparada con el contenido, pero real, y visible para la persona antes de hacer
+clic. Una URL en español bajo `/de-DE/` le dice a un lector alemán que la página
+no es para él, que es exactamente lo contrario de lo que queremos.
+
+Tres cosas que esto obliga y que no son opcionales:
+
+1. **`hreflang` recíproco sobre rutas distintas.** Hasta ahora las siete
+   variantes compartían ruta y el `hreflang` era trivial. Ya no: cada variante
+   apunta a una URL con segmento distinto, y todas tienen que apuntarse entre sí
+   más `x-default`. `audits/hreflang-recip.mjs` deja de ser decorativo.
+2. **301 permanentes desde lo ya publicado.** Las URL con `investigacion` llevan
+   horas en producción y están en el `sitemap.xml`. Llevan horas, no meses — el
+   costo es mínimo, pero un 404 en una URL que ya publicamos es un 404 igual.
+3. **`pt-PT` es `investigacao` sin cedilla ni tilde**, no `investigação`. Los
+   segmentos van sin diacríticos: un carácter no-ASCII en una ruta se
+   porcentualiza (`investiga%C3%A7%C3%A3o`), y una URL porcentualizada es peor de
+   leer, de compartir y de citar que una sin acentos. Es la misma razón por la que
+   `sarif.mjs` codifica las rutas antes de escribirlas.
+
+**Los slugs de documento NO se traducen.** `mc-05-spacing-retrieval-interleaving`
+es el mismo en los siete. El identificador `mc-NN` es citable y estable (D-033), y
+traducir el slug rompería la única forma que tiene alguien de encontrar el mismo
+documento en otro idioma.
+
+Investigación: `mc-34` (notación e i18n), `mc-48` (citabilidad).
+
+---
+
+## D-050 — La traducción del corpus se pausa; el manual es el entregable · 2026-08-01
+
+**Decisión del dueño**, textual: *"Para en traducirlo por el momento, y solo deja
+un md que explique qué y cómo traducir. Con todo detalle por si olvidamos cómo
+traducir."*
+
+Estado al pausar, medido con `node scripts/medir-traduccion.mjs`:
+
+| Locale | Traducidos | Con hallazgo de integridad |
+|--------|-----------:|---------------------------:|
+| `pt-BR` | 47/47 | 28 |
+| `pt-PT` | 47/47 | 29 |
+| `de-DE` | 39/47 | 16 de 29 medidos |
+| `es-ES` | 10/47 | 1 de 8 medidos |
+| `es-MX` | 0/47 | — |
+| `fr-FR` | 0/47 | — |
+| **Total** | **143/282** | **74 de 131 medidos** |
+
+**El número que justifica la pausa no es el costo.** Traducir el corpus entero
+cuesta ~$4.54 USD medidos, no estimados — es barato. Lo caro es que **el 56% de
+lo traducido tiene hallazgos de integridad**: cifras perdidas, inventadas, o
+escritas con la convención decimal equivocada. Seguir traduciendo sin arreglar
+antes el bucle de reintento solo aumenta la pila de documentos que alguien tiene
+que revisar a mano.
+
+El manual está en [`docs/traduccion.md`](traduccion.md) y cubre: qué se traduce y
+qué nunca, la ficha de cada locale, cómo se corre el guion, qué cuesta y qué
+tarda con números medidos, cómo trocea y por qué así, el fallo de
+`reasoning_content` que parece un fallo de traducción y no lo es, la verificación
+con `corpus-integridad`, y el bucle de reintento que falta construir.
+
+**Consecuencia que se acepta a propósito:** seis locales sirven texto en inglés
+bajo su propia URL, y las páginas lo declaran con `inLanguage: "en"`.
+`audits/jsonld-valid.mjs` bloquea por eso y **tiene razón** — declarar `de-DE`
+sobre un cuerpo en inglés sería mentirle al buscador sobre el idioma del
+contenido. El auditor rojo aquí es información correcta, no un obstáculo.
 
 ---
 

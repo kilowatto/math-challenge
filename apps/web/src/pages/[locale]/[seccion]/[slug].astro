@@ -1,6 +1,7 @@
 ---
 import Base from "../../../layouts/Base.astro";
 import { LOCALES, isLocale, type Locale } from "../../../i18n";
+import { ruta, segmento } from "../../../i18n/rutas";
 import {
   loadCorpus,
   loadBodies,
@@ -16,7 +17,8 @@ import {
 } from "../../../lib/corpus";
 
 /**
- * /{locale}/investigacion/{slug}/ — una de las 47 investigaciones (S1).
+ * /{locale}/{segmento}/{slug}/ — una de las 47 investigaciones (S1).
+ * El segmento va en el idioma del locale desde D-049: `/de-DE/forschung/mc-05-…/`.
  *
  * Es la página que D-033 llama "la estrategia": se publican las investigaciones
  * completas, **incluidas las que contradicen al producto**, con sus fuentes,
@@ -64,10 +66,22 @@ import {
 const DOCS = loadCorpus();
 const BODIES = loadBodies();
 
+/**
+ * Las 329 URLs de artículo: 7 locales × 47 documentos, cada una bajo el
+ * segmento de SU locale (D-049) — `/de-DE/forschung/mc-05-…/`.
+ *
+ * El SLUG no se traduce y esto es deliberado: `mc-05-spacing-retrieval-…` es
+ * idéntico en los siete. El identificador `mc-NN` es lo que hace citable al
+ * corpus (D-033), y traducirlo rompería la única forma que tiene alguien de
+ * encontrar el mismo documento en otro idioma. Se traduce el camino hasta el
+ * documento, nunca su nombre.
+ */
 export function getStaticPaths() {
   const docs = loadCorpus();
   return LOCALES.flatMap((locale) =>
-    docs.map((doc) => ({ params: { locale, slug: doc.slug } })),
+    docs.map((doc) => ({
+      params: { locale, seccion: segmento(locale, "investigacion"), slug: doc.slug },
+    })),
   );
 }
 
@@ -76,12 +90,11 @@ if (!isLocale(rawLocale)) return Astro.redirect("/en/");
 const locale: Locale = rawLocale;
 
 const doc = DOCS.find((d) => d.slug === slug);
-if (!doc) return Astro.redirect(`/${locale}/investigacion/`);
+if (!doc) return Astro.redirect(ruta(locale, "investigacion"));
 
 const site = "https://math.kilowatto.com";
-const path = `investigacion/${doc.slug}/`;
-const url = `${site}/${locale}/${path}`;
-const hrefFor = (s: string) => `/${locale}/investigacion/${s}/`;
+const url = `${site}${ruta(locale, "investigacion", doc.slug)}`;
+const hrefFor = (s: string) => ruta(locale, "investigacion", s);
 
 // ---------------------------------------------------------------------------
 // El idioma del documento, y cómo se dice sin mentir.
@@ -523,7 +536,7 @@ const graph: Array<Record<string, unknown>> = [
     "@id": `${url}#breadcrumb`,
     itemListElement: [
       { "@type": "ListItem", position: 1, name: c.breadcrumbHome, item: `${site}/${locale}/` },
-      { "@type": "ListItem", position: 2, name: c.breadcrumbResearch, item: `${site}/${locale}/investigacion/` },
+      { "@type": "ListItem", position: 2, name: c.breadcrumbResearch, item: `${site}${ruta(locale, "investigacion")}` },
       { "@type": "ListItem", position: 3, name: categoryLabel, item: url },
       { "@type": "ListItem", position: 4, name: doc.title, item: url },
     ],
@@ -546,13 +559,13 @@ if (doc.faq.length >= FAQ_MIN_PAIRS) {
 const jsonLd = { "@context": "https://schema.org", "@graph": graph };
 ---
 
-<Base locale={locale} path={path} title={doc.title} description={lead}>
+<Base locale={locale} seccion="investigacion" slug={doc.slug} title={doc.title} description={lead}>
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
   <nav class="migas" aria-label={c.breadcrumbResearch}>
     <a href={`/${locale}/`}>{c.breadcrumbHome}</a>
     <span aria-hidden="true">›</span>
-    <a href={`/${locale}/investigacion/`}>{c.breadcrumbResearch}</a>
+    <a href={ruta(locale, "investigacion")}>{c.breadcrumbResearch}</a>
     <span aria-hidden="true">›</span>
     <span>{categoryLabel}</span>
   </nav>

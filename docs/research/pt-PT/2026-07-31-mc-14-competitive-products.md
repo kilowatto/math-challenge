@@ -126,7 +126,7 @@ DreamBox é classificado como “FORTE” pela Evidence for ESSA [20].
 
 **Mudança no modelo de negócio:** adquirida pela Google/Alphabet em 2023; até 2026 o seu papel mudou de uma aplicação de subscrição independente para alimentar dados de sinal de aprendizagem no Google Workspace for Education/Gemini e no “Homework Helper” da Search — monetizando como valor do ecossistema em vez de subscrição pura [26][27].
 
-**Relevância:** a Photomath é o anti‑padrão a evitar copiar — um solucionador puro de respostas mina “problemas reais, não apenas aritmética simples” se uma criança puder fotografar qualquer problema do Math Challenge e obter uma resposta instantânea. Isto defende formatos de problema interativos/manipuláveis que resistam à resolução fotográfica ingênua.
+**Relevância:** a Photomath é o anti‑padrão a evitar copiar — um solucionador puro de respostas mina “problemas reais, não apenas aritmética simples” se uma criança puder fotografar qualquer problema do Math Challenge e obter uma resposta instantânea. Isto defende formatos de problema interativos/manipuláveis que resistam à resolução fotográfica ingénua.
 
 ### Duolingo Math
 

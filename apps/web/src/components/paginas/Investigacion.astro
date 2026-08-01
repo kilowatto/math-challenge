@@ -1,6 +1,7 @@
 ---
 /**
- * /{locale}/investigacion/ — el índice del corpus de investigación (S1).
+ * /{locale}/{segmento}/ — el índice del corpus de investigación (S1).
+ * El segmento va en el idioma del locale desde D-049: `/de-DE/forschung/`.
  *
  * Gobierno: D-033 (el sitio abierto: la investigación es la estrategia),
  * D-022 (siete locales), D-036 (tipografía), D-039 (AGPL-3.0),
@@ -83,23 +84,31 @@
  * propósito — la alternativa era un segundo parser y un segundo conteo, es
  * decir dos números distintos para la misma cosa en el mismo sitio.
  */
-import Base from "../../../layouts/Base.astro";
-import { LOCALES, MATH_CONVENTIONS, isLocale, type Locale } from "../../../i18n";
-import { loadCorpus, type CategoryKey } from "../../../lib/corpus";
-import copy from "../../../i18n/paginas/investigacion.json";
+import Base from "../../layouts/Base.astro";
+import { MATH_CONVENTIONS, type Locale } from "../../i18n";
+import { loadCorpus, loadRaw, countMdFiles, type CategoryKey } from "../../lib/corpus";
+import copy from "../../i18n/paginas/investigacion.json";
+import { ruta } from "../../i18n/rutas";
 
-export function getStaticPaths() {
-  return LOCALES.map((locale) => ({ params: { locale } }));
+/**
+ * Es un COMPONENTE, no una página, desde D-049.
+ *
+ * La ruta la genera `src/pages/[locale]/[seccion]/index.astro`, que es quien
+ * conoce la tabla de segmentos y por tanto quien sabe que esta sección se sirve
+ * en `/de-DE/forschung/` y no en `/de-DE/investigacion/`. Aquí solo se recibe el locale ya
+ * validado: quien enruta valida, y validar dos veces es tener dos verdades.
+ */
+interface Props {
+  locale: Locale;
 }
 
-const { locale } = Astro.params;
-if (!isLocale(locale)) return Astro.redirect("/en/");
+const { locale } = Astro.props;
 
 const COPY = copy as unknown as Record<Locale, typeof copy.en>;
 const c = COPY[locale];
 
 const site = "https://math.kilowatto.com";
-const url = `${site}/${locale}/investigacion/`;
+const url = `${site}${ruta(locale, "investigacion")}`;
 
 /** Fecha del corpus y de la última relectura de estas cifras. */
 const VERIFICADO = "2026-07-31";
@@ -134,39 +143,32 @@ const LICENCIA = "https://www.gnu.org/licenses/agpl-3.0.html";
 const DOCS = loadCorpus();
 
 /**
- * Los .md sin procesar, por el mismo camino que usa `corpus.ts`: sin `fs` y
- * sin suponer desde qué directorio se lanzó el build.
+ * Los .md sin procesar y el conteo de archivos, del ÚNICO lector del corpus.
+ *
+ * Esta página tenía sus propios `import.meta.glob` y comparaba el resultado con
+ * `loadCorpus()` para detectar divergencias. La comparación era correcta y el
+ * mensaje de error también —"una de las dos listas está mintiendo y no se puede
+ * saber cuál"—, pero el problema que detectaba solo existía porque había dos
+ * lectores. Al mover esta página a un componente (D-049), su glob relativo quedó
+ * apuntando un nivel más arriba, resolvió a nada, y el guardián se disparó.
+ *
+ * Un solo lector no puede divergir de sí mismo. `ARCHIVOS_MD` sigue contando los
+ * 48 —los 47 más el README— porque la página explica en voz alta por qué
+ * `ls docs/research/*.md | wc -l` da un número distinto al de investigaciones.
  */
-const CRUDOS = import.meta.glob("../../../../../../docs/research/2026-07-31-mc-*.md", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
-
-/**
- * Todos los `.md` de la carpeta, incluido el índice: es lo que devuelve
- * `ls docs/research/*.md | wc -l`. Se cuenta para poder explicar en la página
- * por qué ese comando da otro número, en vez de dejar que dos comandos
- * parecidos se desmientan entre sí delante del lector.
- */
-const ARCHIVOS_MD = Object.keys(
-  import.meta.glob("../../../../../../docs/research/*.md", {
-    query: "?raw",
-    import: "default",
-    eager: true,
-  }),
-).length;
+const CRUDOS = loadRaw();
+const ARCHIVOS_MD = countMdFiles();
 
 function crudo(file: string): string {
-  const clave = Object.keys(CRUDOS).find((p) => p.endsWith(`/${file}`));
-  if (!clave) {
+  const raw = CRUDOS[file];
+  if (!raw) {
     throw new Error(
-      `investigacion/index.astro: corpus.ts entregó ${file} pero el glob de esta ` +
-        "página no lo encontró. Los dos leen docs/research/: si divergen, una de las " +
-        "dos listas está mintiendo y no se puede saber cuál.",
+      `Investigacion.astro: loadCorpus() entregó ${file} y loadRaw() no lo tiene. ` +
+        "Los dos salen del mismo glob de corpus.ts, así que esto solo puede pasar " +
+        "si alguien cambió uno de los dos patrones.",
     );
   }
-  return CRUDOS[clave];
+  return raw;
 }
 
 /**
@@ -264,7 +266,7 @@ const POR_TEMA = CATEGORIAS.map(({ clave, key }) => ({
           "apps/web/src/i18n/paginas/investigacion.json antes de seguir.",
       );
     }
-    return { ...doc, resumen, href: `/${locale}/investigacion/${doc.slug}/` };
+    return { ...doc, resumen, href: ruta(locale, "investigacion", doc.slug) };
   }),
 }));
 
@@ -399,7 +401,7 @@ const jsonLd = {
 
 <Base
   locale={locale}
-  path="investigacion/"
+  seccion="investigacion"
   title={c.tituloPagina}
   description={lead}
 >

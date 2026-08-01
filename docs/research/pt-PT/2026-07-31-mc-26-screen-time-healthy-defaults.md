@@ -4,12 +4,12 @@
 
 ## Resumo executivo (ES)
 
-- A OMS (2019) tem os únicos números firmes para menores de 5 anos: **0 ecrãs antes do primeiro ano**, **≤1 hora (menos é melhor) dos 1 aos 4 anos**, e não mais de 1 hora contínua sem se mover a qualquer idade [1]. O Canadá adopta os mesmos números nas suas Diretrizes de Movimento de 24 Horas [2][3].
+- A OMS (2019) tem os únicos números firmes para menores de 5 anos: **0 ecrãs antes do primeiro ano**, **≤1 hora (menos é melhor) dos 1 aos 4 anos**, e não mais de 1 hora contínua sem se mover a qualquer idade [1]. O Canadá adota os mesmos números nas suas Diretrizes de Movimento de 24 Horas [2][3].
 - A AAP **abandonou os limites fixos em horas** com o seu Family Media Plan em vigor; a sua política de 2016 ainda cita 1 hora/dia de conteúdo de qualidade para 2–5 anos, mas a mensagem atual é “qualidade e contexto sobre quantidade” [4][5].
 - O Reino Unido **não tem um número oficial único e duradouro**: os CMO de 2019 concluíram que a evidência era muito fraca para fixar horas [6]; a imprensa de 2026 relata um novo máximo de 1 h/dia para menores de 5 [7], e fontes alinhadas ao NHS fornecem uma escada por idade (0–2: nada; 2–4: 1 h; 5–11: até 2 h) [8].
 - A evidência de que o tempo de ecrã prejudica o bem‑estar é **fraca e contestada**: Orben & Przybylski (2019), com ~355.000 adolescentes, constataram que o uso digital explica **no máximo 0,4 %** da variância no bem‑estar, comparável a “comer batatas” ou “usar óculos” [9][10].
 - Existe evidência experimental de que retirar ecrãs **uma hora antes de dormir** melhora o sono: um ensaio aleatorizado da Universidade de Bath (105 famílias, 16–30 meses) encontrou sono mais eficiente e menos despertares [11].
-- A regra “20‑20‑20” é uma heurística prática de um optometrista (Jeffrey Anshel, final dos anos 90), não um padrão derivado de um ensaio controlado ótimo [12]. O tempo ao ar livre (1–2 h/dia) é o fator melhor evidenciado contra a miopia, mais do que o limite de ecrã em si [13].
+- A regra “20‑20‑20” é uma heurística prática de um optometrista (Jeffrey Anshel, final dos anos 1990), não um padrão derivado de um ensaio controlado ótimo [12]. O tempo ao ar livre (1–2 h/dia) é o fator melhor evidenciado contra a miopia, mais do que o limite de ecrã em si [13].
 - As ferramentas comerciais (Apple Screen Time, Google Family Link) **não trazem limite diário ativado por defeito** — fornecem o mecanismo, não o número; o Instagram é a exceção, com um lembrete forçado a **60 minutos** por defeito [14][15][16].
 
 ## Resumo executivo (EN)
@@ -19,22 +19,22 @@ A AAP afastou‑se dos limites horários fixos em direção ao seu Family Media 
 O Reino Unido não tem um único número oficial duradouro: o comentário dos CMO de 2019 considerou a evidência demasiado fraca para definir horas [6]; a cobertura da imprensa de 2026 relata uma nova recomendação que limita a 1 hora/dia para menores de 5 anos [7], e fontes secundárias alinhadas ao NHS fornecem uma escada por idade (0–2: nada, 2–4: 1 h, 5–11: até 2 h) [8].  
 A evidência de que o tempo de ecrã por si só prejudica o bem‑estar é fraca e contestada: a análise de curva de especificação de Orben & Przybylski (2019) com ~355.000 adolescentes constatou que o uso de tecnologia digital explica **no máximo 0,4 %** da variância no bem‑estar, comparável a comer batatas ou usar óculos [9][10].  
 Existe, porém, evidência experimental (não apenas correlacional) de que retirar ecrãs uma hora antes de se deitar melhora o sono: um ensaio clínico randomizado da Universidade de Bath (105 famílias, idades de 16 a 30 meses) encontrou sono mais eficiente e menos despertares [11].  
-A regra 20‑20‑20 é uma heurística prática do optometrista Jeffrey Anshel (final dos anos 90), não um óptimo validado por ensaio [12]; o tempo ao ar livre (1–2 h/dia) é o fator protetor melhor evidenciado contra a miopia, mais do que o próprio limite de ecrã [13].  
+A regra 20‑20‑20 é uma heurística prática do optometrista Jeffrey Anshel (final dos anos 1990), não um óptimo validado por ensaio [12]; o tempo ao ar livre (1–2 h/dia) é o fator protetor melhor evidenciado contra a miopia, mais do que o próprio limite de ecrã [13].  
 As ferramentas comerciais (Apple Screen Time, Google Family Link) fornecem o mecanismo, não um número por defeito — as Contas de Adolescente do Instagram são a exceção, impondo um lembrete de encerramento de aplicação de 60 minutos por defeito [14][15][16].
 
 ## Constatações
 
-### 1. Directrizes da OMS para menores de 5 anos (2019)
+### 1. Diretrizes da OMS para menores de 5 anos (2019)
 
-A directriz de 2019 da OMS trata a atividade física, o comportamento sedentário e o sono como um único sistema interligado de 24 horas, e não o tempo de ecrã isoladamente [1]. **Menos de 1 ano:** nenhum tempo de ecrã; brincadeira ativa com ≥30 min de tempo de bruços; 14–17 h de sono (0–3 meses) / 12–16 h (4–11 meses). **1–2 anos:** tempo de ecrã sedentário “não mais de 1 hora; menos é melhor”; ≥180 min de atividade variada; 11–14 h de sono. **3–4 anos:** limite de 1 hora, menos preferível; ≥180 min de atividade, incluindo ≥60 min de moderada‑vigorous; 10–13 h de sono. **Todas as idades:** nenhuma restrição (carrinhos, cadeiras altas) além de 1 hora contínua — o conceito subjacente é “sentar demasiado”, do qual os ecrãs são uma instância [1]. A OMS enquadra a atividade liderada pelos cuidadores (leitura, contação de histórias) como a alternativa preferida, mas não isenta o conteúdo educativo do limite numérico [1].
+A diretriz de 2019 da OMS trata a atividade física, o comportamento sedentário e o sono como um único sistema interligado de 24 horas, e não o tempo de ecrã isoladamente [1]. **Menos de 1 ano:** nenhum tempo de ecrã; brincadeira ativa com ≥30 min de tempo de bruços; 14–17 h de sono (0–3 meses) / 12–16 h (4–11 meses). **1–2 anos:** tempo de ecrã sedentário “não mais de 1 hora; menos é melhor”; ≥180 min de atividade variada; 11–14 h de sono. **3–4 anos:** limite de 1 hora, menos preferível; ≥180 min de atividade, incluindo ≥60 min de moderada‑vigorous; 10–13 h de sono. **Todas as idades:** nenhuma restrição (carrinhos, cadeiras altas) além de 1 hora contínua — o conceito subjacente é “sentar demasiado”, do qual os ecrãs são uma instância [1]. A OMS enquadra a atividade liderada pelos cuidadores (leitura, contação de histórias) como a alternativa preferida, mas não isenta o conteúdo educativo do limite numérico [1].
 
 ### 2. AAP: dos limites de horas ao Plano Familiar de Media
 
 A declaração da AAP de 2016 “Media and Young Minds” é a origem dos números frequentemente citados: evitar media além de videochamadas em crianças com menos de 18–24 meses; programação de alta qualidade co‑visualizada apenas a partir de 18–24 meses; **1 hora/dia de programação de alta qualidade para 2–5 anos**; limites consistentes para 6+ que protegem o sono e a atividade [4]. Essa declaração nunca foi revogada, mas a orientação prática da AAP (Plano Familiar de Media) reformula totalmente a abordagem: um plano personalizado baseado na qualidade do conteúdo, co‑uso, zonas sem ecrã (refeições, deveres de casa, hora de dormir) e modelação parental, revisto à medida que a criança amadurece — sem nenhum número específico para além dos 5 anos [5].
 
-### 3. Directrizes canadenses de movimento de 24 horas
+### 3. Diretrizes canadenses de movimento de 24 horas
 
-As directrizes do Canadá (CSEP, endossadas pelo CPS) correspondem quase exatamente à OMS, tendo co‑desenvolvido grande parte da mesma base de evidências [2][3]: nenhum tempo de ecrã abaixo de 2 anos; 2 anos: ≤1 hora, menos é melhor; 3–4 anos: ≤1 hora, menos preferível; cada faixa associada a ≥180 min de atividade e horas de sono adequadas à idade (14–17 h a descender para 10–13 h) [3]. Este resumo trata a OMS/CPS como um bloco alinhado para menores de 5 anos, em vez de duas fontes independentes.
+As diretrizes do Canadá (CSEP, endossadas pelo CPS) correspondem quase exatamente à OMS, tendo co‑desenvolvido grande parte da mesma base de evidências [2][3]: nenhum tempo de ecrã abaixo de 2 anos; 2 anos: ≤1 hora, menos é melhor; 3–4 anos: ≤1 hora, menos preferível; cada faixa associada a ≥180 min de atividade e horas de sono adequadas à idade (14–17 h a descender para 10–13 h) [3]. Este resumo trata a OMS/CPS como um bloco alinhado para menores de 5 anos, em vez de duas fontes independentes.
 
 ### 4. Orientação do CMO do Reino Unido e alinhada ao NHS
 
@@ -46,7 +46,7 @@ Dois mecanismos são agrupados sob “os ecrãs prejudicam o sono”: supressão
 
 ### 6. Consumo passivo vs. uso interativo/educativo
 
-Todas as directrizes numéricas (OMS, CPS, AAP) limitam **o tempo total de ecrã sedentário**, independentemente do conteúdo — o valor de 1 hora da OMS aplica‑se quer o conteúdo seja uma aplicação educativa ou um vídeo passivo [1][2][3]. A distinção de qualidade de conteúdo aparece apenas na camada *qualitativa*: a AAP exige “programação de alta qualidade” e co‑visualização como condição para usar a hora para 2–5 anos [4][5]. Assim, o Math Challenge, por ser interativo/educativo, situa‑se no lado favorecido da orientação qualitativa de todas as entidades — mas isso não autoriza um teto numérico mais elevado; os limites não são condicionais ao conteúdo.
+Todas as diretrizes numéricas (OMS, CPS, AAP) limitam **o tempo total de ecrã sedentário**, independentemente do conteúdo — o valor de 1 hora da OMS aplica‑se quer o conteúdo seja uma aplicação educativa ou um vídeo passivo [1][2][3]. A distinção de qualidade de conteúdo aparece apenas na camada *qualitativa*: a AAP exige “programação de alta qualidade” e co‑visualização como condição para usar a hora para 2–5 anos [4][5]. Assim, o Math Challenge, por ser interativo/educativo, situa‑se no lado favorecido da orientação qualitativa de todas as entidades — mas isso não autoriza um teto numérico mais elevado; os limites não são condicionais ao conteúdo.
 
 ### 7. O contrapeso Przybylski/Orben
 

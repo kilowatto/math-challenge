@@ -33,18 +33,30 @@ const BUDGET = {
   // Esto NO es bajar el listón porque el auditor me atrapó: el listón sigue en
   // 12 KB para todo lo demás, y la excepción está acotada por ruta y escrita.
   //
-  // El 24 sale de medir, no de subirlo hasta que pasara. Distribución real de
-  // las 336 páginas de corpus, en KB gz:
+  // El número sale de medir, no de subirlo hasta que pasara.
   //
-  //     mínimo 9.4 · mediana 13.7 · p90 17.3 · p99 20.3 · máximo 20.8
+  // PRIMERA MEDICIÓN, con el corpus sirviendo INGLÉS en los siete locales
+  // (336 páginas, KB gz):
   //
-  // Un techo de 20 cortaba en el percentil 98: no habría atrapado regresiones,
-  // habría atrapado el techo natural del contenido, y cada documento largo
-  // nuevo bloquearía el commit. 24 deja ~15% de holgura sobre el máximo real,
-  // que basta para que una página que se dispara a 30 KB sí se vea.
+  //     mínimo 9.4 · mediana 13.7 · p90 17.3 · p99 20.3 · máximo 20.8  → techo 24
   //
-  // Se reproduce midiendo dist/**/investigacion/**/index.html con gzip.
-  htmlCorpus: 24,
+  // SEGUNDA MEDICIÓN, 2026-08-01, con el corpus ya TRADUCIDO (329 páginas):
+  //
+  //     mínimo 11.2 · mediana 16.6 · p90 20.5 · p99 23.8 · máximo 24.1
+  //
+  // El corpus creció porque dejó de servir inglés en los siete idiomas: el
+  // español y el portugués ocupan más que su original. Es contenido real que
+  // antes no se servía, no una regresión — y el techo de 24 pasó a cortar en el
+  // percentil 99.4, o sea a bloquear el commit por el techo natural del
+  // contenido en vez de por una regresión, que es exactamente el modo de falla
+  // que la primera medición eligió evitar.
+  //
+  // 28 deja el mismo ~15% de holgura sobre el máximo real que daba el 24. El
+  // presupuesto de JavaScript NO se toca: el cuello de botella en 4G lento es el
+  // JS, no el HTML, y 28 KB gz siguen siendo ~0.3 s de descarga.
+  //
+  // Se reproduce midiendo dist/*/*/mc-*/index.html con gzip.
+  htmlCorpus: 28,
   jsTotal: 60,    // TODO el JS de cliente sumado
   cssTotal: 24,
   imageEach: 120,

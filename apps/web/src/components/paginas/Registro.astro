@@ -307,15 +307,38 @@ const lead = m[puerta.lead];
       }
     }
 
+    /**
+     * ─── DESACTIVADO A PROPÓSITO, Y ESTO SE ENCONTRÓ CON UN NAVEGADOR ────────
+     *
+     * Esto escondía el campo de contraseña cuando el dispositivo tenía
+     * autenticador de plataforma. En un Mac con Touch ID —o en cualquier
+     * Android reciente— `isUserVerifyingPlatformAuthenticatorAvailable()`
+     * devuelve `true`, así que el campo se escondía Y se ponía `disabled`.
+     *
+     * **Un campo `disabled` no se envía.** Resultado, medido haciendo clic de
+     * verdad en producción:
+     *
+     *     {"ok":false,"motivo":"clave_fuera_de_rango:8-64"}
+     *
+     * O sea: el registro estaba roto en la mayoría de los dispositivos
+     * modernos, y la persona veía un error sobre una contraseña que sí había
+     * escrito. Ningún auditor lo vio, ninguna prueba lo vio, y el HTML servido
+     * era correcto — el defecto solo existía después de que corriera el script.
+     *
+     * La causa de fondo: **la ceremonia de passkey no existe todavía** (es lo
+     * que falta del criterio #112). Esconder el único camino que funciona
+     * porque el dispositivo *podría* soportar otro que no está construido es
+     * cambiar un camino que funciona por ninguno.
+     *
+     * Se vuelve a encender cuando `navigator.credentials.create()` esté escrito
+     * y la escritura en `user_passkeys` funcione. Hasta entonces la detección se
+     * queda —abajo— porque lo que se aprende de ella no cuesta nada, pero no
+     * toca el formulario.
+     */
     void hayPasskey().then((disponible) => {
       if (!disponible || !campoClave || !clave || !enviar) return;
-      campoClave.hidden = true;
-      // `required` se quita además de esconder: un campo `required` invisible
-      // bloquea el envío con un mensaje del navegador que apunta a algo que no
-      // se ve, y es de los errores de formulario más difíciles de diagnosticar.
-      clave.required = false;
-      clave.disabled = true;
-      enviar.textContent = enviar.dataset.passkey ?? enviar.textContent;
+      // Marca para cuando exista la ceremonia. No cambia nada visible hoy.
+      enviar.dataset.passkeyDisponible = "1";
     });
   </script>
 </Base>

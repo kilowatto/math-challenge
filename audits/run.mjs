@@ -22,6 +22,32 @@ const ACTIVE = [
   ["bundle-budget",     "peso gz por página, JS y CSS de cliente",           "D-030, mc-47 §4"],
   ["telemetria-infantil","ninguna telemetría en superficies de niño",         "D-037, línea roja #2"],
   ["ipad-usabilidad",   "orientación libre, Split View, foco y hover en iPad", "D-041, WCAG 2.2 AA"],
+
+  // --- Los trece escritos ANTES que el código que vigilan (2026-08-01) ------
+  //
+  // Nacieron para F2-F4 y la intención era dejarlos en PENDIENTE hasta que su
+  // fase abriera. Están activos, y la razón es que PENDIENTE **no corre**: de
+  // los ocho que ya estaban ahí, seis fallaban abiertos sin que nadie lo
+  // supiera. Un guardián que espera su turno en una lista es un guardián que no
+  // vigila.
+  //
+  // Los trece son análisis estático, cuestan milisegundos, pasan en verde sobre
+  // el repo de hoy, y cada uno tiene su caso en `pruebas-auditores.mjs` donde se
+  // le vio bloquear. Activarlos ahora significa que el primer commit de F2 ya
+  // llega vigilado, en vez de que alguien tenga que acordarse de moverlos.
+  ["child-pii",              "ningún dato personal de un niño",              "línea roja #2, D-013, mc-25"],
+  ["sin-penalizacion",       "nunca se penaliza borrar ni corregir",         "línea roja #8, D-020, mc-30"],
+  ["kinder-sin-examen",      "kinder no presenta exámenes ni cronómetros",   "D-024, D-045, D-046, mc-10"],
+  ["borrado-cuatro-sistemas","borrar borra en D1, KV, R2 y Analytics",       "D-013, mc-25, mc-32"],
+  ["puntaje-servidor",       "el puntaje lo calcula el servidor",            "D-010, D-025, mc-29"],
+  ["motor-puntuacion",       "un solo motor, con los invariantes de D-010",  "D-010, D-018, D-024, D-048"],
+  ["tabla-bandas",           "una sola tabla de bandas; la edad no limita",  "D-002, D-017, D-046"],
+  ["notacion-locale",        "notación por locale, no por idioma",           "D-022, mc-34"],
+  ["signup-dos-campos",      "el registro son dos campos",                   "D-026, D-038, mc-45"],
+  ["band-typography",        "marca en Raleway, controles en voz del sistema","D-036, D-031, mc-38"],
+  ["do-por-entidad",         "un Durable Object por entidad, nunca global",  "mc-32, D-030, D-043"],
+  ["intercalado",            "las series intercalan, no agrupan por tema",   "D-018, mc-05"],
+  ["adaptativo-simulacion",  "el motor adaptativo se simula antes de usarse","D-002, mc-13, mc-44"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

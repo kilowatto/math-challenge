@@ -795,6 +795,35 @@ PWA**.
 > con la flota haría que un commit fallara por una caída del sitio, que no es
 > culpa del commit.
 
+> **Enmienda del 2026-08-01: son 45 construidos, y trece nacieron antes que su
+> código.** El dueño decidió construir de una vez los trece auditores que la
+> planeación de F2-F4 identificó, sin esperar a que existiera lo que vigilan:
+> `child-pii` · `sin-penalizacion` · `kinder-sin-examen` ·
+> `borrado-cuatro-sistemas` · `puntaje-servidor` · `motor-puntuacion` ·
+> `tabla-bandas` · `notacion-locale` · `signup-dos-campos` · `band-typography` ·
+> `do-por-entidad` · `intercalado` · `adaptativo-simulacion`.
+>
+> **Están ACTIVOS, no pendientes**, y eso corrige la intención original. La lista
+> PENDIENTE no ejecuta nada: de los ocho que llevaban ahí, seis fallaban abiertos
+> sin que nadie lo supiera. Un guardián que espera su turno en una lista no
+> vigila. Los trece son análisis estático, cuestan milisegundos y pasan en verde
+> sobre el repo de hoy, así que el primer commit de F2 ya llega vigilado en vez
+> de depender de que alguien se acuerde de moverlos.
+>
+> **Y trae su propio guardián.** Un auditor escrito antes que su código no se
+> puede ver fallar contra código real, y CLAUDE.md § Git regla 3 dice que una
+> prueba que nunca se vio fallar no prueba nada. `audits/pruebas-auditores.mjs`
+> escribe una violación de cada regla, comprueba que el auditor bloquea **y que
+> lo dice por la razón correcta**, y la borra. Corre en el gancho.
+>
+> Encontró tres huecos el primer día, en auditores que ya estaban en verde: dos
+> por buscar el contexto en la línea en vez del archivo, y uno porque `\b` no
+> reconoce el guion bajo como frontera —`/\bkinder\b/` **no** encuentra
+> `KINDER_PLACEMENT_REQUIRED`, que es justo la forma en que se escriben las
+> constantes de configuración.
+>
+> Total: 45 construidos, 8 esperando fase, 53 planeados.
+
 > **Eran 12 al decidirse; son 15 al implementarse (F0).** Los tres que se
 > agregaron no son adorno: `child-free-text` hace cumplir la línea roja #3 en el
 > esquema —donde Roblox demuestra que la moderación no alcanza (`mc-46` §4)—,

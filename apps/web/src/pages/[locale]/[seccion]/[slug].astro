@@ -695,7 +695,7 @@ const jsonLd = { "@context": "https://schema.org", "@graph": graph };
 
   .meta { color: var(--color-text-muted); font-size: var(--text-xs); }
   .meta .id {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-family: var(--font-mono);
     letter-spacing: normal;
   }
 
@@ -772,7 +772,7 @@ const jsonLd = { "@context": "https://schema.org", "@graph": graph };
     max-inline-size: 100%;
   }
   .documento :global(code) {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
     letter-spacing: normal;
     overflow-wrap: anywhere;

@@ -57,6 +57,14 @@
   --font-marca: "Raleway", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-sistema: system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto, sans-serif;
 
+  /* La tercera voz, que D-036 no nombró y el código sí necesita.
+     `band-typography.mjs` bloqueó por las familias monoespaciadas literales que
+     estaban repetidas en dos páginas — con razón: eran dos listas distintas para
+     el mismo propósito, y la de arquitectura tenía una fuente que la otra no.
+     `ui-monospace` primero deja que cada sistema use la suya (SF Mono en Apple,
+     Cascadia en Windows), que es lo mismo que hace `--font-sistema`. */
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
   /* Alias heredado. El cuerpo de texto es marca: es donde se lee a Ignia. */
   --font-sans: var(--font-marca);
 

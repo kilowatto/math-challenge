@@ -217,6 +217,13 @@ const CASOS = [
     contenido: ".panel { min-width: 900px; }\n",
     espera: "Split View",
   },
+  {
+    auditor: "retro-completa",
+    que: "retroalimentación que elogia la capacidad en vez del proceso",
+    archivo: "apps/web/src/i18n/reto/prueba.json",
+    contenido: '{ "error.x": ["\u00a1Qu\u00e9 listo eres!", "sigue as\u00ed"] }\n',
+    espera: "elogia la capacidad",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

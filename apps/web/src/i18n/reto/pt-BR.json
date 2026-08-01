@@ -1,0 +1,67 @@
+{
+  "error.multiplico": [
+    "Você multiplicou em vez de somar.",
+    "Conte a partir do número maior."
+  ],
+  "error.resto": [
+    "Você tirou em vez de juntar.",
+    "Os dois grupos se juntam: conte todos."
+  ],
+  "error.conto_el_primero_dos_veces": [
+    "O primeiro foi contado duas vezes.",
+    "Comece a contar do próximo."
+  ],
+  "error.sumo": [
+    "Você juntou em vez de tirar.",
+    "Tire do grupo os patos que voam."
+  ],
+  "error.resto_al_reves": [
+    "Você tirou o maior do menor.",
+    "Comece por quantos havia."
+  ],
+  "error.conto_el_que_quita": [
+    "Tirou um a mais.",
+    "Conte só os que vão embora."
+  ],
+  "error.se_salto_uno": [
+    "Pulou um.",
+    "Toque em cada um uma vez, sem pressa."
+  ],
+  "error.conto_uno_dos_veces": [
+    "Um foi contado duas vezes.",
+    "Cada um se toca uma vez só."
+  ],
+  "error.subestimo": [
+    "Havia um a mais.",
+    "Olhe o grupo inteiro de uma vez."
+  ],
+  "error.sobreestimo": [
+    "Havia um a menos.",
+    "Olhe o grupo inteiro de uma vez."
+  ],
+  "error.puso_el_total": [
+    "Esse é o total, não o que falta.",
+    "Quantos mais para chegar?"
+  ],
+  "error.repitio_la_parte": [
+    "Essa parte já está.",
+    "Quantos ainda faltam?"
+  ],
+  "error.sumo_en_vez_de_completar": [
+    "Você somou os dois em vez de completar.",
+    "Quantos mais cabem?"
+  ],
+  "error.eligio_el_menor": [
+    "Esse grupo tem menos.",
+    "Qual fila é mais comprida?"
+  ],
+  "error.eligio_al_azar": [
+    "Repare no que os outros têm igual.",
+    "Um deles é diferente."
+  ],
+  "acierto": "É isso.",
+  "inesperada": [
+    "Esse não.",
+    "Tente de novo, sem pressa."
+  ]
+}

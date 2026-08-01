@@ -40,7 +40,7 @@ fi
 
 echo "  ✓ cada auditor con caso bloqueó, y por la razón correcta"
 
-# La flota adversarial NO corre aquí: 23 llamadas de LLM por commit son el ruido
+# La flota adversarial NO corre aquí: 28 llamadas de LLM por commit son el ruido
 # que D-032 teme. Pero su cableado sí se verifica, porque cuesta milisegundos y
 # porque una carta rota se descubriría, si no, en medio de una revisión de PR.
 echo
@@ -71,5 +71,5 @@ if ! node audits/adversarial.mjs --simular >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "  ✓ 23 cartas válidas · las dos reglas clasifican bien · informe y SARIF válidos"
+echo "  ✓ 28 cartas válidas · las dos reglas clasifican bien · informe y SARIF válidos"
 echo "    los adversariales se corren a mano:  node audits/adversarial.mjs"

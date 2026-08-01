@@ -845,7 +845,7 @@ PWA**.
 > normal (`docs/guia-de-estilo.md`). El total sube de 35 a 38. Cuando el código
 > encuentra un auditor que faltaba, manda el código.
 
-**Adversariales con LLM (23), en cada PR, instruidos para encontrar la violación
+**Adversariales con LLM (28), en cada PR, instruidos para encontrar la violación
 y no para aprobar:** líneas rojas · privacidad COPPA/GDPR-K · anti-humillación ·
 anti-trampa · patrones oscuros · pedagogía · rigor matemático · rigor científico
 · canon de Larry · rachas y tiempo de pantalla · kinder · PWA iOS · PWA Android ·
@@ -864,7 +864,7 @@ locale**: `en`, `es-MX`, `es-ES`, `fr-FR`, `pt-BR`, `pt-PT`, `de-DE`.
 bloquean únicamente cuando citan una línea roja o una decisión explícita; el
 resto reporta sin detener el PR.
 
-**Riesgo conocido:** 23 llamadas de LLM por PR tienen costo y tasa de falsos
+**Riesgo conocido:** 28 llamadas de LLM por PR tienen costo y tasa de falsos
 positivos. Si la flota se vuelve ruido, la gente aprende a rodearla en silencio,
 que es peor que no tenerla.
 
@@ -875,7 +875,7 @@ que es peor que no tenerla.
 >   reales de este archivo y los archivos reales de `docs/research/`, y descarta
 >   cualquier hallazgo que cite un id inexistente. Se le agregó una segunda
 >   mitad que la decisión no anticipaba: **un auditor solo puede invocar lo que
->   su carta le autoriza**. Sin ese corte, los 23 podían citar cualquier
+>   su carta le autoriza**. Sin ese corte, los 28 podían citar cualquier
 >   decisión y la división de trabajo entre ellos era decorativa. Las cartas se
 >   validan al arrancar y en el gancho `pre-commit` — fue así como se detectó
 >   que la carta de pedagogía citaba `D-036`, que no existe.
@@ -890,11 +890,11 @@ que es peor que no tenerla.
 > **Dónde corren, corregido igual que los deterministas en F0.** No en el
 > gancho. `node audits/adversarial.mjs` se corre a mano antes de abrir el PR;
 > los deterministas cuestan milisegundos y los adversariales cuestan dinero, y
-> bloquear cada commit con 23 llamadas de LLM es exactamente el ruido que esta
+> bloquear cada commit con 28 llamadas de LLM es exactamente el ruido que esta
 > misma decisión nombra como riesgo. El gancho sí verifica el **cableado** —las
-> 23 cartas y la clasificación—, que cuesta milisegundos.
+> 28 cartas y la clasificación—, que cuesta milisegundos.
 >
-> **Proveedor, cambiado por D-035.** Los 23 corren sobre Workers AI
+> **Proveedor, cambiado por D-035.** Los 28 corren sobre Workers AI
 > (`kimi-k2.6` → `gpt-oss-120b`), no sobre Claude. Baja el costo ~5×, que es
 > justo el riesgo que esta decisión nombra. A cambio se pierde la imposición de
 > esquema en la capa de la herramienta —el JSON de Workers AI es best-effort— y
@@ -904,7 +904,7 @@ que es peor que no tenerla.
 > **Tres cosas que se agregaron y no estaban en la decisión:** cada carta declara
 > también **de qué es ciega**, porque sin eso los tres auditores de PWA
 > reportaban lo mismo; solo despiertan los auditores cuyo alcance toca el diff;
-> y `--seco` arma las 23 llamadas sin hacer ninguna y estima el costo, para que
+> y `--seco` arma las 28 llamadas sin hacer ninguna y estima el costo, para que
 > el gasto se decida antes y no en la factura.
 
 **Investigación relacionada:** `mc-47` §7.
@@ -1041,7 +1041,7 @@ Challenge con lo que el dueño ya opera, no lo mete en terreno nuevo.
 | `claude-opus-5` | 5.00 | 0.50 | 25.00 | 1M |
 | `claude-haiku-4-5` | 1.00 | 0.10 | 5.00 | 200k |
 
-### La flota adversarial (F1): los 23 a Workers AI
+### La flota adversarial (F1): los 28 a Workers AI
 
 `kimi-k2.6` primario, `gpt-oss-120b` de respaldo. Medido con `--seco`: dos
 auditores pasan de **$0.34 a $0.06**.

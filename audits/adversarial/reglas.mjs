@@ -35,7 +35,7 @@ export function clasificar(hallazgos, carta, universo, anulaciones = new Map(), 
 
     // Regla 1, segunda mitad: y tiene que ser una que ESTA carta autoriza.
     // Sin esto, cualquier auditor podría invocar cualquier decisión y la
-    // división de trabajo entre los 23 sería decorativa.
+    // división de trabajo entre los 28 sería decorativa.
     if (!carta.cita.includes(h.cita_id)) {
       invalidos.push({
         ...hallazgo,

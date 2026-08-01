@@ -1,7 +1,7 @@
-// El prefijo compartido por los 23 auditores — lo que todos saben antes de
+// El prefijo compartido por los 28 auditores — lo que todos saben antes de
 // recibir su carta.
 //
-// Va en `system` y lleva un punto de caché al final. Los 23 comparten estos
+// Va en `system` y lleva un punto de caché al final. Los 28 comparten estos
 // bytes exactos, así que la primera llamada lo escribe y las otras 22 lo leen a
 // una décima parte del precio. Por eso este archivo NO puede contener nada
 // variable: ni fecha, ni id de corrida, ni nombre del auditor. Un solo byte

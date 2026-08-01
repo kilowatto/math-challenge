@@ -433,6 +433,14 @@ const jsonLd = {
         min-block-size: var(--tap-min);
         padding-block: 0.35rem;
       }
+      /* Sin esto, un enlace que no es la página actual cae al azul y
+         subrayado por default del navegador — se ve como web sin diseñar,
+         no como un control nativo (D-031). `nav.sitio [aria-current]` de
+         abajo YA fijaba su propio color; a este le faltaba el suyo. */
+      nav.sitio a {
+        color: var(--color-text-muted);
+        text-decoration: none;
+      }
       /* El naranja de Ignia da 3.03:1 sobre blanco y NO alcanza el 4.5:1 de
          texto normal: la página actual se marca con el color de texto y una
          línea inferior, no con el naranja. El naranja se queda en el borde,
@@ -464,6 +472,10 @@ const jsonLd = {
         align-items: center;
         min-block-size: var(--tap-min);
       }
+      /* Mismo bug que nav.sitio: sin color/text-decoration propios, el
+         azul-subrayado por default del navegador se cuela en el pie —
+         el enlace al idioma y al repositorio, entre otros. */
+      footer a { color: var(--color-text-muted); text-decoration: none; }
       footer [aria-current] { color: var(--color-text-muted); }
 
       .muted { color: var(--color-text-muted); font-size: var(--text-xs); }

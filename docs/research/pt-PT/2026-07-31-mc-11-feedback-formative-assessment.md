@@ -63,7 +63,7 @@ As orientações para a primeira infância (NAEYC, Wisconsin DCF) recomendam **f
 
 2. **Nunca combinar feedback da tarefa com elogio a nível de traço/autopercepção na mesma frase.** Proibir “Correct! You're so smart at math” — separar a correção do encorajamento, e manter o encorajamento focado no esforço/estratégia, nunca na capacidade. Decorre da descoberta de Kluger & DeNisi de que a captura de atenção a nível de self‑level é o provável mecanismo por trás do feedback que tem efeito contrário [2][6].
 
-3. **Comentar o trabalho/passos do estudante, não apenas a resposta final**, sempre que o formato capturar passos intermédios. A escolha arquitetónica de maior alavancagem segundo a meta‑análise de VanLehn (passo‑a‑passo d≈0.76 vs. resposta d≈0.40) [8].
+3. **Comentar o trabalho/passos do estudante, não apenas a resposta final**, sempre que o formato capturar passos intermédios. A escolha arquitetónica de maior alavancagem segundo a meta‑análise de VanLehn (passo‑a‑passo d≈0,76 vs. resposta d≈0,40) [8].
 
 4. **Manter o feedback elaborado curto — de 3 a 6 frases, no máximo um exemplo trabalhado.** O efeito adverso da elaboração excessiva de Shute implica que o prompt precise de um limite explícito de comprimento, não “explique tudo o que puder” [5].
 

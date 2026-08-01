@@ -18,18 +18,17 @@
 
 ## Resumo executivo (EN)
 
-- Van Hiele's five levels of geometric thought (visualization, analysis, informal deduction, formal deduction, rigor) are **sequential and instruction-dependent, not age-dependent** [1][8].
-- Spatial reasoning is trainable: Uttal et al.'s (2013) meta-analysis of 217 studies found g=0,47 (g=0,61 for children under 13), transferring to untrained spatial tasks [2][3].
-- Uttal's intrinsic/extrinsic × static/dynamic 2×2 taxonomy is the most-cited frame for classifying which spatial skill an activity trains; more recent meta-analyses confirm spatial skill reliably correlates with math performance across ages [11][14].
-- Tangrams and pattern blocks have a millennia-old Chinese lineage; their documented value is shape composition/decomposition, congruence, area, and perimeter through direct manipulation [6][9].
-- Origami blends art and applied mathematics (fold geometry, Kawasaki's theorem) and is used for spatial visualization across education levels [9].
-- Dynamic geometry environments (GeoGebra, Cabri) show consistently positive effects on conceptual understanding and retention (up to g≈0,96 in a 29-study meta-analysis) — though short interventions and small classes inflate the effect, a possible Hawthorne effect [5][7].
-- Cabri-type software documents students shifting from visual to geometric strategies, but also the risk that dragging-and-seeing-it-hold substitutes for real mathematical justification [7].
-- Two-column proof has dominated US instruction since 1913; professional mathematical writing is narrative, and each format trades off differently by proof length [8].
-- Touchscreen-specific research already exists: the "Geometric Constructer" software (Italian secondary students) found finger-dragging changes geometric reasoning relative to mouse-dragging [12].
-- Mature accessible alternatives exist: multimodal apps for blind children, programmable tactile/haptic displays, and audio-tactile graphics with documented gains in spatial working memory [13][15][16].
-- For Math Challenge: map Van Hiele explicitly onto grade bands, prioritize auto-gradable drag tasks over formal proof at younger ages, and design an audio-tactile alternative for every visual task from day one.
-
+- Os cinco níveis de pensamento geométrico de Van Hiele (visualização, análise, dedução informal, dedução formal, rigor) são **sequenciais e dependentes da instrução, não da idade** [1][8].
+- O raciocínio espacial pode ser treinado: a meta‑análise de Uttal et al. (2013) de 217 estudos encontrou g=0,47 (g=0,61 para crianças com menos de 13 anos), transferindo‑se para tarefas espaciais não treinadas [2][3].
+- A taxonomia 2×2 intrínseca/extrínseca × estática/dinâmica de Uttal é a estrutura mais citada para classificar que competência espacial uma atividade desenvolve; meta‑análises mais recentes confirmam que a competência espacial correlaciona‑se de forma fiável com o desempenho em matemática ao longo das idades [11][14].
+- Os tangrams e os blocos de padrões têm uma linhagem chinesa de milénios; o seu valor documentado reside na composição/decomposição de formas, congruência, área e perímetro através da manipulação direta [6][9].
+- O origami combina arte e matemática aplicada (geometria de dobraduras, teorema de Kawasaki) e é usado para visualização espacial em todos os níveis de ensino [9].
+- Os ambientes de geometria dinâmica (GeoGebra, Cabri) demonstram efeitos consistentemente positivos na compreensão conceptual e na retenção (até g≈0,96 numa meta‑análise de 29 estudos) — embora intervenções curtas e turmas pequenas possam inflar o efeito, um possível efeito Hawthorne [5][7].
+- Software do tipo Cabri documenta estudantes a passarem de estratégias visuais para estratégias geométricas, mas também o risco de que arrastar‑e‑ver‑segurar substitua a justificação matemática real [7].
+- A prova em duas colunas domina a instrução nos EUA desde 1913; a escrita matemática profissional é narrativa, e cada formato apresenta compensações diferentes em função do comprimento da prova [8].
+- Já existe investigação específica sobre ecrãs táteis: o software “Geometric Constructer” (estudantes italianos do ensino secundário) constatou que arrastar com o dedo altera o raciocínio geométrico em relação ao arrastar com o rato [12].
+- Existem alternativas acessíveis consolidadas: aplicações multimodais para crianças cegas, ecrãs táteis/hápticos programáveis e gráficos áudio‑táteis com ganhos documentados na memória de trabalho espacial [13][15][16].
+- Para o Math Challenge: mapear Van Hiele explicitamente para as faixas de séries, priorizar tarefas de arrastar auto‑avaliáveis em vez de provas formais nas idades mais jovens, e conceber uma alternativa áudio‑tátil para cada tarefa visual desde o primeiro dia.
 ## Constatações
 
 ### 1. Níveis de pensamento geométrico de Van Hiele

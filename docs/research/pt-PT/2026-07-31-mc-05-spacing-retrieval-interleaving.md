@@ -53,7 +53,7 @@ Cepeda, Vul, Rohrer, Wixted & Pashler (2008, *Psychological Science*, >1.350 par
 
 **Leitner (1972).** Os cartões vivem em caixas (clássico 5) com cadências fixas (~1, 2, 4, 7, 14 dias); uma resposta correta promove, uma incorreta devolve à caixa 1 [14].
 
-**SM‑2 (Woźniak, 1987).** Cada item tem um fator de facilidade (EF), começando em 2,5, com piso em 1,3. Intervalos: I(1)=1, I(2)=6, I(n)=I(n‑1)×EF a partir daí. Uma classificação de qualidade 0‑5 ajusta o EF via EF' = EF + (0.1 − (5−Q)×(0.08 + (5−Q)×0.02)); Q<3 devolve o item [15].
+**SM‑2 (Woźniak, 1987).** Cada item tem um fator de facilidade (EF), começando em 2,5, com piso em 1,3. Intervalos: I(1)=1, I(2)=6, I(n)=I(n‑1)×EF a partir daí. Uma classificação de qualidade 0‑5 ajusta o EF via EF' = EF + (0,1 − (5−Q)×(0,08 + (5−Q)×0,02)); Q<3 devolve o item [15].
 
 **FSRS (padrão atual do Anki).** Rastreia três variáveis de estado por cartão: **Estabilidade** S (dias até a probabilidade de recordação decair para 90 %), **Dificuldade** D (1‑10) e **Recuperabilidade** R (0‑1, decaindo segundo uma curva de lei de potência, não exponencial). Um único controlo, **retenção desejada** (tipicamente 0,85‑0,95, predefinição ~0,90), conduz o agendador a inverter a curva de esquecimento e escolher o intervalo onde a R prevista atinge esse alvo. O FSRS‑6 ajusta ~19‑21 pesos por aprendiz a partir do histórico de revisões via descida de gradiente, superando o fator de facilidade fixo do SM‑2 quando há dados suficientes (~1.000+ revisões) [10].
 

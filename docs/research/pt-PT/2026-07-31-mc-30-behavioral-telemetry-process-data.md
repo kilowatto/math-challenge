@@ -85,7 +85,7 @@ Em privacidade: ao abrigo do GDPR, os dados biométricos são apenas “categori
 1. O Math Challenge deve comprometer‑se a nunca persistir temporizações brutas por tecla (tempo de permanência/voo), mesmo temporariamente num servidor, calculando todos os agregados apenas no dispositivo — eliminando totalmente a questão da dinâmica de teclas/biométrica?
 2. Qual janela de retenção é aceitável para registos de interação a nível de sessão antes da redução a agregados por competência? O intervalo de 30–90 dias na Implicação 10 é uma proposta, não um requisito legal fonte.
 3. O Math Challenge terá utilizadores no Reino Unido/UE a curto prazo, tornando o AADC/GDPR/DSA diretamente vinculativo em vez de mera prática recomendada global?
-4. A deteção de padrão de gaming (Implicações 5–6) deve ser incluída na versão 1, dado que mesmo os detectores validados por Baker et al. não se transferem entre diferentes tipos de interface de problema sem retreinamento?
+4. A deteção de padrão de gaming (Implicações 5–6) deve ser incluída na v1, dado que mesmo os detectores validados por Baker et al. não se transferem entre diferentes tipos de interface de problema sem retreinamento?
 5. A formulação “verifica o próprio trabalho” ao mudar a resposta (Implicação 4) deve ser visível para a criança como incentivo, ou puramente interna à pontuação — isto altera tanto a UX quanto a análise de transparência da AADC?
 
 ## Fontes
@@ -96,7 +96,7 @@ Em privacidade: ao abrigo do GDPR, os dados biométricos são apenas “categori
 4. Michaelides, M.P., Ivanova, M.G., Avraam, D. (2024). The impact of filtering out rapid-guessing examinees on PISA 2015 country rankings. *Psychological Test and Assessment Modeling*, 66, 50–62. https://www.psychologie-aktuell.com/fileadmin/Redaktion/Downloads/2018/ptam/PTAM_24-1_50-62.pdf
 5. NCES / The Nation's Report Card — NAEP Process Data. https://www.nationsreportcard.gov/process_data/
 6. EU Digital Services Act, Article 28 — Online protection of minors. https://dsa-library.com/article/28/
-7. GDPR Article 4(14) and Article 9 — biometric data / special category definitions. https://www.linkedin.com/pulse/biometric_data-under-gdpr-eu-ai-act-krzysztof-wyderka-lolrf
+7. GDPR Article 4(14) and Article 9 — biometric data / special category definitions. https://www.linkedin.com/pulse/biometric-data-under-gdpr-eu-ai-act-krzysztof-wyderka-lolrf
 8. Sprintlaw, "Children's Code: Age-Appropriate Design for UK Made Simple." https://sprintlaw.co.uk/articles/uk-childrens-code-ageappropriate-design-made-simple/
 9. A&O Shearman, "ICO updates guidance on using children's information." https://www.aoshearman.com/en/insights/ao-shearman-on-data/ico-updates-guidance-on-using-childrens-information
 10. Wikipedia — Keystroke dynamics. https://en.wikipedia.org/wiki/Keystroke_dynamics

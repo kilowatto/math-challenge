@@ -2,13 +2,13 @@
 
 > Math Challenge research — 2026-07-31 — topic 35
 
-## Resumen ejecutivo (ES)
+## Zusammenfassung (ES)
 
 Die Evidenz ist bescheidener, als der übliche Diskurs „Online‑Lernen funktioniert“ suggeriert. Die Metaanalyse des US‑Bildungsministeriums (Means et al., 2010) ergab, dass rein online Lernen statistisch **äquivalent** zu Präsenzunterricht ist (+0,05, nicht signifikant); der eigentliche Vorteil zeigt sich nur bei **kombiniert** (+0,35) und **lehrer­gesteuert** (+0,39) Instruktion – nicht beim unabhängigen, selbstgesteuerten Online‑Lernen (+0,05, nicht signifikant) [1]. Direkte Warnung für eine selbstgesteuerte App: Das Online‑Medium allein erzeugt den Effekt nicht; Struktur und Feedback tun es.
 
 Die edX‑Videodaten (Guo et al., 2014) zeigen, dass die mittlere Aufmerksamkeit **höchstens 6 Minuten** beträgt und dass Tutorials nur **2–3 Minuten** echte Aufmerksamkeit erhalten, unabhängig von ihrer Länge [2]. Der „Do‑Effect“ (Koedinger et al.) zeigt, dass Üben etwa **6‑fach** den Lernnutzen von Lesen oder Anschauen liefert [6]. Blooms „2‑Sigma“-Behauptung (1984) stammt aus einer kleinen, nie replizierten Studie; die moderne Metaanalyse zur Nachhilfe (Nickow, Oreopoulos & Quan, 2020) findet einen gepoolten Effekt von nur **0,37 DE** [3][4]. COVID‑Daten zeigen, dass Lernverluste in Mathematik größer waren als in Lesen (−0,20 bis −0,27 DE vs. −0,09 bis −0,18 DE), wobei sich die Gerechtigkeitslücken um weitere 0,10–0,20 DE vergrößerten [12] – eine konkrete Warnung vor unbeaufsichtigtem Fernunterricht in Mathematik für Kinder. Keine dieser Zahlen unterstützt aggressive Marketingansprüche; alle unterstützen ein auf Handeln statt Betrachten ausgerichtetes Design.
 
-## Executive summary (EN)
+## Zusammenfassung (EN)
 
 Die Evidenz ist bescheidener, als das übliche Argument „Online‑Lernen funktioniert“ suggeriert. Die Metaanalyse des US‑Bildungsministeriums (Means et al., 2010) ergab, dass rein online Unterricht statistisch **äquivalent** zu Präsenzunterricht ist (+0,05, nicht signifikant); der eigentliche Vorteil zeigt sich nur bei **blended** (+0,35) und **lehrer­gesteuert** (+0,39) Instruktion – nicht beim unabhängigen, selbstgesteuerten Online‑Lernen (+0,05, nicht signifikant) [1]. Direkte Warnung für eine selbstgesteuerte App: Das Online‑Medium allein erzeugt den Effekt nicht; Struktur und Feedback tun es.
 
@@ -85,7 +85,7 @@ Kuhfeld, Soland & Lewis' Analyse von 5,4 Millionen US‑Schüler*innen der Kla
 | Armutsbedingtes Leistungsgefälle‑Wachstum, gleicher Zeitraum | +0,10 bis +0,20 SD breiter | Kuhfeld, Soland & Lewis 2022 [12] | Hoch — Gleichheitsrisiko bei rein selbstgesteuerter Bereitstellung |
 | Sesame‑Street‑Zuschauer, klassenangemessene Leistung im Jugendalter | +14 Prozentpunkte | Kearney & Levine 2019 [10] | Mittel — langfristiges Ergebnis von charakter‑geführtem Inhalt, erfordert jahrelange Curriculum‑Strenge |
 
-## Design‑Implikationen
+## Designimplikationen
 
 1. **Doing muss die Bildschirmzeit dominieren** — ein realistisches Ziel sind > 80 % der Sitzungszeit, in der Probleme gelöst werden, nicht beim Anschauen/Lesen, basierend auf dem ~6‑fachen „Doing‑Effekt“ [6] und der DOE‑Erkenntnis, dass aktive Methoden besser sind als expositive [1].
 2. **Begrenze jedes erklärende Video/Animation auf deutlich unter 6 Minuten** — das Engagement erreicht nach 6 Minuten ein Plateau, unabhängig von der Gesamtlänge, und Worked‑Example‑Inhalte werden nur 2‑3 Minuten tatsächlich angesehen [2].

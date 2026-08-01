@@ -82,10 +82,25 @@ const walk = (dir) => {
 };
 walk(DIST);
 
+/**
+ * Los segmentos bajo los que vive el corpus, uno por locale (D-049).
+ *
+ * Estaba cableado a `/investigacion/`, y al traducir los segmentos las 235
+ * páginas de corpus de `en`, `fr-FR`, `pt-BR`, `pt-PT` y `de-DE` dejaron de
+ * reconocerse: se midieron contra el presupuesto de una página de marketing y
+ * bloquearon el commit en masa. El auditor tenía razón en el número y estaba
+ * mirando la tabla equivocada.
+ *
+ * Ahora lee la misma tabla que genera las rutas. No puede volver a desfasarse
+ * sin que alguien borre este import.
+ */
+const { SEGMENTOS } = await import("../apps/web/src/i18n/rutas-tabla.mjs");
+const SEGS_CORPUS = new Set(Object.values(SEGMENTOS).map((t) => t.investigacion));
+
 for (const { p, kb } of pages) {
   // El corpus tiene su propio techo. Se reconoce por la ruta, no por el peso —
   // reconocerlo por el peso sería que cualquier página gorda se auto-exima.
-  const esCorpus = /\/investigacion\//.test(p);
+  const esCorpus = p.split("/").some((seg) => SEGS_CORPUS.has(seg));
   const techo = esCorpus ? BUDGET.htmlCorpus : BUDGET.html;
   if (kb > techo) {
     problems.push(`${p} — ${kb.toFixed(1)} KB gz, presupuesto ${techo} KB${esCorpus ? " (corpus)" : ""}`);

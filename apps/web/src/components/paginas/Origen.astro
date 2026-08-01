@@ -21,15 +21,22 @@
  * no de constantes paralelas que se desincronizan a la primera edición.
  */
 import Base from "../../layouts/Base.astro";
-import { LOCALES, t, isLocale } from "../../i18n";
+import { t, type Locale } from "../../i18n";
 import textos from "../../i18n/paginas/origen.json";
 
-export function getStaticPaths() {
-  return LOCALES.map((locale) => ({ params: { locale } }));
+/**
+ * Es un COMPONENTE, no una página, desde D-049.
+ *
+ * La ruta la genera `src/pages/[locale]/[seccion]/index.astro`, que es quien
+ * conoce la tabla de segmentos y por tanto quien sabe que esta sección se sirve
+ * en `/de-DE/ursprung/` y no en `/de-DE/origen/`. Aquí solo se recibe el locale ya
+ * validado: quien enruta valida, y validar dos veces es tener dos verdades.
+ */
+interface Props {
+  locale: Locale;
 }
 
-const { locale } = Astro.params;
-if (!isLocale(locale)) return Astro.redirect("/en/");
+const { locale } = Astro.props;
 
 const p = textos[locale];
 const home = t(locale);
@@ -96,7 +103,7 @@ const jsonLd = {
 };
 ---
 
-<Base locale={locale} path="origen/" title={p.title} description={p.description}>
+<Base locale={locale} seccion="origen" title={p.title} description={p.description}>
   {/* Migas reales, no solo marcado: el BreadcrumbList de arriba describe esto.
       Es navegación, así que va en la voz del sistema (D-036). */}
   <nav class="migas" aria-label={p.breadcrumbLabel}>

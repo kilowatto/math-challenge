@@ -9,7 +9,7 @@
 - **A relação não é uma lei.** Várias fontes documentam casos em que reduzir campos *abaixou* a conversão em 14 % e análises em que dez campos converteram melhor do que três [3][5]. A leitura honesta: menos campos ajudam quase sempre, mas é uma hipótese a medir, não um axioma.
 - **Nielsen Norman Group desaconselha o onboarding, em geral.** A sua recomendação literal é *"evitem criar onboarding de app sempre que possível, e em vez disso gastem esses recursos a tornar a interface mais utilizável"*, por três razões: aumenta o custo de interação, sobrecarrega a memória de trabalho e a investigação mostra que frequentemente não melhora o desempenho real na tarefa [2].
 - **O carrossel de cartões está desaconselhado por nome.** NN/g indica explicitamente: faz com que a interface *pareça mais complexa do que realmente é*, sobrecarrega a memória de trabalho, e a sua investigação sobre "deck-of-cards tutorials" encontrou que **não melhoraram o desempenho na tarefa** [2].
-- **Só três casos justificam o onboarding**, segundo NN/g: solicitar informação indispensável, adaptar a experiência ao contexto do utilizador, e introduzir fluxos **genuinamente inovadores** que se afastam dos padrões padrão [2].
+- **Só três casos justificam o onboarding**, segundo NN/g: solicitar informação indispensável, adaptar a experiência ao contexto do utilizador, e introduzir fluxos **genuinamente inovadores** que se afastam dos padrões habituais [2].
 - **O que funciona é o contextual.** NN/g favorece a ajuda contextual sobre a instrução antecipada: as dicas aparecem quando a funcionalidade se torna acionável, não ao abrir a app [2]. As marcas de guia (*coach marks*) funcionam quando são oportunas e discretas, e são acompanhadas da tarefa real [2].
 - **Uma regra visual concreta:** o estilo de uma dica deve deixar inequivocamente claro que se trata de uma anotação e **não um elemento interativo** [2].
 - **NN/g recomenda testar a app sem onboarding primeiro**, para identificar dificuldades reais antes de investir em resolvê‑las com ecrãs [2].
@@ -22,7 +22,7 @@
 - **Não é uma lei.** Fontes documentam casos em que reduzir campos *abaixou* a conversão em 14 % e análises em que dez campos superaram três [3][5]. Leitura honesta: menos campos ajudam quase sempre, mas é uma hipótese a medir, não um axioma.
 - **Nielsen Norman Group aconselha contra o onboarding em geral.** A sua recomendação literal é *"evite criar onboarding de app sempre que possível e, em vez disso, gaste os seus recursos a tornar a UI mais utilizável"* — porque aumenta o custo de interação, sobrecarrega a memória de trabalho e a investigação mostra que frequentemente falha em melhorar o desempenho real da tarefa [2].
 - **O formato de carrossel de cartões é desaconselhado pelo nome.** NN/g observa que faz as interfaces *parecerem mais complexas do que são*, sobrecarrega a memória de trabalho, e a sua investigação sobre tutoriais de "deck-of-cards" constatou que **não melhoraram o desempenho da tarefa** [2].
-- **Só três casos justificam o onboarding**, segundo NN/g: recolher informação essencial, adaptar ao contexto do utilizador e introduzir fluxos **genuinamente inovadores** que se desviam dos padrões padrão [2].
+- **Só três casos justificam o onboarding**, segundo NN/g: recolher informação essencial, adaptar ao contexto do utilizador e introduzir fluxos **genuinamente inovadores** que se desviam dos padrões habituais [2].
 - **O que funciona é o contextual.** NN/g defende a ajuda contextual em vez de instrução antecipada: as dicas surgem quando as funcionalidades se tornam acionáveis, não de imediato [2]. As coach marks funcionam quando são oportunas, discretas e associadas à conclusão real da tarefa [2].
 - **Uma regra visual concreta:** o estilo visual de uma dica deve deixar inequívoco que se trata de uma anotação e **não um elemento interativo** [2].
 - **NN/g recomenda testar a app sem onboarding primeiro**, para encontrar dificuldades reais dos utilizadores antes de investir em ecrãs para as resolver [2].
@@ -53,7 +53,7 @@ A NN/g reconhece exatamente três cenários que justificam ecrãs de onboarding 
 
 1. **Recolher informação indispensável** (o exemplo que dão: criar conta numa app bancária).
 2. **Adaptar a experiência** ao contexto ou às preferências do utilizador.
-3. **Introduzir fluxos genuinamente novos ou desconhecidos** que se afastam dos padrões padrão.
+3. **Introduzir fluxos genuinamente novos ou desconhecidos** que se afastam dos padrões habituais.
 
 E uma recomendação de método que vale mais que qualquer padrão: **testar a app sem onboarding primeiro**, para identificar as dificuldades reais dos utilizadores antes de investir em resolvê‑las com ecrãs [2].
 
@@ -73,7 +73,7 @@ Várias fontes secundárias da indústria citam cifras chamativas atribuídas à
 
 ### 5. O que é genuinamente inovador no Math Challenge
 
-Aplicando o critério 3 da NN/g — só o que se afasta dos padrões padrão merece explicação — o produto tem exatamente cinco conceitos que um utilizador não pode inferir da interface:
+Aplicando o critério 3 da NN/g — só o que se afasta dos padrões habituais merece explicação — o produto tem exatamente cinco conceitos que um utilizador não pode inferir da interface:
 
 1. **A idade e a dificuldade são eixos separados** (D-002, D-017). Contra‑intuitivo e central; sem isto um pai não entende por que o filho de 7 anos vê um tema de ensino básico mas conteúdo de jardim de infância.
 2. **A criança é um perfil, não um utilizador** (D-013). Afasta‑se do modelo mental de “criar uma conta para o meu filho” que trazem de outros produtos.

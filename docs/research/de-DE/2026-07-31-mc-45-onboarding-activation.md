@@ -15,7 +15,7 @@
 - **NN/g empfiehlt, die App zunächst ohne Onboarding zu testen**, um echte Schwierigkeiten zu identifizieren, bevor man in Bildschirme investiert, um sie zu beheben [2].
 - Zentrale Implikation für Math Challenge: **Registrierung mit 2 Feldern, progressive und überspringbare Konfiguration sowie exakt fünf kontextuelle Marken** — die fünf Aspekte des Produkts, die wirklich neuartig sind und sich nicht von selbst erklären.
 
-## Executive summary (EN)
+## Zusammenfassung (EN)
 
 - **Registrierung ist der messbare Engpass.** HubSpot analysierte Formulare von 40.000 Kunden und stellte fest, dass das Reduzieren von Feldern von 4 auf 3 die Konversion um **fast 50 %** erhöhte [1]. Die Benchmarks von 2026 geben die vollständige Kurve an: 23,1 % bei 3 Feldern, 17,0 % bei 5, 11,4 % bei 7, 6,9 % bei 10 + [5].
 - **Der Rückgang ist nicht linear.** Zwischen 5 und 7 Feldern kostet jedes zusätzliche Feld etwa ~2,8 Prozentpunkte gegenüber ~1,5 darunter [5] — ein Abgrund, keine Schräge.
@@ -28,7 +28,7 @@
 - **NN/g empfiehlt, die App zunächst ohne Onboarding zu testen**, um echte Nutzerprobleme zu finden, bevor man in Bildschirme investiert, um sie zu lösen [2].
 - Kernimplikation: **Registrierung mit 2 Feldern, progressive und überspringbare Konfiguration sowie exakt fünf kontextuelle Marken** — die fünf Aspekte dieses Produkts, die wirklich neuartig sind und sich nicht von selbst erklären.
 
-## Findings
+## Ergebnisse
 
 ### 1. Die Kosten jedes Registrierungsfeldes
 

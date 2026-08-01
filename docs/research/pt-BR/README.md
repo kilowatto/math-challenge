@@ -6,7 +6,7 @@
 >   
 > **Como ler isso.** Cada documento traz `Resumen ejecutivo (ES)` e `Executive summary (EN)` acima, achados com citações numeradas no meio, e uma seção `Design implications` ao final com o que é acionável. Se você tem cinco minutos, leia apenas os resumos executivos dos marcados ⭐.  
 >   
-> **Aviso de método.** A cota de WebSearch da sessão se esgotou a meio da investigação. Os agentes posteriores trabalharam por WebFetch direto contra fontes primárias (MDN, WebKit, W3C, FTC, EUR-Lex, páginas de preços, PDFs de papers) e contra o endpoint HTML do DuckDuckGo. Cada documento declara suas limitações ao final. Vários sites (ftc.gov, ico.org.uk) bloqueiam fetch automatizado, então certas afirmações legais estão marcadas `[unverified]` de propósito — **essas não podem ser usadas como base de conformidade sem confirmá‑las com um advogado.**
+> **Aviso de método.** A cota de WebSearch da sessão se esgotou a meio da investigação. Os agentes posteriores trabalharam por WebFetch direto contra fontes primárias (MDN, WebKit, W3C, FTC, EUR-Lex, páginas de preços, PDFs de papers) e contra o endpoint HTML do DuckDuckGo. Cada documento declara suas limitações ao final. Vários sites (ftc.gov, ico.org.uk) bloqueiam fetch automatizado, então certas afirmações legais estão marcadas `[unverified]` de propósito — **essas não podem ser usadas como base de conformidade sem confirmá-las com um advogado.**
 
 ## Pedagogia — como se ensinam as matemáticas
 
@@ -19,7 +19,7 @@
 | 05 | [Espaciado, recuperación e intercalado](2026-07-31-mc-05-spacing-retrieval-interleaving.md) | ⭐ O algoritmo de revisão concreto (FSRS-lite) com parâmetros e limiar de maestria |
 | 06 | [Numeración temprana (3-7 años)](2026-07-31-mc-06-early-numeracy-kinder.md) | ⭐ A trajetória de aprendizado exata do nível kinder, em ordem |
 | 07 | [Fracciones, decimales y razón (8-14)](2026-07-31-mc-07-fractions-rational-numbers.md) | ⭐ Tabela de 13 erros com nome → resposta equivocada que produzem → o que Larry deve dizer |
-| 08 | [Álgebra y sus errores (12-17)](2026-07-31-mc-08-algebra-misconceptions.md) | ⭐ Tabela de 9 “regras mal aprendidas” → como repará‑las |
+| 08 | [Álgebra y sus errores (12-17)](2026-07-31-mc-08-algebra-misconceptions.md) | ⭐ Tabela de 9 “regras mal aprendidas” → como repará-las |
 | 09 | [Geometría y razonamiento espacial](2026-07-31-mc-09-geometry-spatial-reasoning.md) | Quais tipos de item geométrico são qualificáveis automaticamente em uma PWA |
 | 10 | [Ansiedad matemática, mentalidad y cronómetro](2026-07-31-mc-10-math-anxiety-mindset-timing.md) | ⭐⭐ **Ler antes de decidir o cronômetro.** Onde a evidência contradiz o briefing |
 | 11 | [Retroalimentación y evaluación formativa](2026-07-31-mc-11-feedback-formative-assessment.md) | ⭐ Modelos de feedback por faixa etária; que feedback piora o desempenho |
@@ -35,7 +35,7 @@
 | 14 | [Khan, Brilliant, Kumon, IXL, Prodigy, ST Math…](2026-07-31-mc-14-competitive-products.md) | ⭐ O que copiar, o que evitar, e onde está a lacuna de mercado |
 | 15 | [Escaleras de grado internacionales](2026-07-31-mc-15-international-grade-ladders.md) | ⭐ Proposta de escada interna de 11 faixas, neutra ao país, com nomes em 5 idiomas |
 | 36 | [Diseño de retos y formatos de reactivo](2026-07-31-mc-36-problem-design-item-formats.md) | ⭐ Catálogo de 20 formatos com “resiste um solver?” e ordem de construção do MVP |
-| 40 | [Banco de 2,500 reactivos: cómo se opera](2026-07-31-mc-40-item-bank-content-operations.md) | ⭐⭐ O plano concreto dos 2.500: modelos vs. manual vs. LLM, esquema, esforço e custo |
+| 40 | [Banco de 2.500 itens: como se opera](2026-07-31-mc-40-item-bank-content-operations.md) | ⭐⭐ O plano concreto dos 2.500: modelos vs. manual vs. LLM, esquema, esforço e custo |
 | 44 | [Ubicación adaptativa (CAT, IRT, ALEKS)](2026-07-31-mc-44-adaptive-placement-cat.md) | ⭐ O algoritmo de alocação construível na v1 sem banco calibrado |
 | 37 | [Larry Profe: portar a Larry](2026-07-31-mc-37-larry-profe-port.md) | ⭐⭐ O que existe hoje no repo (com `archivo:línea`), a tabela de roteamento de modelos e o custo por explicação |
 
@@ -69,16 +69,16 @@
 | 33 | [Realidade da PWA em 2026](2026-07-31-mc-33-pwa-first-reality.md) | ⭐ Matriz de capacidades iOS/Android/desktop; push no iOS exige instalação na tela inicial |
 | 25 | [Lei de privacidade infantil](2026-07-31-mc-25-child-privacy-law.md) | ⭐⭐ COPPA 2025, GDPR art. 8, Children's Code, LGPD art. 14, LFPDPPP após o desaparecimento do INAI |
 | 26 | [Tempo de tela saudável](2026-07-31-mc-26-screen-time-healthy-defaults.md) | ⭐ Tabela de limites por idade — padrão, mínimo e máximo que um pai pode definir |
-| 27 | [Contas familiares e consentimento](2026-07-31-mc-27-family-accounts-parental-consent.md) | ⭐ Modelo de entidades; como entra uma criança de 5 anos em menos de 5 segundos sem ler |
+| 27 | [Contas familiares e consentimento](2026-07-31-mc-27-family-accounts-parental-consent.md) | ⭐ Modelo de entidades; como entra uma criança de 5 anos em menos de 5 segundos sem ler |
 | 28 | [Modo mestre / sala](2026-07-31-mc-28-teacher-classroom-mode.md) | ⭐⭐ **A lacuna legal:** um professor sem escola por trás não pode invocar a exceção escolar |
 | 29 | [Integridade e anti-trapaça](2026-07-31-mc-29-assessment-integrity-anticheat.md) | ⭐ Escada progressiva de 6 níveis e a lista do que jamais se faz a uma criança |
-| 30 | [Telemetria comportamental](2026-07-31-mc-30-behavioral-telemetry-process-data.md) | ⭐⭐ Corrigir uma resposta **melhora** a classificação em 79 % dos casos: penalizar a exclusão é um erro |
+| 30 | [Telemetria comportamental](2026-07-31-mc-30-behavioral-telemetry-process-data.md) | ⭐⭐ Corrigir uma resposta **melhora** a classificação em 79% dos casos: penalizar a exclusão é um erro |
 | 31 | [Resistência a solvers de IA](2026-07-31-mc-31-ai-solver-resistance.md) | ⭐ Quais formatos sobrevivem ao Photomath e a um modelo de fronteira, e o que não pode ser impedido |
 | 41 | [Monetização e preços](2026-07-31-mc-41-monetization-pricing.md) | Preços reais da concorrência, métodos de pagamento por mercado, IVA e direito de desistimento |
-| 45 | [Onboarding, registro e ativação](2026-07-31-mc-45-onboarding-activation.md) | ⭐ Quanto custa cada campo de registro, e por que NN/g desaconselha o carrossel de boas‑vindas **por nome** |
+| 45 | [Onboarding, registro e ativação](2026-07-31-mc-45-onboarding-activation.md) | ⭐ Quanto custa cada campo de registro, e por que NN/g desaconselha o carrossel de boas-vindas **por nome** |
 | 46 | [Clubs, desafios de grupo e prêmios](2026-07-31-mc-46-clubs-social-challenges.md) | ⭐⭐ Os três elementos do jogo ilegal e como se elimina um; o *Group Goal* do Strava; como ter apostas sem perdedor |
 | 47 | [Stack, protocolos e desempenho real](2026-07-31-mc-47-stack-protocols-performance.md) | ⭐⭐ **Por que gRPC não entra**: Workers não pode fazer gRPC de saída e o navegador não o suporta. HTTP/3 em redes com perda; INP é a que falha |
-| 48 | [O site aberto e a estratégia orgânica](2026-07-31-mc-48-public-site-seo.md) | ⭐⭐ A pesquisa original é o ativo que o Google premia desde março de 2026; E-E-A-T, JSON‑LD multilíngue e `hreflang` em sete locais |
+| 48 | [O site aberto e a estratégia orgânica](2026-07-31-mc-48-public-site-seo.md) | ⭐⭐ A pesquisa original é o ativo que o Google premia desde março de 2026; E-E-A-T, JSON-LD multilíngue e `hreflang` em sete locais |
 
 ---
 

@@ -38,15 +38,22 @@
  *      texto y dos tablas.
  */
 import Base from "../../layouts/Base.astro";
-import { LOCALES, isLocale } from "../../i18n";
+import { type Locale } from "../../i18n";
 import paginas from "../../i18n/paginas/niveles.json";
 
-export function getStaticPaths() {
-  return LOCALES.map((locale) => ({ params: { locale } }));
+/**
+ * Es un COMPONENTE, no una página, desde D-049.
+ *
+ * La ruta la genera `src/pages/[locale]/[seccion]/index.astro`, que es quien
+ * conoce la tabla de segmentos y por tanto quien sabe que esta sección se sirve
+ * en `/de-DE/stufen/` y no en `/de-DE/niveles/`. Aquí solo se recibe el locale ya
+ * validado: quien enruta valida, y validar dos veces es tener dos verdades.
+ */
+interface Props {
+  locale: Locale;
 }
 
-const { locale } = Astro.params;
-if (!isLocale(locale)) return Astro.redirect("/en/");
+const { locale } = Astro.props;
 
 // `_nota` es documentación dentro del JSON; los siete locales son sus hermanos.
 const p = (paginas as unknown as Record<string, Record<string, string>>)[locale];
@@ -113,7 +120,7 @@ const jsonLd = {
 };
 ---
 
-<Base locale={locale} path="niveles/" title={p.title} description={p.description}>
+<Base locale={locale} seccion="niveles" title={p.title} description={p.description}>
   <h1>{p.title}</h1>
   <p class="lead">{p.description}</p>
 

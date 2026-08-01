@@ -1,8 +1,8 @@
-# Clubs, retos de grupo y prendas: cómo tener apuestas sin perdedor y sin exposición regulatoria
+# Clubes, desafios de grupo e prendas: como ter aposta sem perdedor e sem exposição regulatória
 
-> Math Challenge research — 2026-07-31 — topic 46
+> Pesquisa Math Challenge — 2026-07-31 — tópico 46
 
-## Resumo executivo (ES)
+## Resumo executivo (tópicos)
 
 - **O jogo ilegal é definido, em praticamente toda lei estadual dos EUA, por três elementos: prêmio, sorte e consideração — e os três devem estar presentes** [1]. Basta eliminar um para ficar fora. A estratégia padrão da indústria de sorteios é exatamente essa: remover ao menos um elemento [1].
 - **A sorte já está ausente aqui.** Um desafio matemático é ganho por habilidade, não por sorte. A formulação jurídica que se aplica é a dos concursos de destreza, onde *"os vencedores não são escolhidos por sorte, mas com base em algum critério mensurável"* [1].
@@ -16,7 +16,7 @@
 - **Larry modera o texto da aposta antes de que exista**, com critério de jogo entre adultos: a piada passa, sexo, violência e conteúdo degradante não passam — e nada que aponte para uma pessoa passa. É uma chamada distinta da do tutor, com seu próprio prompt, seu próprio registro e comportamento à prova de falhas.
 - Conclusão de design: **dois sistemas separados na camada de dados** — `grupo_infantil` (sala de mestre + clube de pais, regras idênticas) e `club_adulto` (com desafios e apostas) — para que uma funcionalidade adicionada aos "clubs" não possa cair por engano sobre crianças.
 
-## Resumo executivo (EN)
+## Resumo executivo (prosa)
 
 - **O jogo de azar ilegal é definido, em praticamente todas as leis estaduais dos EUA, por três elementos — prêmio, sorte e consideração — e os três devem estar presentes** [1]. Remover um é suficiente. Essa é exatamente a estratégia padrão da indústria de sorteios: eliminar ao menos um elemento [1].
 - **A sorte já está ausente aqui.** Um desafio matemático é vencido por habilidade. A estrutura aplicável é a de concurso de habilidade, onde *"os vencedores não são selecionados por sorte, mas sim escolhidos com base em algum critério mensurável"* [1].
@@ -29,8 +29,7 @@
 - **Larry modera o texto da aposta antes de que exista**, com julgamento de jogo adulto: a piada passa; sexo, violência e degradação não passam — e nada que destaque uma pessoa passa. É uma chamada separada da do tutor, com seu próprio prompt, registro de auditoria e comportamento fail-closed.
 - Conclusão de design: **dois sistemas separados na camada de dados** — `grupo_infantil` e `club_adulto` — para que uma funcionalidade adicionada aos "clubs" não possa cair sobre crianças por acidente.
 
-## Findings
-
+## Resultados
 ### 1. Os três elementos, e como eliminar um deles
 
 Thompson Coburn LLP resume o quadro que governa tudo isso: praticamente toda lei estadual define jogo ilegal como a presença simultânea de **prêmio, sorte e consideração**, e **os três devem estar presentes** para que uma promoção se qualifique como jogo ilegal [1]. A estratégia inteira da indústria de sorteios consiste em garantir a eliminação de pelo menos um.
@@ -38,12 +37,12 @@ Thompson Coburn LLP resume o quadro que governa tudo isso: praticamente toda lei
 Como eliminar cada um, segundo a própria fonte [1]:
 
 - **Prêmio.** Difícil de eliminar completamente, mas recompensas intangíveis como *"direito de se gabar"* ou a designação de vencedor semanal têm valor monetário mínimo e **podem não atingir o limiar legal** de “prêmio”.
-- **Sorte.** Transforma o sorteio em um concurso de destreza, onde *"os vencedores não são escolhidos por sorte, mas com base em algum critério mensurável"*. Alternativamente, estrutura‑se como um presente onde todos recebem algo.
+- **Sorte.** Transforma o sorteio em um concurso de destreza, onde *"os vencedores não são escolhidos por sorte, mas com base em algum critério mensurável"*. Alternativamente, estrutura-se como um presente onde todos recebem algo.
 - **Consideração.** É a que mais comumente se elimina. Inclui *"o pagamento de dinheiro ou de algo valioso para entrar, ou a exigência de que se faça uma compra"*. Notavelmente, exigir que alguém **envie seus dados de contato não é consideração** — por isso as vias de entrada gratuita são padrão no design de sorteios. A distinção legal depende de se o participante deve fazer algo **além do comportamento normal de cliente** para entrar.
 
 **Onde fica o Math Challenge.** A sorte está ausente pela natureza do produto: resolver desafios matemáticos é um critério mensurável de destreza, não de sorte. A consideração está ausente enquanto a plataforma não cobrar para entrar em um desafio nem reter, transferir ou fazer cumprir nada de valor. E com as formas de aposta propostas abaixo (§3), o prêmio se reduz a agência ou a uma experiência compartilhada, isto é, próximo ao limiar de “direito de se gabar”.
 
-**Faltam dois de três, possivelmente os três.** Mas essa posição depende **totalmente** de que a plataforma nunca toque em valor. No dia em que o Math Challenge reter US$ 20 de cada participante, surge a consideração e a análise se inverte completamente. Essa é a linha, e não é difusa.
+**Faltam dois de três, possivelmente os três.** Mas essa posição depende **totalmente** de que a plataforma nunca toque em valor. No dia em que o Math Challenge reter US$ 20 de cada participante, surge a consideração e a análise se inverte completamente. Essa é a linha, e não é difusa.
 
 ### 2. O precedente que já existe: Strava Group Goal
 
@@ -53,19 +52,19 @@ A descrição da Strava do modo cooperativo é a observação de design mais út
 
 Duas leituras importam. Primeiro, **a ausência de tabela é a função, não uma limitação** — é o que faz o modo servir a quem a competição desmotiva, que é exatamente a população que `mc-18` identifica como a que se desengaja no fundo do quadro. Segundo, **a Strava o oferece junto aos competitivos, não em substituição**: a escolha do modo a faz o organizador do desafio conforme seu grupo. Análises da própria plataforma apontam que os desafios grupais priorizam a conexão sobre a competição pura e sustentam a comunidade [2].
 
-Isso converge com o que já está em `mc-18`: a meta‑análise de Johnson & Johnson (122 estudos, 286 achados) encontra que as estruturas cooperativas superam consistentemente as competitivas e individualistas tanto em desempenho quanto em relações entre pares.
+Isso converge com o que já está em `mc-18`: a meta-análise de Johnson & Johnson (122 estudos, 286 achados) encontra que as estruturas cooperativas superam consistentemente as competitivas e individualistas tanto em desempenho quanto em relações entre pares.
 
 ### 3. O que torna divertida uma aposta, decomposta
 
 Antes de propor formas, vale decompôr o que produz o prazer de uma aposta social. Quatro coisas: que **todos tenham algo em jogo**, que **o resultado importe**, que **sobre o que se crie uma anedota**, e que **o grupo tenha feito algo junto**.
 
-**Nenhuma das quatro requer um perdedor.** O castigo ao último não é o ingrediente ativo — é uma consequência de assumir, sem examiná‑lo, que a aposta tem que recair sobre alguém. Dessa observação surgem três formas que conservam as quatro propriedades:
+**Nenhuma das quatro requer um perdedor.** O castigo ao último não é o ingrediente ativo — é uma consequência de assumir, sem examiná-lo, que a aposta tem que recair sobre alguém. Dessa observação surgem três formas que conservam as quatro propriedades:
 
 **A · Aposta coletiva.** O grupo se compromete junto contra uma meta compartilhada. Ganha ou não ganha em grupo. É o *Group Goal* da Strava aplicado a pontos de matemática, com o respaldo cooperativo de Johnson & Johnson.
 
-**B · O vencedor escolhe.** Inverte‑se a direção do prêmio: o primeiro lugar não recebe tributo dos demais, mas **decide** algo para o grupo — o próximo desafio, a meta do clube, o local onde vão. O prêmio é **agência, não tributo**. Legalmente é a forma mais limpa, porque decidir não tem valor monetário e roça o limiar de “direito de se gabar” que [1] indica como provavelmente insuficiente para constituir prêmio.
+**B · O vencedor escolhe.** Inverte-se a direção do prêmio: o primeiro lugar não recebe tributo dos demais, mas **decide** algo para o grupo — o próximo desafio, a meta do clube, o local onde vão. O prêmio é **agência, não tributo**. Legalmente é a forma mais limpa, porque decidir não tem valor monetário e roça o limiar de “direito de se gabar” que [1] indica como provavelmente insuficiente para constituir prêmio.
 
-**C · Compromisso próprio.** Cada um aposta contra sua própria meta, publicamente. É a forma melhor respaldada por evidência: são as intenções de implementação de Gollwitzer já documentadas em `mc-19`, com efeitos grandes e replicados (100 % vs. 53 % de cumprimento em autoexames; 4,2 kg vs. 2,1 kg de perda de peso). É também, não por acaso, o mecanismo com o qual a HealthyWage sustenta que não é jogo: seu argumento público é que **o usuário controla o resultado o tempo todo** [6].
+**C · Compromisso próprio.** Cada um aposta contra sua própria meta, publicamente. É a forma melhor respaldada por evidência: são as intenções de implementação de Gollwitzer já documentadas em `mc-19`, com efeitos grandes e replicados (100% vs. 53% de cumprimento em autoexames; 4,2 kg vs. 2,1 kg de perda de peso). É também, não por acaso, o mecanismo com o qual a HealthyWage sustenta que não é jogo: seu argumento público é que **o usuário controla o resultado o tempo todo** [6].
 
 ### 4. A propriedade estrutural que torna a moderação desnecessária
 
@@ -75,7 +74,7 @@ As três formas compartilham algo que vale mais que qualquer regra de moderaçã
 - Em “o vencedor escolhe”, o escreve **quem ganhou**, sobre o que segue.
 - No compromisso próprio, só se pode escrever **sobre si mesmo**.
 
-Em nenhuma das três existe um campo que responda a “o que acontece com o último?”. Isso significa que **o texto livre pode existir sem que a humilhação tenha onde aterrissar**: não é que se proíba escrevê‑la, é que não há ranura no modelo de dados onde colocá‑la. É a mesma lógica estrutural com a qual `mc-43` resolve os alias (escolha dentro de um conjunto limitado em vez de entrada livre), aplicada um nível acima: em vez de limitar o vocabulário, limita‑se **o objeto sobre o qual o texto pode falar**.
+Em nenhuma das três existe um campo que responda a “o que acontece com o último?”. Isso significa que **o texto livre pode existir sem que a humilhação tenha onde aterrissar**: não é que se proíba escrevê-la, é que não há ranura no modelo de dados onde colocá-la. É a mesma lógica estrutural com a qual `mc-43` resolve os alias (escolha dentro de um conjunto limitado em vez de entrada livre), aplicada um nível acima: em vez de limitar o vocabulário, limita-se **o objeto sobre o qual o texto pode falar**.
 
 **Risco residual, dito de frente.** Isso não é hermético. Alguém pode escrever, dentro de uma aposta coletiva, “vamos por tacos e o Juan se rapa”. O que a estrutura garante é que o sistema nunca *designe* o Juan, nunca o aponte e nunca o faça cumprir — a aposta continua sendo do grupo. Essa brecha é a que fecha Larry em §5, e o que resta depois é mitigado por procedimento: a aposta é visível **antes** de iniciar o desafio, **todos os membros a aceitam explicitamente** para permanecer dentro, qualquer um pode sair sem penalização, não se pode editar uma vez iniciado, e há botão de denúncia permanente. Com isso, ninguém fica sujeito a uma aposta que não leu e aceitou.
 
@@ -93,9 +92,9 @@ Em nenhuma das três existe um campo que responda a “o que acontece com o últ
 
 **O tom ao rejeitar importa tanto quanto a rejeição.** Larry não prega. `mc-11` é explícito que o feedback direcionado à pessoa em vez da tarefa é o mecanismo pelo qual mais de um terço das intervenções estudadas **piora** o resultado — e embora essa descoberta seja sobre aprendizado, o mecanismo social é o mesmo: uma rejeição moralizante transforma um adulto em adversário do produto. Larry rejeita de forma breve, em personagem, sem lição: *"Vou ter que devolver isso — deixa o grupo inteiro no desafio, não só um. Vamos dar outra volta?"*
 
-**Comportamento à prova de falhas.** Se a chamada de moderação falhar ou expirar, o desafio **não é publicado**. É mostrado que Larry não pôde revisá‑lo e é oferecida a tentativa novamente. Nunca se publica texto sem revisão sob qualquer condição de erro — o modo de falha barato é um usuário irritado, o modo de falha caro é uma humilhação publicada que o produto prometeu que não poderia acontecer.
+**Comportamento à prova de falhas.** Se a chamada de moderação falhar ou expirar, o desafio **não é publicado**. É mostrado que Larry não pôde revisá-lo e é oferecida a tentativa novamente. Nunca se publica texto sem revisão sob qualquer condição de erro — o modo de falha barato é um usuário irritado, o modo de falha caro é uma humilhação publicada que o produto prometeu que não poderia acontecer.
 
-**Roteamento e custo.** O volume é trivial comparado ao do tutor: uma chamada por desafio criado, não por tentativa. Haiku 4,5 basta para o caso claro, com escalonamento para Sonnet 5 quando o veredicto for de baixa confiança — o matiz entre “piada entre amigos” e “denigração” é exatamente onde um modelo pequeno erra em ambas as direções. Com o roteamento de D-015 e o limite de gasto do AI Gateway, isso não move a agulha do orçamento.
+**Roteamento e custo.** O volume é trivial comparado ao do tutor: uma chamada por desafio criado, não por tentativa. Haiku 4.5 basta para o caso claro, com escalonamento para Sonnet 5 quando o veredicto for de baixa confiança — o matiz entre “piada entre amigos” e “denigração” é exatamente onde um modelo pequeno erra em ambas as direções. Com o roteamento de D-015 e o limite de gasto do AI Gateway, isso não move a agulha do orçamento.
 
 **Falsos positivos e apelação.** Larry vai errar, e vai rejeitar piadas legítimas. Sem via de apelação, isso se sente como censura e é a reclamação que chegará. Todo desafio rejeitado deve poder ser enviado para revisão humana com um toque, e essa fila precisa de dono e tempo de resposta comprometido — a mesma fila dos relatórios.
 
@@ -103,14 +102,14 @@ Em nenhuma das três existe um campo que responda a “o que acontece com o últ
 
 ### 6. Os clubes de pais e o padrão real de salvaguarda
 
-A literatura de esportes juvenis é a referência mais próxima a “um adulto organiza uma atividade para crianças alheias”. O padrão geral que relata: exige‑se verificação de antecedentes para *“qualquer voluntário com oportunidade de contato não supervisionado ou um‑a‑um com menores”* — incluindo pais coordenadores que organizam atividades ou gerenciam comunicações que envolvem contato com crianças [4][5]. Uma verificação mínima cobre antecedentes criminais federais e registro de agressores sexuais; recomenda‑se repeti‑la a cada ano ou a cada temporada, com consentimento escrito prévio [4][5]. E estruturalmente: deve existir **uma pessoa nomeada, cujo nome e contato sejam conhecidos por todos**, como primeiro ponto de contato diante de qualquer preocupação de salvaguarda [5].
+A literatura de esportes juvenis é a referência mais próxima a “um adulto organiza uma atividade para crianças alheias”. O padrão geral que relata: exige-se verificação de antecedentes para *“qualquer voluntário com oportunidade de contato não supervisionado ou um-a-um com menores”* — incluindo pais coordenadores que organizam atividades ou gerenciam comunicações que envolvem contato com crianças [4][5]. Uma verificação mínima cobre antecedentes criminais federais e registro de agressores sexuais; recomenda-se repeti-la a cada ano ou a cada temporada, com consentimento escrito prévio [4][5]. E estruturalmente: deve existir **uma pessoa nomeada, cujo nome e contato sejam conhecidos por todos**, como primeiro ponto de contato diante de qualquer preocupação de salvaguarda [5].
 
-**Math Challenge não pode realizar verificação de antecedentes**, e fingir o contrário seria pior do que não fazê‑lo. Mas a própria definição indica onde está o risco: **contato não supervisionado**. A solução de design é eliminar a categoria inteira:
+**Math Challenge não pode realizar verificação de antecedentes**, e fingir o contrário seria pior do que não fazê-lo. Mas a própria definição indica onde está o risco: **contato não supervisionado**. A solução de design é eliminar a categoria inteira:
 
-- **Sem chat e sem mensagens diretas, em nenhuma direção, nunca.** Já é a regra para professores (D-011); estende‑se idêntica aos clubes.  
+- **Sem chat e sem mensagens diretas, em nenhuma direção, nunca.** Já é a regra para professores (D-011); estende-se idêntica aos clubes.  
 - **O dono do clube vê exclusivamente apelidos, pontos e sequência.** Nem nome real, nem idade exata, nem foto, nem outro grupo ao qual a criança pertença.  
 - **O pai de cada criança aprova a entrada**, e vê a identidade declarada do dono antes de aprovar — o padrão invertido do ClassDojo que `mc-28` identifica como o único mecanismo de segurança confirmado na indústria.  
-- **Convida‑se compartilhando um código com os pais**, nunca buscando ou contatando crianças.  
+- **Convida-se compartilhando um código com os pais**, nunca buscando ou contatando crianças.  
 - **Limite rígido menor que uma sala**: um clube é um grupo de amigos, não uma escola.  
 - **Botão de denúncia permanente** e registro completo de altas, aprovações e baixas.
 
@@ -147,22 +146,21 @@ A razão não é de modelagem, mas de modo de falha. Com uma única tabela, no d
 11. **Botão de denúncia permanente em cada aposta e em cada clube**, com revisão humana — a segunda camada, para o que Larry deixar passar.  
 12. **Duas estruturas de dados separadas**, `grupo_infantil` e `club_adulto`, para que nenhuma função social adicionada aos adultos possa alcançar as crianças por omissão (§7).  
 13. **O dono de um grupo infantil vê apelido, pontos e sequência. Nada mais.** Nem nome real, nem idade exata, nem pertencimento a outros grupos.  
-14. **Zero canal privado adulto‑criança**, em qualquer grupo infantil, seja de professor ou de pai — a mitigação direta contra o que §6 identifica como o risco real.  
+14. **Zero canal privado adulto-criança**, em qualquer grupo infantil, seja de professor ou de pai — a mitigação direta contra o que §6 identifica como o risco real.  
 15. **O pai de cada criança aprova, vendo antes a identidade declarada do dono do clube**, com insígnia visível quando essa identidade não está verificada.  
 16. **Limite de tamanho de clube infantil menor que o de salão**, e limite de clubes por conta, porque a criação ilimitada de grupos é a alavanca que um abusador usaria.  
 17. **Registro completo e visível para o pai** de quem pediu acesso, quem aprovou e quando — o análogo do "contato de salvaguarda nomeado" que [5] exige, adaptado a um produto sem equipe.  
 18. **Não apresentar o clube de pais como equivalente à supervisão de um clube esportivo real.** Texto honesto: é um quadro compartilhado entre famílias que já se conhecem, não um programa supervisionado.  
-19. **Registrar a posição legal da §1 por escrito e revisá‑la com advogado antes de habilitar apostas em qualquer mercado** — este documento é pesquisa, não assessoria jurídica, e a conclusão "faltam dois de três elementos" depende de fatos do produto que uma mudança de roadmap pode invalidar.
+19. **Registrar a posição legal da §1 por escrito e revisá-la com advogado antes de habilitar apostas em qualquer mercado** — este documento é pesquisa, não assessoria jurídica, e a conclusão "faltam dois de três elementos" depende de fatos do produto que uma mudança de roadmap pode invalidar.
 
-## Perguntas abertas para o proprietário do projeto
-
-1. Um adolescente de 12‑17 pode estar em um `club_adulto`? A resposta padrão deste documento é **não** (implicação 1), mas isso exclui o caso de um grupo de primos ou de colegas de ensino médio.  
-2. O catálogo de apostas começa vazio com texto livre desde o primeiro dia, ou é semeado com exemplos curados que mostrem o tom esperado? Semeá‑lo é a forma barata de comunicar a norma sem proibí‑la.  
+## Perguntas abertas para o dono do projeto
+1. Um adolescente de 12-17 pode estar em um `club_adulto`? A resposta padrão deste documento é **não** (implicação 1), mas isso exclui o caso de um grupo de primos ou de colegas de ensino médio.  
+2. O catálogo de apostas começa vazio com texto livre desde o primeiro dia, ou é semeado com exemplos curados que mostrem o tom esperado? Semeá-lo é a forma barata de comunicar a norma sem proibí-la.  
 3. A aceitação explícita da aposta (implicação 5) é por desafio ou uma única vez por clube? Por desafio é mais seguro e mais incômodo.  
 4. Os desafios de clube de adultos afetam o quadro global, ou vivem isolados no clube? Se afetam, é preciso revisar o controle de exposição de itens de `mc-29`.  
 5. Quem atende a fila de apelações e denúncias (implicações 9 e 11), e com qual tempo de resposta comprometido? É a mesma pessoa para as duas filas ou são duas.  
 6. Quando Larry rejeita uma aposta, ele diz ao autor **qual** das três regras quebrou, ou apenas que não passou? Dizer ajuda a corrigir; também ensina a driblar o filtro.  
-7. O prompt de moderação do Larry é criado por idioma ou traduzido? O que é denegrente é fortemente cultural — o que no México é uma piada entre amigos na Alemanha pode não ser, e vice‑versa.  
+7. O prompt de moderação do Larry é criado por idioma ou traduzido? O que é denegrente é fortemente cultural — o que no México é uma piada entre amigos na Alemanha pode não ser, e vice-versa.  
 6. É permitido que um clube infantil misture filhos de várias famílias que **não** se conhecem entre si, ou é limitado a famílias que já têm um vínculo prévio? Essa é a diferença entre um risco contido e um aberto.
 
 ## Fontes
@@ -175,4 +173,4 @@ A razão não é de modelagem, mas de modo de falha. Com uma única tabela, no d
 6. HealthyWage, HealthyWager FAQ — https://www.healthywage.com/healthywager/faq/ — fonte da postura pública de que o usuário controla o resultado, usada aqui como precedente de argumentação, não como validação legal.  
 7. Investigação interna: `2026-07-31-mc-18-leaderboards-competition.md` (Johnson & Johnson sobre estruturas cooperativas; dano concentrado no fundo do quadro), `2026-07-31-mc-19-habit-loops-push-notifications.md` (intenções de implementação de Gollwitzer), `2026-07-31-mc-28-teacher-classroom-mode.md` (o vazio de verificação do professor, T-5), `2026-07-31-mc-43-avatars-identity-progression.md` (escolha limitada em vez de entrada livre), `2026-07-31-mc-17-ethical-gamification-dark-patterns.md` (exposição regulatória de mecânicas de azar com menores), `2026-07-31-mc-37-larry-profe-port.md` (cânon de Larry, roteamento de modelos, o padrão de chamada separada), `2026-07-31-mc-11-feedback-formative-assessment.md` (por que a rejeição moralizante é contraproducente).
 
-**Isto é pesquisa, não assessoria jurídica.** A conclusão da §1 —que faltam ao menos dois dos três elementos— baseia‑se em fatos do produto (a plataforma não cobra, não retém, não transfere, não faz cumprir) que devem continuar verdadeiros para que a conclusão se sustente. Um advogado deve revisá‑la antes de habilitar apostas em qualquer mercado, e a fonte [1] é de 2011 e dos EUA: não cobre México, Brasil, nem a UE, onde `mc-17` já documentou que Bélgica e Países Baixos legislaram sobre mecânicas de azar de forma mais rígida que os EUA.
+**Isto é pesquisa, não assessoria jurídica.** A conclusão da §1 —que faltam ao menos dois dos três elementos— baseia-se em fatos do produto (a plataforma não cobra, não retém, não transfere, não faz cumprir) que devem continuar verdadeiros para que a conclusão se sustente. Um advogado deve revisá-la antes de habilitar apostas em qualquer mercado, e a fonte [1] é de 2011 e dos EUA: não cobre México, Brasil, nem a UE, onde `mc-17` já documentou que Bélgica e Países Baixos legislaram sobre mecânicas de azar de forma mais rígida que os EUA.

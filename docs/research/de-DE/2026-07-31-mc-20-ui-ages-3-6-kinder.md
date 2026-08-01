@@ -2,15 +2,15 @@
 
 > Math Challenge research — 2026-07-31 — topic 20
 
-## Resumen ejecutivo (ES)
+## Zusammenfassung (ES)
 
 Kinder im Alter von 3 bis 6 Jahren haben eine deutlich geringere motorische Präzision als Erwachsene: Hourcade et al. (2004) maßen 90 % Zeigegenauigkeit bei 4‑jährigen Kindern nur bei Zielen von 23,7 mm, weit über den ~9 mm (44 pt), die in den Erwachsenenvorgaben angenommen werden [1][2]. Drag‑and‑Drop ist die Geste, die in diesem Alter am häufigsten fehlschlägt: Sie ist nach dem Gesetz von Fitts bei Kindern von 4‑6 Jahren signifikant langsamer als das Tippen (nicht jedoch bei Kindern von 7‑10) [4] und taucht wiederholt als die am schwersten auszuführende Geste zusammen mit Doppel‑Tap und Zeichnen auf [3][5]. Apples Richtlinie für die Kategorie Kids verlangt „parental gates“ mit Aufgaben auf Erwachsenenniveau vor Käufen oder externen Links sowie Sprachhinweise für Kinder, die noch nicht lesen können [11]. Das „vier‑Pfeiler“-Modell von Hirsh‑Pasek (aktiv, engagiert, bedeutungsvoll, sozial interaktiv) ist der akademische Standard, um zu beurteilen, ob eine App wirklich pädagogisch wertvoll ist und nicht nur „educational“ im Namen trägt [10]. NN/g dokumentiert, dass Kinder von 3‑5 Jahren Animation und Klang bevorzugen – im Gegensatz zu Erwachsenen – und dass sie räumliche Navigation und Metaphern aus dem realen Leben benötigen, weil sie noch nicht lesen können [8][9]. Die FTC hat Epic Games mit $520M wegen dunkler Muster bestraft, die versehentliche Käufe durch Minderjährige ermöglichten [13], was für jeden Zahlungs‑ oder Exit‑Flow direkt relevant ist. Dieser Bericht überträgt diese Erkenntnisse in eine konkrete Spezifikation für die KINDER‑Band von Math Challenge: Touch‑Zielgrößen, Typografie, Palette, Klang, Animation, Navigationstiefe, Anzahl der Taps zum Starten einer Herausforderung, Form der Antwort‑Eingabe und Verhalten bei falscher Antwort, differenziert nach Telefon, Tablet und Desktop.
 
-## Executive summary (EN)
+## Zusammenfassung (EN)
 
 Kinder im Alter von 3‑6 Jahren haben eine deutlich geringere motorische Präzision als Erwachsene. Hourcade et al. (2004) maßen 90 % Zeigegenauigkeit bei 4‑jährigen Kindern nur bei Zielen von 23,7 mm, weit über dem ~9 mm (44 pt) Erwachsenen‑Richtwert [1][2]. Drag‑and‑Drop ist die Geste, die in diesem Alter am häufigsten fehlschlägt: Sie ist nach dem Gesetz von Fitts bei 4‑6‑jährigen Kindern signifikant langsamer als das Tippen (nicht jedoch bei 7‑10‑jährigen Kindern) [4] und taucht wiederholt als die schwierigste Geste zusammen mit Doppel‑Tap und Zeichnen auf [3][5]. Apples Kids‑Kategorien‑Richtlinie verlangt „parental gates“ – Aufgaben auf Erwachsenenniveau – vor Käufen oder externen Links sowie Sprachaufforderungen für vor‑lesende Kinder [11]. Hirsh‑Paseks „four pillars“-Framework (aktiv, engagiert, bedeutungsvoll, sozial interaktiv) ist der akademische Standard dafür, ob eine App tatsächlich pädagogisch wertvoll ist und nicht nur im Namen „educational“ [10]. NN/g dokumentiert, dass 3‑5‑jährige Kinder Animation und Klang bevorzugen – im Gegensatz zu Erwachsenen, die sie meist ablehnen – und räumliche Navigation sowie lebensnahe Metaphern benötigen, weil sie noch nicht lesen können [8][9]. Die FTC hat Epic Games mit $520M wegen dunkler Muster bestraft, die versehentliche Käufe durch Minderjährige ermöglichten [13], was für jeden Zahlungs‑ oder Exit‑Flow direkt relevant ist. Dieser Bericht überträgt diese Erkenntnisse in eine konkrete Spezifikation für die KINDER‑Band von Math Challenge: Touch‑Zielgrößen, Typografie, Palette, Klang, Animation, Navigationstiefe, Anzahl der Taps zum Starten einer Herausforderung, Form der Antwort‑Eingabe und Verhalten bei falscher Antwort, aufgeteilt nach Telefon, Tablet und Desktop.
 
-## Findings
+## Ergebnisse
 
 ### 1. Motor development and touch accuracy
 
@@ -90,7 +90,7 @@ Das Four‑Pillars‑Framework selbst behandelt „sozial interaktiv“ als eine
 4. Sollten Sitzungs‑Grenz‑Aufforderungen („play again?“) **auf ein tägliches Limit angerechnet oder zurückgesetzt** werden, das die App oder OS‑seitige Eltern‑Kontrollen eventuell durchsetzen?
 5. Bevorzugt der Eigentümer für die Eltern‑Gate **eine einfache arithmetische Herausforderung** (Apples vorgeschlagenes Muster [11]) oder ein **Press‑and‑Hold‑Muster** — erstere dient doppelt als thematischer Inhalt, letztere ist schneller für einen Elternteil, der häufig Einstellungen öffnen möchte?
 
-## Sources
+## Quellen
 
 1. Hourcade, J.P., Bederson, B.B., Druin, A., Guimbretière, F. (2004).  
    "Unterschiede in der Leistung von Zeigaufgaben zwischen Vorschulkindern und Erwachsenen bei der Nutzung von Mäusen." ACM TOCHI. https://dl.acm.org/doi/10.1145/1035575.1035577  

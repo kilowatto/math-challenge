@@ -2,7 +2,7 @@
 
 > Math Challenge research — 2026-07-31 — topic 02
 
-## Resumen ejecutivo (ES)
+## Zusammenfassung (ES)
 
 - Die „Lehre mit Variation“ (bianshi jiaoxue, 变式教学), entwickelt von Gu Lingyuan im Bezirk Qingpu, Shanghai (seit den 80er‑Jahren), unterscheidet **konzeptuelle Variation** (Beispiele/Gegenbeispiele gegenüberstellen, um wesentliche Merkmale zu offenbaren) und **prozedurale Variation** (Sequenzen, bei denen jeweils ein Element geändert wird, während alles andere unverändert bleibt) [1][2][7].
 - Die „zwei Grundlagen“ (Wissen + Grundfertigkeiten) sind seit den 60er‑Jahren das chinesische Lehrplanprinzip (sowjetischer Einfluss); sie erklären die Betonung von schnellem und präzisem Rechnen [3].
@@ -15,7 +15,7 @@
 - Hongkong verwendet einen spiralförmigen Lehrplan (Zahlen, Algebra, Maße, Form/Raum, Daten), wird jedoch dafür kritisiert, dass er in der Oberstufe der Grundschule dicht und auf intensiver Wiederholung basiert [14].
 - BNU und ECNU sind die beiden einflussreichsten Forschungszentren für Mathematikdidaktik in China, mit nationalen Grundlagen in Lehrbüchern und Lehrkräfteausbildung [15][16].
 
-## Executive summary (EN)
+## Zusammenfassung (EN)
 
 Der Ruf der chinesischen Mathematikbildung beruht auf einer dokumentierten Pädagogik – Lehre mit Variation – die auf der curricularen Philosophie der „zwei/vier Grundlagen“ aufbaut und durch die Zusammenarbeit von Lehr‑ und Forschungsgruppen gestärkt wird. Der am besten exportierbare Mechanismus für ein digitales Produkt ist **prozedurale und konzeptuelle Variation**: Statt zufälliger Übungsaufgaben entwerfen chinesische Lehrkräfte/Lehrbücher gezielte *Sequenzen*, bei denen ein Problem‑Element geändert wird, während die anderen konstant bleiben, sodass die Lernenden Struktur statt Mustererkennung erkennen. Der Austausch von Shanghai‑Lehrkräften nach England ergab ein tatsächlich gemischtes Transferresultat – Fortschritte in Key Stage 1, keine in Key Stage 2 – ein nützlicher Gegenpol zur Annahme, dass die Pädagogik automatisch übertragbar ist. Liping Mas PUFM‑Forschung erklärt *warum* Variation funktioniert: Lehrkräfte benötigen „Wissenspakte“, die jede Fähigkeit vorwärts und rückwärts im Lehrplan verknüpfen, nicht isolierte Verfahren. Chinas PISA‑Dominanz ist ein umstrittener Datenpunkt (Shanghai ist nicht repräsentativ für China), und Schattenbildung verwirrt jede einfache Geschichte von „Lehrplan verursacht Leistung“. Die mit dem größten Hebelwirkung für Math Challenge: Ersetzen der zufälligen Aufgabengenerierung durch **systematische Variationssequenzen** pro Lernziel.
 
@@ -68,7 +68,7 @@ Shanghais Platz 1 im PISA‑Ranking (2009, wiederholt 2012) untermauert die Be
 
 Der EDB‑Lehrplan Hongkongs verwendet einen expliziten **„Spiral‑Ansatz“**, bei dem Themen im Verlauf der Schulzeit mit zunehmender Komplexität erneut aufgegriffen werden, organisiert in fünf Bereiche: Zahl, Algebra, Maße, Form und Raum, Datenverarbeitung [14]. Lehrkräfte können die empfohlene Reihenfolge an die Bedürfnisse ihrer Schülerinnen und Schüler anpassen. Dokumentierte Kritik: der Grundschul‑Lehrplan ist zu dicht, die Mathematik der höheren Grundschule wird wesentlich durch intensives Drill‑Üben erlernt, und es gibt inhaltliche Überschneidungen zwischen Vorschule und Klasse 1 [14] — eine Warnung, dass spiral‑ bzw. meisterschaftsorientierte Lehrpläne nicht automatisch drill‑frei sind.
 
-## Design‑Implikationen für Math Challenge
+## Designimplikationen für Math Challenge
 
 1. **Ersetze die zufällige Aufgabengenerierung durch Variationssequenzen pro Lernziel**: ein geordneter Satz, bei dem zwischen aufeinanderfolgenden Aufgaben exakt ein Oberflächenparameter wechselt, wodurch prozedurale Variation (yiti duobian) operationalisiert wird [1][2][7].
 

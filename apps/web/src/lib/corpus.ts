@@ -591,6 +591,55 @@ export function loadCorpus(): ResearchDoc[] {
 }
 
 /**
+ * El texto crudo de cada documento, por nombre de archivo.
+ *
+ * Por qué existe. La página índice del corpus tenía su PROPIO `import.meta.glob`
+ * sobre `docs/research/`, y comparaba su resultado con el de `loadCorpus()` para
+ * detectar divergencias — con un mensaje de error que decía, correctamente, que
+ * si divergen "una de las dos listas está mintiendo y no se puede saber cuál".
+ *
+ * Divergieron. No por un cambio en el corpus: al mover la página a un componente
+ * (D-049) su glob relativo quedó apuntando un nivel más arriba y resolvió a
+ * nada, mientras `loadCorpus()` seguía entregando los 47. El guardián funcionó,
+ * pero estaba guardando un problema que solo existía porque había dos lectores.
+ *
+ * Ahora hay uno. Un glob que no puede divergir de sí mismo.
+ */
+export function loadRaw(): Record<string, string> {
+  const raws = import.meta.glob("../../../../docs/research/2026-07-31-mc-*.md", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }) as Record<string, string>;
+
+  const out: Record<string, string> = {};
+  for (const [path, raw] of Object.entries(raws)) {
+    out[path.slice(path.lastIndexOf("/") + 1)] = raw;
+  }
+  if (Object.keys(out).length === 0) throw new Error("corpus: 0 documentos crudos; el glob no resolvió nada");
+  return out;
+}
+
+/**
+ * Cuántos `.md` hay en `docs/research/`, incluido el README.
+ *
+ * Es el número que devuelve `ls docs/research/*.md | wc -l` — 48, no 47 —, y la
+ * página índice lo publica para explicar en voz alta por qué ese comando da otro
+ * número que el conteo de investigaciones. Un lector escéptico que corra el
+ * comando obvio tiene que encontrar la diferencia explicada, no una
+ * contradicción.
+ */
+export function countMdFiles(): number {
+  return Object.keys(
+    import.meta.glob("../../../../docs/research/*.md", {
+      query: "?raw",
+      import: "default",
+      eager: true,
+    }),
+  ).length;
+}
+
+/**
  * El cuerpo compilado de cada documento, por nombre de archivo.
  *
  * Se usa el pipeline de Markdown de Astro (el mismo que compila cualquier `.md`

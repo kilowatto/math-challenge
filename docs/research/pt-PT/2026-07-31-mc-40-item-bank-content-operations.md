@@ -2,8 +2,6 @@
 
 > Math Challenge research — 2026-07-31 — topic 40
 
-> Pesquisa Math Challenge — 2026-07-31 — tópico 40
-
 ## Resumo executivo (ES)
 
 Os produtos educativos reais raramente escrevem cada item à mão. IXL publica ~1.219 competências de matemática para pré‑escolar–8.º ano [1] — não itens, mas *habilidades*, cada uma suportada por geração dinâmica de perguntas. A Khan Academy usa o Perseus, o seu editor/renderizador de exercícios [2], para combinar autoria humana com variação paramétrica. O WeBWorK mostra o extremo oposto: um modelo na sua linguagem PG produz um número ilimitado de variantes numéricas [5]. A investigação de 2023–2026 sobre geração de itens com LLM é clara e modesta ao mesmo tempo: os modelos geram distratores matematicamente válidos mas **não antecipam bem os erros reais dos estudantes** [arXiv 2404.02124] — por isso este banco não pode automatizar a “explicação do erro comum” sem revisão humana.

@@ -1,8 +1,8 @@
 # Onboarding, registro e ativação: quantos campos, e por que os tours quase nunca funcionam
 
-> Math Challenge research — 2026-07-31 — topic 45
+> Pesquisa Math Challenge — 2026-07-31 — tópico 45
 
-## Resumo executivo (ES)
+## Resumo executivo (tópicos)
 
 - **O registro é o gargalo mensurável.** HubSpot analisou formulários de 40.000 clientes e encontrou que reduzir de 4 campos para 3 aumentou a conversão **em quase 50%** [1]. Os benchmarks de 2026 fornecem a curva completa: 23,1% com 3 campos, 17,0% com 5, 11,4% com 7, 6,9% com 10 ou mais [5].
 - **A queda não é linear.** Entre 5 e 7 campos, cada campo extra custa ~2,8 pontos percentuais, contra ~1,5 antes desse intervalo [5] — há um despenhadeiro, não uma inclinação.
@@ -12,10 +12,10 @@
 - **Só três casos justificam onboarding**, segundo NN/g: solicitar informações indispensáveis, adaptar a experiência ao contexto do usuário, e introduzir fluxos **genuinamente inovadores** que se afastam dos padrões padrão [2].
 - **O que funciona é contextual.** NN/g favorece a ajuda contextual sobre a instrução antecipada: as dicas aparecem quando a funcionalidade se torna acionável, não ao abrir o app [2]. As marcas de guia (*coach marks*) funcionam quando são oportunas e discretas, e são acompanhadas da tarefa real [2].
 - **Uma regra visual concreta:** o estilo de uma dica deve deixar inequívoco que se trata de uma anotação e **não um elemento interativo** [2].
-- **NN/g recomenda testar o app sem onboarding primeiro**, para identificar dificuldades reais antes de investir em resolvê‑las com telas [2].
+- **NN/g recomenda testar o app sem onboarding primeiro**, para identificar dificuldades reais antes de investir em resolvê-las com telas [2].
 - Implicação central para Math Challenge: **registro de 2 campos, configuração progressiva e pulável, e exatamente cinco marcas contextuais** — as cinco coisas do produto que são de verdade inovadoras e não se explicam sozinhas.
 
-## Resumo executivo (EN)
+## Resumo executivo (prosa)
 
 - **O registro é o gargalo mensurável.** HubSpot analisou formulários de 40.000 clientes e descobriu que reduzir campos de 4 para 3 aumentou a conversão em **quase 50%** [1]. Os benchmarks de 2026 fornecem a curva completa: 23,1% com 3 campos, 17,0% com 5, 11,4% com 7, 6,9% com 10 ou mais [5].
 - **A queda não é linear.** Entre 5 e 7 campos, cada campo adicional custa ~2,8 pontos percentuais versus ~1,5 abaixo desse intervalo [5] — um despenhadeiro, não uma inclinação.
@@ -25,7 +25,7 @@
 - **Só três casos justificam onboarding**, segundo NN/g: coletar informações essenciais, adaptar ao contexto do usuário, e introduzir fluxos de trabalho **genuinamente inovadores** que se desviam dos padrões padrão [2].
 - **O que funciona é contextual.** NN/g defende ajuda contextual em vez de instrução antecipada: dicas aparecem quando os recursos se tornam acionáveis, não de início [2]. Coach marks funcionam quando são oportunas, discretas e acompanhadas da conclusão da tarefa real [2].
 - **Uma regra visual concreta:** o estilo visual de uma dica deve deixar claramente evidente que se trata de uma anotação e **não um elemento interativo** [2].
-- **NN/g recomenda testar o app sem onboarding primeiro**, para encontrar dificuldades reais do usuário antes de investir em telas para resolvê‑las [2].
+- **NN/g recomenda testar o app sem onboarding primeiro**, para encontrar dificuldades reais do usuário antes de investir em telas para resolvê-las [2].
 - Implicação central: **registro de 2 campos, configuração progressiva e pulável, e exatamente cinco marcas contextuais** — as cinco coisas sobre este produto que são genuinamente inovadoras e não se explicam por si mesmas.
 
 ## Descobertas
@@ -43,7 +43,7 @@ A cifra mais citada e melhor sustentada vem da HubSpot, que estudou formulários
 
 O importante não é a inclinação média, mas **onde está a ruptura**: entre 5 e 7 campos cada campo adicional custa ~2,8 pontos percentuais, contra ~1,5 pontos por campo antes desse intervalo [5]. Ou seja, o sexto e o sétimo campo são muito mais caros que o quarto.
 
-**A advertência que deve ser mantida.** A correlação não é perfeita nem universal: há casos documentados em que reduzir campos produziu uma **queda** de 14% na conversão, e ao menos uma análise em que dez campos converteram melhor que três [3][5]. A explicação habitual é a qualidade da intenção — um formulário longo filtra curiosos —, o que importa pouco para um produto gratuito onde o objetivo é que o pai veja seu filho resolvendo uma soma. Para Math Challenge a regra de “menos campos” se aplica com força, mas registra‑se como hipótese a ser medida, não como fato estabelecido.
+**A advertência que deve ser mantida.** A correlação não é perfeita nem universal: há casos documentados em que reduzir campos produziu uma **queda** de 14% na conversão, e ao menos uma análise em que dez campos converteram melhor que três [3][5]. A explicação habitual é a qualidade da intenção — um formulário longo filtra curiosos —, o que importa pouco para um produto gratuito onde o objetivo é que o pai veja seu filho resolvendo uma soma. Para Math Challenge a regra de “menos campos” se aplica com força, mas registra-se como hipótese a ser medida, não como fato estabelecido.
 
 ### 2. A posição do Nielsen Norman Group sobre onboarding
 
@@ -55,13 +55,13 @@ A NN/g reconhece exatamente três cenários que justificam telas de onboarding [
 2. **Adaptar a experiência** ao contexto ou às preferências do usuário.  
 3. **Introduzir fluxos genuinamente novos ou desconhecidos** que se afastam dos padrões padrão.
 
-E uma recomendação metodológica que vale mais que qualquer padrão: **testar o app sem onboarding primeiro**, para identificar as dificuldades reais dos usuários antes de investir em resolvê‑las com telas [2].
+E uma recomendação metodológica que vale mais que qualquer padrão: **testar o app sem onboarding primeiro**, para identificar as dificuldades reais dos usuários antes de investir em resolvê-las com telas [2].
 
 ### 3. Que formato funciona e qual não
 
-**Carrossel de cartões (“deck‑of‑cards tutorial”): desaconselhado pelo nome.** A NN/g aponta que ele faz a interface *parecer mais complexa do que é* e sobrecarrega a memória de trabalho; sua pesquisa sobre esse formato específico constatou que **não melhorou o desempenho na tarefa** [2]. É, de longe, o formato mais popular na indústria e o pior fundamentado.
+**Carrossel de cartões (“deck-of-cards tutorial”): desaconselhado pelo nome.** A NN/g aponta que ele faz a interface *parecer mais complexa do que é* e sobrecarrega a memória de trabalho; sua pesquisa sobre esse formato específico constatou que **não melhorou o desempenho na tarefa** [2]. É, de longe, o formato mais popular na indústria e o pior fundamentado.
 
-**Marcas de guia e sobreposições instrutivas: úteis com condições.** Funcionam quando são **oportunas e discretas**, e quando vêm acompanhadas da execução real da tarefa [2]. A NN/g as classifica como *“nice‑to‑have”* mais que essenciais [2]. A regra visual concreta: o estilo de uma pista deve deixar **inequívocamente claro que é uma anotação, não um elemento interativo** [2].
+**Marcas de guia e sobreposições instrutivas: úteis com condições.** Funcionam quando são **oportunas e discretas**, e quando vêm acompanhadas da execução real da tarefa [2]. A NN/g as classifica como *“nice-to-have”* mais que essenciais [2]. A regra visual concreta: o estilo de uma pista deve deixar **inequívocamente claro que é uma anotação, não um elemento interativo** [2].
 
 **Promoção de funções no lançamento: evitar.** Os usuários raramente precisam que se repita dentro do app o que já leram na loja. O padrão serve melhor para usuários existentes que descobrem funções novas, e não deve ser usado para insistir com funções antigas pouco usadas [2].
 
@@ -69,39 +69,39 @@ E uma recomendação metodológica que vale mais que qualquer padrão: **testar 
 
 ### 4. Sobre os números de “engajamento” que circulam
 
-Várias fontes secundárias da indústria citam números chamativos atribuídos à NN/g — por exemplo, que a orientação disparada por comportamento teria 68% mais engajamento e 54% melhor adoção que as alternativas por tempo ou localização. **Esse número não pôde ser verificado contra uma publicação da NN/g** nesta sessão, e provém de blogs de fornecedores de ferramentas de onboarding, que têm interesse comercial direto em fazer o onboarding parecer eficaz. Registra‑se aqui como **não verificado** e não é usado como base de nenhuma decisão. A posição documentada da NN/g aponta, se for o caso, em direção contrária: menos onboarding, mais interface utilizável.
+Várias fontes secundárias da indústria citam números chamativos atribuídos à NN/g — por exemplo, que a orientação disparada por comportamento teria 68% mais engajamento e 54% melhor adoção que as alternativas por tempo ou localização. **Esse número não pôde ser verificado contra uma publicação da NN/g** nesta sessão, e provém de blogs de fornecedores de ferramentas de onboarding, que têm interesse comercial direto em fazer o onboarding parecer eficaz. Registra-se aqui como **não verificado** e não é usado como base de nenhuma decisão. A posição documentada da NN/g aponta, se for o caso, em direção contrária: menos onboarding, mais interface utilizável.
 
 ### 5. O que é genuinamente novo no Math Challenge
 
 Aplicando o critério 3 da NN/g — apenas o que se afasta dos padrões padrão merece explicação — o produto tem exatamente cinco conceitos que um usuário não pode inferir da interface:
 
-1. **A idade e a dificuldade são eixos separados** (D-002, D-017). Contra‑intuitivo e central; sem isso um pai não entende por que seu filho de 7 anos vê um tema de ensino fundamental, mas conteúdo de pré‑escola.  
-2. **A criança é um perfil, não um usuário** (D-013). Afasta‑se do modelo mental de “criar uma conta para meu filho” que trazem de outros produtos.  
-3. **A localização não é um exame**, e na pré‑escola nem parece ser (D-002, `mc-44`).  
+1. **A idade e a dificuldade são eixos separados** (D-002, D-017). Contra-intuitivo e central; sem isso um pai não entende por que seu filho de 7 anos vê um tema de ensino fundamental, mas conteúdo de pré-escola.  
+2. **A criança é um perfil, não um usuário** (D-013). Afasta-se do modelo mental de “criar uma conta para meu filho” que trazem de outros produtos.  
+3. **A localização não é um exame**, e na pré-escola nem parece ser (D-002, `mc-44`).  
 4. **Os clubes e salões não têm chat, e nunca terão** (D-011, D-027). É uma ausência deliberada, e uma ausência não se explica sozinha.  
-5. **As vestimentas não têm perdedor** (D-028). Afasta‑se do que “aposta” significa para qualquer pessoa que chegue.
+5. **As vestimentas não têm perdedor** (D-028). Afasta-se do que “aposta” significa para qualquer pessoa que chegue.
 
 Todo o resto — tocar a resposta correta, ver seus pontos, mudar de perfil — deve ser explicado por si só ou é um defeito de interface, não um vazio de onboarding.
 
 ## Implicações de design
 
-1. **Nenhum registro passa de 3 campos, e nenhum dos nossos precisa de mais de 2.** E‑mail e senha para as três portas de entrada (adulto, pai, professor). Todo o resto é configuração posterior.  
-2. **Registrar‑se não é configurar.** O perfil da criança, a faixa etária, o limite de tela e o salão são solicitados *após* o registro, em passos separados e puláveis com valores padrão saudáveis — o intervalo de 5‑7 campos é exatamente onde está a queda [5].  
-3. **Zero carrossel de boas‑vindas**, em nenhuma das cinco entradas. É o formato que a NN/g desaconselha pelo nome e cuja pesquisa específica não encontrou melhoria no desempenho [2].  
+1. **Nenhum registro passa de 3 campos, e nenhum dos nossos precisa de mais de 2.** E-mail e senha para as três portas de entrada (adulto, pai, professor). Todo o resto é configuração posterior.  
+2. **Registrar-se não é configurar.** O perfil da criança, a faixa etária, o limite de tela e o salão são solicitados *após* o registro, em passos separados e puláveis com valores padrão saudáveis — o intervalo de 5-7 campos é exatamente onde está a queda [5].  
+3. **Zero carrossel de boas-vindas**, em nenhuma das cinco entradas. É o formato que a NN/g desaconselha pelo nome e cuja pesquisa específica não encontrou melhoria no desempenho [2].  
 4. **Exatamente cinco marcas contextuais**, uma para cada conceito genuinamente novo (§5), cada uma disparada no momento em que sua função se torna acionável, não ao abrir o app [2].  
 5. **Cada marca contextual se apresenta como anotação, nunca como controle.** Estilo visual inequívocamente distinto de qualquer elemento tocável [2].  
 6. **O adulto chega à sua primeira pergunta de matemática sem passar por um formulário além do registro.** É a prova de fogo de “testar o app sem onboarding” [2] aplicada ao caso de uso principal.  
 7. **A verificação do professor ocorre antes de criar um salão, não antes de registrar.** Mover a fricção de identidade para o registro penaliza todos por um requisito que só se aplica a quem terá crianças alheias à vista.  
 8. **Toda marca contextual pode ser descartada permanentemente e não volta a ser mostrada.** Reaparecer seria a versão de onboarding do padrão de “nagging” que a FTC nomeia explicitamente (`mc-17`).  
 9. **Instrumentar o funil por passo desde o primeiro dia**, para poder medir a hipótese do §1 nos nossos próprios dados em vez de herdar o benchmark: registro iniciado → registro completo → primeiro perfil criado → primeiro desafio concluído.  
-10. **Na pré‑escola não há onboarding para a criança, de forma alguma.** O primeiro passeio pela Savana *é* a localização (`mc-44`), e a criança não lê — qualquer tela explicativa dirigida a ela é, por definição, inútil.
+10. **Na pré-escola não há onboarding para a criança, de forma alguma.** O primeiro passeio pela Savana *é* a localização (`mc-44`), e a criança não lê — qualquer tela explicativa dirigida a ela é, por definição, inútil.
 
 ## Perguntas abertas para o responsável pelo projeto
 
-1. O registro do adulto usa senha, link mágico ou passkey? O link mágico reduz a **um** campo, mas adiciona um salto ao e‑mail na metade da ativação.  
-2. O funil é medido com Web Analytics (sem cookies, amostrado em 10 % após 7 dias) ou é preciso algo com retenção mais longa para comparar coortes de registro?  
+1. O registro do adulto usa senha, link mágico ou passkey? O link mágico reduz a **um** campo, mas adiciona um salto ao e-mail na metade da ativação.  
+2. O funil é medido com Web Analytics (sem cookies, amostrado em 10% após 7 dias) ou é preciso algo com retenção mais longa para comparar coortes de registro?  
 3. As cinco marcas contextuais se autoram por idioma ou são traduzidas? O tom de uma explicação breve é justo onde a tradução literal soa condescendente (`mc-37`).  
-4. Vale a pena um teste A/B de 2 vs 3 campos no registro do pai, dado que a evidência externa não é unânime (§1)?
+4. Vale a pena um teste A/B de 2 vs 3 campos no registro do pai, dado que a evidência externa não é unânime (§1)?
 
 ## Fontes
 

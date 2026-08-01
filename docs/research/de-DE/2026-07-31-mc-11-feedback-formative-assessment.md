@@ -2,7 +2,7 @@
 
 > Math Challenge research — 2026-07-31 — topic 11
 
-## Resumen ejecutivo (ES)
+## Zusammenfassung (ES)
 
 - Hattie & Timperley (2007): Wirksames Feedback beantwortet drei Fragen — „Wohin gehe ich?“, „Wie gehe ich?“, „Wohin gehe ich weiter?“ — auf vier Ebenen: Aufgabe, Prozess, Selbstregulation und „Ich“. Die Ebene „Ich“ (generische Lobäußerungen) ist am wenigsten wirksam [1].
 - Kluger & DeNisi (1996), Meta‑Analyse von 607 Effektgrößen: Feedback verbessert die Leistung im Durchschnitt (d=0,41), aber **mehr als ein Drittel der Feedback‑Interventionen verschlechterten sie** — die Botschaft „Feedback hilft immer“ ist falsch [2].
@@ -15,7 +15,7 @@
 - Aktuelle LLMs, ohne pädagogische Feinabstimmung, neigen dazu, **die Antwort zu früh preiszugeben** oder Erklärungen zu erzeugen, die zwar schrittweise logisch erscheinen, aber mathematische Fehler enthalten — MathDial (2023), MathTutorBench (2025) [9][10].
 - Die randomisierte Studie Tutor CoPilot (2024, 783 Tutor*innen, große Stichprobe) zeigte, dass KI‑Vorschläge, die zu untersuchenden Fragen anregen (statt generischem Lob), die Beherrschung mathematischer Themen um 4 Prozentpunkte steigerten, mit größerem Gewinn bei Tutor*innen mit niedrigerer Bewertung [11].
 
-## Executive summary (EN)
+## Zusammenfassung (EN)
 
 - Hattie & Timperley (2007) fassen Feedback als Beantwortung von drei Fragen (Feed‑up / Feed‑back / Feed‑forward) über vier Ebenen (Aufgabe, Prozess, Selbstregulation, Selbst) — wobei Lob auf Selbst‑Ebene das schwächste Hebel ist [1].
 - Kluger & DeNisis (1996) Meta‑Analyse von 607 Effektgrößen ist hier die wichtigste Warnung: Feedback hilft im Durchschnitt (d = ,41), aber **über ein Drittel der Feedback‑Interventionen reduzierten die Leistung**, vor allem, wenn die Aufmerksamkeit auf das Selbst statt auf die Aufgabe gelenkt wird [2].
@@ -65,7 +65,7 @@ MathDial (EMNLP 2023) erstellte 3.000 Tutor‑Dialoge, weil rohe LLMs „im Tuto
 
 Frühkindliche Leitlinien (NAEYC, Wisconsin DCF) empfehlen **beschreibendes, spezifisches Feedback** statt generischem Lob („du hast die Bohnen wieder gezählt und dieselbe Zahl erhalten“ vs. „gute Arbeit“), da Spezifität einem Kind ermöglicht, das Feedback mit einer wiederholbaren Handlung zu verknüpfen [15]. Der Altersgradient verläuft von konkreter/sensorischer Sprache für kleine Kinder hin zu abstrakter metakognitiver Sprache (Strategie, warum, Transfer) für ältere Schüler*innen.
 
-## Design implications for Math Challenge
+## Designimplikationen für Math Challenge
 
 1. **Strukturiere jede Tutor‑Nachricht als Feed‑up / Feed‑back / Feed‑forward**: (a) das Ziel wiederholen, (b) sagen, was im Verhältnis dazu geschehen ist, (c) einen konkreten nächsten Schritt geben. Nie bei (b) stoppen — das lässt den wertvollsten Teil von Hattie & Timperleys Modell ungenutzt [1].
 

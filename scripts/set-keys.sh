@@ -32,6 +32,7 @@ KEYS=(
   "GOOGLE_AI_API_KEY|Piezas complejas de interfaz (Gemini / Nano Banana)|aistudio.google.com → API keys"
   "CLOUDFLARE_API_TOKEN|Workers AI: la inferencia que corre SOBRE Cloudflare — Larry y la flota adversarial (D-035, D-051)|dash.cloudflare.com → Manage Account → API Tokens (permiso: Workers AI Read+Edit)"
   "ANTHROPIC_API_KEY|Traducción del corpus con Sonnet 5 — herramienta de escritorio, fuera de Cloudflare (D-051)|console.anthropic.com → API keys"
+  "TURNSTILE_SECRET_KEY|Defensa de bots sobre el formulario público de registro (F2 #113). NO es verificación de edad ni biometría — no roza la línea roja #1|dash.cloudflare.com → Turnstile → math-challenge-turnstile-signup → Secret key"
 )
 
 # --- El ID de cuenta no es secreto: se deduce, no se pide -------------------

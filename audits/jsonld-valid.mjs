@@ -44,10 +44,51 @@
 
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { SEGMENTOS } from "../apps/web/src/i18n/rutas-tabla.mjs";
 
 const DIST = "apps/web/dist";
 const I18N = "apps/web/src/i18n/index.ts";
 const ORIGEN = "https://math.kilowatto.com";
+const MANIFIESTO = "apps/web/src/lib/corpus-verificado.json";
+
+// --- Documentos del corpus que YA se sabe que siguen en inglés -------------
+// `corpus.ts` cae a honestidad deliberada (D-… la traducción no verificada NO
+// se sirve): si `docs/research/<locale>/<file>.md` no pasó el auditor de
+// integridad, la página sirve el cuerpo en inglés y su ScholarlyArticle
+// declara `inLanguage: "en"` en vez de mentir. Sin esta lista ese
+// comportamiento correcto se ve idéntico a la plantilla mal copiada que la
+// regla de abajo sí busca cazar — y castigar la honestidad con un auditor en
+// rojo es exactamente el incentivo que empuja a alguien a mentir en su lugar.
+const VERIFICADOS = existsSync(MANIFIESTO) ? JSON.parse(readFileSync(MANIFIESTO, "utf8")) : {};
+function traduccionVerificada(locale, ruta) {
+  const m = /\/(mc-\d+-[a-z0-9-]+)\/[^/]*$/.exec(ruta);
+  if (!m) return true; // no es un documento del corpus: la regla no aplica
+  const slug = m[1];
+  return (VERIFICADOS[locale] ?? []).some((archivo) => archivo.includes(`-${slug}.md`));
+}
+
+// --- Normalizar el primer tramo de la ruta a su clave canónica (D-049) -----
+// `SEGMENTOS[locale][clave] = segmentoLocalizado` — p.ej. SEGMENTOS["de-DE"]
+// .investigacion === "forschung". Para agrupar "la misma página" entre
+// locales hace falta la operación inversa: dado un locale y su segmento
+// localizado, encontrar la clave canónica ("investigacion") que comparten
+// los siete. Sin esto, agrupar por ruta cruda compara "/forschung/mc-01/"
+// contra "/investigacion/mc-01/" — nunca son la misma clave, así que cada
+// documento parece "faltante" en seis de los siete locales aunque exista.
+const SEGMENTOS_INVERSOS = new Map(
+  Object.entries(SEGMENTOS).map(([locale, tabla]) => [
+    locale,
+    new Map(Object.entries(tabla).map(([clave, local]) => [local, clave])),
+  ]),
+);
+
+function normalizarRuta(ruta, locale) {
+  const partes = ruta.split("/").filter(Boolean);
+  if (partes.length === 0) return ruta;
+  const canonico = SEGMENTOS_INVERSOS.get(locale)?.get(partes[0]);
+  if (canonico) partes[0] = canonico;
+  return "/" + partes.join("/");
+}
 
 // Cobertura léxica mínima de la descripción del esquema sobre el texto visible.
 //
@@ -108,13 +149,13 @@ if (!existsSync(DIST)) {
 // ni de comilla, con espacios colapsados. Sin esto, el marcado y la página
 // difieren por un guion largo contra uno corto y el auditor grita por nada.
 const ENTIDADES = {
-  "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"',
+  "&amp;": "&", "&#38;": "&", "&#x26;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#34;": '"', "&#x22;": '"',
   "&#39;": "'", "&#x27;": "'", "&apos;": "'", "&nbsp;": " ", "&mdash;": "—", "&ndash;": "–",
 };
 
 function normalizar(texto) {
   return texto
-    .replace(/&(amp|lt|gt|quot|#39|#x27|apos|nbsp|mdash|ndash);/g, (e) => ENTIDADES[e] ?? e)
+    .replace(/&(amp|#38|#x26|lt|gt|quot|#34|#x22|#39|#x27|apos|nbsp|mdash|ndash);/g, (e) => ENTIDADES[e] ?? e)
     .normalize("NFKD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
@@ -257,6 +298,7 @@ for (const archivo of todas) {
   const primerTramo = rel.split("/")[0];
   const locale = LOCALES.includes(primerTramo) ? primerTramo : null;
   const ruta = locale ? "/" + rel.slice(primerTramo.length + 1) : "/" + rel;
+  const rutaCanonica = locale ? normalizarRuta(ruta, locale) : ruta;
 
   const nodos = [];
   const referencias = [];
@@ -330,6 +372,9 @@ for (const archivo of todas) {
     for (const entrada of conIdioma) {
       const { nodo } = entrada;
       const decl = typeof nodo.inLanguage === "string" ? nodo.inLanguage : nodo.inLanguage?.["@id"] ?? "";
+      if (decl === "en" && [nodo["@type"]].flat().includes("ScholarlyArticle") && !traduccionVerificada(locale, ruta)) {
+        continue; // caída honesta a inglés en un documento aún no traducido — no es el bug que esta regla busca
+      }
       if (decl !== locale) {
         problemas.push(`${rel}: inLanguage "${decl}" en ${etiqueta(entrada)}, pero la página es "${locale}".`);
       }
@@ -417,6 +462,7 @@ for (const archivo of todas) {
     rel,
     locale,
     ruta,
+    rutaCanonica,
     tipos: [...new Set(nodos.flatMap(({ nodo }) => [nodo["@type"]].flat()).filter(Boolean))].sort(),
   });
 }
@@ -424,13 +470,16 @@ for (const archivo of todas) {
 // --- Los siete locales, y el mismo esquema en los siete --------------------
 // mc-48 §3: los tipos deben permanecer consistentes entre idiomas — no se usa
 // Course en español y Article en alemán para la misma página. Se agrupa por
-// ruta sin locale para que la comparación siga funcionando cuando el sitio
-// tenga más de una página por idioma.
+// `rutaCanonica` (el segmento de sección normalizado a su clave D-049, p.ej.
+// "forschung" y "pesquisa" ambos vuelven a "investigacion") y NO por `ruta`
+// cruda: como cada locale traduce su propio segmento de sección, agrupar por
+// ruta cruda nunca encuentra la misma clave dos veces y reporta cada página
+// como "faltante" en los otros seis locales aunque exista.
 const porRuta = new Map();
 for (const p of analizadas) {
   if (!p.locale) continue;
-  if (!porRuta.has(p.ruta)) porRuta.set(p.ruta, []);
-  porRuta.get(p.ruta).push(p);
+  if (!porRuta.has(p.rutaCanonica)) porRuta.set(p.rutaCanonica, []);
+  porRuta.get(p.rutaCanonica).push(p);
 }
 
 for (const [ruta, versiones] of porRuta) {

@@ -339,3 +339,45 @@ recomendación de cada una en §8 del plan. Lo que se decida va a
 cada entrada de arriba ya tiene mi recomendación, así que basta con confirmarla o
 cambiarla. Lo que se decida va a `docs/decisions.md` con fecha, y la entrada
 desaparece de aquí.
+
+## F2 · Cómo quitar `birth_month` sin apagar un guardián de línea roja · 2026-08-01
+
+**El hecho.** D-053 decidió que del niño se pide solo el año.
+`child_profiles.birth_month` es `NOT NULL`, así que dejar de pedirlo no basta:
+quien inserte un perfil tiene que dar un valor. Quitar la columna exige la
+reconstrucción de 12 pasos de SQLite, y `audits/migration-safety.mjs` la bloquea:
+
+    la reconstrucción de child_profiles deja fuera la columna "birth_month":
+    es un DROP COLUMN escrito de otra forma
+
+Sobre `child_profiles` ese bloqueo **no se puede anular con un comentario**,
+igual que sobre `consent_records`, y eso es deliberado: el borrado de datos de un
+menor va por el runbook de erasure, que toca cuatro sistemas (`mc-32` riesgo #7).
+
+**Lo que asumí para no detenerme.** La migración 0004 salió sin esa parte, con el
+residuo escrito en el propio archivo. `birth_month` sigue existiendo y sigue
+siendo `NOT NULL`; la puerta del padre **no lo va a preguntar**.
+
+**La tensión, en una frase.** El auditor protege contra perder datos de un menor
+sin querer. Aquí perderlos es el objetivo — es minimización, D-013 funcionando,
+no fallando. La regla mecánica no distingue las dos cosas porque desde el SQL se
+ven idénticas.
+
+**Tres salidas, con lo que cuesta cada una:**
+
+1. **Un marcador propio y más estrecho**, distinto del genérico:
+   `-- migration-safety-minimizacion: birth_month — <razón>`, que además **exija
+   nombrar la columna**. Un borrado accidental nunca nombra la columna que borra,
+   así que el bloqueo sigue en pie para el caso que importa. Es la que
+   recomiendo, y es un cambio a un guardián de línea roja: necesita tu visto
+   bueno explícito, no el mío.
+2. **Dejar la columna y no escribirla**: cambiarla a nullable. Exige la MISMA
+   reconstrucción de 12 pasos, así que no evita nada — solo deja el dato a medias.
+3. **No quitarla nunca.** La puerta no la pregunta, el producto no la lee, y la
+   columna queda como residuo documentado. Cuesta cero hoy y cuesta una
+   explicación incómoda el día que alguien pregunte por qué el esquema guarda un
+   dato de un menor que nadie usa.
+
+**Por qué no la decidí solo:** tocar el auditor que vigila el borrado de datos de
+menores para permitir un borrado de datos de menores es exactamente el tipo de
+cambio que CLAUDE.md manda no hacer sin preguntar.

@@ -1604,3 +1604,95 @@ las dos que siguen abiertas no se pierdan entre 43 documentos.
 | T-6 | Nivel PhD: qué se puede calificar automáticamente de verdad y qué no | **Abierta.** No bloquea el MVP, que llega hasta N10 (D-034), pero define si el modo Pro es viable | `mc-12-advanced-proof-olympiad-phd.md` |
 | T-8 | Tipografía: D-031 exige "tipografía del sistema" por plataforma; `guia-de-estilo.md` fija Raleway. En el mismo elemento no pueden ser ciertas a la vez | **Cerrada** por D-036: la marca habla en Raleway, los controles en la voz del sistema. Fue la primera tensión que levantó la flota adversarial, no una persona | D-031, D-036, `docs/guia-de-estilo.md`, `mc-22` |
 | T-7 | La vía del adulto no tenía contenido en el MVP, y un club de adultos compitiendo en sumas de kinder no tiene sentido | **Cerrada** por D-034: el MVP lleva kinder completo más una franja mínima de contenido adulto (N8-N10), con barandales para que no crezca | D-009, D-028, D-034, `por-que-existe.md` |
+
+---
+
+## D-051 — Un solo consentimiento con gobierno: manda `child_consents` · 2026-08-01
+
+**Decisión del dueño:** `child_consents` + `consent_type_catalog` (migración
+0003) es donde vive el consentimiento; `consent_records` (migración 0001) se
+retira.
+
+**El problema que resuelve, que no era de estilo.** Las dos tablas guardaban el
+mismo hecho —un adulto consintiendo sobre un menor— y no se hablaban.
+`consent_records.consent_type` es `TEXT` libre, sin catálogo ni restricción;
+`child_consents.consent_code` pasa por `trg_consent_tipo_conocido`, que rechaza
+cualquier código que no esté en el catálogo. **La fila que prueba que un padre
+consintió podía caer en cualquiera de las dos, y solo una tenía gobierno.**
+
+Lo encontró la crítica adversarial de la espina de entrada de F2, y se verificó a
+mano: `migrations/0001_identity.sql:110` y `migrations/0003_accounts_onboarding.sql:75`.
+
+**Se congela, no se borra.** `consent_records` está en la lista de INTOCABLES de
+`audits/migration-safety.mjs`: su borrado va por el runbook de erasure, que toca
+cuatro sistemas (`mc-32` riesgo #7). La migración 0004 le pone
+`trg_consent_records_congelada`, que aborta todo `INSERT` con un mensaje que dice
+a dónde ir — un ABORT sin instrucción produce un reintento, no una corrección.
+Las filas que hubiera se quedan legibles.
+
+**Y el criterio #114 se enmienda.** Pedía
+`consent_type='child_profile_creation'`; ese string no existe en el esquema, el
+catálogo lo llama `CHILD_PROFILE`. Con el trigger de 0003 puesto, insertarlo
+habría fallado en tiempo de ejecución — o sea, un padre creando el perfil de su
+hijo y viendo un error. Se conserva `CHILD_PROFILE`.
+
+**Lo que faltaba al mover el gobierno:** `consent_records` tenía
+`consent_version` y `child_consents` no. Sin ella se puede probar QUE alguien
+consintió pero no QUÉ texto aceptó, que es la mitad que un regulador pide. La
+0004 añade `child_consents.consent_version` y
+`consent_type_catalog.current_version`.
+
+Verificado en local y en remoto: el `INSERT` con `child_profile_creation`
+devuelve `SQLITE_CONSTRAINT_TRIGGER` con el mensaje de D-051.
+
+---
+
+## D-052 — La cookie del dispositivo del hogar es `mc_h`, y respalda en D1 · 2026-08-01
+
+**Decisión del dueño:** manda el criterio #113, no el comentario de la migración.
+
+El bloque final de `0003_accounts_onboarding.sql:201` decía que las tres cookies
+de F2 son `mc_s`/`mc_k`/`mc_d` y que **las tres viven en KV**. Las dos cosas
+están mal, y el archivo se contradecía a sí mismo: `household_devices` es una
+tabla de **D1** cuya llave primaria es `device_token`, que es exactamente lo que
+la cookie del dispositivo lleva dentro.
+
+| cookie | qué identifica | respaldo | vida |
+|---|---|---|---|
+| `mc_s` | el adulto | KV | 30 días |
+| `mc_h` | el dispositivo del hogar (D-012) | **D1**, `household_devices` | 400 días |
+| `mc_k` | el perfil de niño activo | KV | 12 horas |
+
+Las tres `HttpOnly; Secure; SameSite=Lax` y **opacas**: un token que indexa, sin
+payload. `mc-25` impl. 6 —nada de perfilado sobre menores— es más fácil de
+sostener cuando no hay payload que perfilar.
+
+No hay cambio de esquema: `household_devices` ya servía. Lo que cambia es que el
+comentario dejaba de ser cierto, y un comentario falso sobre dónde vive una
+sesión es cómo alguien construye la mitad equivocada dentro de un año.
+
+---
+
+## D-053 — Del niño se pide el AÑO de nacimiento, no el mes · 2026-08-01
+
+**Decisión del dueño:** la puerta del padre pregunta **solo el año**. Enmienda el
+criterio #114, que pedía año y mes en dos `<select>`.
+
+**Por qué.** La banda se deriva del año. `birth_month` no alimenta ninguna
+decisión del producto, y es **12 veces más precisión sobre la identidad de un
+menor** de la que hace falta para nada que hagamos. La línea roja #2 prohíbe la
+fecha exacta; el mes no es la fecha exacta, pero tampoco es gratis: es un campo
+más en la puerta y un dato más que proteger, borrar y explicar.
+
+Lo que **no** cambia: sigue prohibido `<input type="date">` en esa ruta. Un
+selector de fecha *tiene* día, y el día no se pide. Que ahora haya un solo
+`<select>` en vez de dos no relaja esa prohibición, la hace más fácil de cumplir.
+
+**Lo que esta decisión NO resolvió, y está en `docs/dudas.md`:** cómo quitar la
+columna. `child_profiles.birth_month` es `NOT NULL`, y quitarla exige la
+reconstrucción de 12 pasos de SQLite, que `audits/migration-safety.mjs` bloquea
+sobre `child_profiles` sin posibilidad de anulación por comentario — a propósito.
+El auditor protege la regla correcta contra el caso contrario al nuestro (perder
+datos de un menor sin querer); aquí perderlos **es** el objetivo. Resolver esa
+tensión toca un guardián de línea roja y no se hace de paso. Sale en la migración
+`0005` con el mecanismo decidido antes.

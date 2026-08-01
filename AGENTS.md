@@ -1,3 +1,13 @@
+## Trabajo en curso — 2026-08-01
+
+**Sesión activa:** Claude Code (Sonnet 5), rama `content/traduccion-es-MX`, traduciendo
+`es-MX` directamente (Claude como traductor, no la cadena Workers AI de este
+archivo) vía agentes en paralelo, por instrucción directa del dueño en esta
+sesión. Si otra sesión ve esta nota y la rama sigue viva, hay traducción en
+curso — coordinar antes de tocar `docs/research/es-MX/`.
+
+---
+
 # AGENTS.md — traducción del corpus de investigación
 
 > Este archivo existe para **un agente que llega a traducir y no conoce el

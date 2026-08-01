@@ -114,6 +114,8 @@ for (const [name, what, enforces] of ACTIVE) {
 // JavaScript: se ejecuta el MISMO archivo que se despliega, no una copia
 // compilada que podría diferir.
 for (const prueba of [
+  "packages/motor/src/alias.prueba.mjs",
+  "packages/motor/src/pin-imagenes.prueba.mjs",
   "apps/web/src/lib/passwords.prueba.mjs",
   "apps/web/src/lib/sesiones.prueba.mjs",
   "packages/motor/src/puntuacion.prueba.mjs",

@@ -122,7 +122,7 @@ for (const archivo of fuentes) {
 }
 
 if (conSenal > 0) notas.unshift(`${conSenal} uso(s) de la señal de borrado, ninguno tocando el puntaje (D-020 la permite guardar)`);
-else notas.unshift("todavía no hay motor de puntuación; el auditor está listo para el primero");
+else notas.unshift("ningún uso de la señal de borrado en el código — nada que penalizar todavía");
 
 informar({
   nombre: "sin-penalizacion",

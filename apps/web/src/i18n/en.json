@@ -120,5 +120,8 @@
   "installIosStep1": "Tap",
   "installIosShare": "Share",
   "installIosStep2": "and then",
-  "installIosAdd": "Add to Home Screen"
+  "installIosAdd": "Add to Home Screen",
+  "markDismiss": "Dismiss",
+  "markProfileNotUser": "Your child is a profile inside your account — never a user. They have no email, no password of their own, and nothing they write is stored, because they never write anything.",
+  "markAgeVsDifficulty": "Age decides how the app LOOKS; a placement decides where they START. Two separate axes, on purpose: a seven-year-old can be at level 2 and another at level 5, and both see the same interface."
 }

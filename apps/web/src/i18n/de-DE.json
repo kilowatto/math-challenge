@@ -120,5 +120,8 @@
   "installIosStep1": "Tippen Sie auf",
   "installIosShare": "Teilen",
   "installIosStep2": "und dann auf",
-  "installIosAdd": "Zum Home-Bildschirm"
+  "installIosAdd": "Zum Home-Bildschirm",
+  "markDismiss": "Schließen",
+  "markProfileNotUser": "Ihr Kind ist ein Profil in Ihrem Konto — nie ein Benutzerkonto. Keine E-Mail, kein eigenes Passwort, und nichts, was es schreibt, wird gespeichert — denn es schreibt nie etwas.",
+  "markAgeVsDifficulty": "Das Alter entscheidet, wie die App AUSSIEHT; ein Einstufungstest entscheidet, wo das Kind ANFÄNGT. Zwei getrennte Achsen, mit Absicht: ein siebenjähriges Kind kann auf Stufe 2 sein und ein anderes auf Stufe 5, und beide sehen dieselbe Oberfläche."
 }

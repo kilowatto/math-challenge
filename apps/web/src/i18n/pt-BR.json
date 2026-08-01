@@ -120,5 +120,8 @@
   "installIosStep1": "Toque em",
   "installIosShare": "Compartilhar",
   "installIosStep2": "e depois em",
-  "installIosAdd": "Adicionar à Tela de Início"
+  "installIosAdd": "Adicionar à Tela de Início",
+  "markDismiss": "Fechar",
+  "markProfileNotUser": "Seu filho é um perfil dentro da sua conta — nunca um usuário. Não tem e-mail, não tem senha própria, e nada do que ele escreve é guardado, porque ele nunca escreve nada.",
+  "markAgeVsDifficulty": "A idade decide como o app APARECE; um teste de nivelamento decide onde ele COMEÇA. Dois eixos separados, de propósito: uma criança de sete anos pode estar no nível 2 e outra no 5, e as duas veem a mesma interface."
 }

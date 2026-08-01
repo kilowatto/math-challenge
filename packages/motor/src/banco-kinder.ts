@@ -24,7 +24,7 @@
  * reales cometen, así que **todo esto pasa por revisión humana antes de F5**.
  */
 
-import type { Item, Formato } from "./item.ts";
+import type { Item, Formato, Proposito, Variacion } from "./item.ts";
 
 /** Las 14 habilidades de kinder (plan §9). */
 export const HABILIDADES_KINDER = {
@@ -51,11 +51,11 @@ export interface Plantilla {
   habilidad: HabilidadKinder;
   formato: Formato;
   nivel: number;
-  proposito: string;
+  proposito: Proposito;
   /** Genera un ítem concreto a partir de sus parámetros. */
-  generar(params: Record<string, number>, variacion: string | null): Item;
+  generar(params: Record<string, number>, variacion: Variacion | null): Item;
   /** Los juegos de parámetros que esta plantilla admite. */
-  parametros(): Array<{ params: Record<string, number>; variacion: string }>;
+  parametros(): Array<{ params: Record<string, number>; variacion: Variacion }>;
 }
 
 const id = (h: string, p: Record<string, number>) =>
@@ -71,7 +71,7 @@ export const K11: Plantilla = {
   habilidad: "K11",
   formato: "toca_la_respuesta",
   nivel: 2,
-  proposito: "sumar contando desde el sumando mayor",
+  proposito: "interpretar",
   generar({ a, b }, variacion) {
     return {
       id: id("K11", { a, b }),
@@ -87,7 +87,7 @@ export const K11: Plantilla = {
         { valor: Math.abs(a - b), causa: "error.resto" },
         { valor: a + b + 1, causa: "error.conto_el_primero_dos_veces" },
       ].filter((e) => e.valor !== a + b),
-      proposito: "sumar contando desde el sumando mayor",
+      proposito: "interpretar",
       contexto: "los patos del lago de Larry",
       variacion,
     };
@@ -97,7 +97,14 @@ export const K11: Plantilla = {
     for (const a of rango(1, 5)) {
       for (const b of rango(1, 5)) {
         if (a + b > 10) continue;
-        out.push({ params: { a, b }, variacion: `sumando mayor ${Math.max(a, b)}` });
+        out.push({
+          params: { a, b },
+          variacion: {
+            varia: `el sumando mayor pasa a ${Math.max(a, b)}`,
+            constante: "sumar contando desde el mayor",
+            por_que: "cambiar solo el mayor deja ver que la estrategia no cambia con el número",
+          },
+        });
       }
     }
     return out;
@@ -111,7 +118,7 @@ export const K12: Plantilla = {
   habilidad: "K12",
   formato: "toca_la_respuesta",
   nivel: 2,
-  proposito: "restar quitando de un conjunto visible",
+  proposito: "interpretar",
   generar({ a, b }, variacion) {
     return {
       id: id("K12", { a, b }),
@@ -125,7 +132,7 @@ export const K12: Plantilla = {
         { valor: b - a, causa: "error.resto_al_reves" },
         { valor: a - b - 1, causa: "error.conto_el_que_quita" },
       ].filter((e) => e.valor !== a - b),
-      proposito: "restar quitando de un conjunto visible",
+      proposito: "interpretar",
       contexto: "los patos que se van volando",
       variacion,
     };
@@ -134,7 +141,14 @@ export const K12: Plantilla = {
     const out: Array<{ params: Record<string, number>; variacion: string }> = [];
     for (const a of rango(2, 10)) {
       for (const b of rango(1, a - 1)) {
-        out.push({ params: { a, b }, variacion: `se quitan ${b}` });
+        out.push({
+          params: { a, b },
+          variacion: {
+            varia: `se quitan ${b}`,
+            constante: "el conjunto de partida se ve entero antes de quitar",
+            por_que: "variar cuántos se quitan sin cambiar el total separa quitar de contar",
+          },
+        });
       }
     }
     return out;
@@ -148,7 +162,7 @@ const contar = (habilidad: "K03" | "K04", tope: number, nivel: number): Plantill
   habilidad,
   formato: "toca_para_contar",
   nivel,
-  proposito: `contar uno a uno hasta ${tope}, y decir cuántos hay al final`,
+  proposito: "interpretar",
   generar({ n }, variacion) {
     return {
       id: id(habilidad, { n }),
@@ -161,14 +175,21 @@ const contar = (habilidad: "K03" | "K04", tope: number, nivel: number): Plantill
         { valor: n - 1, causa: "error.se_salto_uno" },
         { valor: n + 1, causa: "error.conto_uno_dos_veces" },
       ],
-      proposito: `contar uno a uno hasta ${tope}, y decir cuántos hay al final`,
+      proposito: "interpretar",
       contexto: "los patos del lago de Larry",
       variacion,
     };
   },
   parametros() {
     const desde = habilidad === "K03" ? 1 : 11;
-    return rango(desde, tope).map((n) => ({ params: { n }, variacion: `${n} objetos` }));
+    return rango(desde, tope).map((n) => ({
+      params: { n },
+      variacion: {
+        varia: `${n} objetos que contar`,
+        constante: "se toca cada uno una vez y el último dice cuántos hay",
+        por_que: "cambiar la cantidad sin cambiar el gesto enseña la cardinalidad",
+      },
+    }));
   },
 });
 
@@ -182,7 +203,7 @@ const subitizar = (habilidad: "K01" | "K02", desde: number, hasta: number): Plan
   habilidad,
   formato: "flash",
   nivel: 1,
-  proposito: `reconocer de golpe cuántos hay, sin contar (${desde}-${hasta})`,
+  proposito: "clasificar",
   generar({ n }, variacion) {
     return {
       id: id(habilidad, { n }),
@@ -195,12 +216,19 @@ const subitizar = (habilidad: "K01" | "K02", desde: number, hasta: number): Plan
         { valor: n - 1, causa: "error.subestimo" },
         { valor: n + 1, causa: "error.sobreestimo" },
       ].filter((e) => e.valor >= 1),
-      proposito: `reconocer de golpe cuántos hay, sin contar (${desde}-${hasta})`,
+      proposito: "clasificar",
       variacion,
     };
   },
   parametros() {
-    return rango(desde, hasta).map((n) => ({ params: { n }, variacion: `${n} puntos` }));
+    return rango(desde, hasta).map((n) => ({
+      params: { n },
+      variacion: {
+        varia: `${n} puntos`,
+        constante: "la exposición es la misma y no da tiempo a contar",
+        por_que: "subir la cantidad sin dar tiempo marca dónde acaba el subitizar",
+      },
+    }));
   },
 });
 
@@ -214,7 +242,7 @@ export const K10: Plantilla = {
   habilidad: "K10",
   formato: "arma_el_numero",
   nivel: 2,
-  proposito: "ver que un número se arma de varias formas (5 = 2+3 = 1+4)",
+  proposito: "crear",
   generar({ total, parte }, variacion) {
     return {
       id: id("K10", { total, parte }),
@@ -228,7 +256,7 @@ export const K10: Plantilla = {
         { valor: parte, causa: "error.repitio_la_parte" },
         { valor: total + parte, causa: "error.sumo_en_vez_de_completar" },
       ].filter((e) => e.valor !== total - parte),
-      proposito: "ver que un número se arma de varias formas (5 = 2+3 = 1+4)",
+      proposito: "crear",
       variacion,
     };
   },
@@ -236,7 +264,14 @@ export const K10: Plantilla = {
     const out: Array<{ params: Record<string, number>; variacion: string }> = [];
     for (const total of rango(3, 10)) {
       for (const parte of rango(1, total - 1)) {
-        out.push({ params: { total, parte }, variacion: `descomponer ${total}` });
+        out.push({
+          params: { total, parte },
+          variacion: {
+            varia: `la parte que ya está es ${parte}`,
+            constante: `el total sigue siendo ${total}`,
+            por_que: "el mismo total con partes distintas es lo que enseña que se arma de varias formas",
+          },
+        });
       }
     }
     return out;
@@ -250,7 +285,7 @@ export const K07: Plantilla = {
   habilidad: "K07",
   formato: "cual_sobra",
   nivel: 1,
-  proposito: "comparar dos conjuntos sin contarlos uno por uno",
+  proposito: "clasificar",
   generar({ a, b }, variacion) {
     const mayor = Math.max(a, b);
     return {
@@ -261,7 +296,7 @@ export const K07: Plantilla = {
       enunciado: { clave: "k.comparar.grupos", vars: { a, b } },
       respuesta: { valor: mayor, tol: 0 },
       errores: [{ valor: Math.min(a, b), causa: "error.eligio_el_menor" }],
-      proposito: "comparar dos conjuntos sin contarlos uno por uno",
+      proposito: "clasificar",
       variacion,
     };
   },
@@ -269,7 +304,14 @@ export const K07: Plantilla = {
     const out: Array<{ params: Record<string, number>; variacion: string }> = [];
     for (const a of rango(1, 9)) {
       for (const b of rango(a + 1, 10)) {
-        out.push({ params: { a, b }, variacion: `diferencia de ${b - a}` });
+        out.push({
+          params: { a, b },
+          variacion: {
+            varia: `la diferencia entre los grupos es ${b - a}`,
+            constante: "los dos grupos se ven completos a la vez",
+            por_que: "acercar los tamaños obliga a comparar en vez de mirar cuál se ve más largo",
+          },
+        });
       }
     }
     return out;

@@ -76,21 +76,59 @@ export interface Item {
    */
   tambienCorrectas?: Array<{ valor: number | string; razon: string }>;
   /**
-   * El propósito del reto y su apertura (`mc-36`).
+   * El propósito, y son **los cinco de Swan** (`mc-36`), no texto libre.
    *
-   * `proposito` dice qué se aprende; `contexto` es la situación. Un ítem sin los
-   * dos es cálculo pelón, que es lo que `mc-36` documenta que no engancha ni
-   * enseña transferencia.
+   * Un enum y no una cadena porque «cálculo pelón» no es un propósito que
+   * alguien escriba: es lo que queda cuando el campo admite cualquier cosa y
+   * alguien pone «practicar sumas». Con cinco opciones cerradas, elegir obliga a
+   * decidir qué clase de tarea es, que es justo lo que `mc-36` pide.
    */
-  proposito: string;
+  proposito: Proposito;
   contexto?: string;
   /**
-   * El eje de variación respecto al ítem anterior de su serie (`mc-02`).
+   * La variación respecto al ítem anterior, como ESTRUCTURA (`mc-02`).
    *
-   * La enseñanza con variación china cambia **una** cosa a la vez y a propósito.
-   * `null` solo se acepta en el primero de una serie.
+   * Tres campos y los tres obligatorios: qué **varía**, qué se mantiene
+   * **constante**, y **por qué**. La enseñanza con variación china cambia una
+   * cosa a la vez a propósito, y el `por_que` es lo que distingue una variación
+   * decidida de dos ítems que casualmente se parecen.
+   *
+   * **La tercera opción no se puede expresar.** «Toma N ítems al azar del nivel»
+   * no cabe en este esquema: no hay dónde escribir qué varía si nadie lo
+   * decidió. Esa imposibilidad es el punto — un campo opcional se rellena con
+   * `"aleatorio"` y el problema vuelve.
    */
-  variacion: string | null;
+  variacion: Variacion | null;
+}
+
+/**
+ * Los cinco tipos de tarea de Malcolm Swan (`mc-36`).
+ *
+ * No son etiquetas: cada uno produce una actividad distinta. Un banco entero de
+ * `calcular` es exactamente el «cálculo pelón» que la investigación dice que no
+ * enseña transferencia.
+ */
+export type Proposito =
+  /** Clasificar objetos matemáticos: ¿qué tienen en común, cuál sobra? */
+  | "clasificar"
+  /** Interpretar representaciones múltiples: el mismo 7 como puntos, marco y número. */
+  | "interpretar"
+  /** Evaluar afirmaciones: ¿es cierto que sumar siempre da más? */
+  | "evaluar"
+  /** Crear problemas: inventa uno que dé 7. */
+  | "crear"
+  /** Analizar razonamientos: ¿por qué contó mal? */
+  | "analizar";
+
+export const PROPOSITOS: Proposito[] = ["clasificar", "interpretar", "evaluar", "crear", "analizar"];
+
+export interface Variacion {
+  /** Qué cambia respecto al ítem anterior. */
+  varia: string;
+  /** Qué se mantiene igual — la mitad que casi siempre se olvida. */
+  constante: string;
+  /** Por qué ESE cambio enseña algo. Sin esto, es azar con nombre. */
+  por_que: string;
 }
 
 /** Lo que el servidor devuelve tras calificar. Larry recibe esto, no calcula. */
@@ -181,8 +219,23 @@ export function validarItem(item: Item): string[] {
     );
   }
 
-  if (!item.proposito || item.proposito.trim() === "") {
-    p.push("sin `proposito`: es cálculo pelón, y mc-36 documenta que eso no enseña transferencia");
+  if (!PROPOSITOS.includes(item.proposito)) {
+    p.push(
+      `propósito "${item.proposito}" no es uno de los cinco de Swan ` +
+        `(${PROPOSITOS.join(", ")}). mc-36: sin uno de esos, es cálculo pelón.`,
+    );
+  }
+
+  // La variación, como estructura y con sus tres campos.
+  if (item.variacion !== null) {
+    for (const campo of ["varia", "constante", "por_que"] as const) {
+      if (!item.variacion[campo] || String(item.variacion[campo]).trim() === "") {
+        p.push(
+          `variacion.${campo} vacío. mc-02 exige los tres: qué varía, qué se mantiene ` +
+            "constante y por qué. Sin el `por_que`, es azar con nombre.",
+        );
+      }
+    }
   }
 
   for (const c of item.tambienCorrectas ?? []) {

@@ -33,9 +33,25 @@ const SITEVERIFY = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 /** Cómo se llama el campo que el widget inyecta. Lo fija Cloudflare, no nosotros. */
 export const CAMPO_TOKEN = "cf-turnstile-response";
 
-export type ResultadoTurnstile =
-  | { ok: true }
-  | { ok: false; motivo: "no_configurado" | "sin_token" | "rechazado" | "red"; codigos?: string[] };
+export type MotivoTurnstile = "no_configurado" | "sin_token" | "rechazado" | "red";
+
+/**
+ * El resultado.
+ *
+ * **`motivo` está en las dos ramas**, y no es descuido. Como unión discriminada
+ * pura —`{ok:true} | {ok:false; motivo}`— TypeScript solo estrecha con un
+ * `if (!x.ok)` cuando el objeto es una variable local, y aquí viaja entre
+ * funciones: el resultado es `Property 'motivo' does not exist`, medido en
+ * `astro check`, sobre un código que en ejecución funciona.
+ *
+ * Con `motivo` opcional en el caso feliz, leerlo tras comprobar `ok` compila sin
+ * aserciones ni `as`, que es lo que se quería evitar.
+ */
+export type ResultadoTurnstile = {
+  ok: boolean;
+  motivo?: MotivoTurnstile;
+  codigos?: string[];
+};
 
 interface RespuestaSiteverify {
   success: boolean;

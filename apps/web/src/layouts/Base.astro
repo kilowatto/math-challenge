@@ -194,7 +194,15 @@ const jsonLd = {
           ))}
         </ul>
       </nav>
-      <p class="muted">{m.sponsor}</p>
+      {/* El enlace al repositorio, en TODAS las páginas — criterio de S0.
+          Va en el pie del layout y no en cada página porque así no puede
+          faltar: estaba en 350 de 372, y las 22 que no lo tenían eran las
+          portadas, arquitectura y niveles de cada locale. Un criterio que dice
+          "en cada página" se cumple en un solo sitio o no se cumple. */}
+      <p class="muted">
+        {m.sponsor}{" · "}
+        <a href="https://github.com/kilowatto/math-challenge" rel="noopener">{m.repoLink}</a>
+      </p>
     </footer>
 
     <style>

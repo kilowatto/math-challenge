@@ -93,6 +93,47 @@ if (!padre) {
   console.log(`  padre ya existía: #${padre.number}`);
 }
 
+// --- Borrar el borrador que acabamos de sustituir --------------------------
+//
+// Sin esto, la fase queda DOS VECES en el tablero: el borrador original y el
+// issue real. Y el que se ve arriba es el borrador, que no tiene sub-issues, no
+// enlaza PRs y no se mueve nunca — así que el tablero dice `Todo` con la fase a
+// medio hacer. Pasó con F3: tres criterios cerrados y la fila seguía en `Todo`.
+//
+// El borrador se identifica por ser DraftIssue con el mismo título. Se borra
+// después de crear el issue, nunca antes: si la creación falla, el borrador
+// sigue ahí y no se ha perdido nada.
+if (item.content?.type === "DraftIssue") {
+  try {
+    gh("project", "item-delete", PROYECTO, "--owner", DUENO, "--id", item.id);
+    console.log(`  borrador sustituido y borrado del tablero`);
+  } catch (err) {
+    console.error(`  ! no pude borrar el borrador: ${String(err.stderr ?? err.message).slice(0, 120)}`);
+    console.error(`    Bórralo a mano o la fase quedará dos veces en el tablero.`);
+  }
+}
+
+// --- Ponerla en progreso ---------------------------------------------------
+// Abrir una fase ES empezarla. Dejarla en `Todo` con sus sub-issues creados es
+// exactamente la desincronización que este guion existe para evitar.
+try {
+  const proyectoId = gh("project", "view", PROYECTO, "--owner", DUENO, "--format", "json").match(/"id":"([^"]+)"/)?.[1];
+  const campos = JSON.parse(gh("project", "field-list", PROYECTO, "--owner", DUENO, "--format", "json"));
+  const estado = campos.fields.find((f) => f.name === "Status");
+  const enProgreso = estado?.options?.find((o) => /in progress/i.test(o.name));
+  const itemsAhora = JSON.parse(
+    gh("project", "item-list", PROYECTO, "--owner", DUENO, "--format", "json", "--limit", "200"),
+  ).items;
+  const fila = itemsAhora.find((i) => i.content?.number === padre.number);
+  if (proyectoId && estado && enProgreso && fila) {
+    gh("project", "item-edit", "--id", fila.id, "--project-id", proyectoId,
+       "--field-id", estado.id, "--single-select-option-id", enProgreso.id);
+    console.log(`  estado: In Progress`);
+  }
+} catch (err) {
+  console.error(`  ! no pude mover el estado: ${String(err.stderr ?? err.message).slice(0, 120)}`);
+}
+
 // --- Los sub-issues --------------------------------------------------------
 const yaHijos = JSON.parse(gh("api", `repos/${REPO}/issues/${padre.number}/sub_issues`));
 const titulosHijos = new Set(yaHijos.map((h) => h.title));

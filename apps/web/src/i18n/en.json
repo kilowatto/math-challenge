@@ -28,5 +28,6 @@
   "research": "Forty-seven studies, about 157,000 words, with cited sources and declared limitations — including the passages where the evidence contradicts this product.",
   "statusHeading": "Status",
   "status": "In construction. No public release yet.",
-  "sponsor": "A project by Ignia, running on Cloudflare."
+  "sponsor": "A project by Ignia, running on Cloudflare.",
+  "repoLink": "Open source, AGPL-3.0"
 }

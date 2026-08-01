@@ -8,7 +8,7 @@ Foram investigadas nove tradições associadas a “métodos orientais”: Kumon
 
 ## Resumo executivo (prosa)
 
-Nove tradições agrupadas de forma flexível sob a pedagogia de matemática “oriental” ou baseada em drill foram investigadas: Kumon, cálculo mental com ábaco/soroban (UCMAS, Aloha), matemática védica, o sistema Trachtenberg, a tradição russa (círculos de matemática, Zvonkin, escolas Kolmogorov, Russian School of Mathematics), a tradição húngara de descoberta guiada (Pólya/Varga Tamás), a educação matemática finlandesa e a prática coreana/taiwanesa. A qualidade da evidência varia drasticamente. O treinamento com ábaco mental tem pesquisa controlada genuína por trás (um ensaio randomizado em *Child Development*, artigos de cognição em *Cognition* e *Cognitive Science*). Kumon tem essencialmente um estudo antigo, metodologicamente fraco, e depende de depoimentos institucionais. A matemática védica é, segundo o relato de matemáticos que a analisaram, uma invenção do século XX sem fonte védica verificada, e seus atalhos não superam consistentemente a aritmética convencional em complexidade. As franquias comerciais de ábaco (UCMAS, Aloha) baseiam-se em um mecanismo cognitivo real, mas adicionam reivindicações de marketing (“memória fotográfica”, “desenvolvimento de todo o cérebro”) que a pesquisa não sustenta nessa escala. A Finlândia — o contra-exemplo ao drilling por duas décadas — registrou uma queda sustentada na matemática do PISA (548 em 2006 para 484 em 2022). Os sistemas do Leste Asiático superam a Finlândia por 40-90 pontos no PISA 2022, mas coexistem com uma cultura de hagwon/buxiban que produz estresse elevado e ansiedade matemática documentada. A ansiedade matemática em si é bem estudada: testes cronometrados e de alto risco são um fator causal, e estudantes com alta ansiedade perdem, em média, 34 pontos PISA — um ano escolar completo. Um modo de jogo inspirado nessas tradições deve adotar o mecanismo (incrementos pequenos, repetição espaçada, visualização, descoberta guiada) descartando tanto o marketing pseudocientífico quanto o cronômetro de alto risco.
+Nove tradições agrupadas de forma flexível sob a pedagogia de matemática “oriental” ou baseada em drill foram investigadas: Kumon, cálculo mental com ábaco/soroban (UCMAS, Aloha), matemática védica, o sistema Trachtenberg, a tradição russa (círculos de matemática, Zvonkin, escolas Kolmogorov, Russian School of Mathematics), a tradição húngara de descoberta guiada (Pólya/Varga Tamás), a educação matemática finlandesa e a prática coreana/taiwanesa. A qualidade da evidência varia drasticamente. O treinamento com ábaco mental tem pesquisa controlada genuína por trás (um ensaio randomizado em *Child Development*, artigos de cognição em *Cognition* e *Cognitive Science*). Kumon tem essencialmente um estudo antigo, metodologicamente fraco, e depende de depoimentos institucionais. A matemática védica é, segundo o relato de matemáticos que a analisaram, uma invenção do século 20 sem fonte védica verificada, e seus atalhos não superam consistentemente a aritmética convencional em complexidade. As franquias comerciais de ábaco (UCMAS, Aloha) baseiam-se em um mecanismo cognitivo real, mas adicionam reivindicações de marketing (“memória fotográfica”, “desenvolvimento de todo o cérebro”) que a pesquisa não sustenta nessa escala. A Finlândia — o contra-exemplo ao drilling por duas décadas — registrou uma queda sustentada na matemática do PISA (548 em 2006 para 484 em 2022). Os sistemas do Leste Asiático superam a Finlândia por 40-90 pontos no PISA 2022, mas coexistem com uma cultura de hagwon/buxiban que produz estresse elevado e ansiedade matemática documentada. A ansiedade matemática em si é bem estudada: testes cronometrados e de alto risco são um fator causal, e estudantes com alta ansiedade perdem, em média, 34 pontos PISA — um ano escolar completo. Um modo de jogo inspirado nessas tradições deve adotar o mecanismo (incrementos pequenos, repetição espaçada, visualização, descoberta guiada) descartando tanto o marketing pseudocientífico quanto o cronômetro de alto risco.
 
 ## Resultados
 
@@ -44,7 +44,7 @@ verificado**.
 
 ### Soroban / ábaco e cálculo mental anzan (UCMAS, Aloha)
 
-O soroban chegou ao Japão da China no século XIV e se padronizou em sua forma
+O soroban chegou ao Japão da China no século 14 e se padronizou em sua forma
 moderna de 1-bola-sobre-4-contas na década de 1940; ainda é ensinado nas
 escolas primárias japonesas como auxílio ao cálculo mental [2]. **Anzan**
 (cálculo mental baseado em ábaco, AMC) executa as quatro operações manipulando
@@ -80,7 +80,7 @@ existia apenas em uma versão “encontrada por ele” pessoalmente — não ver
 [3]. O consenso acadêmico, representado aqui pelo matemático S. G. Dani (IIT
 Bombay), é que o conteúdo compartilha “praticamente nada” com a matemática
 védica real: a notação decimal, central a várias técnicas, chegou à Índia
-apenas no século XVI; o sânscrito é linguisticamente moderno, não do período
+apenas no século 16; o sânscrito é linguisticamente moderno, não do período
 védico; e o corpus védico não mostra vestígios das ideias matemáticas
 envolvidas [3]. A objeção pedagógica de Dani: o livro ensina “uma coleção de
 métodos sem qualquer rigor conceitual”, e ele alerta contra financiamento

@@ -112,7 +112,7 @@ Google Classroom: cada turma tem um **código de classe** gerado automaticamente
 7. Wikipedia — Roblox (histórico de verificação de idade e controles parentais, rollout nov 2024 / dez 2025–jan 2026, fornecedor Persona): https://en.wikipedia.org/wiki/Roblox  
 8. Prodigy — Página de destino para pais (Membership/painel do pai): https://webflow.prodigygame.com/main-en/parents  
 9. FTC — Cumprindo a COPPA: Perguntas Frequentes (programas safe-harbor, métodos VPC enumerados): https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions  
-10. Wikipedia — Children's Online Privacy Protection Act (aprovação FMVPI 19 nov 2015; status legislativo da COPPA 2.0): https://en.wikipedia.org/wiki/Children%27s_Online_Privacy_Protection_Act  
+10. Wikipedia — Children's Online Privacy Protection Act (aprovação FMVPI 19 nov 2015; status legislativo da COPPA 2,0): https://en.wikipedia.org/wiki/Children%27s_Online_Privacy_Protection_Act  
 11. k-ID — Visão geral da empresa/produto (AgeKit, AgeKit+, Family Connect, AgeKey, neimo): https://www.k-id.com/  
 12. Google Support — Entrar em uma turma com código de turma: https://support.google.com/edu/classroom/answer/6020282  
 13. Wikipedia — Clever (empresa): https://en.wikipedia.org/wiki/Clever_(company)  

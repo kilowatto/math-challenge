@@ -107,7 +107,7 @@ Uma meta‑análise de 2023 (*Educational Technology Research and Development*) 
 2. A gravidade da quebra de racha deve variar por faixa etária (mais suave para 4‑7 anos) ou permanecer uma regra única para todas as idades?
 3. As notificações push devem estar desativadas por defeito para perfis geridos por crianças, exigindo opt‑in apenas através de uma conta de pai/mãe/guardião?
 4. Uma escada de liga semanal está no âmbito do lançamento, ou deve aguardar até que a base de utilizadores ativos por faixa etária/ano escolar seja suficientemente grande para coortes de emparelhamento significativas?
-5. O Math Challenge deve comprometer‑se a uma re‑medição dos métricos de envolvimento a 60/90 dias a partir do dia 1, dado o alerta consistente da literatura de que os resultados iniciais exageram o efeito duradouro?
+5. O Math Challenge deve comprometer‑se a uma re‑medição dos métricos de envolvimento a 60/90 dias a partir do dia um, dado o alerta consistente da literatura de que os resultados iniciais exageram o efeito duradouro?
 
 ## Fontes
 

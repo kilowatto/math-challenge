@@ -46,7 +46,7 @@ Nenhuma fonte descreveu um fluxo de tradução específico para matemática, pel
 
 ### Valores reais de custo por item na indústria de avaliação
 
-Nenhum encontrado e independentemente verificado nesta sessão. As tentativas de obtenção nas páginas de recursos da AIR, NCIEA e ETS devolvem 404 ou não apresentam cifras de custo; a página principal de investigação da ETS indica apenas “11.9K publications”, sem cifra de custo [ETS research page]. Blogs da indústria costumam citar custos por item na ordem de alguns milhares de dólares — mas como nenhuma fonte primária foi obtida ao vivo nesta sessão, essa cifra **não** é utilizada abaixo. O modelo de custos deriva inteiramente dos preços declarados das APIs de LLM e de suposições explícitas e rotuladas de pessoa‑dia.
+Nenhum encontrado e independentemente verificado nesta sessão. As tentativas de obtenção nas páginas de recursos da AIR, NCIEA e ETS devolvem 404 ou não apresentam cifras de custo; a página principal de investigação da ETS indica apenas “11,9K publications”, sem cifra de custo [ETS research page]. Blogs da indústria costumam citar custos por item na ordem de alguns milhares de dólares — mas como nenhuma fonte primária foi obtida ao vivo nesta sessão, essa cifra **não** é utilizada abaixo. O modelo de custos deriva inteiramente dos preços declarados das APIs de LLM e de suposições explícitas e rotuladas de pessoa‑dia.
 
 ## Tabela de referências
 

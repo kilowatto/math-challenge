@@ -1,4 +1,4 @@
-# Building and Operating a 2,500-Item Math Bank: What Real Learning Products Do
+# Building and Operating a 2.500-Item Math Bank: What Real Learning Products Do
 
 > Math Challenge Forschung — 2026-07-31 — Thema 40
 

@@ -20,7 +20,7 @@ MathML Core é um Snapshot de Candidate Recommendation da W3C (24 de junho de 20
 ## Resultados
 ### 1. WCAG 2.2: os novos critérios que mais impactam aqui
 
-WCAG 2.2 (outubro 2023) adicionou nove critérios de sucesso em relação ao 2.1. Mais relevantes para um jogo de matemática cronometrado, com toque como prioridade e arraste habilitado:
+WCAG 2.2 (outubro 2023) adicionou nove critérios de sucesso em relação ao 2,1. Mais relevantes para um jogo de matemática cronometrado, com toque como prioridade e arraste habilitado:
 
 - **2.5.8 Tamanho do Alvo (Mínimo) — AA.** “O alvo para entrada de ponteiro tem, no mínimo, 24 × 24 pixels CSS de tamanho, exceto quando: Equivalente… Inline… Controle do Agente do Usuário… Essencial.” [1] Um piso, não um teto — a UI para menores de 8 anos deve mirar bem acima disso.  
 - **2.5.7 Movimentos de Arraste — AA (novo).** “Funcionalidade que pode ser operada por movimentos de arraste também pode ser operada por ativações de ponteiro único sem arraste, a menos que o arraste seja essencial.” [10] Qualquer mecânica de “arrastar para a linha numérica” precisa de um equivalente de toque-para-posicionar.  
@@ -28,7 +28,7 @@ WCAG 2.2 (outubro 2023) adicionou nove critérios de sucesso em relação ao 2.1
 - **2.5.4 Atuação por Movimento — A.** Entrada por movimento do dispositivo também deve ser operável via componentes de UI, com resposta de movimento desativável [8] — relevante se “inclinar para responder” for considerado.  
 - **1.4.10 Refluxo — AA.** “O conteúdo pode ser apresentado sem perda de informação ou funcionalidade, e sem exigir rolagem em duas dimensões para: conteúdo de rolagem vertical em largura equivalente a 320 pixels CSS… Exceto para partes do conteúdo que requerem layout bidimensional para uso ou significado.” [13] Uma tela de geometria pode plausivelmente alegar a exceção; o chrome ao redor (botões, pontuação, instruções) não pode.  
 - **1.4.1 Uso de Cor — A.** “A cor não é usada como o único meio visual de transmitir informação, indicar uma ação, solicitar uma resposta ou distinguir um elemento visual.” [14] Diretamente implicado por feedback codificado por cor (correto/incorreto) ou níveis de dificuldade.  
-- Outras adições do 2.2 (Foco Não Obstruído, Aparência de Foco, Ajuda Consistente, Entrada Redundante, Autenticação Acessível) são mais relevantes para a camada de conta/portal; **3.3.8 Autenticação Acessível** vale sinalizar se algum bloqueio de perfil usar um puzzle ou teste cognitivo tipo CAPTCHA como método único.
+- Outras adições do 2,2 (Foco Não Obstruído, Aparência de Foco, Ajuda Consistente, Entrada Redundante, Autenticação Acessível) são mais relevantes para a camada de conta/portal; **3.3.8 Autenticação Acessível** vale sinalizar se algum bloqueio de perfil usar um puzzle ou teste cognitivo tipo CAPTCHA como método único.
 
 ### 2. O conflito de tempo, declarado com precisão
 
@@ -50,7 +50,7 @@ Incontroverso e barato: tipo maior, espaçamento de linha generoso, linhas mais 
 
 ### 6. TDAH e atenção em um app de aprendizagem gamificado
 
-O trabalho de Acessibilidade Cognitiva (COGA) da W3C mapeia para três cabeçalhos de diretriz WCAG: **2.2 Tempo Suficiente**, **2.4 Navegável**, **3.2 Previsível** [16], com padrões mais profundos na nota “Making Content Usable”. Em termos de produto: estrutura de sessão previsível, estímulos visuais/áudio concorrentes mínimos durante a resolução ativa de problemas, telas de foco único e limites de tempo ajustáveis ou evitáveis por padrão. Mecânicas de recompensa variável e comparação social — ganchos de engajamento comuns para TDAH na gamificação comercial — acarretam um custo documentado de estresse/atenção junto ao benefício de engajamento (veja o tópico 10 desta série) e devem ser tratadas como um trade-off, não como um ganho gratuito.
+O trabalho de Acessibilidade Cognitiva (COGA) da W3C mapeia para três cabeçalhos de diretriz WCAG: **2,2 Tempo Suficiente**, **2,4 Navegável**, **3,2 Previsível** [16], com padrões mais profundos na nota “Making Content Usable”. Em termos de produto: estrutura de sessão previsível, estímulos visuais/áudio concorrentes mínimos durante a resolução ativa de problemas, telas de foco único e limites de tempo ajustáveis ou evitáveis por padrão. Mecânicas de recompensa variável e comparação social — ganchos de engajamento comuns para TDAH na gamificação comercial — acarretam um custo documentado de estresse/atenção junto ao benefício de engajamento (veja o tópico 10 desta série) e devem ser tratadas como um trade-off, não como um ganho gratuito.
 
 ### 7. Autismo e design sensorial: movimento, som, previsibilidade
 
@@ -159,4 +159,4 @@ Nenhuma deve ser o único argumento de conformidade para a experiência padrão,
 19. Wikipedia, "Nemeth Braille" — https://en.wikipedia.org/wiki/Nemeth_Braille
 20. WebAIM, "Visual Disabilities: Color Blindness" — https://webaim.org/articles/visual/colorblind
 21. Section508.gov, "Laws and Policies" — https://www.section508.gov/manage/laws-and-policies/
-22. W3C, WCAG 2.2 Quick Reference (new success criteria in 2.2) — https://www.w3.org/WAI/WCAG22/quickref/?versions=2.2
+22. W3C, WCAG 2.2 Quick Reference (new success criteria in 2,2) — https://www.w3.org/WAI/WCAG22/quickref/?versions=2.2

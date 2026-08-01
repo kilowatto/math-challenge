@@ -301,6 +301,40 @@ dices que sí a la 1.
 
 ---
 
+## F6 · Larry Profe — 23 preguntas, agrupadas · 2026-08-01
+
+**El hecho.** Se consolidaron seis diseños de F6 y sus seis críticas
+adversariales en [`docs/planes/f6-larry-profe.md`](planes/f6-larry-profe.md).
+Veintitrés preguntas quedaron sin poder decidirse solas, y **cuatro de ellas son
+contradicciones frontales entre diseños**, no dudas de matiz.
+
+**Lo que asumí.** Todo lo que no depende de estas respuestas ya está decidido en
+ese documento — el contrato del sobre, la carta anti-vergüenza, la frontera de
+prompts, la cuenta de bytes del audio y la capa offline. Las 23 preguntas están
+en su §8, cada una con las alternativas explicadas y una recomendación, y no se
+repiten aquí para que no haya dos copias que envejezcan distinto.
+
+**Las cuatro que bloquean todo lo demás:**
+
+1. **P-1 — ¿Kinder tiene modelo en vivo, alguna vez?** Cuatro diseños dicen que
+   no, dos asumen que sí. Es la palanca de alcance más grande de la fase entera.
+   Cerrarla en «no» **enmienda D-015**, no la interpreta.
+2. **P-5 — D-021 dice que el plan gratis tiene «Larry con explicaciones
+   pregeneradas» y el de pago «Larry en vivo ilimitado».** ¿La cuota gratuita de
+   Larry en vivo es **cero**? Un diseño propuso 12 llamadas gratis sin notar que
+   D-021 ya lo respondió.
+3. **P-6 — D-021 pone «modo sin conexión» en el Plan Familia.** ¿El niño gratis
+   puede jugar offline? Toda la capa offline asume que sí.
+4. **P-19 — Workers AI no tiene voz verificada para `fr-FR`, `pt-BR`, `pt-PT` ni
+   `de-DE`** (4 de 7 locales, medido). Generar la voz fuera de Cloudflare toca
+   D-035; lanzar solo en en/es revierte D-022. Ninguna de las dos la decido yo.
+
+**Cómo se contesta.** Igual que el resto: confirmando o cambiando la
+recomendación de cada una en §8 del plan. Lo que se decida va a
+`docs/decisions.md` con fecha, y esta entrada desaparece.
+
+---
+
 **Cómo se contesta esto.** Preferentemente en preguntas de opción múltiple —
 cada entrada de arriba ya tiene mi recomendación, así que basta con confirmarla o
 cambiarla. Lo que se decida va a `docs/decisions.md` con fecha, y la entrada

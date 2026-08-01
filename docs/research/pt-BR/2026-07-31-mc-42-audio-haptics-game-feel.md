@@ -47,7 +47,7 @@ Confetes, contadores de estrelas e animações de mascote são motivadores extr�
 
 ### 6. Haptics na web
 
-O suporte a `navigator.vibrate()` existe, mas é desigual: Chrome (desktop/Android), Edge, Samsung Internet e a maioria dos navegadores Chromium Android o suportam; Firefox desktop o suportou apenas até v128, removido a partir de 129+; e — crucialmente — **iOS Safari nunca o suportou, em nenhuma versão de 3.2 a 26.5** [5][6]. Como qualquer WebView iOS usa WebKit, isso não é um problema de “trocar de navegador”. A vibração é, no melhor dos casos, um acento no Android/Chromium, nunca o canal principal de feedback, já que uma parcela significativa da frota alvo (todos iPad/iPhone) não recebe nada. Nenhuma API web expõe o Taptic Engine do iOS como alternativa.
+O suporte a `navigator.vibrate()` existe, mas é desigual: Chrome (desktop/Android), Edge, Samsung Internet e a maioria dos navegadores Chromium Android o suportam; Firefox desktop o suportou apenas até v128, removido a partir de 129+; e — crucialmente — **iOS Safari nunca o suportou, em nenhuma versão de 3,2 a 26,5** [5][6]. Como qualquer WebView iOS usa WebKit, isso não é um problema de “trocar de navegador”. A vibração é, no melhor dos casos, um acento no Android/Chromium, nunca o canal principal de feedback, já que uma parcela significativa da frota alvo (todos iPad/iPhone) não recebe nada. Nenhuma API web expõe o Taptic Engine do iOS como alternativa.
 
 ### 7. `prefers-reduced-motion`
 
@@ -79,7 +79,7 @@ WCAG 1.2.1 exige equivalente baseado em texto para conteúdo apenas em áudio, j
 
 | Capability | iOS Safari | Android Chrome | Desktop (Chrome/Edge/Firefox/Safari) | Source |
 |---|---|---|---|---|
-| **Vibration API** (`navigator.vibrate`) | **Não suportado**, todas as versões 3.2–26.5 testadas | Suportado (atual) | Chrome v30+/Edge v79+ suportado; Firefox v11–128 **apenas**, removido a partir de 129+; Safari desktop não suportado | caniuse.com/vibration [5]; MDN [6] |
+| **Vibration API** (`navigator.vibrate`) | **Não suportado**, todas as versões 3,2–26,5 testadas | Suportado (atual) | Chrome v30+/Edge v79+ suportado; Firefox v11–128 **apenas**, removido a partir de 129+; Safari desktop não suportado | caniuse.com/vibration [5]; MDN [6] |
 | **Web Audio API** | Suportado desde Safari 6 | Suportado (atual) | Chrome v14+, Edge v12+, Firefox v25+, Safari v6+ todos suportados | caniuse.com/audio-api [16]; MDN [15] |
 | **Autoplay (audio with sound)** | Bloqueado antes de gesto; vídeo sem áudio ou silenciado pode reproduzir automaticamente; `playsinline` exigido inline | Bloqueado antes de gesto a menos que silenciado; Chrome MEI pode permitir lista de origens frequentes | Chrome/Edge: bloqueado a menos que silenciado/gesticulado/MEI; Firefox: preferências granulares por domínio; Safari desktop: mesma política do iOS | WebKit blog [10]; Chrome blog [9]; MDN [11] |
 | **`speechSynthesis`** | Suportado desde Safari 7; **contagem/qualidade de vozes por idioma é uma propriedade do SO** | Suportado (atual); o navegador de sistema Android não o possui | Chrome v33+, Edge v14+, Firefox v49+, Safari v7+ todos suportados | caniuse.com/speech-synthesis [7]; MDN [8] |

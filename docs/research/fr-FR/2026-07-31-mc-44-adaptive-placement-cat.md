@@ -201,7 +201,7 @@ répétée, pas un placement en une seule fois), mais une preuve que le
 court-et-répété peut se substituer au long-et-unique [18]. Cela favorise un
 **placement par sujet** (10-15 items par branche, conforme au cahier des
 charges du projet) plutôt qu'un long test global unique : un enfant peut se
-placer simultanément en « arithmétique de CE2 » et en « géométrie de
+placer simultanément en « arithmétique de 3ᵉ année » et en « géométrie de
 maternelle », ce qu'un score global unique ne peut pas représenter mais
 qu'un CAT par sujet et le modèle d'espace de connaissances d'ALEKS peuvent
 tous deux faire [7].
@@ -303,7 +303,7 @@ plutôt qu'en redérivant le ton ici [9].
    plafond plus élevé que les branches étroites (par exemple, la division
    longue) ?
 5. Quand le placement diverge fortement de l'âge déclaré (un enfant de
-   5 ans se plaçant en CE2), faut-il l'afficher clairement, l'adoucir, ou
+   5 ans se plaçant en 3ᵉ année), faut-il l'afficher clairement, l'adoucir, ou
    demander d'abord confirmation au parent ?
 6. Le replacement périodique (toutes les N semaines, ou après M mauvaises
    réponses au palier actuel) est-il une fonctionnalité de la v1, ou un

@@ -57,7 +57,7 @@ Was es bringt, mit Zahlen:
 - **Paketverlust.** Bei Verbindungen mit 1‑3 % Verlust — dem typischen Bereich für reale Mobilgeräte — berichten Studien von Google und Cloudflare von **10‑30 % Verbesserung der Ladezeit**, weil die Isolation auf Stream‑Ebene verhindert, dass ein verlorenes Paket alle Anfragen blockiert [8]. Das ist exakt das Szenario von „Low‑End‑Android in Lateinamerika“, das der Master‑Plan als Zielmarkt benennt.
 - **Verbindungsaufbau.** QUIC wurde für 0‑RTT/1‑RTT gebaut; mit 0‑RTT bei wiederkehrenden Besuchern kann die Einsparung **über 300 ms** betragen, genug, um die Bewertung der Core Web Vitals einer Seite zu verändern [8].
 
-**Was es nicht löst:** HTTP/3 beschleunigt den Transport, nicht die Arbeit. Ein schweres JavaScript‑Bundle blockiert den Haupt‑Thread exakt gleich über QUIC wie über TCP. Deshalb ist das INP‑Budget (§ 4) wichtiger als das Protokoll.
+**Was es nicht löst:** HTTP/3 beschleunigt den Transport, nicht die Arbeit. Ein schweres JavaScript‑Bundle blockiert den Haupt‑Thread exakt gleich über QUIC wie über TCP. Deshalb ist das INP‑Budget (§4) wichtiger als das Protokoll.
 
 ### 4. INP: die Kennzahl, bei der dieses Produkt Gefahr läuft zu scheitern
 
@@ -87,7 +87,7 @@ Die Kosten der plattformspezifischen Anpassung sind keine Forschungs‑, sondern
 
 Ein Einsatz mit adversarialen Auditoren ist umsetzbar und passt zu der Art, wie dieses Projekt aufgebaut wurde. Er wird in zwei Klassen mit unterschiedlichen Kosten und Geschwindigkeiten unterteilt.
 
-**Deterministisch (12), bei jedem Commit, in Sekunden:** Bundle‑Budget · Core Web Vitals mit Schwellenwerten aus § 4 · axe‑core · Kontrast · Größe der taktilen Ziele pro Band (24 px WCAG AA / 44 px HIG / 88 px Kinder, gemäß `mc-38` und `mc-20`) · Vollständigkeit der sieben Sprach‑Keys · JSON‑LD‑Validierung · `hreflang`‑Reziprozität · Geheimnis‑Scanning · Präfix `math-challenge-` (`CLAUDE.md` § Cloudflare) · Migrations‑Sicherheit · Offline‑Pre‑Cache‑Budget (~5 MB Audio, `mc-42`).
+**Deterministisch (12), bei jedem Commit, in Sekunden:** Bundle‑Budget · Core Web Vitals mit Schwellenwerten aus §4 · axe‑core · Kontrast · Größe der taktilen Ziele pro Band (24 px WCAG AA / 44 px HIG / 88 px Kinder, gemäß `mc-38` und `mc-20`) · Vollständigkeit der sieben Sprach‑Keys · JSON‑LD‑Validierung · `hreflang`‑Reziprozität · Geheimnis‑Scanning · Präfix `math-challenge-` (`CLAUDE.md` § Cloudflare) · Migrations‑Sicherheit · Offline‑Pre‑Cache‑Budget (~5 MB Audio, `mc-42`).
 
 **Adversarial mit LLM (23), bei jedem PR, angeleitet, Verstöße zu finden und nicht zu genehmigen:** rote Linien (die acht) · COPPA/GDPR‑K‑Privatsphäre · Anti‑Demütigung · Anti‑Betrug · dunkle Muster · Pädagogik · mathematische Strenge · wissenschaftliche Strenge (jede nachprüfbare faktische Aussage) · Larry‑Kanon · Serien und Bildschirmzeit · Kinder‑Modus · PWA iOS · PWA Android · PWA‑first/offline · Leistung bei langsamen Netzen · UX nach Altersgruppe · und **einer pro Locale**: `en`, `es-MX`, `es-ES`, `fr-FR`, `pt-BR`, `pt-PT`, `de-DE`.
 
@@ -115,7 +115,7 @@ Gesamt: **35**.
 1. Was geschieht, wenn ein adversarialer Auditor und ein anderer sich widersprechen — zum Beispiel, Performance verlangt weniger JavaScript und Accessibility verlangt mehr Fokus‑Logik? Gibt es eine schriftliche Prioritätsreihenfolge?
 2. Laufen die 23 Auditoren mit LLM bei jedem PR oder nur bei denen, die sensible Pfade berühren? Die Kosten pro PR und die Wartezeit ändern sich stark.
 3. Auf welchem Referenzgerät wird das INP‑Budget von 150 ms gemessen? `mc-33` schlägt ein Mittelklasse‑Android über langsames 3G vor; es muss festgelegt werden, sonst ist das Budget nicht prüfbar.
-4. Beinhaltet die adaptive Schnittstelle Windows und macOS von Anfang an, oder nur Mobile in Version 1?
+4. Beinhaltet die adaptive Schnittstelle Windows und macOS von Anfang an, oder nur Mobile in v1?
 
 ## Quellen
 

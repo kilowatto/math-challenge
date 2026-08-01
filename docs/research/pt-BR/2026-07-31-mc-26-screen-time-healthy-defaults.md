@@ -4,7 +4,7 @@
 
 ## Resumo executivo (tópicos)
 
-- A OMS (2019) tem os únicos números firmes para menores de 5 anos: **0 telas antes de completar 1 ano**, **≤1 hora (menos é melhor) de 1 a 4 anos**, e não mais de 1 hora contínua sem se mover em qualquer idade [1]. O Canadá adota os mesmos números em suas Diretrizes de Movimento de 24 Horas [2][3].
+- A OMS (2019) tem os únicos números firmes para menores de 5 anos: **0 telas antes de completar o ano**, **≤1 hora (menos é melhor) de 1 a 4 anos**, e não mais de 1 hora contínua sem se mover em qualquer idade [1]. O Canadá adota os mesmos números em suas Diretrizes de Movimento de 24 Horas [2][3].
 - A AAP **abandonou os limites fixos em horas** com seu Family Media Plan vigente; sua política de 2016 ainda cita 1 hora/dia de conteúdo de qualidade para 2–5 anos, mas a mensagem atual é “qualidade e contexto sobre quantidade” [4][5].
 - O Reino Unido **não tem um número oficial único e duradouro**: os CMO de 2019 concluíram que a evidência era muito fraca para definir horas [6]; a imprensa de 2026 relata um novo máximo de 1 h/dia para menores de 5 anos [7], e fontes alinhadas ao NHS fornecem uma escada por idade (0–2: nada; 2–4: 1 h; 5–11: até 2 h) [8].
 - A evidência de que o tempo de tela prejudica o bem-estar é **fraca e contestada**: Orben & Przybylski (2019), com ~355.000 adolescentes, encontraram que o uso digital explica **no máximo 0,4%** da variância no bem-estar, comparável a “comer batatas” ou “usar óculos” [9][10].

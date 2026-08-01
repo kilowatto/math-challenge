@@ -22,7 +22,7 @@ Math Challenge ist eine PWA‑first‑Mathe‑Übungs‑App, die vollständig au
 | Adaptives Lernermodell pro Kind | Durable Object (SQLite) oder D1‑Rollup, gelesen von Worker bei Fragen‑Auswahl | Benötigt Lese‑/Schreib‑Latenz niedrig und nahe bei Compute; DO bietet Isolation pro Kind | 10 GB Speicher pro DO‑Objekt [8] |
 | Inhaltsbank (5 Sprachen, tausende Items) | D1 (Metadaten) + R2 (Medien‑Assets: Bilder/Audio) | D1 für strukturierte abfragbare Zeilen; R2 für große Binär‑Assets, keine Ausgeh‑Gebühr | R2 hat keine eigene Abfragesprache — Muss mit D1‑Index kombiniert werden |
 | KI‑Tutor „Larry“ (Claude‑API, Modell‑Routing) | Workers → AI Gateway → Claude API | AI Gateway bietet Caching, Rate‑Limits und Ausgaben‑Limits pro Nutzer vor dem Modellaufruf | AI Gateway: max. 20 Ausgaben‑Limit‑Regeln pro Gateway [Spend limits] |
-| Günstige lokale Inferenz: Embeddings, TTS, Übersetzung | Workers AI | Läuft im Netzwerk von Cloudflare, kein externer Round‑Trip, modellabhängige Preisgestaltung | Modellspezifisch: z. B. bge-m3 $0.012/M Eingabetoken [17] |
+| Günstige lokale Inferenz: Embeddings, TTS, Übersetzung | Workers AI | Läuft im Netzwerk von Cloudflare, kein externer Round‑Trip, modellabhängige Preisgestaltung | Modellspezifisch: z. B. bge-m3 $0,012/M Eingabetoken [17] |
 | RAG über Hinweis‑/Erklärungs‑Bank | Vectorize (Embeddings von bge-m3) | Mehrsprachiges Embedding‑Modell erfüllt die Anforderung von 5 Sprachen | 10 M Vektoren/Index, max. 1.536 Dimensionen [16] |
 | Asynchrone Bewertung, KI‑Erklärungs‑Generierung | Queues + Workflows | Entkoppelt die Versuch‑Einreichungs‑Anfrage von der langsameren KI‑Erklärungs‑Generierung; Workflows bieten dauerhafte Wiederholungen | Queues: 64 KB Operations‑Einheit, 100 K Ops/Tag gratis [Queues pricing]; Workflows: 500 K Schritte inkl. pro Monat [Workflows pricing] |
 | Push‑Benachrichtigungen | Web Push (via einem Worker, der Payloads sendet) + PWA‑Service‑Worker | Kein eigenständiges CF‑Produkt — Workers ist nur der Sender; Browser/OS übernimmt die Zustellung | iOS Web Push erfordert installierte‑auf‑Startbildschirm Safari 16.4+; inkonsistent auf schulverwalteten Chromebooks/iPads |
@@ -49,7 +49,7 @@ Math Challenge ist eine PWA‑first‑Mathe‑Übungs‑App, die vollständig au
 
 **R2.** Speicher $0,015 pro GB‑Monat; Klasse A (schreibähnlich) $4,50 pro Million; Klasse B (leseähnlich) $0,36 pro Million; Ausgangsdaten (egress) kostenlos. Gratis‑Stufe: 10 GB‑Monat Speicher, 1 Mio. Klasse A, 10 Mio. Klasse B/Monat [R2 pricing]. Keine Ausgangsgebühr ist relevant für kaltes Archiv: Batch‑Export/Training‑Abrufe kosten nichts beim Auslesen.
 
-**Vectorize.** Indizes unterstützen jetzt bis zu 10 Mio. Vektoren (erhöht von 5 Mio. am 23. Januar 2026), begrenzt auf 1.536 Dimensionen pro Vektor [16]. Preisgestaltung: 50 Mio. abgefragte Dimensionen pro Monat inbegriffen, danach $0,01 pro Million; 10 Mio. gespeicherte Dimensionen inbegriffen, danach $0,05 pro 100 Millionen [1].
+**Vectorize.** Indizes unterstützen jetzt bis zu 10 Mio. Vektoren (erhöht von 5 Mio. am 2026-01-23), begrenzt auf 1.536 Dimensionen pro Vektor [16]. Preisgestaltung: 50 Mio. abgefragte Dimensionen pro Monat inbegriffen, danach $0,01 pro Million; 10 Mio. gespeicherte Dimensionen inbegriffen, danach $0,05 pro 100 Millionen [1].
 
 **Workers AI.** Beispielpreise: `@cf/baai/bge-m3` (mehrsprachige Einbettungen, entspricht dem 5‑Sprachen‑Bank) $0,012 pro Mio. Eingabetoken; `@cf/myshell-ai/melotts` (TTS) $0,0002 pro Audiominute; `@cf/meta/m2m100-1.2b` (Übersetzung) $0,342 pro Mio. Token ein/aus [17] — günstig genug, um zur Inhaltserstellung zu laufen, nicht pro Anfrage.
 
@@ -61,7 +61,7 @@ Math Challenge ist eine PWA‑first‑Mathe‑Übungs‑App, die vollständig au
 
 **Cache API.** Pro Rechenzentrum, pro Worker‑Cache, getrennt vom Zonen‑Cache. Maximalobjekt 512 MB; 1.000 `put()`/`match()`/`delete()`‑Aufrufe pro Anfrage bei kostenpflichtigen Plänen (50 kostenlos), teilen das Sub‑Request‑Kontingent [20].
 
-**Claude API / Modell‑Routing.** Aktuelle Preise (aus der gebündelten `claude-api`‑Funktion, zwischengespeichert am 24. Juni 2026): Opus 5 $5/$25 pro Million Eingabe‑/Ausgabetoken; Sonnet 5 $3/$15 (Einführung $2/$10 bis zum 31. August 2026); Haiku 4.5 $1/$5. Larrys Routing‑Plan: Sonnet 5 als Standard‑Erklärer, Haiku 4.5 für günstige hochvolumige Mikro‑Texte und ein seltener Opus‑Aufstieg nur für die schwierigsten mehrstufigen Erklärungen – alles gesteuert durch AI‑Gateway‑Ausgabenlimits pro Kind pro Tag.
+**Claude API / Modell‑Routing.** Aktuelle Preise (aus der gebündelten `claude-api`‑Funktion, zwischengespeichert am 2026-06-24): Opus 5 $5/$25 pro Million Eingabe‑/Ausgabetoken; Sonnet 5 $3/$15 (Einführung $2/$10 bis zum 2026-08-31); Haiku 4.5 $1/$5. Larrys Routing‑Plan: Sonnet 5 als Standard‑Erklärer, Haiku 4.5 für günstige hochvolumige Mikro‑Texte und ein seltener Opus‑Aufstieg nur für die schwierigsten mehrstufigen Erklärungen – alles gesteuert durch AI‑Gateway‑Ausgabenlimits pro Kind pro Tag.
 
 ## Vorgeschlagener Ressourcenbestand
 
@@ -257,7 +257,7 @@ Roh‑Versuchszeilen sind **absichtlich nicht enthalten** in diesem Schema — s
 
 5. Sollte es jemals eine unbegrenzte KI‑Tutor‑Stufe geben, oder gilt stets ein striktes tägliches Claude‑Ausgaben‑Limit pro Kind?
 
-6. Welche genau fünf Sprachen? Bestimmt, ob Workers AI's `m2m100` alle Paare abdeckt oder einige für den Start menschliche/Claude‑Qualitäts‑Übersetzungen benötigen.
+6. Welche 5 Sprachen genau? Bestimmt, ob Workers AI's `m2m100` alle Paare abdeckt oder einige für den Start menschliche/Claude‑Qualitäts‑Übersetzungen benötigen.
 
 7. Werden Ligen automatisch zugewiesen (zufällige Kohortenbildung) oder von Lehrern/Eltern kuratiert? Beeinflusst den Liga‑Lebenszyklus‑Workflow und ob `math-challenge-league-do` einen Matching‑Schritt benötigt.
 
@@ -269,27 +269,27 @@ Roh‑Versuchszeilen sind **absichtlich nicht enthalten** in diesem Schema — s
 
 ## Quellen
 
-1. [Workers Platform Pricing](https://developers.cloudflare.com/workers/platform/pricing/) — Preis‑Tabellen für D1, KV, Vectorize, Queues, Workers, Durable Objects. Zugegriffen am 31. 07. 2026.  
+1. [Workers Platform Pricing](https://developers.cloudflare.com/workers/platform/pricing/) — Preis‑Tabellen für D1, KV, Vectorize, Queues, Workers, Durable Objects. Zugegriffen am 2026-07-31.  
 2. [D1 Platform Limits](https://developers.cloudflare.com/d1/platform/limits/) — Datenbankgröße, Speicher, Abfrage‑ und Verbindungs‑Limits.  
 3. [D1 Read Replication (best practices)](https://developers.cloudflare.com/d1/best-practices/read-replication/) — Konsistenzmodell, unterstützte Regionen.  
-4. [D1 Read Replication Public Beta (changelog)](https://developers.cloudflare.com/changelog/post/2025-04-10-d1-read-replication-beta/) — 10. 04. 2025.  
+4. [D1 Read Replication Public Beta (changelog)](https://developers.cloudflare.com/changelog/post/2025-04-10-d1-read-replication-beta/) — 2025-04-10.  
 5. [D1 Debug / Error Reference](https://developers.cloudflare.com/d1/observability/debug-d1/) — CPU‑Zeit‑ und Überlast‑Fehlermodi.  
 6. [Durable Objects Pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/) — Abrechnung für Compute und SQLite‑Speicher.  
 7. [Durable Objects: Rules of Durable Objects](https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/) — Durchsatz‑Leitfaden pro Objekt, Anti‑Patterns.  
-8. [SQLite in Durable Objects GA (changelog)](https://developers.cloudflare.com/changelog/post/2025-04-07-sqlite-in-durable-objects-ga/) — 07. 04. 2025, 10 GB pro Objekt.  
-9. [Billing for SQLite Storage (changelog)](https://developers.cloudflare.com/changelog/post/2025-12-12-durable-objects-sqlite-storage-billing/) — 12. 12. 2025, Startdatum der Abrechnung.  
+8. [SQLite in Durable Objects GA (changelog)](https://developers.cloudflare.com/changelog/post/2025-04-07-sqlite-in-durable-objects-ga/) — 2025-04-07, 10 GB pro Objekt.  
+9. [Billing for SQLite Storage (changelog)](https://developers.cloudflare.com/changelog/post/2025-12-12-durable-objects-sqlite-storage-billing/) — 2025-12-12, Startdatum der Abrechnung.  
 10. [KV: Read key-value pairs](https://developers.cloudflare.com/kv/api/read-key-value-pairs/) — Bulk‑Lesevorgänge, `cacheTtl`.  
 11. [KV: Write key-value pairs](https://developers.cloudflare.com/kv/api/write-key-value-pairs/) — Limit von 1 Write/s/Key, Bulk‑Schreib‑Limits.  
-12. [Reduced minimum cacheTtl for Workers KV (changelog)](https://developers.cloudflare.com/changelog/post/2026-01-30-kv-reduced-minimum-cachettl/) — 30. 01. 2026.  
+12. [Reduced minimum cacheTtl for Workers KV (changelog)](https://developers.cloudflare.com/changelog/post/2026-01-30-kv-reduced-minimum-cachettl/) — 2026-01-30.  
 13. [Workers Analytics Engine — data point limits](https://developers.cloudflare.com/analytics/analytics-engine/limits/) — Limits für Blobs/Doubles/Index/Aufbewahrung.  
 14. [R2 Pricing](https://developers.cloudflare.com/r2/pricing/) — Speicher, Class‑A/B‑Operationen, Ausgangs‑Traffic.  
-15. [Vectorize indexes now support up to 10 million vectors (changelog)](https://developers.cloudflare.com/changelog/post/2026-01-23-increased-index-capacity/) — 23. 01. 2026.  
+15. [Vectorize indexes now support up to 10 million vectors (changelog)](https://developers.cloudflare.com/changelog/post/2026-01-23-increased-index-capacity/) — 2026-01-23.  
 16. [Workers AI Pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) — Preisgestaltung pro Modell (bge-m3, melotts, m2m100).  
 17. [AI Gateway: Spend limits](https://developers.cloudflare.com/ai-gateway/features/spend-limits/) — Budget‑Regeln, dynamischer Routen‑Fallback, 20‑Regel‑Obergrenze.  
 18. [AI Gateway: Caching](https://developers.cloudflare.com/ai-gateway/features/caching/) — Cache‑Umfang und Identisch‑Anfrage‑Abgleich.  
 19. [Workers Platform Limits](https://developers.cloudflare.com/workers/platform/limits/) — Cache‑API‑Limits, Anfrage‑/Antwort‑Limits.  
 20. [Cloudflare Web Analytics FAQ](https://developers.cloudflare.com/web-analytics/faq/) — Stichproben‑ und Aufbewahrungs‑Verhalten.  
 21. [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) — Full‑Stack‑Deploy‑Modell, relevant für Astro auf Workers.  
-22. [Configure your framework for Cloudflare automatically (changelog)](https://developers.cloudflare.com/changelog/post/2025-12-16-wrangler-autoconfig/) — 16. 12. 2025, bestätigt Astro als unterstütztes Framework.  
+22. [Configure your framework for Cloudflare automatically (changelog)](https://developers.cloudflare.com/changelog/post/2025-12-16-wrangler-autoconfig/) — 2025-12-16, bestätigt Astro als unterstütztes Framework.  
 23. [Workflows Pricing](https://developers.cloudflare.com/workflows/reference/pricing/) — Anfragen, CPU‑Zeit, Speicher, Schritte.  
-24. Anthropic `claude-api`‑Skill, zwischengespeicherte Modell‑/Preis‑Tabelle (24. 06. 2026) — Claude Opus 5 / Sonnet 5 / Haiku 4,5 Preisgestaltung, verwendet für den Modell‑Routing‑Plan.
+24. Anthropic `claude-api`‑Skill, zwischengespeicherte Modell‑/Preis‑Tabelle (2026-06-24) — Claude Opus 5 / Sonnet 5 / Haiku 4.5 Preisgestaltung, verwendet für den Modell‑Routing‑Plan.

@@ -50,6 +50,16 @@ const ACTIVE = [
   ["adaptativo-simulacion",  "el motor adaptativo se simula antes de usarse","D-002, mc-13, mc-44"],
   ["retro-completa",         "toda causa de error tiene texto en los 7 locales","mc-11, línea roja #7, D-022"],
   ["migration-safety",       "migraciones sin borrado destructivo",           "mc-32, D-013, D-032"],
+
+  // El manifiesto del corpus traducido — no la integridad, que es otra cosa.
+  //
+  // `corpus-integridad` NO está aquí y no es un olvido: sale con 1 mientras
+  // exista un documento con hallazgo, y hoy hay 36 de 282. Ponerlo en el gancho
+  // haría que todo el mundo commiteara con --no-verify, que es como se muere una
+  // flota. Se corre a mano. Lo que sí bloquea es que su manifiesto envejezca,
+  // porque ese modo falla ABIERTO: el sitio seguiría prometiendo verificación
+  // sobre un archivo que ya cambió.
+  ["corpus-manifiesto",      "el manifiesto del corpus traducido está al día", "D-033, D-022, mc-48 §3"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

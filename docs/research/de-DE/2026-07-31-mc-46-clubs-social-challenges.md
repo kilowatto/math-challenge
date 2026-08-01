@@ -95,7 +95,7 @@ In keiner der drei gibt es ein Feld, das die Frage „Was passiert mit dem Letzt
 
 **Fehlertolerantes Verhalten.** Wenn der Moderationsaufruf fehlschlägt oder abläuft, wird die Aufgabe **nicht veröffentlicht**. Es wird angezeigt, dass Larry sie nicht prüfen konnte, und ein erneuter Versuch wird angeboten. Unter keinen Fehlbedingungen wird Text unverprüft veröffentlicht — der günstige Fehlmodus ist ein verärgerter Nutzer, der teure Fehlmodus ist eine veröffentlichte Demütigung, die das Produkt versprochen hat, nicht zuzulassen.
 
-**Routing und Kosten.** Das Volumen ist im Vergleich zum Tutor trivial: ein Aufruf pro erstellter Aufgabe, nicht pro Versuch. Haiku 4,5 reicht für den klaren Fall, mit Eskalation zu Sonnet 5, wenn das Urteil geringes Vertrauen hat — die Nuance zwischen „Scherz unter Freunden“ und „Herabwürdigung“ ist genau dort, wo ein kleines Modell in beide Richtungen Fehler macht. Mit dem Routing von D-015 und dem Ausgabenlimit des AI‑Gateway bewegt dies das Budget nicht.
+**Routing und Kosten.** Das Volumen ist im Vergleich zum Tutor trivial: ein Aufruf pro erstellter Aufgabe, nicht pro Versuch. Haiku 4.5 reicht für den klaren Fall, mit Eskalation zu Sonnet 5, wenn das Urteil geringes Vertrauen hat — die Nuance zwischen „Scherz unter Freunden“ und „Herabwürdigung“ ist genau dort, wo ein kleines Modell in beide Richtungen Fehler macht. Mit dem Routing von D-015 und dem Ausgabenlimit des AI‑Gateway bewegt dies das Budget nicht.
 
 **False Positive und Beschwerde.** Larry wird Fehler machen und legitime Scherze ablehnen. Ohne Beschwerdeweg fühlt sich das wie Zensur an und wird zur Beschwerde führen. Jede abgelehnte Aufgabe muss per Knopfdruck zur menschlichen Prüfung gesendet werden können, und diese Warteschlange benötigt einen Verantwortlichen und eine zugesagte Reaktionszeit — dieselbe Warteschlange wie bei Meldungen.
 
@@ -157,13 +157,13 @@ Der Grund liegt nicht im Modellieren, sondern im Fehlermodus. Mit einer einzigen
 ## Offene Fragen für den Projektinhaber
 
 1. Kann ein Jugendlicher im Alter von 12‑17 in einem `club_adulto` sein? Die Standardantwort dieses Dokuments ist **nein** (Implikation 1), aber das schließt den Fall einer Gruppe von Cousins oder von Klassenkameraden aus.  
-2. Beginnt der Katalog der Wetten leer mit freiem Text ab Tag 1, oder wird er mit kuratierten Beispielen besät, die den erwarteten Ton zeigen? Das Besäen ist die günstige Art, die Regel zu kommunizieren, ohne sie zu verbieten.  
+2. Beginnt der Katalog der Wetten leer mit freiem Text ab Tag eins, oder wird er mit kuratierten Beispielen besät, die den erwarteten Ton zeigen? Das Besäen ist die günstige Art, die Regel zu kommunizieren, ohne sie zu verbieten.  
 3. Ist die ausdrückliche Annahme der Wette (Implikation 5) pro Herausforderung oder einmal pro Club? Pro Herausforderung ist sicherer, aber lästiger.  
 4. Beeinflussen die Herausforderungen von Erwachsen‑Clubs das globale Board, oder leben sie isoliert im Club? Wenn sie beeinflussen, muss die Expositionskontrolle der Items `mc-29` überprüft werden.  
 5. Wer bearbeitet die Warteschlange für Appeals und Meldungen (Implikationen 9 und 11) und mit welcher zugesagten Reaktionszeit? Ist dieselbe Person für beide Warteschlangen zuständig oder sind es zwei Personen.  
 6. Wenn Larry eine Wette ablehnt, sagt er dem Autor **welche** der drei Regeln verletzt wurde, oder nur, dass sie nicht bestand? Das zu sagen hilft beim Korrigieren; es lehrt auch, den Filter zu umgehen.  
 7. Wird der Moderations‑Prompt von Larry sprachspezifisch erstellt oder übersetzt? Der abwertende Ton ist stark kulturell geprägt – was in Mexiko ein Scherz unter Freunden ist, kann in Deutschland anders sein, und umgekehrt.  
-8. Darf ein Kinder‑Club Kinder mehrerer Familien mischen, die **nicht** miteinander bekannt sind, oder ist er auf Familien beschränkt, die bereits eine vorherige Bindung haben? Das ist der Unterschied zwischen einem begrenzten und einem offenen Risiko.
+6. Darf ein Kinder‑Club Kinder mehrerer Familien mischen, die **nicht** miteinander bekannt sind, oder ist er auf Familien beschränkt, die bereits eine vorherige Bindung haben? Das ist der Unterschied zwischen einem begrenzten und einem offenen Risiko.
 
 ## Quellen
 

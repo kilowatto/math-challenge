@@ -49,7 +49,7 @@ A estrutura de dez (duas linhas de cinco quadrados) é o suporte visual dominant
 
 ### 7. Gnose dos dedos: mais fraca do que se acreditava
 
-O trabalho inicial (Gracia‑Bafalluy & Noël) encontrou que intervenções de treino dos dedos melhoraram a gnose dos dedos e correlacionaram‑se com ganhos no julgamento de ordinalidade, na contagem com os dedos e na subitização [10]. Estudos mais recentes e melhor controlados revelam que a gnose dos dedos explica apenas cerca de 1–2 % da variância na competência de cálculo de crianças de 1.º ano, uma vez controladas a capacidade cognitiva geral e a idade — a associação anterior torna‑se negligível [10][11]. Isto não deve ser um pilar principal do design.
+O trabalho inicial (Gracia‑Bafalluy & Noël) encontrou que intervenções de treino dos dedos melhoraram a gnose dos dedos e correlacionaram‑se com ganhos no julgamento de ordinalidade, na contagem com os dedos e na subitização [10]. Estudos mais recentes e melhor controlados revelam que a gnose dos dedos explica apenas cerca de 1–2 % da variância na competência de cálculo de crianças do primeiro ano, uma vez controladas a capacidade cognitiva geral e a idade — a associação anterior torna‑se negligível [10][11]. Isto não deve ser um pilar principal do design.
 
 ### 8. Testes cronometrados e ansiedade matemática em crianças pequenas
 

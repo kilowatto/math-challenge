@@ -75,7 +75,7 @@ Nenhum estudo dedicado ao teclado numérico para 7‑11 foi encontrado — uma t
 11. **Entrada numérica: combinar a modalidade ao tipo de problema**, não um teclado universal — toques de escolha múltipla para verificações de conceito, toque/arrasto de linha numérica para magnitude, teclado de 48 px para inserção de numerais abertos — conforme a cautela da literatura sobre discalculia contra um único caminho de entrada forçado [11].  
 12. **Duração da sessão: rondas curtas com um ponto de paragem visível a cada alguns problemas** (um conjunto de problemas temático, não uma única questão) — não foi encontrado um benchmark exato de minutos por idade nesta análise; trate qualquer número como uma decisão de produto informada, não ditada, pelo padrão de paciência documentado numa faixa superior [3].  
 13. **Definições de dispositivo: troca rápida de perfil sem escrita**, sem suposição de login pessoal persistente, para tablets familiares partilhados ou Chromebooks escolares — um requisito inferido, não citado, dado o lapso observado na §10.  
-14. **Integração: saltar a sequência de tutorial; ensinar através do primeiro problema real** com apoio integrado (primeiro passo resolvido, botão de dica), correspondendo à baixa paciência desta faixa para atrasos e à fraca retenção de instruções abstratas sem um âncora concreto [3].
+14. **Integração: saltar a sequência de tutorial; ensinar através do primeiro problema real** com apoio integrado (primeiro passo resolvido, botão de dica), correspondendo à baixa paciência desta faixa para atrasos [3] e à fraca retenção de instruções abstratas sem um âncora concreto [1].
 
 ## Anti‑padrões a evitar
 

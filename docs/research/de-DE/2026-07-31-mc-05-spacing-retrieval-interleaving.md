@@ -104,7 +104,7 @@ Die Arbeit von Rohrer/Taylor zielt auf *prozedurale* Fähigkeiten ab: welche Met
 ## Offene Fragen für den Projektinhaber
 
 1. Soll der Planungs‑Zustand nur pro Kind‑pro Fähigkeit live sein, oder sollten wir zusätzlich einen populationsweiten FSRS‑Parameter‑Fit pflegen, um die Zeitpläne neuer Kinder zu initialisieren, bevor genügend eigene Daten vorliegen?  
-2. Soll die gewünschte Behaltensrate plattformweit ein fester Wert von 0,85 sein, oder ein einstellbarer Regler für ältere/Promotions‑Kandidaten, ähnlich wie Anki ihn Power‑Usern anbietet?  
+2. Soll die gewünschte Behaltensrate plattformweit ein fester Wert von 0,90 sein, oder ein einstellbarer Regler für ältere/Promotions‑Kandidaten, ähnlich wie Anki ihn Power‑Usern anbietet?  
 3. Soll die Kennzeichnung einheitsbezogen vs. grundlegend manuell pro Curriculum‑Knoten erstellt werden, oder aus der Tiefe des Voraussetzungen‑Graphen abgeleitet werden?  
 4. Interagiert das Mischungsverhältnis mit dem Anti‑Cheating‑Verhaltens‑Signal‑System – macht das Mischen von Fähigkeitstypen die Erkennung von Zeit‑/Muster‑Signalen leichter oder schwerer zu interpretieren?  
 5. Soll die zweistufige Beherrschungs‑Barriere (Streak + verzögerte Wiederholung) den Fortschritt zur nächsten Curriculum‑Einheit blockieren, oder nur die Wiederholungs‑Planung beeinflussen, während der Fortschritt an einem separaten Genauigkeits‑Schwellenwert festgemacht wird?

@@ -50,7 +50,7 @@ Direkt reproduzierbare Feld‑Daten zu Opt‑Out‑Kurven bei Benachrichtigungs�
 
 Laut WebKits eigenem Engineering‑Blog‑Post zu Web Push für Web‑Apps [2]:
 
-- **Mindest‑OS‑Version 16.4.** Kein Web‑Push auf früheren iOS/iPadOS‑Versionen.
+- **Mindest‑OS‑Version 16,4.** Kein Web‑Push auf früheren iOS/iPadOS‑Versionen.
 - **Installation auf dem Startbildschirm ist zwingend.** Das Manifest muss `display: "standalone"` oder `"fullscreen"` deklarieren, und der Nutzer muss die App über Share → „Add to Home Screen“ hinzufügen. Web Push **funktioniert nicht** für dieselbe Seite, die in normalen Safari‑Tabs oder über ein Lesezeichen geöffnet wird — die Installation ist ein hartes Gate, keine Präferenz.
 - **Erlaubnis muss einer direkten Nutzer­geste folgen** (z. B. dem Tippen eines „Subscribe“-Buttons) — Apple erlaubt keine ambienten/automatischen Erlaubnis‑Prompts.
 - **Standardbasiert**: nutzt denselben W3C‑Web‑Push‑Stack wie macOS Ventura/Safari und greift auf die Apple Push Notification‑Service‑Infrastruktur zurück und – bemerkenswert – **erfordert keine Mitgliedschaft im Apple Developer Program**, um Web‑Push zu senden, im Gegensatz zu nativen iOS‑Push‑Benachrichtigungen.

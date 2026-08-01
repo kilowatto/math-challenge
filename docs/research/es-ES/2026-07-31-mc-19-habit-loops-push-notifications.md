@@ -45,30 +45,30 @@ Los datos de campo directamente reproducibles sobre curvas de desistimiento por 
 
 ## Findings — Part 2: The technical reality of web push in 2026
 
-### 2.1 iOS/iPadOS Safari — requisitos estrictos
+### 2,1 iOS/iPadOS Safari — requisitos estrictos
 
 Según la entrada del blog de ingeniería de WebKit sobre Web Push para aplicaciones web [2]:
 
-- **Versión mínima del SO 16.4.** No hay Web Push en versiones anteriores de iOS/iPadOS.  
+- **Versión mínima del SO 16,4.** No hay Web Push en versiones anteriores de iOS/iPadOS.  
 - **La instalación en la pantalla de inicio es obligatoria.** El manifiesto debe declarar `display: "standalone"` o `"fullscreen"`, y el usuario debe añadir la aplicación mediante Compartir → «Añadir a la pantalla de inicio». Web Push **no funciona** para el mismo sitio abierto en pestañas habituales de Safari o mediante un marcador; la instalación es una barrera rígida, no una preferencia.  
 - **El permiso debe seguir un gesto directo del usuario** (p. ej., pulsar un botón «Suscribirse») — Apple no permite solicitudes de permiso ambientales o automáticas.  
 - **Basado en estándares**: utiliza la misma pila W3C Web Push que macOS Ventura/Safari, apoyándose en la infraestructura del servicio Apple Push Notification, y — notablemente — **no requiere pertenecer al Apple Developer Program** para enviar Web Push, a diferencia del push nativo de iOS.  
 - **La API de insignias está soportada** para aplicaciones web instaladas (`navigator.setAppBadge()` / `clearAppBadge()`), y las notificaciones respetan los modos de enfoque del sistema, con la configuración por aplicación sincronizada entre los dispositivos del usuario mediante el campo `id` del manifiesto.  
-- Los datos de `caniuse` corroboran la barrera de versión: Safari en iOS muestra soporte **parcial** a partir de la 16.4 hasta la versión más reciente rastreada en esta investigación, frente a soporte **completo** en Safari macOS desde la versión 18 [3]. Esa marca «parcial» es una advertencia real y actual, no datos obsoletos — trate cualquier afirmación de «soporte completo en iOS» con sospecha hasta volver a verificarla contra caniuse o las publicaciones propias de WebKit.
+- Los datos de `caniuse` corroboran la barrera de versión: Safari en iOS muestra soporte **parcial** a partir de la 16,4 hasta la versión más reciente rastreada en esta investigación, frente a soporte **completo** en Safari macOS desde la versión 18 [3]. Esa marca «parcial» es una advertencia real y actual, no datos obsoletos — trate cualquier afirmación de «soporte completo en iOS» con sospecha hasta volver a verificarla contra caniuse o las publicaciones propias de WebKit.
 
-### 2.2 Android / Chrome — soporte más amplio, sin barrera de instalación
+### 2,2 Android / Chrome — soporte más amplio, sin barrera de instalación
 
 La Push API ha estado «Ampliamente disponible» (base cruzada de navegadores) desde marzo de 2023 [5], y `caniuse` muestra soporte completo en Chrome para Android y en los equivalentes de escritorio Chrome/Firefox/Samsung Internet, alcanzando aproximadamente el 95 % de la cuota de uso global de navegadores cuando se incluye el soporte parcial [3]. A diferencia de iOS, **no es necesario instalar en la pantalla de inicio** para recibir push en Chrome Android — una página con un service worker registrado y activo puede suscribirse y recibir push mientras se ejecuta como una pestaña de navegador ordinaria, aunque las PWAs instaladas/standalone ofrecen una experiencia de notificación y apertura más nativa. Chrome no impone un límite de cuota al volumen de mensajes push; Firefox sí impone una cuota (renovada por visita al sitio) a menos que el mensaje produzca de forma fiable una notificación visible [5].
 
-### 2.3 Escritorio — maduro, pero no implementado de forma homogénea
+### 2,3 Escritorio — maduro, pero no implementado de forma homogénea
 
-Safari de escritorio solo alcanzó soporte completo de la Push API en Safari 18 (parcial en 16.1–17.6) [3]; Chrome de escritorio lleva soporte completo desde la v50, Firefox desde la v44 [3]. En escritorio, generalmente no se aplica el requisito de instalación de Apple en la pantalla de inicio — la asimetría principal es Safari macOS, que heredó las mismas reglas de gesto de permiso y (para las versiones más recientes) de integración con los modos de enfoque que su contraparte iOS [2].
+Safari de escritorio solo alcanzó soporte completo de la Push API en Safari 18 (parcial en 16,1–17,6) [3]; Chrome de escritorio lleva soporte completo desde la v50, Firefox desde la v44 [3]. En escritorio, generalmente no se aplica el requisito de instalación de Apple en la pantalla de inicio — la asimetría principal es Safari macOS, que heredó las mismas reglas de gesto de permiso y (para las versiones más recientes) de integración con los modos de enfoque que su contraparte iOS [2].
 
-### 2.4 Disparadores de notificación / notificaciones locales programadas — no viables en 2026
+### 2,4 Disparadores de notificación / notificaciones locales programadas — no viables en 2026
 
 Una API para programar notificaciones que se disparen en un momento futuro **sin un viaje de ida y vuelta a la red** (`Notification.showTrigger`, parte de una capacidad propuesta «Notification Triggers») se probó como un trial origin exclusivo de Chrome hace varios años, pero nunca alcanzó consenso entre navegadores ni una implementación estable, de seguimiento estándar, utilizable en producción. Los intentos en esta sesión de investigación de localizar una especificación viva o una página de característica enviada devolvieron errores 404 tanto en la URL del borrador W3C como en la del blog de Chrome — coherente con que se haya archivado en lugar de promocionarse como estándar real. **Consecuencia de diseño: no construir ninguna función (p. ej., «recuérdame en esta zona horaria exacta a las 4 de la tarde aunque la aplicación nunca abra la red») que dependa de notificaciones locales programadas del lado del cliente.** Cada recordatorio programado en Math Challenge necesita un Web Push disparado por el servidor, lo que a su vez requiere una suscripción activa y, en iOS, una PWA instalada.
 
-### 2.5 Envío de Web Push a gran escala, del lado de Cloudflare
+### 2,5 Envío de Web Push a gran escala, del lado de Cloudflare
 
 La biblioteca de referencia de Node.js para Web Push (`web-push` de web-push-libs) está construida sobre `Buffer` y las APIs `crypto` de Node y no está documentada como preparada para entornos edge/serverless de forma predeterminada [14]. Dos rutas nativas de Cloudflare hacen viable su uso dentro de la pila basada en Workers sin necesidad de un servidor Node independiente:
 
@@ -81,7 +81,7 @@ Cualquiera de las dos opciones mantiene el envío de push dentro de la pila Work
 
 | Capability | iOS/iPadOS Safari | Android Chrome | Desktop (Chrome/Firefox/Safari) |
 |---|---|---|---|
-| Push API (server push while app closed) | Parcial; requiere 16.4+ [3] | Completo, base desde 2023 [5] | Completo en Chrome (v50+)/Firefox (v44+); Safari solo desde v18, parcial 16.1–17.6 [3] |
+| Push API (server push while app closed) | Parcial; requiere 16,4+ [3] | Completo, base desde 2023 [5] | Completo en Chrome (v50+)/Firefox (v44+); Safari solo desde v18, parcial 16,1–17,6 [3] |
 | Must be installed to Home Screen / standalone | **Sí, obligatorio** [2] | No — funciona desde una pestaña del navegador con un service worker activo | No (escritorio no tiene barrera de «pantalla de inicio»; Safari macOS hereda la misma regla de gesto de permiso) |
 | Permission prompt rules | Debe seguir un gesto directo del usuario; no hay prompts ambientales [2] | Debe seguir gesto del usuario según la mejor práctica de Chrome [6]; menos estrictamente impuesto por el SO que iOS | Misma mejor práctica, no impuesto por el SO |
 | Re-prompt after user blocks | No es posible programáticamente; el usuario debe cambiarlo en Configuración del sistema [2][6] | No es posible programáticamente; debe modificarse en la configuración del sitio del navegador [6] | Igual |

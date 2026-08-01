@@ -36,14 +36,42 @@
 //   node audits/corpus-integridad.mjs --locale de-DE   solo un locale
 //   node audits/corpus-integridad.mjs --detalle        lista cada diferencia
 //   node audits/corpus-integridad.mjs --max 40         tope de líneas por fallo
+//   node audits/corpus-integridad.mjs --manifiesto     escribe qué SÍ pasó
+//
+// El manifiesto es la mitad constructiva de este auditor, y existe por una razón
+// concreta. La página de cada documento traducido dice, en su nota de idioma,
+// que la traducción "fue verificada automáticamente contra la fuente: cada
+// número, URL, marcador de cita y marca [unverified] coincide". Mientras la
+// lista de lo publicable fuera **por locale**, esa frase era falsa para todo
+// documento del locale que tuviera un hallazgo — y una frase falsa sobre la
+// verificación es peor que no verificar, porque invita a confiar.
+//
+// Con el manifiesto la lista es **por documento** y la escribe el auditor: si un
+// documento no pasa, el sitio publica el original en inglés para ESE documento y
+// dice que no está traducido. La afirmación de la página pasa a ser cierta por
+// construcción, no por vigilancia.
 
-import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, statSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // --------------------------------------------------------------- constantes
 
 const RAIZ_CORPUS = "docs/research";
+
+/**
+ * Dónde vive el manifiesto. Va bajo `apps/web/src/lib/` —junto a `corpus.ts`,
+ * su único lector— y no bajo `docs/` porque lo consume el build de Astro: un
+ * import fuera de `apps/web` obligaría a otro glob relativo hacia arriba de los
+ * que ya dieron un problema real al mover una página (ver `loadRaw` en
+ * `corpus.ts`).
+ *
+ * Estuvo un rato en `src/i18n/` y ahí lo cazó `locales-complete`, que lee todo
+ * `.json` de esa carpeta como si fuera un locale y reportó, correctamente, que
+ * a este le faltaban las 30 llaves de la interfaz. No es un locale: es un
+ * inventario. El auditor tenía razón y el archivo estaba en el sitio equivocado.
+ */
+const RUTA_MANIFIESTO = "apps/web/src/lib/corpus-verificado.json";
 
 /** Los siete locales de D-022. `en` es el origen; los otros seis son destino. */
 export const LOCALE_ORIGEN = "en";
@@ -285,8 +313,29 @@ export function comparar(origen, traduccion) {
   }
 
   // 6. Convención decimal del locale destino (mc-34)
+  //
+  // **Excepción, y es estrecha a propósito.** Un token que el ORIGINAL tampoco
+  // pudo leer como número, y que aparece idéntico en la traducción, no es una
+  // conversión fallida: es notación transcrita. El caso que lo obliga es
+  // `{0,1,2,8,9,10}` en mc-12 — el conjunto de puntajes que el Putnam otorga en
+  // la práctica. No es una cantidad, es un conjunto, y no se escribe distinto en
+  // alemán que en inglés.
+  //
+  // Lo que esta excepción NO abre: `16.4` sí se lee como número en el original,
+  // así que jamás entra aquí, y un francés que lo deje sin convertir a `16,4`
+  // sigue bloqueando. La exención exige que el original tampoco fuera legible —
+  // que es exactamente la firma de "esto no era una cifra".
+  //
+  // Lo que descubrió el hueco: una pasada de traducción convirtió ese conjunto a
+  // `{null, eins, zwei, acht, neun, zehn}` en alemán y a `{cero, uno, dos, …}`
+  // en español, y el auditor **no lo vio** —porque escribir cifras con letras
+  // borra los números en vez de alterarlos—, mientras castigaba la forma
+  // correcta. Es un falso negativo y un falso positivo en la misma línea.
   const conv = CONVENCIONES[traduccion.locale];
-  const malFormados = traduccion.numeros.filter((n) => n.canon === null);
+  const crudosIlegiblesEnOrigen = new Set(malOrigen.map((n) => n.crudo));
+  const malFormados = traduccion.numeros.filter(
+    (n) => n.canon === null && !crudosIlegiblesEnOrigen.has(n.crudo),
+  );
   if (malFormados.length) {
     fallos.push({
       prueba: "convención decimal",
@@ -386,6 +435,35 @@ function pares(locale) {
     }));
 }
 
+/**
+ * El manifiesto que el sitio consume: qué documento puede servirse traducido.
+ *
+ * Vive aquí y no en el auditor que lo vigila para que haya **una sola**
+ * definición de "verificado". Dos cálculos del mismo hecho es cómo se llega a
+ * que el guardián y el guardado discrepen y nadie sepa cuál miente — este
+ * repositorio ya pagó eso una vez con dos `import.meta.glob` sobre el corpus.
+ *
+ * Solo los `mc-*`: el README traducido no tiene página propia, y prometerle al
+ * sitio un documento que no existe es un 404 con nuestra firma.
+ */
+export function calcularManifiesto() {
+  const salida = {};
+  for (const locale of LOCALES_DESTINO) {
+    const ok = [];
+    for (const p of pares(locale)) {
+      if (!existsSync(p.origen)) continue;
+      if (!/^2026-\d{2}-\d{2}-mc-\d{2}-/.test(p.nombre)) continue;
+      const o = extraer(readFileSync(p.origen, "utf8"), LOCALE_ORIGEN);
+      const t = extraer(readFileSync(p.traduccion, "utf8"), locale);
+      if (comparar(o, t).filter((f) => !f.aviso).length === 0) ok.push(p.nombre);
+    }
+    salida[locale] = ok.sort();
+  }
+  return salida;
+}
+
+export { RUTA_MANIFIESTO };
+
 function main(argv) {
   const tiene = (f) => argv.includes(f);
   const valorDe = (f) => {
@@ -447,6 +525,31 @@ function main(argv) {
         problemas.push({ locale, nombre: p.nombre, fallos });
       }
     }
+    console.log("");
+  }
+
+  // ------------------------------------------------------------- manifiesto
+  //
+  // Se escribe ANTES de salir con 1. Que haya hallazgos es el caso normal —
+  // el manifiesto es precisamente la lista de los que no los tienen. Si solo se
+  // escribiera cuando todo pasa, no serviría para nada hasta el día en que ya no
+  // hiciera falta.
+  if (tiene("--manifiesto")) {
+    if (soloLocale) {
+      console.error("✗ corpus-integridad: --manifiesto necesita la pasada completa.");
+      console.error(`  Con --locale ${soloLocale} solo se miraron los documentos de ese locale, y`);
+      console.error("  escribir el manifiesto borraría los demás dejándolos como 'no verificados'.");
+      process.exit(1);
+    }
+    // Ordenado y sin marca de tiempo: el manifiesto se commitea, y una fecha que
+    // cambia en cada corrida produciría un diff todos los días sin que ningún
+    // documento haya cambiado.
+    const salida = calcularManifiesto();
+    mkdirSync(RUTA_MANIFIESTO.replace(/\/[^/]+$/, ""), { recursive: true });
+    writeFileSync(RUTA_MANIFIESTO, JSON.stringify(salida, null, 2) + "\n");
+    const total = Object.values(salida).reduce((a, v) => a + v.length, 0);
+    console.log(`→ ${RUTA_MANIFIESTO}: ${total} documento(s) verificados en ${LOCALES_DESTINO.length} locales`);
+    for (const l of LOCALES_DESTINO) console.log(`   ${l.padEnd(6)} ${String(salida[l].length).padStart(2)}/47`);
     console.log("");
   }
 

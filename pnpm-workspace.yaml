@@ -7,4 +7,5 @@ packages:
 # que agregar un tercero sea una decisión visible en el diff y no un descuido.
 allowBuilds:
   esbuild: true
+  sharp: set this to true or false
   workerd: true

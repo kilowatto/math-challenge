@@ -9,9 +9,27 @@ Los productos educativos reales rara vez escriben cada ítem a mano. IXL publica
 Para 2.500 ítems en 5 idiomas, el plan reparte el trabajo así: ~40 % generado por plantillas paramétricas (fuerte en K‑8, débil en posgrado/doctorado), ~29 % redactado por LLM con revisión humana obligatoria, y ~31 % escrito a mano por especialistas (dominante en los niveles más altos). El **coste** de API del LLM para redactar y traducir es, con aritmética mostrada abajo, del orden de cientos de dólares — un error de redondeo frente al **coste** humano (SME, editorial, traducción, revisión psicométrica), estimado en el orden de mil días‑persona. QTI 3.0 es adoptable de forma incremental (su propio modelo de conformidad lo permite) [3][4]; no hace falta implementarlo entero para el MVP.
 
 ## Executive summary (EN)
-Los productos de aprendizaje reales rara vez escriben a mano cada ítem. IXL publica ~1.219 habilidades matemáticas para PreK–8 [1] — no ítems, sino *habilidades*, cada una respaldada por generación dinámica de preguntas. Khan Academy usa Perseus, su propio editor/renderizador de ejercicios [2], para combinar la autoría humana con variación paramétrica. WeBWorK es el extremo limpio: un problema en su lenguaje PG puede producir instancias numéricas aleatorias ilimitadas [5]. La investigación 2023–2026 sobre generación de ítems con LLM es clara y modesta a la vez: los modelos redactan distractores matemáticamente válidos pero **no son buenos anticipando las verdaderas ideas erróneas de los estudiantes** [arXiv 2404.02124] — la razón por la que este banco no puede automatizar el paso de la «common-error explanation» sin revisión humana.
 
-Para 2.500 ítems en 5 idiomas, el plan a continuación reparte el trabajo aproximadamente 40 % plantillas parametrizadas (fuertes en K‑8, débiles en graduate/PhD), 29 % redactados por LLM con revisión humana obligatoria, y 31 % escritos a mano por especialistas (dominantes en la parte superior de la escalera). El coste de la API de LLM para redactar y traducir, con la aritmética mostrada a continuación, está en el orden de cientos de dólares — un error de redondeo frente al coste en horas‑hombre (SME, editorial, traducción, revisión psicométrica), estimado en aproximadamente mil días‑persona. QTI 3.0 es adoptable incrementalmente (su propio modelo de conformidad lo permite) [3][4]; el MVP no necesita la especificación completa.
+Real learning products rarely hand-write every item. IXL publishes ~1,219
+math skills for PreK–8 [1] — not items, but *skills*, each backed by dynamic
+question generation. Khan Academy uses Perseus, its own exercise
+editor/renderer [2], to blend human authoring with parametric variation.
+WeBWorK is the clean extreme: one problem in its PG language can produce
+unlimited randomized numeric instances [5]. 2023–2026 research on LLM item
+generation is clear and modest at once: models draft mathematically valid
+distractors but are **not good at anticipating real student misconceptions**
+[arXiv 2404.02124] — the reason this bank cannot automate the
+"common-error explanation" step without human review.
+
+For 2,500 items in 5 languages, the plan below splits work roughly 40%
+parameterized templates (strong at K-8, weak at graduate/PhD), 29%
+LLM-drafted with mandatory human review, and 31% handwritten by specialists
+(dominant at the top of the ladder). LLM API cost for drafting and
+translating, with arithmetic shown below, is on the order of hundreds of
+dollars — a rounding error against human-hour cost (SME, editorial,
+translation, psychometric review), estimated at roughly a thousand
+person-days. QTI 3.0 is adoptable incrementally (its own conformance model
+permits this) [3][4]; the MVP does not need the full spec.
 
 ## Findings
 

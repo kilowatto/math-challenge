@@ -7,7 +7,7 @@
 - BKT (Corbett & Anderson 1995) modela o domínio de uma habilidade com quatro parâmetros — `P(L0)` maestria inicial, `P(T)` prob. de aprender, `P(G)` prob. de adivinhar, `P(S)` prob. de "deslize" — com valores de exemplo amplamente citados `P(L0)=0.36, P(T)=0.1, P(G)=0.3, P(S)=0.05` [1].
 - Cognitive Tutor (motor de MATHia) combina "model tracing" (regras de produção passo a passo) com rastreio de conhecimento (domínio agregado por habilidade); são mecanismos distintos e frequentemente confundidos [2].
 - A evidência de eficácia é mista: What Works Clearinghouse (2016) classifica Cognitive Tutor Algebra I como "efeitos mistos" em álgebra (+4 pontos, intervalo -7 a +19) e "sem efeito discernível" em desempenho geral; Geometry obteve efeito potencialmente negativo (-8) [3].
-- O estudo RAND (Pane et al. 2014) não encontrou efeito no primeiro ano e encontrou ~0,21 desvios padrão no segundo ano — a eficácia dependia da fidelidade de implementação [4].
+- O estudo RAND (Pane et al. 2014) não encontrou efeito no ano 1 e encontrou ~0,21 desvios padrão no ano 2 — a eficácia dependia da fidelidade de implementação [4].
 - DKT (Piech et al. 2015) reportou AUC 0,86 vs 0,68 de BKT no ASSISTments, mas Khajah et al. (2016) mostraram que a comparação foi injusta: BKT bem replicado chega a 0,73, e variantes estendidas quase igualam DKT [5][6].
 - PFA e AFM são alternativas de regressão logística ao BKT: contabilizam acertos/erros prévios por componente de conhecimento sem estado bayesiano oculto [7][8].
 - O sistema mais relevante aqui é Math Garden (Rekentuin, U. Ámsterdam / Oefenweb): uma variante Elo que reestima habilidade e item a cada resposta, sem calibração por lotes [9].

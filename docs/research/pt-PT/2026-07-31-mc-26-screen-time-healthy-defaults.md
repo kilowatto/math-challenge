@@ -9,7 +9,7 @@
 - O Reino Unido **não tem um número oficial único e duradouro**: os CMO de 2019 concluíram que a evidência era muito fraca para fixar horas [6]; a imprensa de 2026 relata um novo máximo de 1 h/dia para menores de 5 [7], e fontes alinhadas ao NHS fornecem uma escada por idade (0–2: nada; 2–4: 1 h; 5–11: até 2 h) [8].
 - A evidência de que o tempo de ecrã prejudica o bem‑estar é **fraca e contestada**: Orben & Przybylski (2019), com ~355.000 adolescentes, constataram que o uso digital explica **no máximo 0,4 %** da variância no bem‑estar, comparável a “comer batatas” ou “usar óculos” [9][10].
 - Existe evidência experimental de que retirar ecrãs **uma hora antes de dormir** melhora o sono: um ensaio aleatorizado da Universidade de Bath (105 famílias, 16–30 meses) encontrou sono mais eficiente e menos despertares [11].
-- A regra “20‑20‑20” é uma heurística prática de um optometrista (Jeffrey Anshel, final dos anos 1990), não um padrão derivado de um ensaio controlado ótimo [12]. O tempo ao ar livre (1–2 h/dia) é o fator melhor evidenciado contra a miopia, mais do que o limite de ecrã em si [13].
+- A regra “20‑20‑20” é uma heurística prática de um optometrista (Jeffrey Anshel, final dos anos 90), não um padrão derivado de um ensaio controlado ótimo [12]. O tempo ao ar livre (1–2 h/dia) é o fator melhor evidenciado contra a miopia, mais do que o limite de ecrã em si [13].
 - As ferramentas comerciais (Apple Screen Time, Google Family Link) **não trazem limite diário ativado por defeito** — fornecem o mecanismo, não o número; o Instagram é a exceção, com um lembrete forçado a **60 minutos** por defeito [14][15][16].
 
 ## Resumo executivo (EN)

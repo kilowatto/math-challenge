@@ -1836,3 +1836,40 @@ inventar uno propio.
 vivo el 2026-08-01 (duolingoguides.com).
 **Investigación que la matiza:** `mc-18-leaderboards-competition.md`
 implicación 5 (recomienda 15-20%/10%, más conservador que lo adoptado).
+
+---
+
+## D-057 — F8 pospone el cobro: panel, reportes y límite de pantalla se construyen gratis para todo padre · 2026-08-01
+
+**Decisión del dueño:** al diseñar F8 ("Padres"), instrucción explícita — *"no vamos a cobrar nada.
+Por lo que tenemos que ser muy cuidadosos con eso."* Ninguna de las funciones de F8 (panel con
+diagnóstico, límite de pantalla con corte suave, reportes) queda gateada detrás de una suscripción.
+
+**Por qué hacía falta esta entrada.** D-021 (Monetización) lista *"panel del padre con diagnóstico...
+reportes"* como funciones del Plan Familia de pago (~$8-10 USD/mes). Al diseñar F8 en detalle, tres
+documentos de subsistema repitieron, cada uno por su cuenta, la misma corrección de alcance sin que
+quedara registrada en el lugar que CLAUDE.md manda consultar primero: *"Toda decisión nueva se anota
+[en decisions.md] con fecha... Si una decisión ya está en decisions.md, no se vuelve a discutir."*
+Sin esta entrada, una sesión futura que abra `decisions.md` antes que las issues de F8 (el orden que
+CLAUDE.md exige) leería D-021 tal cual está — panel y reportes como función de pago — y no
+encontraría la corrección.
+
+**Alcance exacto de esta pausa:**
+- **Panel con diagnóstico** y **Reportes** — D-021 los listaba como Plan Familia. Se construyen
+  completos y disponibles para cualquier padre, sin verificar suscripción ni plan.
+- **Límite de pantalla con corte suave** — D-021, verificado línea por línea, **nunca** lo listó como
+  función de pago (el agrupamiento de `master-plan.md` §13.2, que junta "límite de pantalla" con
+  "Stripe" en la misma fila de F8, es un artefacto de esa tabla resumen, no de la decisión real). No
+  necesita esta pausa porque nunca estuvo gateado.
+- **Stripe en sí** (el flujo de suscripción, checkout, webhooks) — pospuesto por completo. Ninguna
+  issue de F8 depende de que exista.
+
+**Lo que NO cambia:** D-021 sigue siendo la decisión de monetización del proyecto — el Plan Familia
+a ~$8-10 USD/mes sigue existiendo en el plan. Lo que se pospone es la implementación del cobro en sí
+y el gateo de panel/reportes detrás de él, no la intención de monetizar en algún momento futuro. El
+tope de 6 perfiles gratis con bandera en `CONFIG_KV` (issue #120, F2) tampoco se resuelve aquí —
+sigue en 6 hasta que exista una decisión de monetización real que lo reemplace formalmente.
+
+**Condición de revisión:** cuando exista una decisión de negocio sobre cobro real, esta entrada se
+enmienda (mismo patrón que D-035 enmendó D-015) para especificar el mecanismo de gateo — no se
+reescribe D-021, que sigue siendo la fuente del *qué* se cobra; esta entrada gobierna el *cuándo*.

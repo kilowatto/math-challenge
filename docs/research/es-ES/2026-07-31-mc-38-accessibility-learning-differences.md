@@ -21,7 +21,7 @@ MathML Core is a W3C Candidate Recommendation Snapshot (24 June 2025) whose own 
 
 ### 1. WCAG 2.2: los criterios nuevos que impactan más aquí
 
-WCAG 2.2 (octubre de 2023) añadió nueve criterios de éxito sobre la versión 2.1. Los más relevantes para un juego de matemáticas cronometrado, táctil y con capacidad de arrastre:
+WCAG 2.2 (octubre de 2023) añadió nueve criterios de éxito sobre la 2,1. Los más relevantes para un juego de matemáticas cronometrado, táctil y con capacidad de arrastre:
 
 - **2.5.8 Target Size (Minimum) — AA.** “El objetivo para la entrada de puntero debe ser de al menos 24 × 24 píxeles CSS, salvo que: Equivalente… En línea… Control del agente de usuario… Esencial.” [1] Un límite inferior, no superior: la UI para menores de 8 años debe apuntar muy por encima de él.  
 - **2.5.7 Dragging Movements — AA (nuevo).** “La funcionalidad que puede operarse mediante movimientos de arrastre también puede operarse con activaciones de puntero único sin arrastrar, a menos que el arrastre sea esencial.” [10] Cualquier mecánica de “arrastrar a la recta numérica” necesita un equivalente de toque para colocar.  

@@ -1,0 +1,67 @@
+{
+  "error.multiplico": [
+    "Du hast mal gerechnet statt plus.",
+    "Zähl von der größeren Zahl weiter."
+  ],
+  "error.resto": [
+    "Du hast weggenommen statt zusammengelegt.",
+    "Beide Gruppen kommen zusammen: zähl alle."
+  ],
+  "error.conto_el_primero_dos_veces": [
+    "Der erste wurde zweimal gezählt.",
+    "Fang beim nächsten an zu zählen."
+  ],
+  "error.sumo": [
+    "Du hast zusammengelegt statt wegzunehmen.",
+    "Nimm die Enten weg, die wegfliegen."
+  ],
+  "error.resto_al_reves": [
+    "Du hast die große von der kleinen Zahl abgezogen.",
+    "Fang damit an, wie viele es waren."
+  ],
+  "error.conto_el_que_quita": [
+    "Eine zu viel wurde weggenommen.",
+    "Zähl nur die, die weggehen."
+  ],
+  "error.se_salto_uno": [
+    "Eine wurde übersprungen.",
+    "Tippe jede einmal an, in Ruhe."
+  ],
+  "error.conto_uno_dos_veces": [
+    "Eine wurde zweimal gezählt.",
+    "Jede wird nur einmal angetippt."
+  ],
+  "error.subestimo": [
+    "Es war eine mehr.",
+    "Schau dir die ganze Gruppe auf einmal an."
+  ],
+  "error.sobreestimo": [
+    "Es war eine weniger.",
+    "Schau dir die ganze Gruppe auf einmal an."
+  ],
+  "error.puso_el_total": [
+    "Das ist die ganze Menge, nicht das, was fehlt.",
+    "Wie viele fehlen noch?"
+  ],
+  "error.repitio_la_parte": [
+    "Dieser Teil ist schon da.",
+    "Wie viele fehlen noch?"
+  ],
+  "error.sumo_en_vez_de_completar": [
+    "Du hast beide addiert statt aufzufüllen.",
+    "Wie viele passen noch?"
+  ],
+  "error.eligio_el_menor": [
+    "Diese Gruppe hat weniger.",
+    "Welche Reihe ist länger?"
+  ],
+  "error.eligio_al_azar": [
+    "Schau, was die anderen gemeinsam haben.",
+    "Eine davon ist anders."
+  ],
+  "acierto": "Genau.",
+  "inesperada": [
+    "Die nicht.",
+    "Versuch es noch einmal, in Ruhe."
+  ]
+}

@@ -48,6 +48,7 @@ const ACTIVE = [
   ["do-por-entidad",         "un Durable Object por entidad, nunca global",  "mc-32, D-030, D-043"],
   ["intercalado",            "las series intercalan, no agrupan por tema",   "D-018, mc-05"],
   ["adaptativo-simulacion",  "el motor adaptativo se simula antes de usarse","D-002, mc-13, mc-44"],
+  ["retro-completa",         "toda causa de error tiene texto en los 7 locales","mc-11, línea roja #7, D-022"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

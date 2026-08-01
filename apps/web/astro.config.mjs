@@ -49,7 +49,18 @@ const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
 
 export default defineConfig({
   site: "https://math.kilowatto.com",
-  adapter: cloudflare({ imageService: "compile" }),
+  adapter: cloudflare({
+    imageService: "compile",
+    // El limitador de tasa es un Durable Object, y un DO tiene que ser una
+    // exportación con nombre del módulo raíz del Worker — no puede vivir dentro
+    // de una ruta de Astro. `namedExports` es lo que impide que el empaquetado
+    // lo tire por no estar referenciado; sin esta lista el despliegue falla con
+    // «class not found» y el síntoma aparece en producción, no al construir.
+    workerEntryPoint: {
+      path: "src/worker.ts",
+      namedExports: ["RateLimiter"],
+    },
+  }),
   integrations: [redireccionesD049()],
 
   // D-033: mismo host, sitio en la raíz y app en rutas autenticadas, para que

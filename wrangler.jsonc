@@ -87,6 +87,34 @@
     }
   ],
 
+  // ── El limitador de tasa (criterio #113) ─────────────────────────────────
+  //
+  // Un contador necesita leer y escribir sin carrera. KV es eventualmente
+  // consistente y admite UNA escritura por segundo por llave: dos peticiones
+  // simultáneas leerían el mismo valor y el contador subiría de uno en uno
+  // mientras el atacante manda diez. Un Durable Object serializa, y es la única
+  // primitiva de Cloudflare que da un contador que no miente.
+  //
+  // UNA instancia por (acción, IP), jamás una global: un objeto global
+  // serializaría todo el tráfico del producto en un solo hilo (mc-32, D-030).
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "RATE_LIMITER",
+        "class_name": "RateLimiter"
+      }
+    ]
+  },
+
+  // Las migraciones de Durable Objects NO son las de D1: declaran qué clases
+  // existen. Sin esta entrada el despliegue falla con «class not found».
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["RateLimiter"]
+    }
+  ],
+
   "analytics_engine_datasets": [
     {
       "binding": "ATTEMPTS_AE",
@@ -97,6 +125,13 @@
       // superficie de niño: el script no se carga ahí y el endpoint lo rechaza.
       "binding": "VITALS_AE",
       "dataset": "math-challenge-vitals-ae"
+    },
+    {
+      // El embudo de activación (criterio #122). Mide al ADULTO: registro,
+      // primer perfil, primer dispositivo marcado. NUNCA a un niño — D-037 y
+      // línea roja #2, y `audits/telemetria-infantil.mjs` lo hace cumplir.
+      "binding": "FUNNEL_AE",
+      "dataset": "math-challenge-funnel-ae"
     }
   ],
 

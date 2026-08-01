@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // La flota adversarial — corredor (D-032, fase F1)
 //
-// 23 auditores con LLM, cada uno con su carta, cada uno obligado a citar la
+// 28 auditores con LLM, cada uno con su carta, cada uno obligado a citar la
 // decisión que hace cumplir. Juzgan **el cambio**, no producción: leen el diff
 // de tu rama y dicen qué no debería llegar a un usuario.
 //
@@ -13,7 +13,7 @@
 //   node audits/adversarial.mjs --simular        pipeline completo con veredictos falsos
 //   node audits/adversarial.mjs --todos          los 23 aunque no les toque — al cerrar fase
 //   node audits/adversarial.mjs --rutas apps/web/  acota el diff a esas rutas
-//   node audits/adversarial.mjs --cartas         valida las 23 cartas y sale
+//   node audits/adversarial.mjs --cartas         valida las 28 cartas y sale
 //
 // Va aparte del gancho pre-commit a propósito. Los deterministas de
 // audits/run.mjs cuestan milisegundos y bloquean cada commit; estos cuestan
@@ -95,7 +95,7 @@ const CON_VALOR = ["--solo", "--rutas"];
 const valoresDeBandera = new Set(CON_VALOR.map(valorDe).filter(Boolean));
 const refExplicita = argv.find((a) => !a.startsWith("--") && !valoresDeBandera.has(a)) ?? null;
 
-// ------------------------------------------------- 1. validar las 23 cartas
+// ------------------------------------------------- 1. validar las 28 cartas
 // Antes de gastar una sola llamada: una carta que cite un documento inventado
 // debe fallar aquí, no a mitad de una revisión. (Fue así como se detectó que la
 // carta de pedagogía citaba D-036, que no existe.)

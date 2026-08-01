@@ -38,6 +38,7 @@
  */
 import type { APIRoute } from "astro";
 import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../lib/sesiones";
+import { anotarPaso } from "../../lib/embudo";
 import { generarAlias, type LocaleAlias } from "../../../../../packages/motor/src/alias.ts";
 import { temaPorEdad, temaPermitido, edadDesdeAnio, aniosOfrecidos, type TemaVisual } from "../../../../../packages/motor/src/bandas.ts";
 
@@ -46,6 +47,8 @@ export const prerender = false;
 interface Env {
   DB: D1Database;
   SESSION_KV: KVNamespace;
+  /** El embudo. Mide al ADULTO que crea el perfil, nunca al niño (D-037). */
+  FUNNEL_AE?: AnalyticsEngineDataset;
 }
 
 const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
@@ -189,6 +192,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (/UNIQUE/i.test(msg)) return error("alias_repetido:reintenta", 409);
     throw e;
   }
+
+  // El embudo: este adulto creó un perfil. **Ningún dato del niño viaja** — ni
+  // el id, ni el alias, ni la banda. Que un adulto creó *un* perfil es un hecho
+  // sobre el adulto; que creó el de *este* niño es un hecho sobre el niño.
+  anotarPaso(env.FUNNEL_AE, "primer_perfil", { locale });
 
   // ── La respuesta depende de CÓMO se envió, y eso no es cosmética ─────────
   //

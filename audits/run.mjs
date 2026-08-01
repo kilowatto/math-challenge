@@ -94,7 +94,7 @@ const PENDING = [
 // deterministas cuestan milisegundos y bloquean cada commit; aquéllos cuestan
 // dinero y segundos. Bloquear cada commit con 23 llamadas de LLM es exactamente
 // cómo una flota se convierte en el ruido que D-032 teme.
-const ADVERSARIAL_COUNT = 23;
+const ADVERSARIAL_COUNT = 28;
 
 console.log("Flota de auditores — D-032\n");
 

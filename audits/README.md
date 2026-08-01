@@ -31,9 +31,9 @@ sitio se cayó, que no es culpa del commit.
 node audits/adversarial.mjs
 ```
 
-Los 23 auditores adversariales con LLM (F1). Leen el diff de tu rama contra
+Los 28 auditores adversariales con LLM (F1). Leen el diff de tu rama contra
 `main` y juzgan **el cambio**, no producción. Cuestan dinero y segundos, por eso
-no están en el gancho: bloquear cada commit con 23 llamadas de LLM es
+no están en el gancho: bloquear cada commit con 28 llamadas de LLM es
 exactamente cómo una flota se convierte en el ruido que D-032 teme.
 
 **Proveedor: Workers AI** (D-035) — `@cf/moonshotai/kimi-k2.6` primario,
@@ -67,7 +67,7 @@ documentación no despierta al de PWA en iOS.
 | | qué juzga | cuándo | bloquea |
 |---|---|---|---|
 | `run.mjs` (7 deterministas) | el cambio | cada commit, gancho | siempre |
-| `adversarial.mjs` (23 con LLM) | el cambio | antes del PR, a mano | solo citando línea roja o decisión |
+| `adversarial.mjs` (28 con LLM) | el cambio | antes del PR, a mano | solo citando línea roja o decisión |
 | `live.mjs` | producción desplegada | tras desplegar, a mano | no commitea nada |
 
 Ninguna corre en runtime. Ningún usuario las toca nunca.
@@ -81,7 +81,7 @@ Ninguna corre en runtime. Ningún usuario las toca nunca.
    → `adversarial/citas.mjs` lee los encabezados reales de `decisions.md` y los
    archivos reales de `research/`. Un hallazgo que cite `D-036` cuando las
    decisiones llegan a D-034 se descarta, por convincente que suene. Y un
-   auditor solo puede invocar lo que su carta le autoriza: sin ese corte, los 23
+   auditor solo puede invocar lo que su carta le autoriza: sin ese corte, los 28
    podrían citar cualquier decisión y la división de trabajo sería decorativa.
 
 2. **Anular exige escribir por qué**, y eso queda en el historial.
@@ -97,7 +97,7 @@ Ambas se prueban sin gastar una llamada:
 
 ```
 node audits/adversarial/prueba.mjs   las dos reglas, con veredictos escritos a mano
-node audits/adversarial.mjs --cartas las 23 cartas contra el repo
+node audits/adversarial.mjs --cartas las 28 cartas contra el repo
 ```
 
 ## Estado

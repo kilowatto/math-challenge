@@ -92,7 +92,7 @@ const PENDING = [
 // --- Adversariales con LLM: construidos en F1 ----------------------------
 // Viven en audits/adversarial.mjs y NO corren aquí a propósito. Estos
 // deterministas cuestan milisegundos y bloquean cada commit; aquéllos cuestan
-// dinero y segundos. Bloquear cada commit con 23 llamadas de LLM es exactamente
+// dinero y segundos. Bloquear cada commit con 28 llamadas de LLM es exactamente
 // cómo una flota se convierte en el ruido que D-032 teme.
 const ADVERSARIAL_COUNT = 28;
 

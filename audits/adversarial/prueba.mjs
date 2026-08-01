@@ -58,7 +58,7 @@ console.log("Reglas de D-032 — clasificación de hallazgos\n");
 {
   // D-021 existe (monetización), pero no está en la carta de kinder. Sin este
   // corte, cualquier auditor podría invocar cualquier decisión y la división de
-  // trabajo entre los 23 sería decorativa.
+  // trabajo entre los 28 sería decorativa.
   const c = clasificar([hallazgo({ cita_tipo: "decision", cita_id: "D-021" })], carta, universo);
   comprobar("una decisión real fuera de la carta no bloquea", c.bloqueantes.length, 0);
   comprobar("una decisión real fuera de la carta se descarta", c.invalidos.length, 1);
@@ -134,10 +134,10 @@ comprobar(
 );
 
 // --- La flota completa ---------------------------------------------------
-comprobar("D-032 pide 23 adversariales", CARTAS.length, 23);
+comprobar("D-032 pide 28 adversariales", CARTAS.length, 28);
 comprobar("cada carta tiene al menos una cita", CARTAS.every((c) => c.cita.length > 0), true);
 comprobar("cada carta declara de qué es ciega", CARTAS.every((c) => c.ciega_a?.length > 20), true);
-comprobar("ningún id de carta repetido", new Set(CARTAS.map((c) => c.id)).size, 23);
+comprobar("ningún id de carta repetido", new Set(CARTAS.map((c) => c.id)).size, 28);
 
 // --- El veredicto mal formado (D-035) ------------------------------------
 // Con la API de Claude el esquema se imponía en la capa de la herramienta. El

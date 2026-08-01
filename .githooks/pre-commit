@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Gancho pre-commit — la flota de auditores.
+#
+# Sustituye a CI. D-032 dice que los deterministas "bloquean por defecto", y sin
+# algo que los ejecute solo corren cuando alguien se acuerda — que es justo
+# cuando no hacen falta.
+#
+# Se activa una vez por clon:   git config core.hooksPath .githooks
+# Para saltarlo en una emergencia:  git commit --no-verify
+# (y entonces D-032 pide escribir por qué en el cuerpo del commit)
+
+set -euo pipefail
+
+echo "── auditores deterministas (D-032)"
+
+if ! node audits/run.mjs; then
+  echo
+  echo "✗ commit bloqueado por un auditor."
+  echo "  Anularlo exige --no-verify Y escribir la razón en el commit (D-032)."
+  exit 1
+fi
+
+# La flota adversarial NO corre aquí: 23 llamadas de LLM por commit son el ruido
+# que D-032 teme. Pero su cableado sí se verifica, porque cuesta milisegundos y
+# porque una carta rota se descubriría, si no, en medio de una revisión de PR.
+echo
+echo "── cableado de la flota adversarial (F1)"
+
+if ! node audits/adversarial.mjs --cartas >/dev/null; then
+  node audits/adversarial.mjs --cartas || true
+  echo
+  echo "✗ una carta cita un documento que no existe (regla 1 de D-032)."
+  exit 1
+fi
+
+if ! node audits/adversarial/prueba.mjs >/dev/null; then
+  node audits/adversarial/prueba.mjs || true
+  echo
+  echo "✗ las reglas de D-032 no clasifican como deben."
+  exit 1
+fi
+
+# El pipeline entero —clasificación, anulaciones, informe, SARIF, validación—
+# con veredictos falsos y cero llamadas al modelo. Va aquí porque ese camino
+# solo se ejecutaba tras una corrida real de ~18 minutos, y un bug ahí costó
+# una corrida completa antes de que existiera esta comprobación.
+if ! node audits/adversarial.mjs --simular >/dev/null 2>&1; then
+  node audits/adversarial.mjs --simular 2>&1 | tail -12
+  echo
+  echo "✗ el camino del informe está roto (SARIF, plan de remediación o clasificación)."
+  exit 1
+fi
+
+echo "  ✓ 23 cartas válidas · las dos reglas clasifican bien · informe y SARIF válidos"
+echo "    los adversariales se corren a mano:  node audits/adversarial.mjs"

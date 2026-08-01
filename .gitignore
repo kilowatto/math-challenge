@@ -42,3 +42,11 @@ playwright-report/
 # Temporal
 tmp/
 .cache/
+
+# Build de Astro
+apps/web/dist/
+apps/web/.astro/
+
+# Informes de la flota adversarial: evidencia de una corrida, no fuente.
+# El que importa se pega en el PR; el resto es ruido en el historial.
+audits/adversarial/informes/

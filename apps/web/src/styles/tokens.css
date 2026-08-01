@@ -1,0 +1,162 @@
+/* Tokens de diseño — paleta y tipografía de Ignia
+ *
+ * Fuente: docs/guia-de-estilo.md. Los nombres semánticos codifican las
+ * restricciones de contraste, para que usar el token correcto sea más fácil que
+ * usar el incorrecto: no existe un --color-text-on-light que sea naranja,
+ * porque ese uso no pasa WCAG.
+ *
+ * Verifica: node audits/brand-image.mjs --tabla
+ */
+
+:root {
+  /* --- Paleta cruda. No usar directo en componentes: usa los semánticos. --- */
+  --ignia-naranja: #F36B1C;
+  --ignia-azul: #0B6AB0;
+  --ignia-naranja-claro: #F8A337;
+  --ignia-naranja-oscuro: #CE4912;
+  --ignia-gris-900: #434547;
+  --ignia-gris-600: #727476;
+  --ignia-gris-400: #A4A6A8;
+  --ignia-negro: #000000;
+  --ignia-blanco: #FFFFFF;
+
+  /* --- Semánticos, tema claro ------------------------------------------- */
+  --color-bg: var(--ignia-blanco);
+  --color-surface: #F7F7F8;
+  --color-border: var(--ignia-gris-400);           /* 2.44:1 — solo bordes */
+
+  --color-text: var(--ignia-gris-900);             /* 9.63:1 ✓ */
+  --color-text-muted: var(--ignia-gris-600);       /* 4.69:1 ✓ apenas */
+
+  /* Texto de marca sobre claro. NO es el naranja: da 3.03:1 y no alcanza
+   * el 4.5:1 de texto normal. Estos dos sí pasan. */
+  --color-text-brand: var(--ignia-azul);           /* 5.67:1 ✓ */
+  --color-text-brand-warm: var(--ignia-naranja-oscuro); /* 4.58:1 ✓ */
+
+  /* El naranja de Ignia vive aquí: superficies, no texto chico. En gráficos y
+   * controles el umbral es 3:1 y lo pasa (3.03:1). */
+  --color-accent: var(--ignia-naranja);
+  --color-accent-hover: var(--ignia-naranja-oscuro);
+  --color-on-accent: var(--ignia-blanco);          /* 3.03:1 — solo texto grande */
+
+  /* --- Tipografía -------------------------------------------------------- */
+  /* Dos familias, no una — D-036.
+   *
+   * D-031 exige "tipografía del sistema" por plataforma; la guía de estilo fija
+   * Raleway como la tipografía de Ignia. La salida no es elegir una y perder la
+   * otra: **la marca habla en Raleway, los controles hablan en la voz del
+   * sistema**. Un botón con la tipografía del sistema se siente nativo; un
+   * título en Raleway se siente Ignia. Es lo que hacen las apps que consiguen
+   * las dos cosas.
+   *
+   * `system-ui` resuelve solo a la cara correcta de cada plataforma: Roboto en
+   * Android, SF Pro en iOS y macOS, Segoe UI Variable en Windows. No hace falta
+   * detectar la plataforma en JavaScript, que además fallaría en la primera
+   * pintura. La tabla de excepciones por sistema vive en docs/guia-de-estilo.md.
+   */
+  --font-marca: "Raleway", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sistema: system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto, sans-serif;
+
+  /* Alias heredado. El cuerpo de texto es marca: es donde se lee a Ignia. */
+  --font-sans: var(--font-marca);
+
+  --weight-title: 300;    /* Raleway Light */
+  --weight-subtitle: 500; /* Raleway Medium */
+  --weight-body: 400;     /* Raleway Regular */
+
+  --text-xs: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.5rem;
+
+  --leading-body: 1.6;
+
+  /* Parámetros de dislexia (mc-21). No se usa fuente especial: la evidencia no
+   * la respalda (mc-38). El esfuerzo va al espaciado. */
+  --tracking-readable: 0.012em;
+  --measure: 68ch;
+
+  /* --- Blancos táctiles por banda (mc-38, mc-20, mc-21) ------------------ */
+  --tap-min: 24px;        /* WCAG 2.2 AA 2.5.8 — piso absoluto */
+  --tap-primaria: 48px;   /* mc-21 */
+  --tap-kinder: 88px;     /* mc-20 — 23.7mm para 90% de acierto a los 4 años */
+
+  --radius: 10px;
+  --space: 1rem;
+}
+
+/* --- Tema oscuro ---------------------------------------------------------
+ * Aquí la marca mejora: el naranja pasa de 3.03:1 a 6.93:1 y sí puede llevar
+ * texto normal. Coincide con que mc-22 y mc-23 ya querían oscuro por defecto
+ * para adolescentes y adultos. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #16181A;
+    --color-surface: #1F2224;
+    --color-border: var(--ignia-gris-600);
+
+    --color-text: #ECEDEE;
+    --color-text-muted: var(--ignia-gris-400);      /* 8.60:1 sobre negro ✓ */
+
+    --color-text-brand: var(--ignia-naranja);       /* 6.93:1 ✓ aquí sí */
+    --color-text-brand-warm: var(--ignia-naranja-claro); /* 10.29:1 ✓ */
+
+    --color-accent: var(--ignia-naranja);
+    --color-accent-hover: var(--ignia-naranja-claro);
+    --color-on-accent: var(--ignia-negro);
+  }
+}
+
+/* --- Base ---------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { color-scheme: light dark; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-readable);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: var(--font-marca); font-weight: var(--weight-title); line-height: 1.2; margin: 0 0 0.5em; }
+
+/* Los controles hablan en la voz del sistema (D-031, D-036). Sin esto, un
+ * botón de Android con Raleway rompe la convención de Material 3 — que es
+ * exactamente lo que levantó el auditor `pwa-android`. */
+button, input, select, textarea, [role="button"] { font-family: var(--font-sistema); }
+h1 { font-size: var(--text-2xl); }
+h2 { font-size: var(--text-xl); font-weight: var(--weight-subtitle); }
+
+p { max-width: var(--measure); margin: 0 0 1em; }
+
+a { color: var(--color-text-brand); }
+
+/* Foco visible siempre — WCAG 2.4.7, y el auditor axe-a11y de F2 lo exigirá. */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Ningún blanco táctil por debajo del piso de WCAG 2.5.8. */
+button, a[role="button"], input[type="button"], input[type="submit"] {
+  min-block-size: var(--tap-min);
+  min-inline-size: var(--tap-min);
+}
+
+/* mc-42 / mc-38: respetar la preferencia del sistema. Nunca quitar la
+ * retroalimentación, solo calmarla. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

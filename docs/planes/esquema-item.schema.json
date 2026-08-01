@@ -1,0 +1,416 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://math.kilowatto.com/schemas/item-1.json",
+  "title": "Math Challenge — ítem, reto y serie (propuesta, §9 del plan maestro)",
+  "description": "PROPUESTA. No está implementado. Un ítem se guarda como ESTRUCTURA, jamás como texto ya formado (CLAUDE.md § Contenido, mc-34 implicación 1). additionalProperties es false en todas partes a propósito: es lo que impide que alguien agregue un campo de texto libre o un campo de castigo sin que nadie lo note (línea roja #3, #8).",
+
+  "oneOf": [
+    { "$ref": "#/$defs/item" },
+    { "$ref": "#/$defs/reto" },
+    { "$ref": "#/$defs/modelo" }
+  ],
+
+  "$defs": {
+
+    "locale": {
+      "enum": ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"],
+      "description": "Siete locales, no cinco idiomas (D-022, mc-34)."
+    },
+
+    "clave": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(\\.[a-z0-9_]+)+$",
+      "description": "Referencia a una frase autorada por un adulto en el paquete del locale. NUNCA texto ya formado dentro del ítem."
+    },
+
+    "frase": {
+      "type": "object",
+      "description": "Lo único que un ítem guarda de 'texto': una llave y sus variables. El texto vive en el paquete de frases del locale, y se renderiza en el límite de presentación.",
+      "required": ["clave"],
+      "additionalProperties": false,
+      "properties": {
+        "clave": { "$ref": "#/$defs/clave" },
+        "vars": {
+          "type": "object",
+          "additionalProperties": { "type": ["number", "string", "boolean"] }
+        }
+      }
+    },
+
+    "nodo": {
+      "description": "Un nodo del árbol semántico. Es lo que mc-34 llama AST: operador y operandos, sin ningún símbolo de notación adentro. El símbolo (÷ o :, × o ·), el separador decimal y el agrupador de millares se eligen al renderizar, por locale.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["t", "v"],
+          "additionalProperties": false,
+          "properties": {
+            "t": { "const": "num" },
+            "v": { "type": "number" },
+            "decimales": { "type": "integer", "minimum": 0, "maximum": 12 }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["t", "v"],
+          "additionalProperties": false,
+          "properties": {
+            "t": { "const": "magnitud" },
+            "v": { "type": "integer", "description": "Exponente de 10. 9 = mil millones / milliard / bilhão / Milliarde. El NOMBRE depende de escala corta o larga y no se puede guardar (mc-34 §6)." }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["t", "op", "args"],
+          "additionalProperties": false,
+          "properties": {
+            "t": { "const": "op" },
+            "op": { "enum": ["SUMA", "RESTA", "MULTIPLICA", "DIVIDE", "POTENCIA", "IGUAL", "MENOR", "MAYOR"] },
+            "args": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nodo" } }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["t", "n"],
+          "additionalProperties": false,
+          "properties": {
+            "t": { "const": "coleccion" },
+            "n": { "type": "integer", "minimum": 0, "maximum": 20 },
+            "objeto": { "type": "string", "description": "Id del arte en math-challenge-media. La Sabana no habla: el arte se reusa entre los siete locales (D-019)." },
+            "arreglo": { "enum": ["lineal", "marco_de_diez", "disperso", "dado", "par_impar"] }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["t", "hueco"],
+          "additionalProperties": false,
+          "properties": {
+            "t": { "const": "incognita" },
+            "hueco": { "type": "string" }
+          }
+        }
+      ]
+    },
+
+    "causa": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{3,48}$",
+      "description": "Vocabulario CERRADO, declarado en content/causas.json. Es lo que permite que Larry sepa QUÉ error se cometió y no solo que se falló (CLAUDE.md § Contenido, D-004 punto 1), y es la llave de caché de la explicación (D-015)."
+    },
+
+    "error": {
+      "type": "object",
+      "description": "Un error con causa nombrada. El arreglo nunca puede estar vacío: un ítem sin errores catalogados no puede ser explicado por Larry sin inventar, y Larry no calcula (línea roja #7).",
+      "required": ["causa", "explicacion"],
+      "additionalProperties": false,
+      "properties": {
+        "causa": { "$ref": "#/$defs/causa" },
+        "valor": {
+          "description": "La respuesta observable que produce esta causa. Puede ser un número, una opción, o un conjunto de celdas.",
+          "type": ["number", "string", "array"]
+        },
+        "explicacion": { "$ref": "#/$defs/clave" },
+        "remedia": {
+          "type": "string",
+          "pattern": "^K[0-9]{2}$|^N[0-9]{1,2}$",
+          "description": "A qué habilidad manda el repaso cuando esta causa aparece dos veces (mc-05)."
+        },
+        "locales": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/locale" },
+          "description": "Presente solo cuando la causa NO es universal. La inversión decena-unidad es un error del alemán, no del francés (mc-34 §7)."
+        },
+        "evidencia": {
+          "type": "string",
+          "description": "mc-NN §N. Un distractor sin evidencia es un número inventado, y mc-40 documenta que ahí es donde los modelos fallan."
+        },
+        "revisado_por_humano": {
+          "type": "boolean",
+          "description": "Obligatorio true para publicar cuando origen != 'a_mano' (mc-40 implicación 9)."
+        }
+      }
+    },
+
+    "respuesta": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["tipo", "valor"],
+          "additionalProperties": false,
+          "properties": {
+            "tipo": { "enum": ["opcion", "conteo", "numero"] },
+            "valor": { "type": ["number", "string"] },
+            "tol": { "type": "number", "minimum": 0, "description": "0 = exacta. >0 = banda de tolerancia (Fermi, estimación — mc-36 §6)." }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["tipo", "celdas"],
+          "additionalProperties": false,
+          "properties": {
+            "tipo": { "const": "conjunto" },
+            "celdas": { "type": "array", "items": { "type": "integer" } },
+            "orden_importa": { "type": "boolean", "default": false }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["tipo", "aceptables"],
+          "additionalProperties": false,
+          "description": "Para '¿cuál sobra?' (WODB, mc-36 §5): varias elecciones son legítimas, cada una por una razón matemática distinta. La razón la escribió un adulto; el niño solo toca. Así el formato entra sin pedirle al niño que justifique por escrito (línea roja #3).",
+          "properties": {
+            "tipo": { "const": "aceptables" },
+            "aceptables": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "required": ["valor", "razon"],
+                "additionalProperties": false,
+                "properties": {
+                  "valor": { "type": ["number", "string"] },
+                  "razon": { "$ref": "#/$defs/clave" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "medio": {
+      "type": "object",
+      "required": ["rol", "clave"],
+      "additionalProperties": false,
+      "properties": {
+        "rol": { "enum": ["audio_consigna", "audio_respuesta", "arte", "alt"] },
+        "clave": { "type": "string", "description": "Llave en math-challenge-media (R2)." },
+        "formato": { "enum": ["opus", "avif", "webp", "svg"], "description": "AVIF con respaldo WebP (CLAUDE.md § Imágenes, mc-47 §5)." },
+        "bytes": { "type": "integer", "minimum": 1, "description": "Alimenta el presupuesto de precaché offline de 5 MB (plan maestro §11)." }
+      }
+    },
+
+    "item": {
+      "type": "object",
+      "required": [
+        "tipo_doc", "id", "familia", "version", "estado", "habilidad", "nivel",
+        "dificultad_experta", "proposito", "formato", "autoria", "origen",
+        "cuerpo", "respuesta", "errores"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tipo_doc": { "const": "item" },
+        "id": { "type": "string", "pattern": "^[A-Z]{1,2}[0-9]{2,3}-[a-z0-9-]+(-[a-z]{2}(-[A-Z]{2})?)?$" },
+        "familia": {
+          "type": "string",
+          "description": "Agrupa a los hermanos por locale del mismo ítem. Un ítem 'universal' es familia de uno; un ítem de conteo son siete autorías bajo una familia (D-022)."
+        },
+        "version": { "type": "integer", "minimum": 1 },
+        "supersede": { "type": "string", "description": "Id de la versión que este ítem retira. Un ítem con respuestas encima NUNCA se edita en su lugar (mc-40 implicación 5)." },
+        "estado": {
+          "enum": ["borrador", "editorial", "matematica", "accesibilidad", "locales", "piloto", "activo", "retirado"],
+          "description": "La compuerta de revisión de mc-40 como máquina de estados, no como prosa."
+        },
+        "habilidad": { "type": "string", "pattern": "^K[0-9]{2}$|^S[0-9]{3}$" },
+        "nivel": { "type": "integer", "minimum": 1, "maximum": 12, "description": "N1..N12 (D-017). Manda el valor en puntos: 10 × 1.6^(nivel−1) (D-010)." },
+        "dificultad_experta": {
+          "type": "integer", "minimum": 1, "maximum": 100,
+          "description": "Escala 1-100 asignada por experto. Es lo que usa la ubicación adaptativa en v1, porque no hay banco calibrado (plan maestro §4.4, mc-44). Se retira cuando cada ítem tenga 200-400 respuestas."
+        },
+        "proposito": {
+          "enum": ["fluidez", "concepto", "resolucion", "lenguaje", "aplicacion"],
+          "description": "Los cinco propósitos de Swan (mc-36 §3). El propósito manda el formato, no el tema."
+        },
+        "formato": {
+          "enum": [
+            "toca_la_respuesta", "toca_para_contar", "flash", "arma_el_numero", "cual_sobra",
+            "entrada_numerica", "ordenar", "clasificar", "encuentra_el_error"
+          ],
+          "description": "Los cinco primeros son los formatos táctiles de kinder (§9). Los cuatro últimos son de la franja adulta y están PROHIBIDOS en banda KINDER (mc-06 implicación 4: nada de teclado a los 4-6 años)."
+        },
+        "qti": {
+          "enum": [
+            "choiceInteraction", "selectPointInteraction", "hotspotInteraction",
+            "textEntryInteraction", "orderInteraction", "matchInteraction", "gapMatchInteraction"
+          ],
+          "description": "Nombre de la interacción en QTI 3.0. Se adopta el vocabulario sin implementar el XML (mc-36 implicación 10, mc-40 §QTI)."
+        },
+        "autoria": {
+          "enum": ["universal", "por_locale"],
+          "description": "'universal' = una autoría, siete renders (D-034: es lo que hace asequible la franja adulta). 'por_locale' = siete autorías, porque la matemática misma cambia: 'einundzwanzig', 'quatre-vingt-dix', 'dezasseis' vs 'dezesseis' (D-022, mc-34 §7)."
+        },
+        "locale": { "$ref": "#/$defs/locale" },
+        "origen": {
+          "enum": ["plantilla", "ia_revisada", "a_mano"],
+          "description": "mc-40: ~70% plantilla en kinder. Un ítem 'ia_revisada' no puede publicarse sin revisión humana de sus errores."
+        },
+        "modelo": { "type": "string", "description": "Id del modelo de ítem (AIG) que lo generó (mc-36 §11)." },
+        "cuerpo": {
+          "type": "object",
+          "required": ["consigna", "escena"],
+          "additionalProperties": false,
+          "properties": {
+            "consigna": { "$ref": "#/$defs/frase" },
+            "escena": { "$ref": "#/$defs/nodo" },
+            "opciones": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/nodo" },
+              "description": "Los distractores se ordenan al renderizar con semilla por intento, no aquí: un orden fijo es una respuesta memorizable."
+            },
+            "flash_ms": { "type": "integer", "minimum": 200, "maximum": 2000, "description": "Solo formato 'flash'. Es exposición, no cronómetro: no puntúa, no se ve, no corre contra el niño (D-024, línea roja del reloj)." },
+            "audio_obligatorio": { "type": "boolean", "description": "true en toda la banda KINDER: la voz es la interfaz, el niño no lee (D-015, mc-06 implicación 2)." }
+          }
+        },
+        "respuesta": { "$ref": "#/$defs/respuesta" },
+        "errores": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/error" }
+        },
+        "medios": { "type": "array", "items": { "$ref": "#/$defs/medio" } },
+        "autoria_meta": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "autor": { "type": "string" },
+            "revisor": { "type": "string" },
+            "creado": { "type": "string", "format": "date" },
+            "revisado": { "type": ["string", "null"], "format": "date" },
+            "nota": { "type": "string" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "autoria": { "const": "por_locale" } }, "required": ["autoria"] },
+          "then": { "required": ["locale"] }
+        },
+        {
+          "if": { "properties": { "autoria": { "const": "universal" } }, "required": ["autoria"] },
+          "then": { "not": { "required": ["locale"] } }
+        },
+        {
+          "if": { "properties": { "origen": { "enum": ["ia_revisada"] } }, "required": ["origen"] },
+          "then": {
+            "properties": {
+              "errores": { "items": { "required": ["revisado_por_humano"] } }
+            }
+          }
+        }
+      ]
+    },
+
+    "modelo": {
+      "type": "object",
+      "description": "Modelo de ítem (AIG). Separa RADICALES —lo que determina la dificultad— de INCIDENTALES —lo que varía sin cambiarla (mc-36 §11). Se traduce el modelo, no sus instancias: 200 unidades de traducción cubren 1,010 ítems (mc-40 implicación 3).",
+      "required": ["tipo_doc", "id", "habilidad", "formato", "radicales", "incidentales", "estado"],
+      "additionalProperties": false,
+      "properties": {
+        "tipo_doc": { "const": "modelo" },
+        "id": { "type": "string" },
+        "habilidad": { "type": "string", "pattern": "^K[0-9]{2}$|^S[0-9]{3}$" },
+        "formato": { "type": "string" },
+        "estado": { "enum": ["borrador", "editorial", "matematica", "accesibilidad", "locales", "piloto", "activo", "retirado"] },
+        "radicales": {
+          "type": "object",
+          "description": "Lo que NO puede variar sin recalificar la dificultad. Ej.: el rango del número objetivo, si cruza la decena, cuántos distractores comparten unidad.",
+          "additionalProperties": true
+        },
+        "incidentales": {
+          "type": "object",
+          "description": "Lo que puede variar libremente: qué animal, qué color, qué arreglo visual.",
+          "additionalProperties": true
+        },
+        "rinde": { "type": "integer", "minimum": 1, "description": "Cuántos isomorfos declara producir. Un modelo que rinde 1 es un ítem escrito a mano con disfraz." },
+        "autoria_por_locale": {
+          "type": "boolean",
+          "description": "true cuando el modelo produce contenido que no se traduce: secuencias de conteo y palabras-número (mc-34 implicación 10)."
+        }
+      }
+    },
+
+    "reto": {
+      "type": "object",
+      "description": "Lo que el niño juega y lo que da puntos. Se compone de 1..N ítems (D-018). El reloj depende del TIPO de reto, jamás de la edad del niño.",
+      "required": ["tipo_doc", "id", "tipo", "banda", "composicion", "estado"],
+      "additionalProperties": false,
+      "properties": {
+        "tipo_doc": { "const": "reto" },
+        "id": { "type": "string" },
+        "tipo": { "enum": ["PRACTICA", "FLUIDEZ", "PROBLEMA", "DUELO", "HISTORIA"] },
+        "banda": { "enum": ["KINDER", "PRIMARIA", "SECUNDARIA", "SERIO", "PRO"] },
+        "locale": { "$ref": "#/$defs/locale" },
+        "lugar": { "type": "string", "description": "Lugar de la Sabana (D-019). Solo modo HISTORIA, solo KINDER." },
+        "estado": { "enum": ["borrador", "editorial", "matematica", "accesibilidad", "locales", "piloto", "activo", "retirado"] },
+        "composicion": {
+          "oneOf": [
+            {
+              "type": "object",
+              "description": "SERIE CURADA. La unidad de diseño es la serie, no la pregunta suelta (D-018). Es enseñanza con variación (mc-02): algo varía a propósito y algo se mantiene fijo a propósito.",
+              "required": ["modo", "items", "variacion"],
+              "additionalProperties": false,
+              "properties": {
+                "modo": { "const": "serie" },
+                "items": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+                "variacion": {
+                  "type": "object",
+                  "required": ["varia", "constante", "por_que"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "varia": { "type": "string" },
+                    "constante": { "type": "string" },
+                    "por_que": { "type": "string" }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "description": "RECETA. Una serie declarada como regla en vez de como lista. Se cura una vez y compone muchos retos — es lo que hace posible la franja adulta sin 2,500 curadurías (D-034), sin degradar a 'toma N ítems al azar'.",
+              "required": ["modo", "n", "filtros", "variacion"],
+              "additionalProperties": false,
+              "properties": {
+                "modo": { "const": "receta" },
+                "n": { "type": "integer", "minimum": 1, "maximum": 30 },
+                "filtros": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "habilidades": { "type": "array", "items": { "type": "string" } },
+                    "nivel": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer" } },
+                    "formatos": { "type": "array", "items": { "type": "string" } },
+                    "proposito": { "type": "array", "items": { "type": "string" } }
+                  }
+                },
+                "restricciones": {
+                  "type": "array",
+                  "items": { "enum": ["sin_repetir_modelo", "max_dos_por_causa", "intercalar_habilidades", "sin_repetir_en_7_dias"] },
+                  "description": "'intercalar_habilidades' hace cumplir la práctica intercalada: mezclar duele en la sesión y duplica el desempeño al día siguiente (mc-05, plan maestro §4.2)."
+                },
+                "variacion": {
+                  "type": "object",
+                  "required": ["varia", "constante", "por_que"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "varia": { "type": "string" },
+                    "constante": { "type": "string" },
+                    "por_que": { "type": "string" }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "banda": { "const": "KINDER" } }, "required": ["banda"] },
+          "then": {
+            "properties": { "tipo": { "enum": ["PRACTICA", "PROBLEMA", "HISTORIA"] } },
+            "description": "KINDER no tiene FLUIDEZ ni DUELO: los dos llevan reloj, y en kinder no hay reloj ni visible ni invisible (D-024). DUELO además es 8+ (D-018)."
+          }
+        }
+      ]
+    }
+  }
+}

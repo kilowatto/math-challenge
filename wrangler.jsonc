@@ -1,0 +1,119 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Regla de CLAUDE.md § Cloudflare: TODO objeto lleva prefijo
+  // `math-challenge-`, sin excepción, ni en pruebas (ahí se sufija: -dev).
+  // El auditor `audits/cf-prefix.mjs` lo hace cumplir en el gancho pre-commit,
+  // cruzando contra
+  // el inventario de docs/infrastructure.md.
+  "name": "math-challenge-web",
+  "main": "apps/web/dist/_worker.js/index.js",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": "apps/web/dist",
+    "binding": "ASSETS"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // D-033: mismo host. El sitio abierto vive en la raíz y la app en rutas
+  // autenticadas, para que la autoridad de dominio se concentre en un solo
+  // lugar en vez de repartirse (mc-48).
+  "routes": [
+    {
+      "pattern": "math.kilowatto.com",
+      "custom_domain": true
+    }
+  ],
+
+  // NOTA SOBRE BINDINGS: wrangler propone al crear un objeto un binding
+  // derivado del nombre (math_challenge_session_kv). No se usa. Los bindings
+  // los fija docs/infrastructure.md en UPPER_SNAKE_CASE corto, y el auditor
+  // cf-prefix verifica que no se separen.
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "math-challenge-db",
+      "database_id": "25276cac-2d48-4771-87c1-f58bc8722b4e",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "kv_namespaces": [
+    // Tokens de sesión de corta vida. No van a D1 a propósito.
+    // ADVERTENCIA: mc-25 NO pudo confirmar la residencia de datos de Workers
+    // KV. Hasta verificarlo con Cloudflare, aquí solo van tokens efímeros —
+    // nunca datos personales de un menor de la UE o el Reino Unido.
+    {
+      "binding": "SESSION_KV",
+      "id": "c7157f96cd7d478ca8bd0190ef396239"
+    },
+    // Feature flags y caché del catálogo de contenido.
+    {
+      "binding": "CONFIG_KV",
+      "id": "76bfad78247544bbb8fbd447a06ad933"
+    }
+  ],
+
+  "r2_buckets": [
+    // Arte de la Sabana, imágenes y audio de los ítems.
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "math-challenge-media"
+    },
+    // Archivo frío de intentos vencidos y exportaciones COPPA/GDPR.
+    {
+      "binding": "EXPORTS_BUCKET",
+      "bucket_name": "math-challenge-exports"
+    }
+  ],
+
+  // Telemetría por intento. NO va a D1: D1 topa en 10 GB por base y sería la
+  // primera pared que golpeamos (mc-32, riesgo #1). El dataset no se crea con
+  // comando: aparece la primera vez que un Worker le escribe.
+  // Service binding hacia math-challenge-ingest. Esto es el RPC nativo de
+  // D-030: el Worker llamado corre en el MISMO hilo del mismo servidor y la
+  // llamada normalmente ni siquiera cruza una red. Latencia añadida: cero.
+  "services": [
+    {
+      "binding": "INGEST",
+      "service": "math-challenge-ingest",
+      "entrypoint": "Ingest"
+    }
+  ],
+
+  "analytics_engine_datasets": [
+    {
+      "binding": "ATTEMPTS_AE",
+      "dataset": "math-challenge-attempts-ae"
+    },
+    {
+      // Core Web Vitals de campo, medidos por nosotros (D-037). Nunca desde una
+      // superficie de niño: el script no se carga ahí y el endpoint lo rechaza.
+      "binding": "VITALS_AE",
+      "dataset": "math-challenge-vitals-ae"
+    }
+  ],
+
+  "vars": {
+    // Los siete locales. No cinco: es-MX y es-ES no comparten separador
+    // decimal, pt-BR y pt-PT no comparten escala numérica (mc-34, D-022).
+    "SUPPORTED_LOCALES": "en,es-MX,es-ES,fr-FR,pt-BR,pt-PT,de-DE",
+    "DEFAULT_LOCALE": "en"
+  }
+
+  // Pendientes de fases posteriores, deliberadamente ausentes para que wrangler
+  // no falle contra objetos que no existen todavía:
+  //   F4  math-challenge-learner-do      (modelo adaptativo por niño)
+  //   F7  math-challenge-league-do       (liga de ~30, WebSocket)
+  //   F9  math-challenge-classroom-do    (salón y club de papás)
+  //   F6  math-challenge-tutor-gateway   (AI Gateway delante de Claude)
+  //
+  // Quien cree cualquiera de ellos escribe su renglón en la bitácora de
+  // docs/infrastructure.md EN EL MISMO PR (CLAUDE.md § Cloudflare).
+}

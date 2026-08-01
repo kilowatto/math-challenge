@@ -19,9 +19,9 @@ niño de 7 años que va adelantado no reciba una interfaz de adulto ni un adulto
 que batalla con fracciones reciba una de kinder.
 
 Los retos se componen de un banco de ítems y se califican con una regla validada
-que combina **precisión y velocidad** — con el peso de la velocidad en cero para
-los niños pequeños, porque cronometrar a un niño de cinco años mide su ansiedad,
-no su matemática.
+que combina **precisión y velocidad** — salvo en kinder, que tiene su propia
+regla de solo precisión, porque cronometrar a un niño de cinco años mide su
+ansiedad, no su matemática.
 
 **Larry**, el rinoceronte naranja de Ignia, es el tutor: al cerrar cada reto
 explica qué estuvo bien, por qué se perdieron puntos y cómo hacerlo bien — como
@@ -37,7 +37,8 @@ investigación y el plan:
 | [`docs/master-plan.md`](docs/master-plan.md) | El plan integral, en 15 secciones |
 | [`docs/decisions.md`](docs/decisions.md) | Las decisiones del dueño, con fecha y evidencia |
 | [`docs/infrastructure.md`](docs/infrastructure.md) | Los 27 objetos `math-challenge-*` de Cloudflare |
-| [`docs/research/`](docs/research/README.md) | 43 investigaciones, ~143,000 palabras |
+| [`docs/research/`](docs/research/README.md) | 47 investigaciones, ~157,000 palabras |
+| [`docs/por-que-existe.md`](docs/por-que-existe.md) | Por qué existe el proyecto, en palabras del dueño |
 | [`CLAUDE.md`](CLAUDE.md) | Reglas del proyecto: líneas rojas, commits, contenido |
 
 ### Principios que no se negocian
@@ -65,9 +66,9 @@ get an adult interface and an adult struggling with fractions doesn't get a
 kindergarten one.
 
 Challenges are composed from an item bank and scored by a validated rule
-combining **accuracy and speed** — with the speed weight set to zero for young
-children, because timing a five-year-old measures their anxiety, not their
-mathematics.
+combining **accuracy and speed** — except in kindergarten, which gets its own
+accuracy-only rule, because timing a five-year-old measures their anxiety, not
+their mathematics.
 
 **Larry**, Ignia's orange rhino, is the tutor: after each challenge he explains
 what went right, why points were lost, and how to do it properly — like a
@@ -107,4 +108,4 @@ usa escala larga mientras Brasil usa escala corta.
 
 ## Licencia / License
 
-Privado. Todos los derechos reservados. · Private. All rights reserved.
+**Licencia: [AGPL-3.0](LICENSE)** — copyleft fuerte de red. Quien lo use como servicio publica sus cambios (D-039).

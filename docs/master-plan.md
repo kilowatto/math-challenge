@@ -2,8 +2,8 @@
 
 > **math.kilowatto.com** · Plan maestro · 2026-07-31
 >
-> Construido sobre 43 investigaciones (~143,000 palabras) en
-> [`research/`](research/README.md) y 22 decisiones del dueño en
+> Construido sobre 47 investigaciones (~157,000 palabras) en
+> [`research/`](research/README.md) y 35 decisiones del dueño en
 > [`decisions.md`](decisions.md). Cada afirmación de este plan que suene a hecho
 > viene de una de esas dos fuentes; donde es criterio nuestro, lo dice.
 >
@@ -12,9 +12,11 @@
 > Cloudflare. A parent registers and creates child profiles; an adaptive
 > placement test sets difficulty while age sets the visual theme. Challenges are
 > composed from an item bank and scored by a validated accuracy-and-speed rule
-> whose speed weight is zero for young children. Larry, Ignia's existing orange
+> from primary school up, with an accuracy-only rule for kindergarten. Larry,
+> Ignia's existing orange
 > rhino, becomes the tutor. The MVP ships the **entire platform** with **only
-> kindergarten content**; each subsequent release adds one grade band.
+> kindergarten content**, plus a minimal adult strip (N8-N10) so adult clubs
+> have something to compete on; each subsequent release adds one grade band.
 
 ---
 
@@ -50,8 +52,9 @@ que sepa **qué** error cometiste y no solo que fallaste.
 
 ### 3.1 Stack
 
-**Astro + islas React sobre Cloudflare Workers**, igual que `apps/portal` y
-`apps/partners` de este monorepo. HTML estático para lo público (tableros,
+**Astro + islas React sobre Cloudflare Workers**, el mismo stack que `apps/portal`
+y `apps/partners` en `ignia-object-storage` — convención heredada, no código
+compartido (D-023). HTML estático para lo público (tableros,
 marketing, SEO en cinco idiomas) e islas React solo para el motor de reto. La
 razón no es la convención: es que buena parte del mercado objetivo en LatAm juega
 en Android de gama baja, y el bundle importa.
@@ -70,8 +73,10 @@ nombre, tipo, propósito EN/ES y binding en
   consistente y baja latencia para elegir el siguiente ítem.
 - **KV guarda instantáneas del tablero**, jamás escrituras por intento — KV
   admite una escritura por segundo por llave.
-- **AI Gateway siempre delante de Claude**, para caché, tope de gasto por perfil
-  y ruteo de modelo.
+- **La inferencia corre entera sobre Workers AI** (`kimi-k2.6` → `gpt-oss-120b`),
+  sin proveedor externo (D-035). Corre dentro del Worker: sin viaje externo, que
+  es lo que importa en Android de gama baja sobre 4G lento. **AI Gateway va
+  delante**, para caché, tope de gasto por perfil y ruteo de modelo.
 
 Costo estimado del tablero: ~$0.50-1.00 USD por millón de intentos.
 
@@ -125,8 +130,9 @@ desempeño al día siguiente (`mc-05`).
 
 ### 4.3 Puntuación
 
-Una sola fórmula para las seis bandas, la regla High-Speed High-Stakes validada
-con millones de niños y matemáticamente equivalente al modelo IRT 2PL:
+**Dos reglas, no una.** De primaria en adelante rige la regla High-Speed
+High-Stakes, validada con millones de niños y matemáticamente equivalente al
+modelo IRT 2PL:
 
 ```
 score = a · (d − RT) · (2·acc − 1)
@@ -137,19 +143,40 @@ resta más que fallar lento**. El castigo a adivinar está en la fórmula, no en
 regla aparte. `d` es el tiempo permitido y `a` el peso — Jr y Pro no son un caso
 especial, son la misma fórmula con `d` corto y `a` alto.
 
-| Banda | `d` | Peso velocidad | Reloj | Anti-trampa |
-|-------|-----|----------------|-------|-------------|
-| KINDER 4-7 | — | 0.0 | no | tier 0 |
-| PRIMARIA 8-11 | 60 s | 0.3 | opcional | tier 1-2 |
-| SECUNDARIA 12-17 | 45 s | 0.5 | sí | tier 3 |
-| ADULTO | 40 s | 0.6 | sí | tier 3 |
-| JR (olimpiada) | 30 s | 0.8 | sí | tier 4 |
-| PRO (matemático) | 20 s | 1.0 | sí | tier 5 |
+**Kinder tiene su propia regla, y decirlo de frente es más honesto que fingir que
+la fórmula es universal:**
+
+```
+score = valor_del_ítem · acc
+```
+
+Sin tiempo, sin resta al fallar. La razón es aritmética antes que pedagógica: con
+`a = 0` la regla HSHS colapsa a cero para toda respuesta, correcta o no — no
+"puntúa sin cronómetro", **no puntúa nada**. Y es la banda que el MVP entero va a
+ejercitar. Ver [D-024](decisions.md#d-024--regla-de-puntuación-de-kinder--2026-07-31).
+
+| Banda | Regla | `d` | Peso velocidad | Reloj | Anti-trampa |
+|-------|-------|-----|----------------|-------|-------------|
+| KINDER 4-6 | precisión | — | — | no | tier 0 |
+| PRIMARIA 7-11 | HSHS | 60 s | 0.3 | opcional | tier 1-2 |
+| SECUNDARIA 12-17 | HSHS | 45 s | 0.5 | sí | tier 3 |
+| SERIO (adulto) | HSHS | 40 s | 0.6 | sí | tier 3 |
+| JR (olimpiada) | HSHS | 30 s | 0.8 | sí | tier 4 |
+| PRO (matemático) | HSHS | 20 s | 1.0 | sí | tier 5 |
+
+Las edades de esta tabla son **las mismas** que las de la escalera de temas
+(§4.1) y las del límite de pantalla (§7). Un niño de 7 años es PRIMARIA en las
+tres, sin excepción.
 
 **Valor del ítem por dificultad:** `10 × 1.6^(nivel−1)`. Un problema de nivel 8
 vale ~268 puntos y 30 sumas de nivel 1 valen ~300. Quedan comparables a
 propósito, para que el primer lugar mundial no sea quien hace mil sumas triviales
 rápido.
+
+Esto **se aparta de lo que recomienda la investigación**: `mc-18` y `mc-44` piden
+ordenar el tablero global por habilidad estimada (θ, estilo TRI), no por puntos
+acumulados. Elegimos el valor-por-dificultad a sabiendas, y el porqué está
+escrito en [D-025](decisions.md#d-025--el-tablero-global-ordena-por-puntos-no-por-θ--2026-07-31).
 
 ### 4.4 Ubicación adaptativa
 
@@ -176,7 +203,8 @@ Tres seguidas en el momento no prueban nada durable.
 Larry no es un chatbot nuevo: es el mismo rinoceronte naranja de Ignia, con su
 canon intacto — coach honesto, humor solo sobre sí mismo, "¡Ya vas!" únicamente
 al aceptar una tarea. La investigación `mc-37` documenta con `archivo:línea` lo
-que ya existe en este repo y lo que hay que cambiar.
+que existe hoy en `ignia-object-storage` y lo que hay que cambiar. Ese código
+**no está a la mano desde aquí**: se reimplementa, no se importa (D-023).
 
 **Lo que cambia para un tutor de niños:**
 
@@ -184,18 +212,26 @@ que ya existe en este repo y lo que hay que cambiar.
 2. Cinco idiomas en vez de dos.
 3. **En kinder la voz es la interfaz** — el niño no lee, Larry habla.
 4. Larry **nunca calcula**: recibe el veredicto ya calculado y solo lo explica.
-   Es el patrón que ya usa `larry/contador/explain.ts` en este repo, y es lo que
-   evita que el tutor se equivoque en matemáticas.
+   Es el patrón de `src/larry/contador/explain.ts` en `ignia-object-storage`, y
+   es lo que evita que el tutor se equivoque en matemáticas.
 
 **Arquitectura híbrida:** explicación pregenerada y revisada al cerrar el reto
-(instantánea, gratis, offline, sin alucinación). La API de Claude entra solo
-cuando el niño pide más o comete un error no catalogado.
+(instantánea, gratis, offline, sin alucinación). **Workers AI** entra solo cuando
+el niño pide más o comete un error no catalogado (D-035) — dentro del Worker,
+sin viaje externo, que es lo que importa en Android de gama baja sobre 4G lento.
 
 | Banda | Modelo | ~Costo / 1k explicaciones |
 |-------|--------|---------------------------|
-| Kinder–Primaria | Haiku 4.5 | ~$1 |
-| Secundaria / Adulto / Jr | Sonnet 5 | ~$6 |
-| Pro | Opus 5 | ~$19-60 |
+| Kinder–Primaria | `@cf/openai/gpt-oss-120b` | ~$0.22 |
+| Secundaria / Adulto / Jr | `@cf/moonshotai/kimi-k2.6` | ~$1.50 |
+| Pro | `@cf/moonshotai/kimi-k2.6` | ~$1.50 |
+
+**La banda Pro tiene una condición, no solo un modelo.** Antes de soltarla con
+explicación en vivo hay que medir `kimi-k2.6` contra explicaciones avanzadas
+revisadas por humano. Si no pasa, la salida es dejar Pro con explicación
+pregenerada — el punto 1 de esta misma arquitectura, que nunca dependió de
+ningún modelo. Una explicación de cálculo tensorial incorrecta **enseña error**
+(`mc-37` §3).
 
 Tope de gasto por perfil y por día vía AI Gateway. Caché de explicaciones por
 tipo de error: la misma confusión no se paga mil veces.
@@ -375,8 +411,14 @@ complejo. El arte se reusa entre los cinco idiomas: **la Sabana no habla**.
 Decisión del dueño, con su costo dicho de frente: **el contenido de kinder no se
 puede traducir.** En alemán el 21 es "einundzwanzig" (uno-y-veinte) y en francés
 el 90 es "quatre-vingt-dix" (cuatro-veintes-diez); esa estructura cambia el orden
-en que un niño puede aprender a contar. Se necesitan **cinco autores nativos con
-criterio didáctico**, no cinco traductores.
+en que un niño puede aprender a contar. Se necesitan autores nativos con criterio
+didáctico, no traductores.
+
+**Son siete autores, no cinco.** Cinco idiomas, pero siete locales — y los pares
+que comparten idioma no comparten contenido matemático: `es-MX` usa punto decimal
+y `es-ES` coma; `pt-BR` dibuja la división larga a la europea y `es-MX` a la
+anglosajona; Portugal usa escala larga y Brasil corta. No son revisiones
+cosméticas sobre un original, son autorías separadas (`mc-34`).
 
 Trampas de notación ya documentadas (`mc-34`), que la arquitectura de árbol
 estructurado resuelve pero la autoría no:
@@ -437,24 +479,74 @@ lista Brasil, lo cual es una puerta de decisión real antes de vender ahí.
 
 Cada fase termina con algo que se puede usar, no con un documento.
 
+**Son dos vías en paralelo, no una.** El sitio abierto no depende de una sola
+línea del producto — las 157,000 palabras de investigación ya existen — y su
+valor compone con el tiempo, porque la autoridad de dominio y las citas entrantes
+tardan meses (`mc-48`). Si el sitio sale cuando sale la app, llega con cero
+audiencia. Si sale ahora, la app aterriza sobre público ya formado.
+
+### 13.1 Vía B — el sitio abierto
+
 | Fase | Qué queda funcionando | Depende de |
 |------|----------------------|-----------|
-| **F0 · Cimientos** | Worker desplegado en math.kilowatto.com, D1 con esquema, Astro con las cinco rutas de idioma, PWA instalable | — |
-| **F1 · Cuentas** | Padre se registra, crea perfiles de hijo, el niño entra con avatar + PIN de imágenes | F0 |
-| **F2 · Motor de reto** | Los 5 formatos táctiles, un reto de práctica corre de principio a fin, puntuación del lado del servidor | F1 |
-| **F3 · Adaptativo** | Ubicación por tema, selección del siguiente ítem, repaso espaciado, modelo por niño en su DO | F2 |
-| **F4 · Contenido kinder** | 400 ítems × 5 idiomas, 2,500 retos curados, 14 habilidades, arte de la Sabana | F2 (en paralelo con F3) |
-| **F5 · Larry** | Explicación pregenerada + Claude en vivo con ruteo y tope de gasto, voz en cinco idiomas | F2, F4 |
-| **F6 · Juego** | XP, rachas, misiones, mapa, ligas de 30, tablero con alias | F3 |
-| **F7 · Padres** | Panel, límite de pantalla con corte suave, reportes, Stripe | F1 |
-| **F8 · Maestro** | Salón, código, aprobación del padre, tablero del salón, bitácora | F1, F6 |
-| **F9 · Cierre** | Anti-trampa tier 0-1, accesibilidad WCAG 2.2 AA, revisión legal, offline completo | todas |
+| **S0 · Cimientos del sitio** | Astro sobre Workers, 7 rutas de locale con `hreflang` recíproco y `x-default`, JSON-LD con `inLanguage` por versión, WCAG 2.2 AA, auditores de esquema y `hreflang` bloqueando en el gancho pre-commit | — |
+| **S1 · El corpus** | Las 47 investigaciones publicadas e indexables, con fuentes, limitaciones y `[unverified]` visibles — incluidas las que contradicen al producto | S0 |
+| **S2 · La historia y el producto** | Página de origen desde [`por-que-existe.md`](por-que-existe.md), los niveles y el propósito explicados, la arquitectura técnica como contenido citable, atribución Ignia + Cloudflare | S0 |
 
-**F4 es la ruta crítica**, no la ingeniería. Cinco autores nativos produciendo y
-revisando 400 ítems y curando 2,500 retos es más trabajo que el motor que los
-sirve. La investigación estima ~1,053 días-persona para el banco completo de
-2,500 ítems de todas las bandas; kinder es una fracción, pero no una fracción
-pequeña.
+### 13.2 Vía A — el producto
+
+| Fase | Qué queda funcionando | Depende de |
+|------|----------------------|-----------|
+| **F0 · Cimientos y gates** | Worker en math.kilowatto.com, D1 con esquema, Astro con las **siete** rutas de locale, PWA instalable, HTTP/3 **y 0-RTT** verificados, RPC nativo entre `web` e `ingest` probado en vivo, y los auditores deterministas **bloqueando en un gancho pre-commit** | — |
+| **F1 · La flota adversarial** ⚠️ | Los 23 auditores con LLM, cada uno con su carta y con la regla de citar la decisión que hace cumplir; anulación por escrito. Las dos reglas de D-032 son código verificable, no prosa: `audits/adversarial/citas.mjs` valida cada cita contra el repo real y `ANULACIONES.md` es el registro de anulaciones, commiteado. Corre a mano antes del PR — no en el gancho, porque 23 llamadas de LLM por commit son el ruido que D-032 teme. Sobre **Workers AI** por D-035, con validación de esquema propia porque su JSON es best-effort. Verificada con violaciones plantadas: `pwa-ios` cazó las tres y citó bien. **No cerrada:** falta correr los 23 completos —solo `pwa-ios` se ha ejercido— y ejercer una anulación de punta a punta | F0 |
+| **F2 · Cuentas y onboarding** | Las tres puertas de registro de 2 campos, perfiles de hijo, entrada del niño con avatar + PIN de imágenes, verificación del maestro antes de crear salón, y las cinco marcas contextuales | F0 |
+| **F3 · Motor de reto** | Los 5 formatos táctiles, un reto de práctica de principio a fin, puntuación del lado del servidor con HSHS **y la regla de precisión de kinder** (D-024) | F2 |
+| **F4 · Adaptativo** | Ubicación por tema, selección del siguiente ítem, repaso espaciado, modelo por niño en su Durable Object | F3 |
+| **F5 · Contenido kinder** | ~400 ítems × **7 locales**, 2,500 retos curados, 14 habilidades, arte de la Sabana | esquema de ítem (§9) · en paralelo con F3-F4 |
+| **F5b · Franja adulta** | ~150 ítems N8-N10, **autorados una vez y renderizados en 7 notaciones**. Sin Sabana, sin modo historia, sin curaduría por serie (D-034) | esquema de ítem (§9) · en paralelo con F5 |
+| **F6 · Larry Profe** | Explicación pregenerada al cerrar el reto + Workers AI en vivo con ruteo por banda y tope de gasto (D-035), voz en los siete locales | F3, F5 |
+| **F7 · Juego** | XP, rachas con red, misiones, mapa, ligas de ~30, tablero con alias generados | F4 |
+| **F8 · Padres** | Panel con diagnóstico, límite de pantalla con corte suave, reportes, Stripe | F2 |
+| **F9 · Grupos infantiles** | Salón del maestro y club de papás sobre la misma tabla `grupo_infantil`: código, aprobación del padre, tablero, bitácora. Sin chat, en ninguna dirección (D-027) | F2, F7 |
+| **F10 · Clubs de adultos** | `club_adulto`, retos con ventana de tiempo, las tres formas de prenda, y Larry moderando el texto libre a prueba de fallos (D-028, D-029) | F2, F7, **F5b** |
+| **F11 · Cierre** | Anti-trampa tier 0-1, accesibilidad auditada, revisión legal con abogado, offline completo, interfaz adaptativa terminada en las cuatro plataformas | todas |
+
+### 13.3 Cuatro cosas que la tabla no dice sola
+
+**F0 y F1 van primero por una razón, no por burocracia.** Construir 35 auditores
+después del código es reajustar; construirlos antes es que el código nazca
+cumpliendo. Es también lo único que convierte las ocho líneas rojas en algo que
+el sistema impone en vez de algo que alguien recuerda.
+
+**F5 sigue siendo la ruta crítica, y creció.** Son **siete** autores nativos, no
+cinco: `es-MX` y `es-ES` no comparten separador decimal ni formato de división
+larga, y `pt-BR` y `pt-PT` no comparten escala numérica (`mc-34`, D-022).
+Producir y revisar 400 ítems y curar 2,500 retos es más trabajo que el motor que
+los sirve — la investigación estima ~1,053 días-persona para el banco completo de
+todas las bandas, y kinder es una fracción, pero no una pequeña (`mc-40`). **F5
+no espera a F3**: el esquema de ítem ya está especificado en §9, así que la
+autoría puede arrancar en cuanto haya autores contratados.
+
+**La interfaz adaptativa no es una fase, es un impuesto.** Material 3 en Android,
+HIG en iOS y macOS, controles del sistema en Windows (D-031) se pagan en cada
+función de F2 a F10, no en un bloque al final. Aparece en F11 solo como
+verificación; el costo real está repartido.
+
+**F10 depende de F5b, y F5b existe por una razón concreta.** D-009 fijaba el MVP
+con solo contenido de kinder, y un club de adultos compitiendo en sumas de kinder
+no tiene sentido — la vía del adulto, que es el caso de uso del propio dueño
+([`por-que-existe.md`](por-que-existe.md)), se quedaba sin contenido. D-034
+enmienda D-009 y agrega una franja mínima de ~150 ítems en N8-N10.
+
+Lo que hace esa franja asequible no es su tamaño sino algo menos obvio: **el
+costo de los siete locales es un problema de kinder, no de adultos.** Lo que no
+se puede traducir son las palabras-número y las secuencias de conteo (`mc-34`);
+en N8-N10 lo único que cambia es la notación, y eso lo resuelve el
+almacenamiento del ítem como estructura (§9). La franja adulta **se autora una
+vez y se renderiza siete veces** — el primer lugar donde el proyecto cobra esa
+decisión de diseño. Con el costo contrario también dicho: `mc-40` muestra que la
+proporción de plantilla baja al subir de nivel (20-35% aquí contra ~70% en
+kinder), así que ítem por ítem el contenido adulto es más caro de producir.
 
 ---
 
@@ -469,7 +561,8 @@ buscado.
    `[unverified]` a propósito. Antes de lanzar con menores esto se revisa con
    abogado, en particular COPPA 2025 (cumplimiento exigible desde abril 2026), el
    Children's Code, y el estado real de la LFPDPPP tras la desaparición del INAI.
-3. **No incluye contenido arriba de kinder.** Las bandas N4 a N12 están
+3. **No incluye la escalera completa.** El MVP llega a kinder (N1-N3) más una
+   franja mínima en N8-N10 (D-034); las bandas N4 a N7 y N11-N12 están
    investigadas, no construidas.
 4. **No promete resultados de aprendizaje.** No podemos afirmar que la app enseña
    hasta medirlo con pre/post y retención diferida. Nunca citar "las 2 sigma de
@@ -499,6 +592,7 @@ señala como el punto de falla (`mc-18`).
 
 ## Referencias
 
-- [`decisions.md`](decisions.md) — las 22 decisiones del dueño, con fecha
+- [`decisions.md`](decisions.md) — las 34 decisiones del dueño, con fecha
 - [`infrastructure.md`](infrastructure.md) — los 27 objetos `math-challenge-*`
-- [`research/README.md`](research/README.md) — índice de las 43 investigaciones
+- [`research/README.md`](research/README.md) — índice de las 47 investigaciones
+- [`por-que-existe.md`](por-que-existe.md) — la historia del dueño, voz del sitio

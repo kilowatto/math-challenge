@@ -1,0 +1,52 @@
+/* Raleway autohospedada, como fuente variable.
+ *
+ * Por qué no se carga de Google Fonts:
+ *
+ * 1. Rendimiento. Eran dos `preconnect` más una hoja de estilo de un tercero en
+ *    la ruta crítica, y solo entonces empezaba la descarga de la fuente. En 4G
+ *    lento con pérdida de paquetes eso son viajes redondos que se pagan antes de
+ *    poder leer nada (mc-47 §3).
+ *
+ * 2. Privacidad. Cargar de fonts.gstatic.com le manda a Google la IP y el
+ *    user-agent de cada visitante — en un producto para niños, desde una página
+ *    pública. El Children's Code exige minimización y perfilado apagado por
+ *    defecto (mc-25, mc-30). No hay razón para regalar ese dato por una fuente.
+ *
+ * DOS archivos, no seis. Raleway es una fuente VARIABLE: Google declara tres
+ * @font-face con pesos fijos (300, 400, 500) que apuntan todos al MISMO woff2,
+ * y el navegador instancia el peso que se pida. La primera versión de este
+ * archivo descargaba seis archivos creyendo que eran distintos; los tres pesos
+ * tenían md5 idéntico. Se detectó comparando checksums, no leyendo el CSS.
+ *
+ * Declararlo como rango (`font-weight: 300 500`) es lo correcto y además da
+ * gratis cualquier peso intermedio, por si el diseño llega a pedir 350 o 450.
+ *
+ * Subconjuntos: latin y latin-ext. latin-ext es obligatorio, no opcional — lleva
+ * ñ, ç, ã, õ y ü, o sea que sin él es-MX, es-ES, pt-BR, pt-PT y de-DE renderizan
+ * con fuente de respaldo justo en sus caracteres propios.
+ *
+ * `font-display: swap`: el texto se lee con la fuente del sistema mientras llega
+ * Raleway. En una red mala, leer tarde es peor que leer en otra fuente.
+ */
+
+@font-face {
+  font-family: "Raleway";
+  font-style: normal;
+  font-weight: 300 500; /* variable: cubre Light, Regular y Medium */
+  font-display: swap;
+  src: url("/fonts/raleway-var-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Raleway";
+  font-style: normal;
+  font-weight: 300 500;
+  font-display: swap;
+  src: url("/fonts/raleway-var-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}

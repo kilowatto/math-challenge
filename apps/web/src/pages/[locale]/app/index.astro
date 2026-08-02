@@ -27,10 +27,15 @@
  * adulto que se registró por `registro-aprendo` veía la misma sección "Tus
  * hijos" que un padre, vacía y sin sentido para él.
  *
- * Ahora la pantalla lee `is_learner` igual que ya leía `child_profiles`, y las
- * pestañas que se enseñan dependen de lo que la cuenta REALMENTE es — que
- * pueden ser las dos cosas a la vez (D-034 cita al propio dueño como ejemplo:
- * papá y aprendiz adulto en la misma cuenta).
+ * ─── #346: y aun así seguían saliendo pestañas de familia sin familia ──────
+ *
+ * El primer arreglo se pasó al otro lado. `esFamilia = hijos.length > 0 ||
+ * !esSolo` daba las tres pestañas de familia a toda cuenta que no se hubiera
+ * registrado por la puerta «quiero aprender yo», y el dueño volvió a abrir su
+ * iPhone —cero hijos— para encontrarse «Hijos · Progreso · Tiemp». La regla
+ * vuelve a ser la de D-065 punto 3: **hay pestañas de familia cuando hay al
+ * menos un hijo**, y el primer hijo se crea desde «Cuenta», que toda cuenta ve.
+ * El detalle completo está en `lib/pestanas-privadas.ts`.
  *
  * ─── Esto es SSR, y no por gusto ───────────────────────────────────────────
  *
@@ -51,6 +56,11 @@ import Privada from "../../../layouts/Privada.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
 import { rutaKids, rutaPerfilNuevo } from "../../../lib/rutas-app";
+import {
+  pestanasPrivadas,
+  clavesDePestana,
+  type ClavePestana,
+} from "../../../lib/pestanas-privadas";
 import { ruta } from "../../../i18n/rutas";
 
 const { locale: raw } = Astro.params;
@@ -87,26 +97,18 @@ if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
  * que no se pide (`mc-25`, D-013).
  */
 let hijos: Array<{ id: string; alias: string; theme_band: string }> = [];
-let esSolo = false;
 if (env?.DB) {
   try {
-    const [rHijos, rUsuario] = await Promise.all([
-      env.DB.prepare(
-        "SELECT id, alias, theme_band FROM child_profiles WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at",
-      )
-        .bind(sesion.userId)
-        .all<{ id: string; alias: string; theme_band: string }>(),
-      env.DB.prepare("SELECT is_learner FROM users WHERE id = ?")
-        .bind(sesion.userId)
-        .first<{ is_learner: number }>(),
-    ]);
+    const rHijos = await env.DB.prepare(
+      "SELECT id, alias, theme_band FROM child_profiles WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at",
+    )
+      .bind(sesion.userId)
+      .all<{ id: string; alias: string; theme_band: string }>();
     hijos = rHijos.results ?? [];
-    esSolo = rUsuario?.is_learner === 1;
   } catch {
     // Sin base, la casa se enseña vacía en vez de dar un 500. El adulto puede
     // marcar el aparato y añadir su passkey igual.
     hijos = [];
-    esSolo = false;
   }
 }
 
@@ -114,82 +116,38 @@ if (env?.DB) {
 const aparatoMarcado = Boolean(cookies[COOKIE_HOGAR]);
 
 /**
- * Una cuenta es de FAMILIA por lo que es, no por lo que ya alcanzó a hacer.
+ * ─── Una cuenta es de familia cuando TIENE hijos. Punto. (issue #346) ──────
  *
- * Esto decía `hijos.length > 0`, y con eso un padre que acababa de registrarse
- * —cero hijos todavía, que es el estado de TODA cuenta nueva— no era ni familia
- * ni aprendiz. Se quedaba con una sola pestaña, «Cuenta», así que:
+ * Esto decía `hijos.length > 0 || !esSolo`, y lo escribí yo arreglando «la casa
+ * no tiene menú» (#344). El efecto fue el contrario del que D-065 punto 3 pide:
+ * toda cuenta que no se hubiera registrado por la puerta «quiero aprender yo»
+ * —o sea casi todas— recibía las tres pestañas del modo familia. El dueño abrió
+ * su iPhone sin un solo hijo cargado y leyó:
  *
- *   · la franja de pestañas no se pintaba (`Privada.astro` la oculta con una
- *     sola: un menú de un elemento no es un menú), y el dueño lo reportó como
- *     «sin menú»;
- *   · la vista de aterrizaje era «Cuenta», o sea que entrar te dejaba en
- *     contraseñas y llaves de acceso — el mismo aterrizaje equivocado que ya se
- *     había corregido antes;
- *   · y no había **ninguna** forma de crear el primer perfil de hijo, porque el
- *     botón vive en la pestaña «Hijos», que no existía.
+ *     Hijos    Progreso (Próximamente)    Tiemp    Cerrar sesión
  *
- * Un padre recién registrado quedaba encerrado en la pantalla de ajustes de su
- * cuenta. La pantalla vacía correcta ya estaba escrita —«todavía no hay nadie»
- * más el botón de añadir— y era inalcanzable.
+ * Tres destinos de familia, dos de ellos vacíos por construcción, para alguien
+ * que no tiene familia en el producto.
  *
- * `is_learner` marca a quien se registró por la puerta «quiero aprender yo»
- * (D-026). Todo lo demás es una cuenta de adulto a cargo de alguien, tenga hijos
- * cargados o no. Quien es las dos cosas ve las dos.
+ * **Y el primer hijo se sigue pudiendo crear**, que era el motivo real de aquel
+ * `|| !esSolo`: el botón se mudó a «Cuenta» (`app/perfil.astro`), que toda
+ * cuenta ve siempre. En cuanto existe un hijo, las tres pestañas aparecen solas
+ * — sin interruptor, sin pregunta, sin pantalla intermedia.
+ *
+ * `users.is_learner` ya no se lee aquí, y es a propósito: con esta regla no
+ * cambia nada de lo que se pinta. Vuelve a ser una columna sin lector, y esa es
+ * exactamente la deuda que cierra el interruptor de modo familia/solo que el
+ * dueño pidió — ver `lib/pestanas-privadas.ts`.
  */
-const esFamilia = hijos.length > 0 || !esSolo;
+const tieneHijos = hijos.length > 0;
 
-/**
- * Las pestañas, derivadas de lo que la cuenta REALMENTE tiene — no de por
- * dónde se registró (D-065).
- *
- * "Cuenta" (passkey, contraseña) se pensó para vivir en `/app/perfil/`, una
- * ruta aparte que otra sesión está construyendo en paralelo — pero mientras
- * esa ruta no exista de verdad, apuntar la pestaña ahí es un 404 real: se
- * vio pasar en vivo, un padre probando el cambio lo encontró de inmediato.
- * Hasta que `/app/perfil/` esté desplegada, "Cuenta" se queda AQUÍ, como una
- * vista más — un callejón sin salida es peor que una página que no se ve
- * tan limpia como se planeó.
- *
- * Tope de 5 (HIG, Material 3 — mc-49). Progreso/Límite de pantalla son F8
- * (D-057, ya decidido, todavía sin construir); Practicar es F5b/F10 (D-034,
- * también sin construir). Se enseñan igual, marcadas "Próximamente": el dueño
- * prefirió dejar el hueco visible a rehacer la navegación cuando esas fases
- * lleguen.
- */
-type Clave = "hijos" | "progreso" | "limite" | "practicar" | "cuenta";
-// «Practicar» YA no es próximamente: `/app/practicar/` existe y sirve retos
-// reales del mismo motor. Lo que sigue sin construirse son Progreso y Límite
-// de pantalla (F8, D-057).
-const PROXIMAMENTE = new Set<Clave>(["progreso", "limite"]);
-const vistasDisponibles: Clave[] = [
-  ...(esFamilia ? (["hijos", "progreso", "limite"] as Clave[]) : []),
-  // **Practicar la ve TODO EL MUNDO**, no solo quien se registró por la puerta
-  // «quiero aprender yo». Math Challenge tiene dos modos —familia y solo— y son
-  // igual de importantes: un padre también puede querer jugar, y alguien sin
-  // hijos tiene que poder jugar sin leer una palabra sobre familia.
-  //
-  // Estaba condicionada a `esSolo`, así que un adulto que se registró como
-  // padre no tenía forma de jugar ni siquiera el contenido de kinder — que no
-  // es «de niños», es el principio de la escalera y hoy es lo único autorado.
-  "practicar",
-  "cuenta",
-];
+// Las pestañas, en un solo sitio para las dos rutas de esta superficie
+// (`app/index.astro` y `app/perfil.astro`). Ver `lib/pestanas-privadas.ts`.
+const vistasDisponibles = clavesDePestana(tieneHijos);
 
-const ETIQUETAS: Record<Clave, string> = {
-  hijos: m.casaTabHijos,
-  progreso: m.casaTabProgreso,
-  limite: m.casaTabLimite,
-  practicar: m.casaTabPracticar,
-  cuenta: m.casaTabCuenta,
-};
-
-// La vista de aterrizaje es la primera pestaña REAL, no la primera de la
-// lista: un aprendiz solo vería "Practicar" (próximamente) como bienvenida
-// si el orden mandara, y eso es un callejón sin salida en la primera pantalla
-// que ve. "Cuenta" siempre es real, así que esto nunca queda sin destino.
-const vistaPedida = Astro.url.searchParams.get("vista") as Clave | null;
 /*
+ * ─── Qué vista se pinta ───────────────────────────────────────────────────
+ *
  * Sin hijos, se aterriza en PRACTICAR. Con hijos, en Hijos.
  *
  * Antes era «la primera pestaña real», que siempre daba «Hijos», así que quien
@@ -199,35 +157,31 @@ const vistaPedida = Astro.url.searchParams.get("vista") as Clave | null;
  *
  * Los dos modos son iguales de importantes. Quien juega solo entra a jugar.
  */
-const vistaPorDefecto: Clave = hijos.length > 0
-  ? "hijos"
-  : (vistasDisponibles.find((c) => !PROXIMAMENTE.has(c) && c !== "hijos") ?? "practicar");
-const vista: Clave =
-  vistaPedida && vistasDisponibles.includes(vistaPedida) ? vistaPedida : vistaPorDefecto;
+const vistaPedida = Astro.url.searchParams.get("vista") as ClavePestana | null;
 
-const pestanas = vistasDisponibles.map((clave) => ({
-  clave,
-  label: ETIQUETAS[clave],
-  href: `/${locale}/app/?vista=${clave}`,
-  activa: clave === vista,
-  proximamente: PROXIMAMENTE.has(clave),
-}));
+/*
+ * `?vista=cuenta` ya no es una vista de esta página: «Cuenta» tiene su ruta,
+ * `/app/perfil/`, como D-065 punto 7 mandaba. El enlace viejo sigue existiendo
+ * en marcadores, en el historial y en cualquier pestaña abierta desde ayer, así
+ * que se redirige en vez de caer en el aterrizaje por defecto — que dejaría a
+ * quien buscaba su contraseña mirando un reto de kinder.
+ */
+if (vistaPedida === "cuenta") return Astro.redirect(`/${locale}/app/perfil/`);
+
+const vista: ClavePestana =
+  vistaPedida && vistasDisponibles.includes(vistaPedida)
+    ? vistaPedida
+    : (tieneHijos ? "hijos" : "practicar");
+
+const pestanas = pestanasPrivadas(locale, tieneHijos, vista);
 
 /*
  * El título y la entradilla dependen de si HAY HIJOS, no del tipo de cuenta.
  *
- * Estaban colgados de `esFamilia`, y desde que `esFamilia` pasó a ser «no es
- * aprendiz» —el arreglo de la pantalla sin menú— eso significó que a alguien
- * SIN un solo hijo el producto le decía «Aquí está todo lo de tus hijos».
- *
  * El dueño lo leyó en su teléfono: «me sigue diciendo algo de hijos. No tengo
- * hijos». Arreglar el menú rompió la voz, y las dos cosas venían de colgar
- * demasiadas decisiones de una sola bandera.
- *
- * `esFamilia` sigue decidiendo qué PESTAÑAS existen —hay que poder crear el
- * primer hijo— y `tieneHijos` decide qué se DICE. Son preguntas distintas.
+ * hijos». Desde #346 las dos preguntas —qué pestañas existen y qué se dice— se
+ * responden con el mismo dato, que es como debió estar siempre.
  */
-const tieneHijos = hijos.length > 0;
 const titulo = tieneHijos ? m.casaTitulo : m.casaTituloSolo;
 const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
 ---
@@ -309,57 +263,21 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
       </section>
     )}
 
-    {vista === "cuenta" && (
-      <Fragment>
-        {/*
-          ─── La salida de la redirección de #339 ────────────────────────────
+    {/*
+      ─── «Cuenta» ya NO se pinta aquí ────────────────────────────────────
 
-          Desde #339, quien tiene sesión y pide `/entrar/` es redirigido aquí
-          sin ver el formulario. Eso es correcto casi siempre —quien ya entró y
-          pide entrar se equivocó de botón— y sería una trampa sin salida en el
-          caso que el dueño nombró: **en esta casa puede haber varias sesiones
-          vivas a la vez**, y un teléfono se comparte.
+      D-065 punto 7 dijo desde el principio que passkey y contraseña viven en
+      `/app/perfil/`, una ruta propia. Se quedaron TAMBIÉN aquí porque cuando
+      se escribió la pestaña ese destino no existía y llevaba a un 404 real.
+      Existe desde #340 — y desde entonces hubo dos altas de passkey y dos
+      cambios de contraseña, en dos archivos, con el mismo `id="passkey"` y el
+      mismo `id="cambiar-clave"`. Dos copias de un formulario de credenciales
+      no se mantienen sincronizadas: la de `perfil.astro` ya había ganado la
+      pista de longitud de contraseña (#333) y esta no.
 
-          Este enlace es la salida, y va a `?cambiar=1`, que es la única cadena
-          que el script del `<head>` de `Base.astro` respeta para no redirigir.
-          No cierra la sesión actual: lleva al formulario. Quien solo quería
-          mirar su cuenta ni lo nota.
-        */}
-        <p class="muted">
-          <a href={`${ruta(locale, "entrar")}?cambiar=1`}>{m.casaOtraCuenta}</a>
-        </p>
-
-        {/* ── La passkey, DESPUÉS del registro (D-038) ────────────────────── */}
-        <section class="bloque" id="bloque-passkey" hidden>
-          <h2>{m.casaPasskeyTitulo}</h2>
-          <p class="muted">{m.casaPasskeyTexto}</p>
-          <button type="button" class="boton" id="passkey">{m.casaPasskeyCta}</button>
-          <p class="ok" id="passkey-ok" hidden>{m.casaPasskeyListo}</p>
-        </section>
-
-        {/* ── Cambiar la contraseña (#313) ────────────────────────────────── */}
-        <section class="bloque">
-          <h2>{m.casaClaveTitulo}</h2>
-          {/*
-            Se pide la ACTUAL aunque haya sesión. La sesión dura 30 días y vive en el
-            teléfono: quien toma un aparato desbloqueado la tiene y no tiene la
-            contraseña. Sin este campo, esa persona deja al padre fuera de su cuenta
-            y de las de sus hijos. El porqué completo está en `/api/clave`.
-          */}
-          <div class="campo">
-            <label for="clave-actual">{m.casaClaveActual}</label>
-            <input type="password" id="clave-actual" autocomplete="current-password" />
-          </div>
-          <div class="campo">
-            <label for="clave-nueva">{m.casaClaveNueva}</label>
-            <input type="password" id="clave-nueva" autocomplete="new-password" minlength="8" maxlength="64" />
-          </div>
-          <button type="button" class="boton" id="cambiar-clave">{m.casaClaveCta}</button>
-          <p class="ok" id="clave-ok" hidden>{m.casaClaveListo}</p>
-          <p class="mal" id="clave-mal" hidden></p>
-        </section>
-      </Fragment>
-    )}
+      La pestaña apunta a `/app/perfil/` y `?vista=cuenta` redirige allí
+      (arriba, en el frontmatter), así que ningún enlace viejo se rompe.
+    */}
 
   </article>
 
@@ -389,27 +307,25 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
     .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
     .boton:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
     .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-start: 0.5rem; }
-    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-start: 0.5rem; }
-    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space); }
-    label { font-family: var(--font-sistema); font-size: var(--text-sm); }
-    input { font-family: var(--font-sistema); font-size: var(--text-base); min-height: 44px;
-            padding-inline: 0.75rem; color: var(--color-text); background: var(--color-surface);
-            border: 1px solid var(--color-border); border-radius: var(--radius); }
-    input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    /* Se fueron con la vista «Cuenta»: `.mal`, `.campo`, `label` e `input` solo
+       vestían el formulario de contraseña, que ahora vive una vez, en
+       `app/perfil.astro`. CSS de un formulario que no está es CSS que el
+       siguiente cambio va a mantener sin motivo. */
   </style>
 
-  <script define:vars={{
-    MSG: {
-      credenciales: m.formErrCredenciales,
-      rango: m.formErrClave,
-      igual: m.formErrGenerico,
-      generico: m.formErrGenerico,
-    },
-  }}>
-    // `define:vars` implica `is:inline` (Astro no lo compila): JS PURO aquí
-    // abajo, sin `as Tipo`, sin anotaciones — es exactamente la clase de bug
-    // que rompió el login el 2026-08-02 (ver CLAUDE.md § Cloudflare). El
-    // guardián `audits/script-cliente-sin-ts.mjs` vigila esto en cada commit.
+  {/*
+    Un solo script, y ya solo hace UNA cosa: marcar el aparato.
+
+    Llevaba también el alta de passkey y el cambio de contraseña, copiados de
+    `app/perfil.astro` con los mismos identificadores. Se fueron con la vista
+    «Cuenta»; con ellos se fue el `define:vars` de mensajes de error, que ya no
+    tenía a quién servir.
+  */}
+  <script is:inline>
+    // `is:inline` — Astro NO compila esto, así que aquí abajo va JS PURO: sin
+    // `as Tipo`, sin anotaciones. Es exactamente la clase de bug que rompió el
+    // login el 2026-08-02 (ver CLAUDE.md § Cloudflare), y el guardián
+    // `audits/script-cliente-sin-ts.mjs` lo vigila en cada commit.
 
     // ── Marcar el aparato (D-012) ────────────────────────────────────────
     const bMarcar = document.getElementById("marcar");
@@ -427,106 +343,6 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
         return;
       }
       bMarcar.disabled = false;
-    });
-
-    // ── Añadir una passkey a una cuenta que ya existe (D-038) ───────────
-    //
-    // El bloque nace `hidden` y solo aparece si el navegador tiene la API. Al
-    // revés —pintarlo y esconderlo— enseñaría un botón muerto a quien no puede
-    // usarlo.
-    const bloquePasskey = document.getElementById("bloque-passkey");
-    const bPasskey = document.getElementById("passkey");
-    if (bloquePasskey && "PublicKeyCredential" in window) bloquePasskey.hidden = false;
-
-    const b64urlABytes = (s) =>
-      Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
-    const bytesAB64url = (b) =>
-      btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-
-    bPasskey?.addEventListener("click", async () => {
-      bPasskey.disabled = true;
-      try {
-        const reto = await (await fetch("/api/passkey-reto", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ proposito: "registrar" }),
-        })).json();
-        if (!reto.ok) throw new Error(reto.motivo);
-
-        const cred = await navigator.credentials.create({
-          publicKey: {
-            challenge: b64urlABytes(reto.reto),
-            rp: { id: reto.rpId, name: "Math Challenge" },
-            user: {
-              id: b64urlABytes(reto.usuarioId),
-              name: reto.usuarioNombre ?? "",
-              displayName: reto.usuarioNombre ?? "",
-            },
-            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-            authenticatorSelection: { userVerification: "preferred", residentKey: "preferred" },
-            timeout: 60000,
-          },
-        });
-        if (!cred) throw new Error("cancelado");
-
-        const r = cred.response;
-        const res = await (await fetch("/api/passkey-registrar", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            retoId: reto.id,
-            credentialId: cred.id,
-            clientDataJSON: bytesAB64url(r.clientDataJSON),
-            attestationObject: bytesAB64url(r.attestationObject),
-          }),
-        })).json();
-
-        if (res.ok) {
-          document.getElementById("passkey-ok").hidden = false;
-          bPasskey.hidden = true;
-          return;
-        }
-        throw new Error(res.motivo);
-      } catch {
-        // Si falla —cancelada, sin autenticador, lo que sea— NO se enseña un
-        // error: la contraseña sigue funcionando y el bloque entero es opcional.
-        bPasskey.disabled = false;
-      }
-    });
-
-    // ── Cambiar la contraseña ───────────────────────────────────────────
-    const bClave = document.getElementById("cambiar-clave");
-    bClave?.addEventListener("click", async () => {
-      const actual = document.getElementById("clave-actual").value;
-      const nueva = document.getElementById("clave-nueva").value;
-      const ok = document.getElementById("clave-ok");
-      const mal = document.getElementById("clave-mal");
-      ok.hidden = true; mal.hidden = true;
-      bClave.disabled = true;
-      const r = await fetch("/api/clave", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ actual, nueva }),
-      }).then((x) => x.json()).catch(() => ({}));
-      bClave.disabled = false;
-      if (r.ok) {
-        ok.hidden = false;
-        document.getElementById("clave-actual").value = "";
-        document.getElementById("clave-nueva").value = "";
-        return;
-      }
-      /*
-        El mensaje sale de una tabla cerrada, igual que en `AvisoDeError`: lo que
-        el servidor devuelve es una CLAVE, y pintar una clave cruda deja
-        `credenciales` en pantalla.
-      */
-      const TEXTOS = {
-        credenciales: MSG.credenciales,
-        clave_fuera_de_rango: MSG.rango,
-        clave_igual: MSG.igual,
-      };
-      mal.textContent = TEXTOS[r.error] ?? MSG.generico;
-      mal.hidden = false;
     });
   </script>
 </Privada>

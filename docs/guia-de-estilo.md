@@ -213,6 +213,75 @@ kinder (F2).
 
 ---
 
+## Navegación — una sola primaria a la vez (D-064)
+
+Nació de una captura real de un iPhone: `nav.sitio` (arriba) y
+`.barra-inferior` (abajo) se pintaban juntas en iOS/Android, y en una
+pestaña de Safari eso son **tres** navegaciones apiladas —las dos del sitio
+más la barra de direcciones del navegador—. La regla que lo evita, y que
+vale para cualquier pantalla nueva que se agregue: **nunca dos sistemas de
+navegación primaria visibles al mismo tiempo.** Investigación completa en
+`mc-49`.
+
+### Qué navegación existe en cada contexto
+
+| Contexto | Señal | Navegación |
+|---|---|---|
+| App instalada, ancho de teléfono | `[data-platform=ios\|android]` + `display-mode: standalone` | Barra inferior, 5 destinos fijos, ícono + texto |
+| App instalada, iPad en horizontal completo | `[data-platform=ios]` (iPad) + `display-mode: standalone` + 1024-1366px | Riel lateral |
+| Pestaña de navegador, móvil | `[data-platform=ios\|android]` sin `display-mode: standalone` | Encabezado compacto + `<details>/<summary>` que despliega las 6 secciones debajo |
+| Escritorio, cualquier estado | `[data-platform=macos\|windows\|otro]` | Barra horizontal arriba (sin cambio) |
+
+`display-mode: standalone` es CSS puro — el mismo mecanismo que ya usa
+`Instalar.astro`. Nunca se detecta con JavaScript, por la misma razón que
+`data-platform` no se detecta en JS: fallaría en la primera pintura.
+
+### La barra inferior instalada: 5 y solo 5
+
+HIG y Material 3 coinciden en el máximo: **3-5 destinos**, nunca más. Los
+cinco de Math Challenge son **Inicio, Niveles, Investigación, Entrar, Crear
+cuenta** — las dos acciones de cuenta van adentro porque el dueño pidió
+explícitamente que Entrar sea de un solo toque, sin pasar por un segundo
+nivel. Eso agota los 5 slots: no queda uno para una pestaña "Más".
+
+Origen, Arquitectura y Código abierto —las tres secciones que no caben— van
+en un `<details>/<summary>` nativo en la franja superior del modo
+instalado. Cero JavaScript, mismo elemento que el menú de pestaña de
+navegador de abajo.
+
+### El menú de pestaña de navegador (Chrome/Safari sin instalar)
+
+Esta es la vista que ve la mayoría de las visitas nuevas — la que produjo
+la captura que originó esta regla. Encabezado compacto: marca + **Entrar y
+Crear cuenta siempre visibles** (mismo criterio de "un toque" que la barra
+instalada) + un botón que despliega las 6 secciones.
+
+El menú se despliega **empujando el contenido hacia abajo**, nunca como un
+overlay de pantalla completa: `mc-49` documenta que los overlays de
+pantalla completa en iOS Safari no cierran con el gesto de deslizar que sí
+funciona en Android, y que las áreas seguras hay que manejarlas con cuidado
+en ese contexto. Empujar el contenido evita esa categoría entera de bug por
+construcción.
+
+### Íconos de la barra inferior
+
+Ícono + texto, no solo texto — es lo que HIG y Material 3 esperan. Los 5
+glifos son **línea simple, monocromos, SVG inline con `currentColor`**, no
+arte de Recraft ni pieza de Gemini/Nano Banana (`CLAUDE.md` § Imágenes): un
+glifo de navegación no es ilustración de marca, y SVG inline no pesa una
+petición HTTP ni entra en la regla de AVIF/WebP, que es para fotografía.
+
+### Sin librería
+
+Framework7, Ionic y Onsen UI prometen "look nativo" de fábrica, pero cuestan
+peso de JavaScript real en **todas** las páginas del sitio, no solo donde
+se usan, y `mc-49` no encontró evidencia de que el resultado supere a CSS
+bien hecho para una barra de pestañas. La navegación se construye con HTML
+semántico + `data-platform` + `display-mode`, exactamente el patrón que ya
+existe en el resto del sitio.
+
+---
+
 ## iPad — primera clase, no un teléfono ancho (D-041)
 
 El iPad y el teléfono se diseñan por separado. Lo que sigue es la tabla que

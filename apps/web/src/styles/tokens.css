@@ -22,7 +22,18 @@
 
   /* --- Semánticos, tema claro ------------------------------------------- */
   --color-bg: var(--ignia-blanco);
-  --color-surface: #F7F7F8;
+  /* Blanco puro, y NO es lo que decía la guía. Decisión del dueño, 2026-08-01.
+     El `#F7F7F8` de `docs/guia-de-estilo.md` § Neutros derivados hacía fallar
+     tres pares de contraste, medidos por `audits/contrast.mjs`:
+         --color-text-muted        4.38:1  exige 4.5 (texto normal)
+         --color-text-brand-warm   4.28:1  exige 4.5
+         --color-accent            2.83:1  exige 3.0 (gráfico/control)
+     Ese último es el que decide: el naranja de Ignia quedaba por debajo del
+     umbral incluso como GRÁFICO, no ya como texto. Sobre blanco puro los tres
+     pasan — 4.69, 4.58 y 3.03 — sin tocar un solo color de marca.
+     Es la razón por la que la guía dice que el naranja da 3.03:1: ese número
+     siempre fue contra blanco, y la superficie real no lo era. */
+  --color-surface: #FFFFFF;
   --color-border: var(--ignia-gris-400);           /* 2.44:1 — solo bordes */
 
   --color-text: var(--ignia-gris-900);             /* 9.63:1 ✓ */

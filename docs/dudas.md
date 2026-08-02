@@ -299,6 +299,36 @@ Mi recomendación es la 1. `--color-text-muted` y `--color-text-brand-warm` se
 arreglan solos oscureciéndolos un paso, y ésos sí los haría sin preguntar si me
 dices que sí a la 1.
 
+### RESUELTA · 2026-08-01 — el dueño eligió la 2, la que yo no recomendaba
+
+`--color-surface: #F7F7F8` → `#FFFFFF`. **Ningún color de marca cambió**, que es
+lo que la salida 1 no conseguía: oscurecer el naranja para bordes habría metido
+un segundo naranja al producto.
+
+Los tres pares medidos después del cambio:
+
+```
+--color-accent          2.83:1 → 3.03:1  (exige 3:1, gráfico)   ✓
+--color-text-muted      4.38:1 → 4.58:1  (exige 4.5:1, texto)   ✓
+--color-text-brand-warm 4.28:1 → 4.69:1  (exige 4.5:1, texto)   ✓
+```
+
+El 3.03:1 pasa por **0.03**, y eso hay que decirlo en vez de celebrarlo: el
+naranja de Ignia sigue sin servir para texto normal en ningún fondo, y cualquier
+superficie que no sea blanco puro lo vuelve a tumbar. Por eso `contrast` pasó de
+PENDING a ACTIVO en `audits/run.mjs` — no para festejar el verde, sino para que
+el día que alguien vuelva a poner un gris de fondo, el commit se detenga.
+
+**La segunda mitad de esta duda, la del espaciado**, se resolvió el mismo día:
+`guia-de-estilo.md` cita mc-21 con «0.12em / 0.16em / 1.5×» y **ésas son
+literalmente las cifras de WCAG 1.4.12**, una pauta que no pide aplicarlas sino
+*aguantarlas*. Decisión: **tolerar, no aplicar**. `--tracking-readable: 0.012em`
+—diez veces menos— se queda como decisión estética, y lo que faltaba era la
+prueba: `audits/espaciado-tolerante.mjs`. Lo que ese auditor **no** puede
+comprobar está escrito en su encabezado: si el texto de verdad desborda exige un
+motor de maquetación midiendo, y su verde significa «no tiene las formas que lo
+rompen», no «cumple 1.4.12».
+
 ---
 
 ## F6 · Larry Profe — 23 preguntas, agrupadas · 2026-08-01

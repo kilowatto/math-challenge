@@ -28,6 +28,22 @@
 // Cuando un borrado SÍ es lo que se quiere, se declara en el archivo:
 //
 //     -- migration-safety: <razón de al menos 20 caracteres>
+//
+// Y hay un SEGUNDO marcador, más estrecho, para el único caso que el genérico
+// no puede cubrir: **quitar una columna de una tabla INTOCABLE para dejar de
+// guardar un dato de un menor.**
+//
+//     -- migration-safety-minimizacion: <columna> — <razón de 20+ caracteres>
+//
+// Existe porque el genérico protege contra el caso CONTRARIO —perder datos de
+// un menor sin querer— y aquí perderlos ES el objetivo: es D-013 funcionando,
+// no fallando. Decisión del dueño, 2026-08-01, para `child_profiles.birth_month`
+// (D-053: del niño se pide solo el AÑO).
+//
+// **Exige nombrar la columna, y eso es lo que lo hace seguro.** Un borrado
+// accidental nunca nombra la columna que borra: quien escribe
+// `migration-safety-minimizacion: birth_month` ya sabe exactamente qué está
+// quitando. El bloqueo sigue entero para todo lo demás.
 //     DROP TABLE tabla_muerta;
 //
 // Mismo espíritu que `adversarial/ANULACIONES.md`: anular exige escribir por
@@ -73,6 +89,8 @@ const FIN_DE_TIPO = new Set([
 
 const problemas = [];
 const anulaciones = [];
+/** Columnas retiradas a propósito para dejar de guardar un dato de un menor. */
+const minimizaciones = [];
 
 // ---------------------------------------------------------------------------
 // Utilidades de identificadores y de tipos
@@ -541,8 +559,21 @@ for (const { archivo } of numerados.sort((a, b) => a.num - b.num)) {
             for (const [nombre, viejo] of antes.columnas) {
               const nuevo = despues.columnas.get(nombre);
               if (!nuevo) {
+                // El marcador de minimización, y SOLO para esta columna: tiene
+                // que nombrarla. Ver la cabecera — un borrado accidental nunca
+                // nombra lo que borra.
+                const marcador = new RegExp(
+                  `--\\s*migration-safety-minimizacion:\\s*${nombre}\\s*[—-]\\s*(.{20,})`,
+                  "i",
+                );
+                if (marcador.test(texto)) {
+                  minimizaciones.push(`${archivo}: ${c.tabla}.${nombre} — retirada a propósito (D-013)`);
+                  continue;
+                }
                 registrar(
-                  `la reconstrucción de ${c.tabla} deja fuera la columna "${nombre}": es un DROP COLUMN escrito de otra forma`,
+                  `la reconstrucción de ${c.tabla} deja fuera la columna "${nombre}": es un DROP COLUMN escrito de otra forma. ` +
+                    `Si es a propósito para dejar de guardar un dato de un menor, decláralo NOMBRANDO la columna: ` +
+                    `"-- migration-safety-minimizacion: ${nombre} — <razón>"`,
                 );
                 continue;
               }

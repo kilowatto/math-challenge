@@ -30,6 +30,7 @@
  *  · **Ninguna pista de si el correo existe.** Ver el endpoint.
  */
 import Base from "../../layouts/Base.astro";
+import AvisoDeError from "../AvisoDeError.astro";
 import { t, type Locale } from "../../i18n";
 import { ruta } from "../../i18n/rutas";
 import { idiomaWidget } from "../../lib/turnstile";
@@ -46,12 +47,15 @@ const siteKey =
   (import.meta.env.TURNSTILE_SITE_KEY as string | undefined) ??
   (typeof process !== "undefined" ? process.env?.TURNSTILE_SITE_KEY : undefined) ??
   "";
+
 ---
 
 <Base locale={locale} seccion="entrar" title={m.signinFormTitle} description={m.signinFormLead}>
   <article class="entrar">
     <h1>{m.signinFormTitle}</h1>
     <p class="lead">{m.signinFormLead}</p>
+
+    <AvisoDeError locale={locale} />
 
     <form method="post" action="/api/entrar" id="form-entrar">
       <div class="campo">

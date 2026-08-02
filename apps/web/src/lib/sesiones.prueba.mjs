@@ -101,10 +101,22 @@ ok(Object.keys(leerCookies(null)).length === 0, "sin cabecera devuelve vacío, n
 
 // --- sesión de adulto -------------------------------------------------------
 const kv = kvFalso();
-const s = await abrirSesionAdulto(kv, { userId: "u1", creadaEn: 0, intent: "PADRE" });
+// ─── El id es largo A PROPÓSITO, y no es cosmético ────────────────────────
+//
+// Era `"u1"`. Dos caracteres, contra un token de 43 caracteres de base64url
+// sacados al azar: la probabilidad de que `"u1"` aparezca dentro por pura
+// casualidad es de 42 posiciones × (1/64)² ≈ **1%**, así que esta prueba fallaba
+// una de cada cien corridas y parecía un intermitente de infraestructura.
+//
+// No era intermitente: era una aserción demasiado débil para ser fiable. Con un
+// id largo la colisión por azar es imposible **y la comprobación dice más** —
+// que no se filtró ni un trozo del identificador, no que no aparecieran dos
+// letras.
+const ID_ADULTO = "usuario-de-prueba-9f3c1b";
+const s = await abrirSesionAdulto(kv, { userId: ID_ADULTO, creadaEn: 0, intent: "PADRE" });
 ok(esTokenOpaco(s.token), "la sesión de adulto emite un token opaco");
-ok(!s.cookie.includes("u1"), "el id del usuario NO viaja en la cookie");
-ok((await leerSesionAdulto(kv, s.token)).userId === "u1", "la sesión se recupera desde KV");
+ok(!s.cookie.includes(ID_ADULTO), "el id del usuario NO viaja en la cookie");
+ok((await leerSesionAdulto(kv, s.token)).userId === ID_ADULTO, "la sesión se recupera desde KV");
 ok((await leerSesionAdulto(kv, JWT)) === null, "un JWT no llega a tocar KV");
 ok((await leerSesionAdulto(kv, undefined)) === null, "sin token devuelve null");
 ok(kv.m.get(`s:${s.token}`).ttl === VIDA_ADULTO_S, "KV recibe el TTL de 30 días");
@@ -112,8 +124,10 @@ await cerrarSesionAdulto(kv, s.token);
 ok((await leerSesionAdulto(kv, s.token)) === null, "cerrar sesión borra el valor de KV");
 
 // --- sesión de niño: el caso de los dos hermanos ----------------------------
-const k1 = await abrirSesionNino(kv, { childProfileId: "c1", parentUserId: "u1", creadaEn: 0 });
-ok(!k1.cookie.includes("c1"), "el id del perfil del niño NO viaja en la cookie");
+// Mismo defecto que arriba: `"c1"` cabía por azar en un token aleatorio.
+const ID_NINO = "perfil-de-prueba-4a7e02";
+const k1 = await abrirSesionNino(kv, { childProfileId: ID_NINO, parentUserId: ID_ADULTO, creadaEn: 0 });
+ok(!k1.cookie.includes(ID_NINO), "el id del perfil del niño NO viaja en la cookie");
 const k2 = await abrirSesionNino(kv, { childProfileId: "c2", parentUserId: "u1", creadaEn: 0 }, k1.token);
 ok((await leerSesionNino(kv, k1.token)) === null, "cambiar de perfil BORRA la sesión del hermano anterior");
 ok((await leerSesionNino(kv, k2.token)).childProfileId === "c2", "y deja abierta solo la nueva");
@@ -121,11 +135,11 @@ ok(kv.m.get(`k:${k2.token}`).ttl === VIDA_NINO_S, "la sesión de niño caduca en
 
 // --- dispositivo del hogar: D1, no KV (D-052) -------------------------------
 const db = d1Falso();
-const d = await marcarDispositivoDelHogar(db, "u1", "la tablet de la sala", 1000);
+const d = await marcarDispositivoDelHogar(db, ID_ADULTO, "la tablet de la sala", 1000);
 ok(db.filas.length === 1, "marcar el dispositivo escribe una fila en D1");
 ok(db.filas[0].device_token === d.token, "la fila se indexa por el token de la cookie");
-ok(!d.cookie.includes("u1"), "el dueño no viaja en la cookie del hogar");
-ok((await leerDispositivoDelHogar(db, d.token)).ownerUserId === "u1", "el dispositivo se reconoce");
+ok(!d.cookie.includes(ID_ADULTO), "el dueño no viaja en la cookie del hogar");
+ok((await leerDispositivoDelHogar(db, d.token)).ownerUserId === ID_ADULTO, "el dispositivo se reconoce");
 ok((await leerDispositivoDelHogar(db, nuevoToken())) === null, "un token que no existe no reconoce nada");
 db.filas[0].revoked_at = 2000;
 ok((await leerDispositivoDelHogar(db, d.token)) === null, "un dispositivo revocado deja de reconocerse");

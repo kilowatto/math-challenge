@@ -85,6 +85,7 @@
  * dispositivo del hogar: un `p` de un niño de otra casa no pinta nada.
  */
 import "../../../../styles/fonts.css";
+import { rutaJugar } from "../../../../lib/rutas-app";
 import "../../../../styles/tokens.css";
 /**
  * La capa de banda, igual que en `app/kids/index.astro`.
@@ -161,7 +162,11 @@ interface Env {
 
 /** A dónde va el niño cuando entra. Su casa dentro de la aplicación. */
 // Igual que en `index.astro`: función, porque `locale` nace más abajo.
-const destinoTrasEntrar = (l: string) => `/${l}/app/kids/`;
+// Tras entrar, el niño va A JUGAR. Apuntaba a la rejilla de caras —la pantalla
+// de la que acababa de venir—, así que el embudo infantil entero terminaba
+// donde empezó y no había nada que hacer. El literal vive en `lib/rutas-app.ts`
+// y no aquí (ver el encabezado de ese archivo).
+const destinoTrasEntrar = (l: string) => rutaJugar(l);
 
 /**
  * A dónde va quien no debería estar aquí.

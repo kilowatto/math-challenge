@@ -1,0 +1,111 @@
+---
+/**
+ * El aviso que sale cuando un formulario vuelve con `?e=<motivo>`.
+ *
+ * ─── Por qué existe ────────────────────────────────────────────────────────
+ *
+ * Los endpoints devolvían JSON a un `<form>` de HTML, así que el navegador
+ * pintaba `{"ok":true}` a pantalla completa y ahí se acababa el producto. El
+ * arreglo está en `lib/respuesta-de-formulario.ts`: ahora redirigen. Este
+ * componente es la otra mitad — **la redirección de error no sirve de nada si la
+ * página a la que vuelve no dice qué pasó.**
+ *
+ * ─── Por qué el motivo se lee en el CLIENTE y no en el servidor ────────────
+ *
+ * Primera versión: `Astro.url.searchParams.get("e")` en el frontmatter. No
+ * funcionó, y el motivo vale la pena escribirlo porque es la tercera vez que
+ * este proyecto se lo encuentra:
+ *
+ * **Estas páginas son PRERRENDERIZADAS.** Se generan una vez, en el build, y se
+ * sirven como HTML estático. En ese momento no hay petición, así que
+ * `Astro.url.searchParams` está vacío — igual que `Astro.request.headers` en una
+ * página estática no son los de nadie. La comprobación pasó en local, el
+ * componente compiló, el HTML se desplegó, y el aviso no salió nunca.
+ *
+ * La alternativa era `prerender = false` sobre el registro y la entrada, o sea
+ * convertir dos páginas cacheables en dos renders por visita. No vale la pena
+ * por un mensaje de error: **los siete mensajes ya viajan en el HTML** y el
+ * cliente solo elige cuál enseñar.
+ *
+ * ─── El motivo se valida contra una tabla cerrada ──────────────────────────
+ *
+ * `e` viene de la URL, así que **cualquiera puede escribir lo que quiera ahí**.
+ * Nunca se pinta el valor crudo: se busca en el mapa y, si no está, sale el
+ * genérico. Sin eso, un enlace preparado podría enseñar el texto que quisiera
+ * dentro de una página nuestra — que es exactamente cómo se monta una estafa que
+ * parece nuestra. Se usa `textContent` y jamás `innerHTML`, por lo mismo.
+ */
+import { t, type Locale } from "../i18n";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props as Props;
+const m = t(locale);
+
+/**
+ * La tabla cerrada. Cada clave la produce un endpoint de este repositorio.
+ *
+ * `credenciales` es a propósito ambiguo —«ese correo y esa contraseña no
+ * coinciden con una cuenta»— porque decir cuál de los dos falló revela si el
+ * correo existe, y eso convierte el formulario de entrada en un comprobador de
+ * cuentas.
+ */
+const MENSAJES: Record<string, string> = {
+  credenciales: m.formErrCredenciales,
+  correo_invalido: m.formErrCorreo,
+  clave_fuera_de_rango: m.formErrClave,
+  demasiados_intentos: m.formErrDemasiados,
+  alias_repetido: m.formErrAlias,
+  edad_de_adulto: m.formErrEdadAdulto,
+  // A la persona no se le explica qué es Turnstile: se le dice que reintente,
+  // que es lo único que puede hacer.
+  turnstile: m.formErrGenerico,
+  generico: m.formErrGenerico,
+};
+---
+
+{/*
+  Nace `hidden` y solo aparece si hay motivo. Al revés —pintarlo y esconderlo—
+  enseñaría un recuadro vacío durante el primer pintado.
+*/}
+<p class="aviso-error" id="aviso-error" role="alert" hidden></p>
+
+<script is:inline define:vars={{ MENSAJES }}>
+  (() => {
+    const clave = new URLSearchParams(location.search).get("e");
+    if (!clave) return;
+    const aviso = document.getElementById("aviso-error");
+    if (!aviso) return;
+    // `textContent`, nunca `innerHTML`: el valor sale de un mapa nuestro, pero
+    // la clave viene de la URL y esa distinción se olvida en el siguiente cambio.
+    aviso.textContent = MENSAJES[clave.split(":")[0]] ?? MENSAJES.generico;
+    aviso.hidden = false;
+    /*
+      El foco se mueve al aviso. Sin esto, quien navega con teclado o con lector
+      de pantalla vuelve al principio de la página y tiene que buscar qué cambió
+      — y `role="alert"` anuncia el texto pero no lleva a nadie hasta él.
+    */
+    aviso.setAttribute("tabindex", "-1");
+    aviso.focus();
+  })();
+</script>
+
+<style>
+  .aviso-error {
+    /*
+      El borde grueso a un lado y no solo el color: el color por sí solo no
+      comunica a quien no lo distingue (WCAG 1.4.1). Es la misma razón por la que
+      lleva texto y no un icono.
+    */
+    border-inline-start: 4px solid var(--color-error);
+    background: var(--color-error-suave);
+    color: var(--color-text);
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius);
+    margin-block-end: var(--space);
+    font-family: var(--font-sistema);
+    line-height: var(--leading-body);
+  }
+  .aviso-error:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+</style>

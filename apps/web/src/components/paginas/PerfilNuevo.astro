@@ -124,6 +124,7 @@
  * en este archivo.
  */
 import { t, type Locale } from "../../i18n";
+import AvisoDeError from "../AvisoDeError.astro";
 import "../../styles/fonts.css";
 import "../../styles/tokens.css";
 import {
@@ -286,7 +287,9 @@ for (let i = 0; alias.length < CUANTOS_ALIAS && i < CUANTOS_ALIAS * 4; i++) {
         <p>{m.profileMarkProfile}</p>
       </aside>
 
-      <form method="post" action="/api/perfil-nuevo" id="form-perfil">
+      <AvisoDeError locale={locale} />
+
+    <form method="post" action="/api/perfil-nuevo" id="form-perfil">
         {/* El locale no se pregunta: viaja como `hidden` porque es el idioma de
             la página, y es el que decide de qué lista salió el alias
             (`alias_locale` en la migración 0002). */}

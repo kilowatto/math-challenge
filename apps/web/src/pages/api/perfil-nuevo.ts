@@ -37,6 +37,8 @@
  * respeta a un menor de uno que lo publica por defecto.
  */
 import type { APIRoute } from "astro";
+import { terminarMal } from "../../lib/respuesta-de-formulario";
+import { rutaPerfilNuevo } from "../../lib/rutas-app";
 import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../lib/sesiones";
 import { anotarPaso } from "../../lib/embudo";
 import { generarAlias, type LocaleAlias } from "../../../../../packages/motor/src/alias.ts";
@@ -53,20 +55,30 @@ interface Env {
 
 const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
 
-function error(motivo: string, estado = 400) {
-  return new Response(JSON.stringify({ ok: false, motivo }), {
-    status: estado,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
+/**
+ * El error vuelve al FORMULARIO del perfil, con el motivo en la URL.
+ *
+ * `alias_repetido` y `edad_de_adulto` son cosas que la persona puede corregir, y
+ * una pantalla de JSON no le dice cómo. Ver `lib/respuesta-de-formulario.ts`.
+ *
+ * El locale es el de la sesión y no el del `Referer`: aquí ya hay adulto
+ * autenticado, así que se sabe en qué idioma está su cuenta.
+ */
+function error(request: Request, locale: string, motivo: string, estado = 400) {
+  return terminarMal(request, rutaPerfilNuevo(locale), motivo, estado);
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  // `en` mientras no se sepa el locale real: las primeras comprobaciones fallan
+  // antes de leer el cuerpo, y volver a la puerta en inglés es mejor que no
+  // volver. En cuanto se lee el cuerpo, `locale` se reasigna al de verdad.
+  let locale = "en";
   const env = (locals as any).runtime?.env as Env | undefined;
-  if (!env?.DB || !env?.SESSION_KV) return error("sin_bindings", 503);
+  if (!env?.DB || !env?.SESSION_KV) return error(request, locale, "sin_bindings", 503);
 
   // Crear un perfil es una escritura, y `early data` es replicable (RFC 8470).
   // Sin esto, reenviar los bytes del 0-RTT crearía perfiles duplicados.
-  if (request.headers.get("early-data") === "1") return error("reintenta", 425);
+  if (request.headers.get("early-data") === "1") return error(request, locale, "reintenta", 425);
 
   // ── Tiene que haber un adulto con sesión ─────────────────────────────────
   // No hay camino a este endpoint sin `mc_s`. Un perfil de niño **siempre**
@@ -74,9 +86,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // niño sin adulto responsable, que es la forma exacta de la línea roja #2.
   const cookies = leerCookies(request.headers.get("cookie"));
   const sesion = await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]);
-  if (!sesion) return error("sin_sesion", 401);
+  if (!sesion) return error(request, locale, "sin_sesion", 401);
 
-  let anio = 0, temaPedido = "", locale = "";
+  // `locale` ya está declarado arriba: se reasigna aquí en cuanto se lee el
+  // cuerpo, y hasta entonces vale `en` para poder volver a alguna parte.
+  let anio = 0, temaPedido = "";
   try {
     const tipo = request.headers.get("content-type") ?? "";
     if (tipo.includes("application/json")) {
@@ -91,7 +105,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       locale = String(f.get("locale") ?? "");
     }
   } catch {
-    return error("cuerpo_ilegible");
+    return error(request, locale, "cuerpo_ilegible");
   }
 
   // ── El año, y SOLO el año (D-053) ────────────────────────────────────────
@@ -119,10 +133,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Un año fuera del rango SÍ se rechaza: no es alguien saltándose el paso,
     // es alguien mandando 1974 por curl para crear un «niño» de 52 años dentro
     // de la cuenta de otro. Una fila que nadie sabría explicar.
-    return error("anio_fuera_de_rango");
+    return error(request, locale, "anio_fuera_de_rango");
   }
 
-  if (!LOCALES.includes(locale)) return error("locale_invalido");
+  if (!LOCALES.includes(locale)) return error(request, "en", "locale_invalido");
 
   // ── El tema: derivado, y movible UNA banda ───────────────────────────────
   // El adulto manda sobre el derivado, dentro del margen. Fuera del margen no
@@ -141,7 +155,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // temas de adulto no son perfiles de niño: si la edad da SERIO o PRO, esta
   // persona necesita su propia cuenta (D-034), no un perfil dentro de otra.
   if (tema !== "KINDER" && tema !== "PRIMARIA" && tema !== "SECUNDARIA") {
-    return error("edad_de_adulto:abre_cuenta_propia", 422);
+    return error(request, locale, "edad_de_adulto:abre_cuenta_propia", 422);
   }
 
   // ── El alias lo genera el SERVIDOR ───────────────────────────────────────
@@ -182,7 +196,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // reintentar con otro alias, no enseñarle un error a quien está creando el
     // perfil de su hijo.
     const msg = String((e as Error)?.message ?? "");
-    if (/UNIQUE/i.test(msg)) return error("alias_repetido:reintenta", 409);
+    if (/UNIQUE/i.test(msg)) return error(request, locale, "alias_repetido:reintenta", 409);
     throw e;
   }
 

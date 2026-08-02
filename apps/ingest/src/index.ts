@@ -18,6 +18,30 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import { calificar, pareceImposible, type Veredicto } from "../../../packages/motor/src/puntuacion.ts";
 import { generarBanco } from "../../../packages/motor/src/banco-kinder.ts";
 import { calificarRespuesta, type VeredictoDeItem } from "../../../packages/motor/src/item.ts";
+import { dificultadDeNivel } from "../../../packages/motor/src/adaptativo.ts";
+import { formatear } from "../../../packages/motor/src/numeros.ts";
+
+// Los textos del reto en los siete locales. Se importan como JSON porque son
+// CONTENIDO, no código: el enunciado de un ítem de kinder se autora, no se
+// traduce (`CLAUDE.md` § Idiomas), y vive junto a las causas de error que
+// `retro-completa.mjs` ya vigila.
+import retoEn from "../../web/src/i18n/reto/en.json" with { type: "json" };
+import retoEsMx from "../../web/src/i18n/reto/es-MX.json" with { type: "json" };
+import retoEsEs from "../../web/src/i18n/reto/es-ES.json" with { type: "json" };
+import retoFr from "../../web/src/i18n/reto/fr-FR.json" with { type: "json" };
+import retoPtBr from "../../web/src/i18n/reto/pt-BR.json" with { type: "json" };
+import retoPtPt from "../../web/src/i18n/reto/pt-PT.json" with { type: "json" };
+import retoDe from "../../web/src/i18n/reto/de-DE.json" with { type: "json" };
+
+const MENSAJES_DE_RETO: Record<string, Record<string, unknown>> = {
+  en: retoEn,
+  "es-MX": retoEsMx,
+  "es-ES": retoEsEs,
+  "fr-FR": retoFr,
+  "pt-BR": retoPtBr,
+  "pt-PT": retoPtPt,
+  "de-DE": retoDe,
+};
 import { agregar, validarLote, SQL_UPSERT } from "../../../packages/motor/src/rollup.ts";
 
 interface Env {
@@ -257,6 +281,109 @@ export class Ingest extends WorkerEntrypoint<Env> {
     const item = this.banco().get(itemId);
     if (!item) throw new Error(`ítem desconocido: ${itemId}`);
     return { ...calificarRespuesta(item, eleccion), nivel: item.nivel, habilidad: item.habilidad };
+  }
+
+  /**
+   * El catálogo que el selector adaptativo necesita, y **nada más** (F4 #90).
+   *
+   * Devuelve `id`, `habilidad`, `nivel` y la dificultad en logits. NO devuelve
+   * el enunciado ni las respuestas: quien elige el siguiente ítem no necesita
+   * saber qué dice, y mandárselo pondría el banco entero —con sus respuestas
+   * correctas— a viajar en cada selección.
+   *
+   * `dificultad` sale hoy de `nivel`, que es el prior de arranque en frío. La
+   * calificación Elo viva vivirá en otra columna cuando el banco tenga
+   * respuestas suficientes; son dos números distintos a propósito (F4 #89,
+   * `mc-13` impl. 8).
+   */
+  async catalogoAdaptativo(): Promise<Array<{ id: string; habilidad: string; nivel: number; dificultad: number }>> {
+    return [...this.banco().values()].map((i) => ({
+      id: i.id,
+      habilidad: i.habilidad,
+      nivel: i.nivel,
+      dificultad: dificultadDeNivel(i.nivel),
+    }));
+  }
+
+  /**
+   * Prepara un ítem para la pantalla: enunciado ya escrito y opciones barajadas.
+   *
+   * ─── Por qué la respuesta correcta NO viaja marcada ────────────────────────
+   *
+   * Las opciones salen mezcladas y **sin bandera de cuál es la buena**. El
+   * cliente manda el valor que el niño tocó y el servidor lo califica contra el
+   * banco (`calificarContraBanco`). Mandar `{correcta: true}` pondría la
+   * respuesta en el HTML de una pantalla infantil, que es la forma más tonta de
+   * que un hermano mayor «ayude».
+   *
+   * ─── El barajado es DETERMINISTA por ítem ─────────────────────────────────
+   *
+   * `Math.random()` haría que recargar la página cambiara el orden, y a un niño
+   * de cuatro años eso le parece que las cosas se mueven solas. El orden sale de
+   * un hash del `itemId`, así que el mismo ítem se ve siempre igual y dos ítems
+   * distintos no comparten patrón.
+   *
+   * Los números se escriben con `formatear()` y la convención del locale
+   * (`mc-34`): en México punto decimal, en el resto del mundo hispano coma.
+   */
+  async presentarItem(
+    itemId: string,
+    locale: string,
+  ): Promise<{
+    id: string;
+    habilidad: string;
+    nivel: number;
+    formato: string;
+    enunciado: string;
+    vars: Record<string, string>;
+    opciones: Array<{ valor: number | string; texto: string }>;
+  } | null> {
+    const item = this.banco().get(itemId);
+    if (!item) return null;
+
+    const textos = MENSAJES_DE_RETO[locale] ?? MENSAJES_DE_RETO.en;
+    const vars: Record<string, string> = {};
+    for (const [k, v] of Object.entries(item.enunciado.vars)) {
+      vars[k] = typeof v === "number" ? formatear(v, locale) : String(v);
+    }
+    const plantilla = (textos as Record<string, unknown>)[item.enunciado.clave];
+    const enunciado =
+      typeof plantilla === "string"
+        ? plantilla.replace(/\{(\w+)\}/g, (_m, k) => vars[k] ?? `{${k}}`)
+        : item.enunciado.clave;
+
+    // La correcta más los distractores CON CAUSA. Un distractor sin causa no
+    // entra: es lo que permite que Larry sepa qué error se cometió y no solo
+    // que se falló (CLAUDE.md § Contenido).
+    const crudas = [
+      item.respuesta.valor,
+      ...item.errores.map((e) => e.valor),
+      ...(item.tambienCorrectas ?? []).map((a) => a.valor),
+    ];
+    const unicas = [...new Set(crudas)];
+
+    // Barajado determinista: hash del id, mezcla de Fisher-Yates con ese hash
+    // como semilla. Ver el encabezado.
+    let semilla = 0;
+    for (let i = 0; i < itemId.length; i++) semilla = (semilla * 31 + itemId.charCodeAt(i)) & 0x7fffffff;
+    const siguiente = () => ((semilla = (semilla * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    for (let i = unicas.length - 1; i > 0; i--) {
+      const j = Math.floor(siguiente() * (i + 1));
+      [unicas[i], unicas[j]] = [unicas[j], unicas[i]];
+    }
+
+    return {
+      id: item.id,
+      habilidad: item.habilidad,
+      nivel: item.nivel,
+      formato: item.formato,
+      enunciado,
+      vars,
+      opciones: unicas.map((v) => ({
+        valor: v,
+        texto: typeof v === "number" ? formatear(v, locale) : String(v),
+      })),
+    };
   }
 
   /** Cuántos ítems tiene el banco vivo. Para comprobar el despliegue. */

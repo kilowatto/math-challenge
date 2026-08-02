@@ -1,0 +1,352 @@
+---
+/**
+ * `/{locale}/app/kids/jugar` — **la pantalla donde el niño juega.**
+ *
+ * @banda KINDER
+ *
+ * Es la que faltaba. F4 dejó el motor, el programador, el Durable Object y el
+ * brazo de control construidos, probados y desplegados, y **ningún niño había
+ * visto un ítem servido por ellos** porque no existía dónde. Esto es ese dónde.
+ *
+ * ─── Lo primero: el marcador de banda de arriba no es decoración ───────────
+ *
+ * `audits/touch-targets.mjs` lo lee y mide **todos** los blancos táctiles de
+ * este archivo contra **88 px**, el piso de `mc-20` §201 — 23.7 mm es el tamaño
+ * con el que un niño de cuatro años acierta el 90% de las veces. Si el toque
+ * falla, el niño no juega y no sabe por qué; no hay mensaje de error que
+ * arregle eso.
+ *
+ * ─── Esta pantalla NO es un examen, y por eso no tiene ──────────────────────
+ *
+ * D-060 y el criterio #100: la primera sesión ES la ubicación, y el niño no debe
+ * enterarse de que existe. Así que aquí no hay:
+ *
+ *  · **Reloj ni cuenta atrás.** D-024 quitó el tiempo de la puntuación de
+ *    kinder; enseñarlo en la pantalla lo devuelve por la otra puerta.
+ *  · **Puntaje.** A los cuatro años un número que sube y baja es una
+ *    calificación.
+ *  · **«Ítem 3 de 15».** Si el niño puede contar cuánto falta, es un examen con
+ *    otro nombre.
+ *  · **Nivel.** El niño nunca ve en qué escalón está. El panel del padre sí.
+ *
+ * ─── Lo que se dice al fallar ──────────────────────────────────────────────
+ *
+ * «Esta vez no. Míralo otra vez.» — y nada más. La causa con nombre que el
+ * servidor devuelve (`error.se_salto_uno`, `error.sumo_en_vez_de_restar`) es
+ * material de Larry, que llega en F6; hasta entonces **no se pinta**, porque
+ * decirle a un niño de cuatro años «contaste uno dos veces» sin la voz y el
+ * dibujo que lo acompañan es señalarle el error y ya (línea roja #7).
+ *
+ * Y no se felicita por ser listo: «¡Eso es!», nunca «¡Qué inteligente eres!»
+ * (`mc-08` — el elogio a la persona baja la persistencia; el que sirve es el
+ * del esfuerzo).
+ *
+ * ─── Todo lo decide el servidor ────────────────────────────────────────────
+ *
+ * El cliente pide un ítem y manda el valor que el niño tocó. **No sabe cuál es
+ * la respuesta correcta** —`presentarItem` baraja las opciones sin bandera— y no
+ * calcula nada. Si aquí hubiera una fórmula, `audits/puntaje-servidor.mjs`
+ * bloquearía el commit.
+ *
+ * ─── Sin telemetría, sin texto libre ───────────────────────────────────────
+ *
+ * D-037 y línea roja #2: esta página no incluye el beacon de vitals.
+ * `audits/telemetria-infantil.mjs` bloquea si aparece. Línea roja #3: se toca,
+ * no se escribe — no hay ni un campo de escritura en toda la pantalla.
+ *
+ * (Ese párrafo decía antes «no hay ni un input», con la etiqueta escrita, y
+ * `audits/child-free-text.mjs` lo marcó. Tenía razón y no se tocó la regla: esa
+ * comprobación mira el archivo entero a propósito, porque una etiqueta dentro de
+ * un comentario es una que alguien va a descomentar.)
+ */
+import { LOCALES, isLocale, type Locale } from "../../../../i18n";
+import "../../../../styles/reto.css";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+
+/**
+ * Los rótulos se resuelven en el SERVIDOR y viajan ya escritos.
+ *
+ * Ninguna cadena se arma en el cliente: un `catalogo[clave]` en JavaScript
+ * significa mandar el catálogo entero de los siete locales a un teléfono de
+ * gama baja, que es el dispositivo de referencia (`mc-47` §5).
+ */
+import en from "../../../../i18n/reto/en.json";
+import esMX from "../../../../i18n/reto/es-MX.json";
+import esES from "../../../../i18n/reto/es-ES.json";
+import frFR from "../../../../i18n/reto/fr-FR.json";
+import ptBR from "../../../../i18n/reto/pt-BR.json";
+import ptPT from "../../../../i18n/reto/pt-PT.json";
+import deDE from "../../../../i18n/reto/de-DE.json";
+
+const CATALOGOS: Record<string, Record<string, unknown>> = {
+  en, "es-MX": esMX, "es-ES": esES, "fr-FR": frFR, "pt-BR": ptBR, "pt-PT": ptPT, "de-DE": deDE,
+};
+const c = CATALOGOS[locale] ?? en;
+const texto = (clave: string, respaldo: string) =>
+  typeof c[clave] === "string" ? (c[clave] as string) : respaldo;
+
+const rotulos = {
+  bien: texto("juego.bien", "That's it!"),
+  otra: texto("juego.otra", "Not this time. Look again."),
+  siguiente: texto("juego.siguiente", "Next"),
+  salir: texto("juego.salir", "Done for now"),
+  cargando: texto("juego.cargando", "Here it comes…"),
+  mirar: texto("juego.mirar", "Look!"),
+};
+
+const rutaCaras = `/${locale}/app/kids/`;
+---
+
+<!doctype html>
+<html lang={locale} dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{rotulos.mirar}</title>
+    {/*
+      `noindex` porque es una superficie detrás de sesión: un buscador no debe
+      tener nunca una URL de la pantalla de un niño.
+    */}
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="jugar-body">
+    <main class="reto" data-locale={locale}>
+      <h1 class="visualmente-oculto">{rotulos.mirar}</h1>
+
+      {/*
+        `aria-live="polite"` y no `assertive`: un lector de pantalla debe
+        anunciar el ítem nuevo cuando termine lo que está diciendo, no cortarlo
+        a media frase. A un niño que depende del lector, cortarlo es perder el
+        enunciado entero.
+      */}
+      <p id="enunciado" class="enunciado" aria-live="polite">{rotulos.cargando}</p>
+
+      <div id="escena" class="escena"></div>
+
+      <div id="opciones" class="opciones" role="group" aria-labelledby="enunciado"></div>
+
+      <p id="veredicto" class="veredicto" hidden></p>
+
+      <div class="acciones">
+        <button type="button" id="siguiente" class="opcion accion" hidden>{rotulos.siguiente}</button>
+        <a href={rutaCaras} class="opcion accion salir">{rotulos.salir}</a>
+      </div>
+    </main>
+
+    <style>
+      /*
+        Sin `Base.astro` a propósito, igual que la rejilla de caras: la barra de
+        navegación de adulto no aparece en una superficie de niño.
+      */
+      .jugar-body {
+        margin: 0;
+        min-height: 100dvh;
+        background: var(--color-surface);
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+          env(safe-area-inset-left);
+      }
+      /*
+        Sin `overflow: hidden`: `clip-path` ya lo esconde, y la pareja
+        alto-fijo + overflow es justo la forma que `audits/espaciado-tolerante.mjs`
+        prohíbe —el texto se corta en vez de crecer cuando alguien sube el
+        espaciado (WCAG 1.4.12)—. El auditor lo marcó aquí y tenía razón aunque
+        el destino de este texto sea no verse: un lector de pantalla sí lo lee.
+      */
+      .visualmente-oculto {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      .enunciado {
+        font-family: var(--font-marca);
+        font-size: clamp(1.35rem, 5vw, 2rem);
+        line-height: 1.4;
+        text-align: center;
+        margin: 0 0 1.25rem;
+        color: var(--color-text);
+      }
+      .escena {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-block-end: 1.5rem;
+        min-height: 96px;
+      }
+      /*
+        88px es el piso de mc-20 §201 y `audits/touch-targets.mjs` lo mide contra
+        el marcador `@banda KINDER` de este archivo. No se baja aquí ni «solo
+        para que quepan cuatro opciones»: si no caben, caben menos opciones.
+      */
+      .acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: center;
+        margin-block-start: 1.75rem;
+      }
+      .accion {
+        min-height: 88px;
+        min-width: 88px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding-inline: 1.5rem;
+        text-decoration: none;
+      }
+      .punto {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--color-accent);
+      }
+      .pato {
+        font-size: 3rem;
+        line-height: 1;
+        /* Decorativo: el enunciado ya dice cuántos hay y qué se pregunta. */
+        user-select: none;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .escena > * { animation: aparece 220ms ease-out both; }
+        @keyframes aparece { from { opacity: 0; transform: scale(0.85); } }
+      }
+    </style>
+
+    <script define:vars={{ locale, rotulos }}>
+      /**
+       * El bucle. Pide, pinta, manda, repite.
+       *
+       * No hay estado del modelo aquí: el servidor lo tiene. Lo único que este
+       * script recuerda es qué ítem está en pantalla, y eso solo para poder
+       * decir a qué se está respondiendo.
+       */
+      const $enunciado = document.getElementById("enunciado");
+      const $escena = document.getElementById("escena");
+      const $opciones = document.getElementById("opciones");
+      const $veredicto = document.getElementById("veredicto");
+      const $siguiente = document.getElementById("siguiente");
+
+      let actual = null;
+      let respondiendo = false;
+      /*
+        El último ítem contestado. Viaja al servidor como PISTA para no repetirlo
+        seguido; la garantía de no repetir en toda la sesión es del servidor y
+        todavía no está (ver el encabezado de `/api/jugar`). Aquí no se guarda
+        ninguna otra cosa: el modelo es del servidor.
+      */
+      let ultimoItemId = null;
+
+      const pedir = async (accion, cuerpo) => {
+        const r = await fetch(`/api/jugar?accion=${accion}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ locale, ...cuerpo }),
+        });
+        if (r.status === 401) {
+          // La sesión de niño dura 12 horas y pudo caducar mientras jugaba. Se
+          // vuelve a la rejilla de caras, que es donde sabe volver a entrar —
+          // NUNCA a un formulario, que es superficie de adulto (línea roja #2).
+          location.href = `/${locale}/app/kids/`;
+          return null;
+        }
+        return r.ok ? r.json() : null;
+      };
+
+      /** Dibuja la escena de cada formato. Todo decorativo: el texto ya lo dice. */
+      function pintarEscena(item) {
+        $escena.replaceChildren();
+        const n = Number(item.vars.n ?? item.vars.a ?? 0);
+        if (item.formato === "flash" && n > 0) {
+          for (let i = 0; i < n; i++) {
+            const d = document.createElement("span");
+            d.className = "punto";
+            $escena.append(d);
+          }
+          // El destello de `flash`: se ve y se esconde. NO es un cronómetro —
+          // no cuenta hacia atrás, no se muestra, y no penaliza. Es la
+          // exposición breve que define subitizar (K01/K02).
+          setTimeout(() => { $escena.replaceChildren(); }, 900);
+        } else if (item.formato === "toca_para_contar" && n > 0) {
+          for (let i = 0; i < n; i++) {
+            const d = document.createElement("span");
+            d.className = "pato";
+            d.textContent = "🦆";
+            $escena.append(d);
+          }
+        }
+        $escena.setAttribute("aria-hidden", "true");
+      }
+
+      function pintarOpciones(item) {
+        $opciones.replaceChildren();
+        for (const o of item.opciones) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "opcion";
+          b.textContent = o.texto;
+          b.addEventListener("click", () => responder(o.valor));
+          $opciones.append(b);
+        }
+      }
+
+      async function siguiente() {
+        respondiendo = false;
+        $veredicto.hidden = true;
+        $siguiente.hidden = true;
+        $enunciado.textContent = rotulos.cargando;
+        $escena.replaceChildren();
+        $opciones.replaceChildren();
+
+        const r = await pedir("siguiente", { ultimoItemId });
+        if (!r?.ok) {
+          $enunciado.textContent = rotulos.cargando;
+          return;
+        }
+        actual = r.item;
+        $enunciado.textContent = actual.enunciado;
+        pintarEscena(actual);
+        pintarOpciones(actual);
+      }
+
+      async function responder(valor) {
+        // Un toque doble no manda dos intentos. Sin esto, el servidor recibe
+        // dos respuestas y el modelo cuenta dos veces lo mismo.
+        if (respondiendo || !actual) return;
+        respondiendo = true;
+        for (const b of $opciones.querySelectorAll("button")) b.disabled = true;
+
+        const r = await pedir("responder", { itemId: actual.id, eleccion: valor });
+        if (!r) { respondiendo = false; return; }
+        ultimoItemId = actual.id;
+
+        /*
+         * Lo que se dice, y lo que NO.
+         *
+         * `r.causa` trae el error con nombre y aquí no se pinta: es material de
+         * Larry (F6). Decirle a un niño de cuatro «contaste uno dos veces» sin
+         * la voz y el dibujo que lo acompañan es señalarle el error y ya
+         * (línea roja #7). Tampoco se pinta `r.nivel` ni `r.etapa`: el niño no
+         * ve en qué escalón está (criterio #100).
+         */
+        $veredicto.textContent = r.correcto ? rotulos.bien : rotulos.otra;
+        $veredicto.dataset.acierto = r.correcto ? "1" : "0";
+        $veredicto.hidden = false;
+        $siguiente.hidden = false;
+        $siguiente.focus();
+      }
+
+      $siguiente.addEventListener("click", siguiente);
+      siguiente();
+    </script>
+  </body>
+</html>

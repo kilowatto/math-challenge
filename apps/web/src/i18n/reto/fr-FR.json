@@ -63,5 +63,18 @@
   "inesperada": [
     "Pas celui-là.",
     "Réessaie, sans te presser."
-  ]
+  ],
+  "k.flash.puntos": "Combien de points as-tu vus ?",
+  "k.contar.patos": "Touche chaque canard pour les compter.",
+  "k.comparar.grupos": "De quel côté y en a-t-il le plus ?",
+  "k.descomponer.marco": "Il y en a déjà {parte}. Combien en manque-t-il pour {total} ?",
+  "k.suma.patos": "{a} canards et encore {b} canards. Combien de canards en tout ?",
+  "k.resta.patos": "Il y avait {a} canards. {b} sont partis. Combien en reste-t-il ?",
+  "k.formas.cual_sobra": "Lequel ne va pas avec les autres ?",
+  "juego.bien": "C'est ça !",
+  "juego.otra": "Pas cette fois. Regarde encore.",
+  "juego.siguiente": "Suivant",
+  "juego.salir": "J'ai fini",
+  "juego.cargando": "Ça arrive…",
+  "juego.mirar": "Regarde !"
 }

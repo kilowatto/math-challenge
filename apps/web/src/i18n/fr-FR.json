@@ -10,6 +10,8 @@
   "navArchitecture": "Architecture",
   "navResearch": "Recherche",
   "navOpen": "Code ouvert",
+  "navMore": "Plus",
+  "navMenu": "Menu",
   "exploreHeading": "Pour aller plus loin",
   "title": "Math Challenge",
   "tagline": "Compter des canards, puis faire de la topologie algébrique.",
@@ -124,5 +126,12 @@
   "markDismiss": "Fermer",
   "markProfileNotUser": "Votre enfant est un profil dans votre compte — jamais un utilisateur. Pas d’e-mail, pas de mot de passe à lui, et rien de ce qu’il écrit n’est conservé, parce qu’il n’écrit jamais rien.",
   "markAgeVsDifficulty": "L’âge décide de l’APPARENCE de l’app ; un test de placement décide du POINT DE DÉPART. Deux axes distincts, volontairement : un enfant de sept ans peut être au niveau 2 et un autre au niveau 5, et tous deux voient la même interface.",
-  "signinPasskeyCta": "Utiliser une clé d’accès"
+  "signinPasskeyCta": "Utiliser une clé d’accès",
+  "formErrGenerico": "Cela n'a pas abouti. Réessaie.",
+  "formErrCredenciales": "Cet e-mail et ce mot de passe ne correspondent à aucun compte.",
+  "formErrCorreo": "Vérifie l'adresse e-mail.",
+  "formErrClave": "Le mot de passe doit faire entre 8 et 64 caractères.",
+  "formErrDemasiados": "Trop de tentatives. Attends une minute et réessaie.",
+  "formErrAlias": "Ce nom est déjà utilisé dans ton compte. Choisis-en un autre.",
+  "formErrEdadAdulto": "Cette année est celle d'un adulte. Un adulte ouvre son propre compte."
 }

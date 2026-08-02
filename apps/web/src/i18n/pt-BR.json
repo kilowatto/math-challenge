@@ -10,6 +10,8 @@
   "navArchitecture": "Arquitetura",
   "navResearch": "Pesquisa",
   "navOpen": "Código aberto",
+  "navMore": "Mais",
+  "navMenu": "Menu",
   "exploreHeading": "Continue lendo",
   "title": "Math Challenge",
   "tagline": "De contar patos a topologia algébrica.",
@@ -124,5 +126,12 @@
   "markDismiss": "Fechar",
   "markProfileNotUser": "Seu filho é um perfil dentro da sua conta — nunca um usuário. Não tem e-mail, não tem senha própria, e nada do que ele escreve é guardado, porque ele nunca escreve nada.",
   "markAgeVsDifficulty": "A idade decide como o app APARECE; um teste de nivelamento decide onde ele COMEÇA. Dois eixos separados, de propósito: uma criança de sete anos pode estar no nível 2 e outra no 5, e as duas veem a mesma interface.",
-  "signinPasskeyCta": "Usar uma chave de acesso"
+  "signinPasskeyCta": "Usar uma chave de acesso",
+  "formErrGenerico": "Isso não deu certo. Tente de novo.",
+  "formErrCredenciales": "Esse e-mail e essa senha não correspondem a nenhuma conta.",
+  "formErrCorreo": "Confira o e-mail.",
+  "formErrClave": "A senha precisa ter entre 8 e 64 caracteres.",
+  "formErrDemasiados": "Tentativas demais. Espere um minuto e tente de novo.",
+  "formErrAlias": "Esse nome já está em uso na sua conta. Escolha outro.",
+  "formErrEdadAdulto": "Esse ano é de um adulto. Um adulto abre a própria conta."
 }

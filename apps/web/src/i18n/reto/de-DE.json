@@ -63,5 +63,18 @@
   "inesperada": [
     "Die nicht.",
     "Versuch es noch einmal, in Ruhe."
-  ]
+  ],
+  "k.flash.puntos": "Wie viele Punkte hast du gesehen?",
+  "k.contar.patos": "Tippe jede Ente an und zähle mit.",
+  "k.comparar.grupos": "Auf welcher Seite siehst du mehr?",
+  "k.descomponer.marco": "Es sind schon {parte} da. Wie viele fehlen bis {total}?",
+  "k.suma.patos": "{a} Enten und noch {b} Enten. Wie viele Enten sind das?",
+  "k.resta.patos": "Da waren {a} Enten. {b} sind weggeschwommen. Wie viele bleiben?",
+  "k.formas.cual_sobra": "Welches passt nicht dazu?",
+  "juego.bien": "Genau!",
+  "juego.otra": "Diesmal nicht. Schau noch mal.",
+  "juego.siguiente": "Weiter",
+  "juego.salir": "Fertig",
+  "juego.cargando": "Gleich geht's los…",
+  "juego.mirar": "Schau!"
 }

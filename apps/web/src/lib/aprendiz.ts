@@ -85,6 +85,23 @@ export interface Resumen {
   ubicando: boolean;
   etapa: "sin_ver" | "practicando" | "provisional" | "aprendido";
   venceEn: number | null;
+  /**
+   * La estimación cruda en logits y cuántos ítems se han respondido.
+   *
+   * ─── Por qué SÍ salen del objeto, si el criterio #86 pide minimizar ──────
+   *
+   * Porque son **estado derivado**, que es exactamente lo que este objeto puede
+   * guardar y exponer. Lo que no sale —ni existe— es el intento crudo.
+   *
+   * Y hacen falta: el selector vive en el Worker web y necesita reconstruir el
+   * estado para elegir. Sin `respondidos`, `kPara()` recibe siempre 0 y el motor
+   * usa K de arranque para siempre; sin `habilidad`, el nivel redondeado a
+   * escalón pierde hasta medio escalón en cada ida y vuelta y la estimación
+   * camina sola. Las dos cosas se escribieron mal primero y se vieron en la
+   * prueba del ida y vuelta.
+   */
+  habilidad: number;
+  respondidos: number;
 }
 
 const PREFIJO = "hab:";
@@ -180,6 +197,8 @@ export class Aprendiz {
       ubicando: estaUbicando(fila.habilidad),
       etapa: etapaDe(fila.repaso),
       venceEn: fila.repaso.venceEn,
+      habilidad: fila.habilidad.habilidad,
+      respondidos: fila.habilidad.respondidos,
     };
   }
 }

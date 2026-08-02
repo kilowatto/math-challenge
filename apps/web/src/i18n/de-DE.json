@@ -10,6 +10,8 @@
   "navArchitecture": "Architektur",
   "navResearch": "Forschung",
   "navOpen": "Open Source",
+  "navMore": "Mehr",
+  "navMenu": "Menü",
   "exploreHeading": "Weiterlesen",
   "title": "Math Challenge",
   "tagline": "Vom Entenzählen zur algebraischen Topologie.",
@@ -124,5 +126,12 @@
   "markDismiss": "Schließen",
   "markProfileNotUser": "Ihr Kind ist ein Profil in Ihrem Konto — nie ein Benutzerkonto. Keine E-Mail, kein eigenes Passwort, und nichts, was es schreibt, wird gespeichert — denn es schreibt nie etwas.",
   "markAgeVsDifficulty": "Das Alter entscheidet, wie die App AUSSIEHT; ein Einstufungstest entscheidet, wo das Kind ANFÄNGT. Zwei getrennte Achsen, mit Absicht: ein siebenjähriges Kind kann auf Stufe 2 sein und ein anderes auf Stufe 5, und beide sehen dieselbe Oberfläche.",
-  "signinPasskeyCta": "Passkey verwenden"
+  "signinPasskeyCta": "Passkey verwenden",
+  "formErrGenerico": "Das hat nicht geklappt. Bitte versuche es noch einmal.",
+  "formErrCredenciales": "Diese E-Mail und dieses Passwort passen zu keinem Konto.",
+  "formErrCorreo": "Prüfe die E-Mail-Adresse.",
+  "formErrClave": "Das Passwort braucht zwischen 8 und 64 Zeichen.",
+  "formErrDemasiados": "Zu viele Versuche. Warte eine Minute und versuche es erneut.",
+  "formErrAlias": "Dieser Name wird in deinem Konto schon verwendet. Wähle einen anderen.",
+  "formErrEdadAdulto": "Dieses Jahr gehört zu einem Erwachsenen. Erwachsene eröffnen ein eigenes Konto."
 }

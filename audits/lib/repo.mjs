@@ -175,3 +175,58 @@ export function sinComentarios(texto) {
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/^\s*--[^\n]*/gm, " ");
 }
+
+/**
+ * Deuda declarada: un fallo del producto que este auditor YA encontró, que otra
+ * persona está arreglando, y que no puede bloquear el commit de todo el mundo
+ * mientras tanto.
+ *
+ * ─── Por qué existe, y por qué no es una anulación disfrazada ──────────────
+ *
+ * Un auditor nuevo casi siempre nace ROJO: se escribe porque algo se rompió, y
+ * lo que se rompió sigue roto el día que se escribe. Hay dos salidas malas y
+ * una buena.
+ *
+ *   · Mala 1 — no registrarlo en `run.mjs` hasta que el producto esté limpio.
+ *     Es lo que hizo que seis auditores fallaran abiertos sin que nadie lo
+ *     supiera (ver el comentario de los trece en `run.mjs`). Un guardián que
+ *     espera su turno en una lista no vigila.
+ *   · Mala 2 — ablandar la regla para que pase. Entonces el auditor deja de
+ *     cazar la clase entera, que es justo lo que valía.
+ *   · Buena — declarar POR ESCRITO cada violación conocida, con su issue, y
+ *     bloquear todo lo demás. El día siguiente, una violación NUEVA de la misma
+ *     clase bloquea, que es el 90% del valor.
+ *
+ * **Una entrada rancia BLOQUEA.** Si el fallo ya no está, el renglón sobra y hay
+ * que borrarlo. Sin eso, la lista crece y nunca se vacía — que es exactamente
+ * cómo un `.eslintrc` acaba con doscientas reglas apagadas.
+ *
+ * @param {string[]} problemas       todos los problemas encontrados, sin filtrar
+ * @param {Array<{id: string, issue: string, porQue: string}>} deuda
+ * @returns {{ bloquean: string[], conocidos: string[] }}
+ */
+export function separarDeuda(problemas, deuda) {
+  const bloquean = [];
+  const conocidos = [];
+  const vistos = new Set();
+
+  for (const p of problemas) {
+    const entrada = deuda.find((d) => p.includes(d.id));
+    if (entrada) {
+      vistos.add(entrada.id);
+      conocidos.push(`DEUDA ${entrada.issue} · ${entrada.id} — ${entrada.porQue}`);
+    } else {
+      bloquean.push(p);
+    }
+  }
+
+  for (const d of deuda) {
+    if (vistos.has(d.id)) continue;
+    bloquean.push(
+      `la deuda declarada «${d.id}» (${d.issue}) YA NO SE REPRODUCE. Borra su renglón del auditor: ` +
+        "una lista de excepciones que nadie vacía es cómo un gate se apaga sin que nadie lo decida.",
+    );
+  }
+
+  return { bloquean, conocidos };
+}

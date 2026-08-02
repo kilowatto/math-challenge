@@ -310,6 +310,93 @@ const CASOS = [
     contenido: '---\n---\n<script define:vars={{ x: 1 }}>\n  const el = (document.body as HTMLElement);\n</script>\n',
     espera: "lleva TypeScript",
   },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Los cuatro de #341, y por qué casi todos son de DEGRADACIÓN
+  //
+  // D-070: «el control negativo no basta si el caso de prueba se escribe a
+  // mano». Los cuatro fallos que estos auditores existen para cazar ocurrieron
+  // en archivos que siguen aquí, así que el control honesto es quitarle a ESE
+  // archivo la línea que de verdad faltó — no inventar un archivo que viole.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  {
+    // El bug real, dos veces: `Privada.astro` sin `tokens.css`. La segunda vez
+    // fue un `git checkout --theirs` resolviendo un conflicto de merge.
+    auditor: "hojas-de-estilo",
+    que: "el layout privado sin tokens.css — el bug que volvió con un merge",
+    archivo: "apps/web/src/layouts/Privada.astro",
+    parche: (t) => t.replace(/^import\s+["'].*styles\/tokens\.css["'];?\s*$/m, ""),
+    espera: "NO importa styles/tokens.css",
+  },
+  {
+    // El otro, en la pantalla del reto: no es un layout, así que la parte 1 no
+    // lo cubre. Lo caza el cruce de los tokens que el CSS usa contra los que
+    // sus hojas definen.
+    auditor: "hojas-de-estilo",
+    que: "la pantalla del reto sin tokens.css, con reto.css pidiendo --color-surface",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) => t.replace(/^import\s+["'].*styles\/tokens\.css["'];?\s*$/m, ""),
+    espera: "sin que ninguna hoja de su cierre lo defina",
+  },
+  {
+    // La tercera parte: un `data-*` en el <html> que ninguna hoja lee. Es el
+    // modo de romperlo que, en palabras del encabezado de `bandas.css`, «no
+    // deja rastro».
+    auditor: "hojas-de-estilo",
+    que: "una pantalla que emite data-band y no carga bandas.css",
+    archivo: "apps/web/src/pages/[locale]/app/kids/index.astro",
+    parche: (t) => t.replace(/^import\s+["'].*styles\/bandas\.css["'];?\s*$/m, ""),
+    espera: "escribe data-band en su <html>",
+  },
+  {
+    auditor: "componente-sin-importar",
+    que: "el <Marca> sin importar que sirvió 200 con cero bytes y dejó imposible crear un perfil",
+    archivo: "apps/web/src/components/paginas/PerfilNuevo.astro",
+    parche: (t) => t.replace(/^import\s+Marca\s+from\s+["'][^"']*["'];?\s*$/m, ""),
+    espera: "usa <Marca>",
+  },
+  {
+    // Y además uno de archivo NUEVO, porque los dos fallos que ya ocurrieron en
+    // este repo con auditores ciegos fueron con archivos sin rastrear.
+    auditor: "componente-sin-importar",
+    que: "un componente nuevo que usa una etiqueta que no liga",
+    archivo: "apps/web/src/components/PruebaSinImportar.astro",
+    contenido: "---\nconst x = 1;\n---\n<div>{x}<Marca locale=\"en\" /></div>\n",
+    espera: "usa <Marca>",
+  },
+  {
+    // Mitad A de #349: una cadena que no existe en ningún catálogo de i18n
+    // viaja cruda al botón. Se degrada K11 —una habilidad SIN deuda declarada—
+    // para que el caso no lo absorba la lista de conocidos.
+    auditor: "opciones-contestables",
+    que: "una habilidad que sirve un identificador interno como opción",
+    archivo: "packages/motor/src/banco-kinder.ts",
+    parche: (t) => t.replace("respuesta: { valor: a + b, tol: 0 },", 'respuesta: { valor: `opcion_${a + b}`, tol: 0 },'),
+    espera: "K11 · opción con identificador interno",
+  },
+  {
+    // Mitad B, y es la que prueba que la SEGUNDA FUENTE se lee de verdad: no se
+    // toca el banco, se toca el renderizador. Si `Pantalla.astro` empieza a
+    // dibujar `toca_para_contar` con figuras, las opciones numéricas de K03
+    // dejan de ser contestables — y el auditor tiene que verlo sin que nadie le
+    // diga que K03 cambió.
+    auditor: "opciones-contestables",
+    que: "la pantalla empieza a dibujar otro formato con figuras y sus opciones siguen siendo índices",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) => t.replace('cajita("pato", "🦆")', 'cajita("figura", "🦆")'),
+    espera: "K03 · escena de figuras",
+  },
+  {
+    // Y el control de la propia lista de deuda: si el fallo declarado deja de
+    // reproducirse, el renglón sobra y el auditor BLOQUEA hasta que se borre.
+    // Sin esto, una lista de excepciones crece y nunca se vacía.
+    auditor: "opciones-contestables",
+    que: "una deuda declarada que ya no se reproduce y sigue en la lista",
+    archivo: "packages/motor/src/banco-kinder.ts",
+    parche: (t) => t.replace("K06, K07, K08,", "K06, K08,"),
+    espera: "YA NO SE REPRODUCE",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;
@@ -330,27 +417,62 @@ for (const caso of casos) {
   const existiaAntes = existsSync(ruta);
   const original = existiaAntes ? readFileSync(ruta, "utf8") : null;
 
-  // Un caso que sobrescribiera un archivo real y luego lo restaurara mal sería
-  // peor que no probar nada. Se aborta antes de tocarlo.
-  if (existiaAntes) {
-    console.error(`  ✗ ${caso.auditor}: ${caso.archivo} YA EXISTE. El caso lo sobrescribiría.`);
-    fallos++;
-    continue;
-  }
+  if (caso.parche) {
+    // ─── Caso de DEGRADACIÓN, no de archivo nuevo ─────────────────────────
+    //
+    // D-070 lo dice con todas sus letras: «el control negativo no basta si el
+    // caso de prueba se escribe a mano». Un archivo inventado prueba que el
+    // auditor sabe leer un archivo inventado. Degradar el archivo REAL —quitar
+    // el import que de verdad faltó— prueba que habría cazado el bug que de
+    // verdad ocurrió.
+    //
+    // El archivo TIENE que existir: si no, el caso apunta a una ruta que se
+    // movió y estaría probando el vacío.
+    if (!existiaAntes) {
+      console.error(`  ✗ ${caso.auditor}: ${caso.archivo} NO EXISTE y el caso lo degrada.`);
+      console.error(`      Un parche sobre un archivo ausente no prueba nada. ¿Se movió?`);
+      fallos++;
+      continue;
+    }
+    const degradado = caso.parche(original);
+    if (degradado === original) {
+      console.error(`  ✗ ${caso.auditor}: el parche sobre ${caso.archivo} no cambió NADA.`);
+      console.error(`      El texto que buscaba ya no está: el caso corría en verde sin degradar nada.`);
+      fallos++;
+      continue;
+    }
+    writeFileSync(ruta, degradado, "utf8");
+  } else {
+    // Un caso que sobrescribiera un archivo real y luego lo restaurara mal sería
+    // peor que no probar nada. Se aborta antes de tocarlo.
+    if (existiaAntes) {
+      console.error(`  ✗ ${caso.auditor}: ${caso.archivo} YA EXISTE. El caso lo sobrescribiría.`);
+      fallos++;
+      continue;
+    }
 
-  mkdirSync(dirname(ruta), { recursive: true });
-  writeFileSync(ruta, caso.contenido, "utf8");
+    mkdirSync(dirname(ruta), { recursive: true });
+    writeFileSync(ruta, caso.contenido, "utf8");
+  }
 
   let r;
   try {
-    r = spawnSync("node", [`audits/${caso.auditor}.mjs`], {
+    // `--experimental-strip-types` para todos, igual que en `run.mjs`: hay
+    // auditores que importan el motor, que es TypeScript. Mantener aquí una
+    // lista de cuáles lo necesitan se desincronizaría el día que un auditor
+    // nuevo importe código de producto — y el síntoma sería un caso que
+    // "bloquea" por un error de sintaxis en vez de por la violación.
+    r = spawnSync("node", ["--experimental-strip-types", "--no-warnings", `audits/${caso.auditor}.mjs`], {
       cwd: RAIZ,
       encoding: "utf8",
       maxBuffer: 16 * 1024 * 1024,
     });
   } finally {
-    rmSync(ruta, { force: true });
-    if (original !== null) writeFileSync(ruta, original, "utf8");
+    if (caso.parche) writeFileSync(ruta, original, "utf8");
+    else {
+      rmSync(ruta, { force: true });
+      if (original !== null) writeFileSync(ruta, original, "utf8");
+    }
   }
 
   const salida = `${r.stdout ?? ""}${r.stderr ?? ""}`;

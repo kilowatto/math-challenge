@@ -23,40 +23,133 @@
  */
 
 /* ───────────────────────────────────────────────────────────────────────────
-   Base común: la navegación como barra inferior en táctil.
+   D-064 — una sola navegación primaria a la vez, `mc-49`.
+   ───────────────────────────────────────────────────────────────────────────
+   Cuatro bloques posibles, nunca dos visibles juntos. La señal que decide
+   entre "instalada" y "pestaña de navegador" es `display-mode`, CSS puro, el
+   mismo mecanismo que ya usa `Instalar.astro` — no se detecta en JS por la
+   misma razón que `data-platform` tampoco: fallaría en la primera pintura.
+
+     1. nav.sitio       — escritorio (macOS/Windows/otro). Oculto en táctil.
+     2. header.compacto — móvil, pestaña de navegador (display-mode: browser).
+     3. .barra-inferior + .mas-instalada — móvil instalado, ancho de teléfono.
+     4. nav.riel        — iPad instalado, horizontal completo (1024px+).
    ─────────────────────────────────────────────────────────────────────────── */
 
-/* `--safe-*` es lo que separa una PWA de una página. Sin esto, la barra inferior
-   queda debajo del indicador de inicio de un iPhone y de la barra de gestos de
-   Android: se ve, no se puede tocar. */
+/* `--safe-*` es lo que separa una PWA de una página. Sin esto, la barra
+   inferior o el encabezado compacto quedan debajo del indicador de inicio de
+   un iPhone y de la barra de gestos de Android: se ven, no se pueden tocar. */
 :root {
   --safe-abajo: env(safe-area-inset-bottom, 0px);
   --safe-arriba: env(safe-area-inset-top, 0px);
   --nav-alto: 56px;
 }
 
-/* La barra inferior solo existe donde la plataforma la espera (Android e iOS).
-   No es una consulta de ancho: un iPad en horizontal es ancho y la sigue
-   queriendo abajo, y una ventana estrecha de escritorio no. */
+/* ─── Bloque 1: nav.sitio nunca en táctil ─────────────────────────────────
+   Antes de D-064 se pintaba en las cinco plataformas y competía con la barra
+   inferior en iOS/Android. Ahora es exclusivamente de escritorio — coincide
+   con el modo "Top" de Fluent NavigationView en Windows y con la convención
+   de apps web de macOS (`mc-49`).
+
+   `!important`, y hay que decir por qué: empata en especificidad con
+   `nav.sitio { display: flex }` de `Base.astro` dentro de
+   `@media (min-width: 40rem)`, y sin esto gana esa regla por orden de
+   aparición — se vio pasar en un navegador real, no es cautela de sobra.
+   Mismo patrón que ya usa `Instalar.astro` para el mismo tipo de choque. */
+[data-platform="ios"] nav.sitio,
+[data-platform="android"] nav.sitio {
+  display: none !important;
+}
+
+/* ─── Bloque 2: encabezado compacto — solo pestaña de navegador ───────────
+   `display-mode: browser` es el valor explícito para "no instalada"; no hace
+   falta negar `standalone`. Es lo que ve la mayoría de las visitas nuevas.
+
+   `!important` por la misma razón que el Bloque 1: `header.compacto` tiene
+   su propio `display: none` incondicional en `Base.astro` (el default que
+   evita que se cuele en escritorio), con la MISMA especificidad que esta
+   regla — comprobado en un navegador real que sin `!important` gana el
+   default y el encabezado nunca aparece, ni en pestaña de navegador. */
+@media (display-mode: browser) {
+  [data-platform="ios"] header.compacto,
+  [data-platform="android"] header.compacto {
+    display: block !important;
+  }
+}
+[data-platform="ios"] header.compacto,
+[data-platform="android"] header.compacto,
+[data-platform="ios"] .mas-instalada,
+[data-platform="android"] .mas-instalada {
+  padding-block-start: var(--safe-arriba);
+}
+
+/* ─── Bloques 3 y 4: solo instalada ────────────────────────────────────────
+   `standalone`, `minimal-ui` y `fullscreen` son los tres valores que
+   `Instalar.astro` ya trata como "instalada". Por debajo de 1024px es la
+   barra inferior de teléfono; a partir de 1024px, en iOS, el riel de iPad. */
+@media (display-mode: standalone), (display-mode: minimal-ui), (display-mode: fullscreen) {
+  /* `!important`: mismo choque que los bloques 1 y 2, contra los defaults
+     ocultos de `.mas-instalada`/`nav.barra-inferior` en `Base.astro`. */
+  [data-platform="android"] .mas-instalada,
+  [data-platform="ios"] .mas-instalada {
+    display: block !important;
+  }
+  [data-platform="android"] .barra-inferior,
+  [data-platform="ios"] .barra-inferior {
+    display: flex !important;
+  }
+  [data-platform="android"] main,
+  [data-platform="ios"] main {
+    padding-block-end: calc(var(--nav-alto) + var(--safe-abajo) + var(--space));
+  }
+
+}
+
+/* El riel reemplaza a la barra inferior y a "Más" a partir de 1024px, solo en
+   iOS/iPad — alcance de D-064; una tableta Android ancha se queda con la
+   barra inferior, sin riel, hasta que se investigue esa convención. Repite la
+   consulta de `display-mode` porque `@media` no anida selectores de atributo
+   de un bloque a otro sin CSS nesting, y este archivo no usa nesting en
+   ningún otro lado. */
+@media (display-mode: standalone), (display-mode: minimal-ui), (display-mode: fullscreen) {
+  @media (min-width: 1024px) {
+    /* `!important` en las dos: apagan reglas que también son `!important`
+       (el bloque de arriba), así que sin esto el resultado depende de orden
+       de aparición en vez de la intención — más frágil, no menos. */
+    [data-platform="ios"] .mas-instalada,
+    [data-platform="ios"] .barra-inferior {
+      display: none !important;
+    }
+    [data-platform="ios"] main {
+      padding-block-end: 3rem;
+      padding-inline-start: calc(220px + 1.25rem);
+    }
+    [data-platform="ios"] nav.riel {
+      display: block !important;
+      position: fixed;
+      inset-block: 0;
+      inset-inline-start: 0;
+      inline-size: 220px;
+      padding-block-start: var(--safe-arriba);
+      overflow-y: auto;
+      border-inline-end: 1px solid var(--color-border);
+      background: var(--color-surface);
+    }
+  }
+}
+
 [data-platform="android"] .barra-inferior,
 [data-platform="ios"] .barra-inferior {
   position: fixed;
   inset-inline: 0;
   inset-block-end: 0;
   z-index: 10;
-  display: flex;
   justify-content: space-around;
   align-items: stretch;
   padding-block-end: var(--safe-abajo);
   background: var(--color-surface);
   border-block-start: 1px solid var(--color-border);
   font-family: var(--font-sistema);
-}
-
-/* Y el cuerpo deja hueco para ella, o el último párrafo queda debajo. */
-[data-platform="android"] main,
-[data-platform="ios"] main {
-  padding-block-end: calc(var(--nav-alto) + var(--safe-abajo) + var(--space));
 }
 
 [data-platform="android"] .barra-inferior a,
@@ -76,15 +169,6 @@
   color: var(--color-text-muted);
 }
 
-/* En escritorio la barra inferior no se pinta: la navegación va arriba, que es
-   donde vive en Windows y en macOS, y el borde de abajo es de la barra de tareas
-   o del Dock. */
-[data-platform="macos"] .barra-inferior,
-[data-platform="windows"] .barra-inferior,
-[data-platform="otro"] .barra-inferior {
-  display: none;
-}
-
 /* ───────────────────────────────────────────────────────────────────────────
    ANDROID — Material 3
    ───────────────────────────────────────────────────────────────────────────
@@ -100,7 +184,8 @@
   --radius-control: 100px;
 }
 
-[data-platform="android"] .acciones > * {
+[data-platform="android"] .acciones > *,
+[data-platform="android"] .acciones-compactas > * {
   border-radius: var(--radius-control);
   /* M3 no usa sombra en botones rellenos: la jerarquía es de color. */
   box-shadow: none;
@@ -134,7 +219,8 @@
   --radius-control: 12px;
 }
 
-[data-platform="ios"] .acciones > * {
+[data-platform="ios"] .acciones > *,
+[data-platform="ios"] .acciones-compactas > * {
   border-radius: var(--radius-control);
   box-shadow: none;
   /* 44pt es el mínimo de HIG y coincide con `--tap-primaria`. */
@@ -152,8 +238,12 @@
   [data-platform="ios"] .barra-inferior { backdrop-filter: blur(20px) saturate(180%); }
 }
 
-[data-platform="ios"] .barra-inferior [aria-current] {
+[data-platform="ios"] .barra-inferior [aria-current],
+[data-platform="ios"] nav.riel [aria-current] {
   color: var(--color-text-brand);
+}
+[data-platform="ios"] nav.riel a:hover {
+  background: var(--color-surface-alt, color-mix(in srgb, var(--color-text) 6%, transparent));
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

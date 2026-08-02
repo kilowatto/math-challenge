@@ -250,6 +250,13 @@ const CASOS = [
     contenido: '{ "error.x": ["\u00a1Qu\u00e9 listo eres!", "sigue as\u00ed"] }\n',
     espera: "elogia la capacidad",
   },
+  {
+    auditor: "navegacion-unica",
+    que: "un import de una librería de navegación nativa que D-064 descartó explícitamente",
+    archivo: "apps/web/src/components/PruebaLibreriaNav.astro",
+    contenido: '---\nimport Framework7 from "framework7";\n---\n<div></div>\n',
+    espera: "framework7",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

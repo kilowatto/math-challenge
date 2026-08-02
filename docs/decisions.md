@@ -786,6 +786,13 @@ escritorio más completa.
 > derivado de `CARTAS.length`**, que sería una prueba incapaz de fallar. Existe
 > para que añadir una carta obligue a tocar esta decisión — que es lo que acaba
 > de pasar: la prueba bloqueó un commit hasta que alguien vino a escribir esto.
+>
+> **Enmendada el 2026-08-01: `navegacion-unica` se suma a los deterministas.**
+> D-064 (una sola navegación primaria a la vez) necesitaba su guardián — y
+> escribirlo hizo aparecer el MISMO tipo de bug que D-064 corrigió, una
+> segunda vez, mientras se construía el arreglo (un `display: none`
+> incondicional que faltaba). Vive en `audits/navegacion-unica.mjs`, con caso
+> en `pruebas-auditores.mjs`.
 
 **Decisión del dueño:** el despliegue lleva auditores adversariales, sin miedo a
 que sean muchos. Son **38**, en dos clases:
@@ -2016,3 +2023,54 @@ roja #4.
 **Lo que cuesta:** un niño puede avanzar sobre un nodo que todavía no probó durable y arrastrar
 el hueco. Lo que lo atrapa es el repaso: el nodo sigue vencido y vuelve a aparecer intercalado,
 solo que sin puerta.
+
+---
+
+## D-064 — Una sola navegación primaria a la vez, nunca dos apiladas · 2026-08-01
+
+**Origen:** el dueño reportó, con una captura de su iPhone, que el menú del sitio "no se ve
+orgánico, no se ve nativo". La causa raíz, confirmada leyendo `Base.astro`: `nav.sitio` (arriba)
+y `.barra-inferior` (abajo) se pintaban **las dos a la vez** en iOS/Android, sin condicionar a
+si la página corre instalada o en una pestaña de navegador. En una pestaña normal de Safari eso
+son **tres** navegaciones apiladas — las dos del sitio más la barra de direcciones del
+navegador —, confirmado en la propia captura del dueño.
+
+**Decisión del dueño**, resuelta en dos rondas de preguntas de opción múltiple tras investigar
+HIG, Material 3, NavigationView de Fluent y varias fuentes de patrones de PWA (`mc-49`):
+
+1. **La barra inferior de app solo existe instalada** (`display-mode: standalone`, la misma
+   señal que ya usa `Instalar.astro`). En una pestaña de navegador no compite con la barra del
+   propio navegador.
+2. **La barra inferior instalada se limita a 5 destinos, todos de UN toque**: Inicio, Niveles,
+   Investigación, Entrar, Crear cuenta. El dueño pidió explícitamente que Entrar no pase por un
+   segundo nivel — así que los 5 slots que HIG/M3 permiten como máximo se llenan con las 5
+   acciones que importan a diario, y no queda slot para una pestaña "Más".
+3. **Origen, Arquitectura y Código abierto viven en un `<details>/<summary>` nativo** ("Más"),
+   en la franja superior del modo instalado — cero JavaScript, mismo elemento HTML que ya se usa
+   para el menú de la pestaña de navegador (punto 5).
+4. **Ícono + texto** en cada destino de la barra instalada — se aparta de "solo texto", que era
+   la opción de menor costo, porque el dueño prefirió fidelidad a HIG/M3 (que casi siempre
+   emparejan ambos) sobre el ahorro de no generar un set de 5 glifos nuevos.
+5. **En pestaña de navegador (no instalada): encabezado compacto** — marca + Entrar + Crear
+   cuenta siempre visibles + un botón que despliega las 6 secciones **debajo**, empujando el
+   contenido (mismo `<details>/<summary>`, nunca un overlay de pantalla completa — `mc-49`
+   documenta rarezas específicas de iOS Safari con overlays que este patrón evita por
+   construcción).
+6. **iPad en horizontal completo (1024-1366px, la fila de D-041) usa un riel lateral**, no la
+   barra inferior de iPhone — coincide con dónde Material 3 documenta que cambia el patrón. Por
+   debajo de ese ancho, iPad se comporta como iPhone.
+7. **Sin librería nueva** (se descartó Framework7/Ionic/Onsen UI): HTML semántico + CSS con
+   `data-platform` y `display-mode`, el mismo patrón que el repo ya usa. `mc-49` no encontró
+   evidencia de que una librería dé mejor resultado que CSS bien hecho para una barra de
+   pestañas, y sí un costo real de peso de JS en todas las páginas, no solo donde se usa.
+8. **Escritorio no cambia.** La barra horizontal de hoy coincide con el modo "Top" de Fluent
+   `NavigationView` y con la convención de apps web de macOS.
+
+**Investigación relacionada:** `mc-49`. Enmienda D-031 (que ya pedía "barras de navegación y
+pestañas nativas" pero nunca dijo "una sola, no dos") y `docs/guia-de-estilo.md` § Navegación.
+
+**Lo que esto no resuelve todavía:** de dónde salen los 5 íconos (el punto 4 crea una
+dependencia nueva — no encaja en "arte" de Recraft ni en "pieza compleja de interfaz" de Gemini
+per CLAUDE.md § Imágenes, así que se resuelve como glifo de línea simple, monocromo, en SVG
+inline con `currentColor`, sin pasar por ninguna de las dos herramientas de imagen); y el
+detalle exacto del riel de iPad, que queda para cuando se construya esa pieza.

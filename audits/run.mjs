@@ -98,6 +98,13 @@ const ACTIVE = [
   // 0-RTT sin verificar: no basta con que exista, tiene que estar en el gancho.
   ["jsonld-valid",           "JSON-LD válido y coincidente con la página",     "S0 §59, mc-48 §3, D-022"],
   ["hreflang-recip",         "hreflang recíproco entre los 7 + x-default",     "S0 §59, mc-48 §3"],
+
+  // Nació de una captura real de un iPhone (2026-08-01): dos navegaciones
+  // primarias pintadas a la vez, más la barra del propio navegador — tres
+  // apiladas. Construir el arreglo hizo aparecer el MISMO tipo de bug otra
+  // vez (un default "display: none" que faltaba), así que este auditor
+  // existe para que la tercera vez no haga falta un iPhone real.
+  ["navegacion-unica",       "una sola navegación primaria a la vez",          "D-064, mc-49"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

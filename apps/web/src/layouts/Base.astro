@@ -115,6 +115,57 @@ const NAV: Array<{ seccion: Seccion | null; label: string }> = [
 const REGISTRO: Seccion = "registro-padre";
 const ENTRAR: Seccion = "entrar";
 
+/**
+ * Una sola navegación primaria a la vez. D-064, `mc-49`.
+ *
+ * Nació de una captura real de un iPhone: la barra de arriba y la de abajo se
+ * pintaban juntas, y en una pestaña de Safari eso son TRES navegaciones
+ * apiladas con la del propio navegador. La salida no es una detección de
+ * plataforma más fina — ya existe, es `data-platform` — es una segunda señal
+ * que hoy falta: si la página corre INSTALADA o en una pestaña. Esa señal es
+ * `display-mode`, y por la misma razón que `data-platform` nunca se detecta
+ * en JavaScript (`docs/guia-de-estilo.md`), esta tampoco: los cuatro bloques
+ * de abajo se pintan siempre, y el CSS decide cuál se ve, sin script y sin
+ * destello. Es el mismo mecanismo que ya usa `Instalar.astro`.
+ *
+ * Los cuatro bloques, y quién los enseña:
+ *   1. `.sitio`      — escritorio (macOS/Windows/otro), sin cambio.
+ *   2. `.compacto`   — móvil, pestaña de navegador (`display-mode: browser`).
+ *   3. `.barra-inferior` + `.mas-instalada` — móvil, instalada, ancho de
+ *      teléfono. 5 destinos de un toque en la barra (HIG/M3 no permiten más),
+ *      el resto en un `<details>` sin JavaScript.
+ *   4. `.riel`       — iPad instalado en horizontal completo (D-041,
+ *      1024-1366px). Material 3 documenta que el patrón cambia a un riel
+ *      lateral a partir de ahí, no una barra inferior estirada.
+ */
+const SECCIONES_MAS: Array<{ seccion: Seccion; label: string }> = [
+  { seccion: "origen", label: m.navOrigin },
+  { seccion: "arquitectura", label: m.navArchitecture },
+  { seccion: "codigo-abierto", label: m.navOpen },
+];
+
+/** Los 5 de la barra instalada — HIG/M3: 3-5, nunca más. El dueño pidió
+    Entrar de un toque, así que no queda slot para una 6ª pestaña "Más". */
+const CINCO: Array<{ seccion: Seccion | null; label: string; icono: "inicio" | "niveles" | "investigacion" | "entrar" | "crear-cuenta" }> = [
+  { seccion: null, label: m.navHome, icono: "inicio" },
+  { seccion: "niveles", label: m.navLevels, icono: "niveles" },
+  { seccion: "investigacion", label: m.navResearch, icono: "investigacion" },
+  { seccion: ENTRAR, label: m.navSignin, icono: "entrar" },
+  { seccion: REGISTRO, label: m.navSignup, icono: "crear-cuenta" },
+];
+
+/** Glifos de línea simple, SVG inline con `currentColor` — no son arte de
+    Recraft ni pieza de Gemini/Nano Banana (CLAUDE.md § Imágenes): un glifo de
+    navegación no es ilustración de marca, y SVG inline no pesa una petición
+    HTTP ni entra en la regla de AVIF/WebP, que es para fotografía. */
+const GLIFOS: Record<string, string> = {
+  inicio: '<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/>',
+  niveles: '<path d="M12 4 3 8.5 12 13l9-4.5Z"/><path d="M6 11.5 3 13l9 4.5 9-4.5-3-1.5"/><path d="M6 15 3 16.5 12 21l9-4.5-3-1.5"/>',
+  investigacion: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/>',
+  entrar: '<path d="M10 17v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2v1"/><path d="M3 12h12"/><path d="m11 8 4 4-4 4"/>',
+  "crear-cuenta": '<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M18 8v6"/><path d="M15 11h6"/>',
+};
+
 // JSON-LD. `name` y `description` vienen de las MISMAS variables que renderiza
 // el <body>, no de constantes paralelas: es la única forma de que la regla de
 // coincidencia esquema-página no se rompa al editar una sola de las dos.
@@ -247,9 +298,10 @@ const jsonLd = {
   <body>
     <a class="skip" href="#main">{m.skipToContent}</a>
 
-    {/* Navegación del sitio. Es navegación, así que habla en la voz del
-        sistema — D-036: la marca en `--font-marca`, los controles y la
-        navegación en `--font-sistema`. Sin JavaScript: cinco enlaces. */}
+    {/* ─── 1. Escritorio (macOS/Windows/otro) — sin cambio de contenido ──────
+        D-036: la marca en `--font-marca`, los controles y la navegación en
+        `--font-sistema`. Sin JavaScript: cinco enlaces. Oculta en ios/android
+        vía CSS (plataformas.css) — ahí viven los bloques 2-4 de abajo. */}
     <nav class="sitio" aria-label={m.navLabel}>
       <ul>
         {NAV.map((item) => (
@@ -260,18 +312,6 @@ const jsonLd = {
           </li>
         ))}
       </ul>
-
-      {/*
-        Las dos acciones van en su PROPIA fila, no dentro de la lista de
-        secciones. Estaban dentro y en un teléfono el resultado era la barra
-        partida en dos líneas con el botón encajado al final de la segunda —
-        una barra de escritorio con el ancho reducido, no un diseño móvil.
-
-        Aquí son dos botones lado a lado que ocupan el ancho completo en un
-        teléfono y se encogen a su contenido a partir de 40rem. `master-plan`
-        §11 dice «PWA primero, móvil segundo, escritorio tercero», y el orden
-        importa: esta fila se diseña para el pulgar y después se deja crecer.
-      */}
       <div class="acciones">
         {seccion === ENTRAR
           ? <span class="entrar" aria-current="page">{m.navSignin}</span>
@@ -281,6 +321,65 @@ const jsonLd = {
           : <a class="registro" href={ruta(locale, REGISTRO)}>{m.navSignup}</a>}
       </div>
     </nav>
+
+    {/* ─── 2. Móvil, pestaña de navegador — `display-mode: browser` ─────────
+        Lo que ve la mayoría de las visitas nuevas: la vista que produjo la
+        captura que originó D-064. Encabezado compacto: marca + Entrar/Crear
+        cuenta SIEMPRE visibles (mismo criterio de un toque que el bloque 3) +
+        un <details> que despliega las 6 secciones empujando el contenido —
+        nunca un overlay: `mc-49` documenta que los overlays de pantalla
+        completa no cierran con el gesto de deslizar en iOS Safari. */}
+    <header class="compacto">
+      <div class="fila">
+        <a class="marca" href={`/${locale}/`}>Math Challenge</a>
+        <div class="acciones-compactas">
+          {seccion === ENTRAR
+            ? <span class="entrar" aria-current="page">{m.navSignin}</span>
+            : <a class="entrar" href={ruta(locale, ENTRAR)}>{m.navSignin}</a>}
+          {seccion === REGISTRO
+            ? <span class="registro" aria-current="page">{m.navSignup}</span>
+            : <a class="registro" href={ruta(locale, REGISTRO)}>{m.navSignup}</a>}
+        </div>
+        <details class="menu">
+          <summary aria-label={m.navMenu}>{m.navMenu}</summary>
+          <ul>
+            {NAV.map((item) => (
+              <li>
+                {item.seccion === seccion && !slug
+                  ? <span aria-current="page">{item.label}</span>
+                  : <a href={item.seccion ? ruta(locale, item.seccion) : `/${locale}/`}>{item.label}</a>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      </div>
+    </header>
+
+    {/* ─── 3. Móvil, instalada, ancho de teléfono — `display-mode: standalone` ───
+        D-064: 5 destinos, todos de un toque (HIG/M3: 3-5, nunca más). Origen,
+        Arquitectura y Código abierto no caben — van en el <details> "Más" de
+        la franja superior, con el mismo mecanismo sin JavaScript que el menú
+        del bloque 2. Oculto además a partir de 1024px (bloque 4, el riel de
+        iPad se hace cargo ahí).
+
+        Va ANTES de <main>, junto a header.compacto, no después: son
+        mutuamente excluyentes (nunca los dos instalados a la vez) y los dos
+        necesitan la misma franja superior persistente — no solo describirlo
+        en el comentario, que es donde se quedó la primera vez. */}
+    <div class="mas-instalada">
+      <details>
+        <summary>{m.navMore}</summary>
+        <ul>
+          {SECCIONES_MAS.map((item) => (
+            <li>
+              {item.seccion === seccion && !slug
+                ? <span aria-current="page">{item.label}</span>
+                : <a href={ruta(locale, item.seccion)}>{item.label}</a>}
+            </li>
+          ))}
+        </ul>
+      </details>
+    </div>
 
     <main id="main">
       <slot />
@@ -296,29 +395,40 @@ const jsonLd = {
       <Instalar locale={locale} plataforma={plataforma} />
     </main>
 
-    {true && (
-      /*
-        La barra de pestañas de D-031: barra de navegación de Material 3 en
-        Android, barra de pestañas de HIG en iOS. Se pinta SOLO en esas dos
-        plataformas — y no por ancho: un iPad en horizontal es ancho y la sigue
-        queriendo abajo, mientras que una ventana estrecha en un Mac no.
+    <nav class="barra-inferior" aria-label={m.navLabel}>
+      {CINCO.map((item) =>
+        item.seccion === seccion && !slug
+          ? <span aria-current="page"><span class="icono" data-svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={GLIFOS[item.icono]}></svg></span><span class="etiqueta">{item.label}</span></span>
+          : <a href={item.seccion ? ruta(locale, item.seccion) : `/${locale}/`}><span class="icono" data-svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={GLIFOS[item.icono]}></svg></span><span class="etiqueta">{item.label}</span></a>,
+      )}
+    </nav>
 
-        Cuatro destinos, que es el máximo que HIG recomienda antes de que la
-        barra se lea como un menú. Las secciones largas siguen arriba.
-      */
-      <nav class="barra-inferior" aria-label={m.navLabel}>
-        {[
-          { seccion: null as Seccion | null, label: m.navHome },
-          { seccion: "niveles" as Seccion, label: m.navLevels },
-          { seccion: "investigacion" as Seccion, label: m.navResearch },
-          { seccion: REGISTRO, label: m.navSignup },
-        ].map((item) =>
-          item.seccion === seccion && !slug
-            ? <span aria-current="page"><span class="icono">{item.label}</span></span>
-            : <a href={item.seccion ? ruta(locale, item.seccion) : `/${locale}/`}><span class="icono">{item.label}</span></a>,
-        )}
-      </nav>
-    )}
+    {/* ─── 4. iPad instalado, horizontal completo (1024-1366px, D-041) ──────
+        Material 3 documenta que el patrón cambia de barra inferior a riel
+        lateral a partir de ancho "medium" — no una barra estirada. Cabe todo:
+        los 5 con ícono más los 3 de "Más", sin necesitar un segundo nivel.
+        Fuera de este ancho (Split View, vertical) el iPad usa el bloque 3,
+        igual que hoy — D-041 ya lo trata como iOS. Alcance de esta ronda:
+        solo iOS/iPad; una tableta Android ancha se queda con el bloque 3. */}
+    <nav class="riel" aria-label={m.navLabel}>
+      <ul>
+        {CINCO.map((item) => (
+          <li>
+            {item.seccion === seccion && !slug
+              ? <span aria-current="page"><span class="icono" data-svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={GLIFOS[item.icono]}></svg></span><span class="etiqueta">{item.label}</span></span>
+              : <a href={item.seccion ? ruta(locale, item.seccion) : `/${locale}/`}><span class="icono" data-svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={GLIFOS[item.icono]}></svg></span><span class="etiqueta">{item.label}</span></a>}
+          </li>
+        ))}
+        <li class="separador" role="separator"></li>
+        {SECCIONES_MAS.map((item) => (
+          <li>
+            {item.seccion === seccion && !slug
+              ? <span aria-current="page" class="etiqueta">{item.label}</span>
+              : <a href={ruta(locale, item.seccion)} class="etiqueta">{item.label}</a>}
+          </li>
+        ))}
+      </ul>
+    </nav>
 
     <footer>
       <nav aria-label={m.languageLabel}>
@@ -448,6 +558,204 @@ const jsonLd = {
       nav.sitio [aria-current] {
         color: var(--color-text);
         box-shadow: inset 0 -3px 0 0 var(--color-accent);
+      }
+
+      /* ─── Bloque 2: encabezado compacto de pestaña de navegador ──────────
+         Oculto por defecto; `plataformas.css` lo enseña solo en ios/android
+         con `display-mode: browser` (D-064). */
+      /* `sticky`, no estático: sin esto, al hacer scroll el encabezado
+         desaparece igual que el nav de hoy — es la otra mitad de la queja
+         original ("en Safari no hay menú" al bajar en la página). El botón
+         de menú tiene que quedar alcanzable sin volver arriba. */
+      header.compacto {
+        display: none;
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 10;
+        background: var(--color-surface);
+      }
+      header.compacto .fila {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.25rem;
+        border-block-end: 1px solid var(--color-border);
+      }
+      /* La marca habla en Raleway (D-036) — es donde se lee a Ignia, a
+         diferencia de los controles de alrededor, que hablan en la voz del
+         sistema. */
+      header.compacto .marca {
+        display: inline-flex;
+        align-items: center;
+        /* touch-targets.mjs marcaba este blanco como "frágil": llegaba al
+           mínimo por padding + línea, no por un tamaño garantizado. */
+        min-block-size: var(--tap-min);
+        font-family: var(--font-marca);
+        font-weight: var(--weight-subtitle);
+        font-size: var(--text-base);
+        color: var(--color-text);
+        text-decoration: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      header.compacto .acciones-compactas {
+        display: flex;
+        gap: 0.5rem;
+        margin-inline-start: auto;
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+      }
+      header.compacto .acciones-compactas > * {
+        display: inline-flex;
+        align-items: center;
+        min-block-size: var(--tap-min);
+        padding-inline: 0.6rem;
+        border-radius: var(--radius);
+        text-decoration: none;
+        font-weight: var(--weight-subtitle);
+        white-space: nowrap;
+      }
+      header.compacto .entrar { color: var(--color-text); border: 1px solid var(--color-border); }
+      header.compacto .registro { background: var(--color-accent); color: var(--color-on-accent); }
+      header.compacto [aria-current] { opacity: 0.6; pointer-events: none; }
+
+      /* El botón de menú y la lista que empuja el contenido — nunca un
+         overlay (mc-49: iOS Safari no cierra overlays con el gesto de
+         deslizar que sí funciona en Android). */
+      /* `align-self: flex-start`, no el `center` heredado de `.fila`: sin
+         esto, al abrirse, flexbox centra el <details> ya CRECIDO contra la
+         altura completa de la fila, y la lista se ve flotando encima del
+         encabezado en vez de empujarlo hacia abajo — se vio pasar en un
+         navegador real. Los demás hijos de `.fila` son cortos y se quedan
+         centrados sin que nadie lo note. */
+      header.compacto details.menu { flex: 0 0 auto; align-self: flex-start; }
+      header.compacto details.menu summary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-inline-size: var(--tap-min);
+        min-block-size: var(--tap-min);
+        list-style: none;
+        cursor: pointer;
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+        color: var(--color-text);
+      }
+      header.compacto details.menu summary::-webkit-details-marker { display: none; }
+      header.compacto details.menu summary::before {
+        content: "";
+        inline-size: 1.1rem;
+        block-size: 1.1rem;
+        margin-inline-end: 0.35rem;
+        background: currentColor;
+        -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" stroke="black" stroke-width="2" stroke-linecap="round" fill="none"/></svg>') center / contain no-repeat;
+        mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" stroke="black" stroke-width="2" stroke-linecap="round" fill="none"/></svg>') center / contain no-repeat;
+      }
+      header.compacto ul {
+        list-style: none;
+        margin: 0;
+        padding: 0.5rem 1.25rem 0.75rem;
+        border-block-end: 1px solid var(--color-border);
+        font-family: var(--font-sistema);
+        font-size: var(--text-sm, var(--text-xs));
+      }
+      header.compacto ul a,
+      header.compacto ul [aria-current] {
+        display: flex;
+        align-items: center;
+        min-block-size: var(--tap-primaria);
+        color: var(--color-text-muted);
+        text-decoration: none;
+      }
+      header.compacto ul [aria-current] { color: var(--color-text); font-weight: var(--weight-subtitle); }
+
+      /* ─── Bloque 3: franja "Más" de la app instalada ──────────────────────
+         Mismo <details> sin JavaScript, esta vez para las tres secciones que
+         no caben en los 5 destinos de la barra inferior. */
+      /* `sticky`, mismo motivo que header.compacto: sin esto, "Más" solo se
+         alcanza volviendo arriba, que es el defecto que D-064 vino a
+         arreglar en primer lugar. */
+      .mas-instalada {
+        display: none;
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 10;
+        background: var(--color-surface);
+      }
+      .mas-instalada details { border-block-end: 1px solid var(--color-border); }
+      .mas-instalada summary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-block-size: var(--tap-min);
+        list-style: none;
+        cursor: pointer;
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        padding-block: 0.4rem;
+      }
+      .mas-instalada summary::-webkit-details-marker { display: none; }
+      .mas-instalada ul {
+        list-style: none;
+        margin: 0;
+        padding: 0 1.25rem 0.75rem;
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+      }
+      .mas-instalada a, .mas-instalada [aria-current] {
+        display: flex;
+        align-items: center;
+        min-block-size: var(--tap-primaria);
+        color: var(--color-text-muted);
+        text-decoration: none;
+      }
+      .mas-instalada [aria-current] { color: var(--color-text); }
+
+      /* ─── Bloque 3: barra inferior instalada ──────────────────────────────
+         Oculta por defecto — `plataformas.css` la enseña como flex solo en
+         ios/android + instalada. Sin este default se colaría en escritorio,
+         donde ninguna regla de plataforma la toca. El resto de la geometría
+         (posición fija, safe-area, translúcido de iOS, píldora de Android)
+         vive en plataformas.css, que es donde ya vivía antes de D-064. Esto
+         solo agrega el default oculto y el tamaño de ícono + etiqueta. */
+      nav.barra-inferior { display: none; }
+      .barra-inferior .icono { inline-size: 22px; block-size: 22px; }
+      .barra-inferior .icono[data-svg] svg { inline-size: 100%; block-size: 100%; }
+      .barra-inferior .etiqueta { font-size: 0.68rem; }
+
+      /* ─── Bloque 4: riel de iPad ancho instalado ──────────────────────────
+         Oculto por defecto; plataformas.css lo enseña solo en
+         [data-platform="ios"] + standalone + 1024-1366px (D-041, D-064). */
+      nav.riel { display: none; }
+      nav.riel ul {
+        list-style: none;
+        margin: 0;
+        padding: 1.25rem 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      nav.riel a, nav.riel [aria-current] {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-block-size: var(--tap-primaria);
+        padding-inline: 0.75rem;
+        border-radius: var(--radius);
+        text-decoration: none;
+        color: var(--color-text-muted);
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+      }
+      nav.riel [aria-current] { color: var(--color-text); font-weight: var(--weight-subtitle); }
+      nav.riel .icono { inline-size: 22px; block-size: 22px; flex: 0 0 auto; }
+      nav.riel .icono[data-svg] svg { inline-size: 100%; block-size: 100%; }
+      nav.riel .separador {
+        border-block-start: 1px solid var(--color-border);
+        margin-block: 0.5rem;
+        padding: 0;
       }
 
       main { max-inline-size: 46rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; }

@@ -160,7 +160,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .run();
   }
 
-  const { cookie } = await abrirSesionAdulto(env.SESSION_KV, {
+  const { cookies } = await abrirSesionAdulto(env.SESSION_KV, {
     userId: fila.id,
     creadaEn: Math.floor(Date.now() / 1000),
     // La intención se observó al registrarse; iniciar sesión no la cambia.
@@ -176,12 +176,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // esa cookie rebotaba a un relleno — el adulto entraba y no llegaba a
     // ninguna parte (issue #311). El literal vive en `lib/rutas-app.ts`.
     const h = new Headers({ location: rutaCasa(locale) });
-    h.append("set-cookie", cookie);
+    for (const c of cookies) h.append("set-cookie", c);
     return new Response(null, { status: 303, headers: h });
   }
 
   const h = new Headers({ "content-type": "application/json; charset=utf-8" });
-  h.append("set-cookie", cookie);
+  for (const c of cookies) h.append("set-cookie", c);
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers: h });
 };
 

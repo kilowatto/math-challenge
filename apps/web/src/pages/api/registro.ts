@@ -235,7 +235,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     ).bind(userId, hash, ahora, ahora),
   ]);
 
-  const { cookie } = await abrirSesionAdulto(env.SESSION_KV, {
+  const { cookies } = await abrirSesionAdulto(env.SESSION_KV, {
     userId,
     creadaEn: ahora,
     intent: intent as "PADRE" | "MAESTRO" | "ADULTO_APRENDE",
@@ -245,7 +245,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // `lib/embudo.ts`. No lanza, así que no puede impedir el registro.
   anotarPaso(env.FUNNEL_AE, "registro", { pais, locale, intent });
 
-  return respuesta(request, locale, [cookie]);
+  return respuesta(request, locale, cookies);
 };
 
 /**

@@ -68,7 +68,18 @@ const sesion = env?.SESSION_KV
 
 // Sin sesión, a la puerta. **Se falla cerrado**: esta página lista a los hijos
 // de alguien y lee si la cuenta practica por su cuenta.
-if (!sesion) return Astro.redirect(ruta(locale, "entrar"));
+// `?cambiar=1` y no `/entrar/` a secas: sin eso hay un bucle infinito real.
+// Desde #339, `/entrar/` lleva un script que redirige a la casa si encuentra la
+// pista `mc_p`. Las dos cookies caducan juntas, pero una sesión se puede
+// invalidar ANTES que su cookie —cambiar la contraseña cierra las demás, y KV
+// expira por su cuenta—, y en ese hueco:
+//
+//     /app/ → sin sesión → /entrar/ → hay mc_p → /app/ → sin sesión → …
+//
+// El navegador gira hasta rendirse, delante de alguien que solo quería volver a
+// entrar. `?cambiar=1` es la única cadena que ese script respeta. Se vio
+// probando la redirección con la pista puesta y la sesión ausente, no razonando.
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
 
 /**
  * Los hijos de esta cuenta. Solo alias y banda — lo que hace falta para
@@ -251,6 +262,24 @@ const lead = esFamilia ? m.casaLead : m.casaLeadSolo;
 
     {vista === "cuenta" && (
       <Fragment>
+        {/*
+          ─── La salida de la redirección de #339 ────────────────────────────
+
+          Desde #339, quien tiene sesión y pide `/entrar/` es redirigido aquí
+          sin ver el formulario. Eso es correcto casi siempre —quien ya entró y
+          pide entrar se equivocó de botón— y sería una trampa sin salida en el
+          caso que el dueño nombró: **en esta casa puede haber varias sesiones
+          vivas a la vez**, y un teléfono se comparte.
+
+          Este enlace es la salida, y va a `?cambiar=1`, que es la única cadena
+          que el script del `<head>` de `Base.astro` respeta para no redirigir.
+          No cierra la sesión actual: lleva al formulario. Quien solo quería
+          mirar su cuenta ni lo nota.
+        */}
+        <p class="muted">
+          <a href={`${ruta(locale, "entrar")}?cambiar=1`}>{m.casaOtraCuenta}</a>
+        </p>
+
         {/* ── La passkey, DESPUÉS del registro (D-038) ────────────────────── */}
         <section class="bloque" id="bloque-passkey" hidden>
           <h2>{m.casaPasskeyTitulo}</h2>

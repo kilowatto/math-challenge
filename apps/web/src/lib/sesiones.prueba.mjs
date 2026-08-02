@@ -115,7 +115,28 @@ const kv = kvFalso();
 const ID_ADULTO = "usuario-de-prueba-9f3c1b";
 const s = await abrirSesionAdulto(kv, { userId: ID_ADULTO, creadaEn: 0, intent: "PADRE" });
 ok(esTokenOpaco(s.token), "la sesión de adulto emite un token opaco");
-ok(!s.cookie.includes(ID_ADULTO), "el id del usuario NO viaja en la cookie");
+ok(s.cookies.every((c) => !c.includes(ID_ADULTO)), "el id del usuario NO viaja en ninguna de las dos cookies");
+
+// --- La pista de sesión, `mc_p` (#339) --------------------------------------
+//
+// Es la única cookie del archivo sin `HttpOnly`, y eso hay que comprobarlo en
+// las dos direcciones: que efectivamente se pueda leer desde un script —o el
+// arreglo de #339 no funciona— y que no lleve nada dentro que valga robar.
+//
+// Se comprueba también que salga JUNTO a `mc_s` en la misma llamada. Con dos
+// valores sueltos, una puerta de entrada nueva pondría la sesión y olvidaría la
+// pista, y el síntoma sería que solo esa puerta sigue pidiendo la contraseña a
+// quien ya entró — un bug por locale o por método que nadie reproduce.
+const pista = s.cookies.find((c) => c.startsWith("mc_p="));
+const sesionCookie = s.cookies.find((c) => c.startsWith("mc_s="));
+ok(s.cookies.length === 2, "entrar emite DOS cookies: la sesión y su pista");
+ok(!!sesionCookie && !!pista, "y son exactamente mc_s y mc_p");
+ok(sesionCookie.includes("HttpOnly"), "mc_s sigue siendo HttpOnly");
+ok(!pista.includes("HttpOnly"), "mc_p NO es HttpOnly — un script tiene que poder leerla");
+ok(pista.includes("Secure") && pista.includes("SameSite=Lax"), "mc_p conserva Secure y SameSite");
+ok(/^mc_p=1;/.test(pista), "mc_p vale exactamente 1: no es un token ni identifica a nadie");
+ok(!pista.includes(s.token), "el token de sesión NO viaja dentro de la pista");
+ok(!pista.includes(ID_ADULTO), "ni el id del usuario");
 ok((await leerSesionAdulto(kv, s.token)).userId === ID_ADULTO, "la sesión se recupera desde KV");
 ok((await leerSesionAdulto(kv, JWT)) === null, "un JWT no llega a tocar KV");
 ok((await leerSesionAdulto(kv, undefined)) === null, "sin token devuelve null");
@@ -146,8 +167,13 @@ ok((await leerDispositivoDelHogar(db, d.token)) === null, "un dispositivo revoca
 
 // --- cerrar todo ------------------------------------------------------------
 const cierres = cerrarTodo();
-ok(cierres.length === 2, "cerrar sesión cierra la del adulto Y la del niño");
+ok(cierres.length === 3, "cerrar sesión cierra la del adulto, su pista Y la del niño");
 ok(cierres.some((x) => x.startsWith(`${COOKIE_ADULTO}=;`)), "borra mc_s");
+// La pista tiene que morir con la sesión. Si sobrevive, quien cerró sesión
+// queda con `mc_p=1` en el navegador y el script de #339 lo redirige a la casa
+// una y otra vez — que rebota a `/entrar/`, que vuelve a redirigir. Un bucle,
+// y encima solo para quien acaba de salir a propósito.
+ok(cierres.some((x) => x.startsWith("mc_p=;")), "borra mc_p, o cerrar sesión deja un bucle de redirección");
 ok(cierres.some((x) => x.startsWith(`${COOKIE_NINO}=;`)), "borra mc_k");
 ok(!cierres.some((x) => x.startsWith(`${COOKIE_HOGAR}=;`)), "y NO borra mc_h: el dispositivo sigue siendo de la casa aunque el adulto salga");
 

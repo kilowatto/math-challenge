@@ -33,6 +33,7 @@ import Base from "../../layouts/Base.astro";
 import { t, type Locale } from "../../i18n";
 import { ruta } from "../../i18n/rutas";
 import { idiomaWidget } from "../../lib/turnstile";
+import { rutaKids } from "../../lib/rutas-app";
 
 interface Props {
   locale: Locale;
@@ -93,6 +94,18 @@ const siteKey =
       )}
 
       <button type="submit">{m.signinFormCta}</button>
+
+      {/*
+        La passkey es un botón APARTE, no un reemplazo del formulario.
+        Esta mañana el script escondía el campo de contraseña cuando detectaba
+        autenticador, y rompió el registro en cualquier Mac con Touch ID y en
+        Android reciente: un campo `disabled` no se envía, y la persona veía un
+        error sobre una contraseña que sí había escrito.
+
+        La lección quedó: **no se esconde el camino que funciona a cambio de uno
+        que puede fallar**. La passkey se ofrece; la contraseña se queda.
+      */}
+      <button type="button" id="passkey" hidden>{m.signinPasskeyCta}</button>
     </form>
 
     <p class="muted">
@@ -160,4 +173,75 @@ const siteKey =
       margin-block-start: var(--space);
     }
   </style>
+
+  <script define:vars={{ destino: rutaKids(locale) }}>
+    /**
+     * Entrar con passkey. D-038: es el camino principal, y por eso se ofrece
+     * arriba — pero **nunca escondiendo la contraseña**.
+     *
+     * El botón nace `hidden` y solo aparece si el navegador tiene la API. Al
+     * revés —pintarlo y esconderlo si falla— enseñaría un botón muerto a quien
+     * no puede usarlo.
+     */
+    // La ruta viene del servidor, ya construida: el literal vive en
+    // `lib/rutas-app.ts` y no en cuatro archivos. Ver el encabezado de ese
+    // archivo — lo encontró `turnstile-solo-adulto`.
+    const DESTINO = destino;
+    const boton = document.getElementById("passkey") as HTMLButtonElement | null;
+    const b64urlABytes = (s: string) =>
+      Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+    const bytesAB64url = (b: ArrayBuffer) =>
+      btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+    if (boton && "PublicKeyCredential" in window) boton.hidden = false;
+
+    boton?.addEventListener("click", async () => {
+      boton.disabled = true;
+      try {
+        const reto = await (await fetch("/api/passkey-reto", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ proposito: "entrar" }),
+        })).json();
+        if (!reto.ok) throw new Error(reto.motivo);
+
+        const cred = (await navigator.credentials.get({
+          publicKey: {
+            challenge: b64urlABytes(reto.reto),
+            rpId: reto.rpId,
+            userVerification: "preferred",
+            timeout: 60000,
+          },
+        })) as PublicKeyCredential | null;
+        if (!cred) throw new Error("cancelado");
+
+        const r = cred.response as AuthenticatorAssertionResponse;
+        const res = await (await fetch("/api/passkey-entrar", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            retoId: reto.id,
+            credentialId: cred.id,
+            clientDataJSON: bytesAB64url(r.clientDataJSON),
+            authenticatorData: bytesAB64url(r.authenticatorData),
+            signature: bytesAB64url(r.signature),
+          }),
+        })).json();
+
+        if (res.ok) {
+          location.href = DESTINO;
+          return;
+        }
+        throw new Error(res.motivo);
+      } catch {
+        /*
+         * Si la passkey falla —cancelada, sin llave registrada, cualquier cosa—
+         * NO se muestra un error: el formulario de contraseña sigue ahí abajo,
+         * funcionando. Un mensaje aquí le echaría la culpa a la persona por un
+         * camino que el producto ofreció.
+         */
+        boton.disabled = false;
+      }
+    });
+  </script>
 </Base>

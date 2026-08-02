@@ -155,6 +155,7 @@ for (const prueba of [
   // `kPara()` están elegidas por esa medición y por nada más — sin esta línea,
   // bajarlas no rompería nada visible.
   "packages/motor/src/adaptativo.prueba.mjs",
+  "packages/motor/src/programador.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

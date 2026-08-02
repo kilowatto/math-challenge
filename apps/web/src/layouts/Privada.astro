@@ -58,13 +58,7 @@ import "../styles/fonts.css";
 import "../styles/tokens.css";
 import "../styles/plataformas.css";
 
-interface Pestana {
-  clave: string;
-  label: string;
-  href: string;
-  activa: boolean;
-  proximamente?: boolean;
-}
+import type { Pestana } from "../lib/pestanas-privadas";
 
 interface Props {
   locale: Locale;
@@ -121,27 +115,28 @@ const plataforma = plataformaDe(Astro.request.headers);
 
     {pestanas.length > 1 && (
       <nav class="pestanas" aria-label={title}>
+        {/*
+          Solo destinos. Nada más.
+
+          «Cerrar sesión» vivía DENTRO de esta franja, pegado a la derecha con
+          `margin-inline-start: auto`, y era la única cosa aquí que no lleva a
+          ninguna parte. En un teléfono se llevaba el ancho que las pestañas
+          necesitaban y las empujaba fuera de la vista: el dueño vio «Tiemp»
+          cortado a la mitad, sin ninguna señal de que hubiera más a la
+          derecha. Ahora está en el pie, abajo — sigue en este layout, que es lo
+          que D-065 punto 7 pide (es transversal, no de una pestaña), pero fuera
+          de la navegación primaria.
+        */}
         <ul>
           {pestanas.map((p) => (
             <li>
               <a href={p.href} aria-current={p.activa ? "page" : undefined}>
-                {p.label}
+                <span class="rotulo">{p.label}</span>
                 {p.proximamente && <span class="chip">{m.casaProximamenteEtiqueta}</span>}
               </a>
             </li>
           ))}
         </ul>
-        {/* Salir vive aquí, no en el contenido de una pestaña: es transversal,
-            no depende de qué pestaña estés viendo, y así ninguna página del
-            área privada tiene que repetirla.
-
-            Botón con JS, no una regla nueva de D-064: esa decisión restringe
-            la ESTRUCTURA de la navegación (nunca dos apiladas, sin librería),
-            no cada botón de una pantalla de cuenta — el passkey y el cambio
-            de contraseña de esta misma superficie ya son JS-mejorados por la
-            misma razón. `/api/casa?accion=salir` responde JSON, no una
-            redirección; un <form> normal aterrizaría en JSON crudo. */}
-        <button type="button" class="salir" id="salir-privada">{m.casaSalir}</button>
       </nav>
     )}
 
@@ -149,6 +144,20 @@ const plataforma = plataformaDe(Astro.request.headers);
       <slot />
       <Instalar locale={locale} plataforma={plataforma} />
     </main>
+
+    {/* Botón con JS, no una regla nueva de D-064: esa decisión restringe la
+        ESTRUCTURA de la navegación (nunca dos apiladas, sin librería), no cada
+        botón de una pantalla de cuenta — el passkey y el cambio de contraseña
+        de esta misma superficie ya son JS-mejorados por la misma razón.
+        `/api/casa?accion=salir` responde JSON, no una redirección; un <form>
+        normal aterrizaría en JSON crudo.
+
+        Se pinta SIEMPRE, también cuando no hay franja de pestañas: antes
+        colgaba del mismo `pestanas.length > 1` que la navegación, así que una
+        pantalla privada con una sola sección se quedaba sin forma de salir. */}
+    <footer class="pie">
+      <button type="button" class="salir" id="salir-privada">{m.casaSalir}</button>
+    </footer>
 
     <style>
       .skip {
@@ -165,34 +174,62 @@ const plataforma = plataformaDe(Astro.request.headers);
         position: sticky;
         inset-block-start: 0;
         z-index: 10;
-        display: flex;
-        align-items: stretch;
         background: var(--color-surface);
         border-block-end: 1px solid var(--color-border);
         font-family: var(--font-sistema);
       }
+
+      /*
+        ─── Móvil: una rejilla de columnas iguales, NUNCA un scroller ────────
+        ─────────────────────────────────────────────────────────────────────
+
+        Esto era `display: flex` con `overflow-x: auto` y `white-space: nowrap`.
+        En un teléfono el scroller se comprimía, la última etiqueta visible
+        quedaba cortada («Tiemp») y no había ni una señal de que hubiera más:
+        se lee como una pantalla rota, no como algo desplazable. Un scroller
+        horizontal sin affordance es peor que no tener el destino.
+
+        La rejilla no puede cortar nada porque no desborda: cinco columnas de
+        `1fr` reparten el ancho que haya, y `overflow-wrap: anywhere` hace que
+        una palabra que no quepa BAJE de línea en vez de salirse. El peor caso
+        es una pestaña de dos renglones; el peor caso de antes era una palabra
+        a medias.
+
+        Las etiquetas cortas hacen el resto — «Tiempo de pantalla» es el título
+        de la pantalla, «Pantalla» es el rótulo de la pestaña
+        (`casaTabLimiteCorto`, ver lib/pestanas-privadas.ts).
+      */
       nav.pestanas ul {
         list-style: none;
-        display: flex;
-        flex: 1 1 auto;
-        overflow-x: auto;
-        scrollbar-width: none;
-        gap: 0 0.5rem;
-        min-inline-size: 0;
-        padding-inline-start: 1.25rem;
+        margin: 0 auto;
+        padding: 0;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        max-inline-size: var(--measure, 46rem);
       }
-      nav.pestanas ul::-webkit-scrollbar { display: none; }
-      nav.pestanas li { flex: 0 0 auto; }
       nav.pestanas a {
-        display: inline-flex;
+        display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 0.4rem;
+        justify-content: center;
+        gap: 0.1rem;
+        block-size: 100%;
         min-block-size: var(--tap-primaria);
-        padding-inline: 0.75rem;
+        /* 0.1rem y no 0.25: con cinco columnas en 390 px cada una mide 78, y
+           «Próximamente» mide 66. Con 0.25rem a cada lado quedaban 70 px de
+           hueco y la palabra entraba… hasta que aparece la barra de scroll y
+           el hueco baja a 66 justos: entonces parte a la mitad
+           («Próximament / e»). Se midió con `Range.getClientRects().length`,
+           que cuenta renglones — `scrollWidth > clientWidth` NO detecta esto,
+           porque un texto que se parte no desborda. */
+        padding: 0.35rem 0.1rem;
         color: var(--color-text-muted);
         text-decoration: none;
-        font-size: var(--text-sm, var(--text-xs));
-        white-space: nowrap;
+        text-align: center;
+        font-size: 0.75rem;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
         border-block-end: 3px solid transparent;
       }
       nav.pestanas a[aria-current="page"] {
@@ -200,18 +237,65 @@ const plataforma = plataformaDe(Astro.request.headers);
         font-weight: var(--weight-subtitle);
         border-block-end-color: var(--color-accent);
       }
+      nav.pestanas a:focus-visible { outline: 3px solid var(--color-text); outline-offset: -3px; }
+      /* Sin borde ni píldora en móvil: la cápsula sumaba ~13 px de relleno a un
+         rótulo que ya iba justo. Aquí es un subtítulo, que es lo que dice. */
+      /*
+        La marca de «todavía no» va debajo del rótulo, en texto pequeño y sin
+        cápsula. El borde y el `padding-inline` de la píldora sumaban ~13 px a
+        una columna de 74, y no cabía.
+
+        Y el TEXTO se acortó por locale, en los siete: «Próximamente» partía a
+        la mitad en 360 px —el ancho de un Android de gama media, que es el
+        aparato de referencia (`mc-47` §5)— aunque cupiera justo en 390. La
+        palabra corta («Pronto», «Soon») cabe con margen hasta 320.
+      */
       nav.pestanas .chip {
-        font-size: 0.65rem;
+        font-size: 0.62rem;
+        line-height: 1.1;
         color: var(--color-text-muted);
-        border: 1px solid var(--color-border);
-        border-radius: 999px;
-        padding-inline: 0.4rem;
       }
-      nav.pestanas .salir {
-        flex: 0 0 auto;
-        margin-inline-start: auto;
+
+      /*
+        ─── Desde tableta: la fila de siempre, alineada al contenido ─────────
+        Con sitio de sobra, columnas iguales estiran cinco pestañas por 68ch y
+        se ven flotando. Aquí vuelven a ser una fila compacta a la izquierda, y
+        el «Próximamente» recupera su píldora al lado del rótulo.
+      */
+      @media (min-width: 40em) {
+        nav.pestanas ul {
+          grid-auto-columns: auto;
+          justify-content: start;
+          padding-inline: 1.25rem;
+        }
+        nav.pestanas a {
+          flex-direction: row;
+          gap: 0.4rem;
+          padding-inline: 0.75rem;
+          font-size: var(--text-sm, var(--text-xs));
+        }
+        nav.pestanas .chip {
+          font-size: 0.65rem;
+          border: 1px solid var(--color-border);
+          border-radius: 999px;
+          padding-inline: 0.4rem;
+        }
+      }
+
+      main#main { max-inline-size: var(--measure, 46rem); margin: 0 auto; padding: 2rem 1.25rem 1rem; }
+
+      /* El pie: una sola acción, discreta, lejos de los destinos. */
+      footer.pie {
+        max-inline-size: var(--measure, 46rem);
+        margin: 0 auto;
+        padding: 0 1.25rem 3rem;
+        border-block-start: 1px solid var(--color-border);
+        padding-block-start: 1rem;
+      }
+      footer.pie .salir {
         min-block-size: var(--tap-primaria);
         padding-inline: 0.75rem;
+        margin-inline-start: -0.75rem;
         color: var(--color-text-muted);
         background: none;
         border: 0;
@@ -219,9 +303,7 @@ const plataforma = plataformaDe(Astro.request.headers);
         font-size: var(--text-sm, var(--text-xs));
         cursor: pointer;
       }
-      nav.pestanas .salir:focus-visible { outline: 3px solid var(--color-text); outline-offset: -3px; }
-
-      main#main { max-inline-size: var(--measure, 46rem); margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+      footer.pie .salir:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
     </style>
 
     <Rum banda="SERIO" locale={locale} />

@@ -32,6 +32,8 @@ export const prerender = false;
 import Privada from "../../../layouts/Privada.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../lib/sesiones";
+import { rutaPerfilNuevo } from "../../../lib/rutas-app";
+import { pestanasPrivadas } from "../../../lib/pestanas-privadas";
 import { ruta } from "../../../i18n/rutas";
 
 const { locale: raw } = Astro.params;
@@ -68,6 +70,15 @@ if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
  */
 let cuenta: { email: string; created_at: number } | null = null;
 let passkeys: Array<{ id: string; created_at: number }> = [];
+/**
+ * Cuántos hijos tiene la cuenta. No se pinta ninguno aquí — esta pantalla es de
+ * cuenta, no de familia. Se cuenta por dos motivos, los dos de navegación:
+ *
+ *  1. la franja de pestañas es la misma que la de `app/index.astro` y depende
+ *     de este número (issue #346);
+ *  2. **si es cero, aquí vive la única puerta para crear el primer hijo.**
+ */
+let numHijos = 0;
 if (env?.DB) {
   try {
     cuenta = await env.DB.prepare("SELECT email, created_at FROM users WHERE id = ?")
@@ -79,9 +90,19 @@ if (env?.DB) {
       .bind(sesion.userId)
       .all<{ id: string; created_at: number }>();
     passkeys = r.results ?? [];
+    const rHijos = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM child_profiles WHERE parent_user_id = ? AND deleted_at IS NULL",
+    )
+      .bind(sesion.userId)
+      .first<{ n: number }>();
+    numHijos = rHijos?.n ?? 0;
   } catch {
     // Sin base se enseña la pantalla igual: el alta de passkey y el cambio de
     // contraseña no dependen de poder LEER la cuenta.
+    //
+    // `numHijos` se queda en 0, que es el fallo seguro: se ofrece crear el
+    // primer hijo. La alternativa —asumir que hay familia— escondería la única
+    // puerta que lleva a crearlo.
   }
 }
 
@@ -93,14 +114,16 @@ if (env?.DB) {
  * había forma de volver a «Tu casa» ni de ir a ninguna otra parte — ni un
  * enlace. El dueño lo vio en su teléfono.
  *
- * Se calculan aquí igual que en `app/index.astro` porque son dos rutas
- * distintas y cada una tiene que saber cuál está activa. «Tu casa» siempre
- * existe —es el punto de partida de todo lo demás— y «Cuenta» es esta.
+ * Y se calculaban aquí a mano, con una lista propia de dos —«Tu casa» y «Tu
+ * cuenta»— distinta de la de `app/index.astro`. El resultado era que **la
+ * navegación cambiaba de forma al moverse dentro de la misma superficie**:
+ * entrabas a tu cuenta y las pestañas de tus hijos desaparecían, sustituidas
+ * por otras dos que no existían en ninguna otra pantalla.
+ *
+ * Ahora salen las dos de `lib/pestanas-privadas.ts`, que es un solo sitio, y
+ * dependen de lo mismo: si esta cuenta tiene hijos (issue #346, D-065 punto 3).
  */
-const pestanas = [
-  { clave: "casa", label: m.casaTitulo, href: `/${locale}/app/`, activa: false },
-  { clave: "cuenta", label: m.perfilTitulo, href: `/${locale}/app/perfil/`, activa: true },
-];
+const pestanas = pestanasPrivadas(locale, numHijos > 0, "cuenta");
 
 const fecha = (s: number) =>
   new Date(s * 1000).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
@@ -125,6 +148,34 @@ const fecha = (s: number) =>
         <p class="muted">{m.formErrGenerico}</p>
       )}
     </section>
+
+    {/*
+      ── La puerta al modo familia (issue #346) ───────────────────────────
+
+      Solo cuando la cuenta NO tiene hijos, y aquí no por comodidad: es la
+      única puerta que queda. Sin un solo hijo, la franja de pestañas es
+      «Practicar · Cuenta» —lo que D-065 punto 3 manda: nada de familia para
+      quien no tiene familia—, así que el botón «añadir un hijo» de la pestaña
+      «Hijos» no existe todavía. Sin esto, un padre recién registrado se queda
+      encerrado exactamente como antes de #344, solo que por el otro lado.
+
+      Es una PREGUNTA, no una tarea pendiente. Quien juega solo la lee una vez,
+      ve que no es para él y no vuelve a encontrársela en ninguna pantalla. En
+      cuanto crea el primer perfil, este bloque desaparece y las tres pestañas
+      de familia aparecen solas.
+
+      Lo que esto NO es: el interruptor de modo familia/solo que el dueño pidió
+      —conmutable, explícito, con el registro empezando en solo—. Ese necesita
+      una columna en `users` y un endpoint que la escriba. Ver
+      `lib/pestanas-privadas.ts`.
+    */}
+    {numHijos === 0 && (
+      <section class="bloque">
+        <h2>{m.perfilFamiliaTitulo}</h2>
+        <p class="muted">{m.perfilFamiliaTexto}</p>
+        <a class="boton" href={rutaPerfilNuevo(locale)}>{m.casaNuevoHijo}</a>
+      </section>
+    )}
 
     {/* ── Las passkeys (D-038) ──────────────────────────────────────────── */}
     <section class="bloque" id="bloque-passkey">
@@ -177,6 +228,24 @@ const fecha = (s: number) =>
       <p class="ok" id="clave-ok" hidden>{m.casaClaveListo}</p>
       <p class="mal" id="clave-mal" hidden></p>
     </section>
+
+    {/*
+      ─── La salida de la redirección de #339 ──────────────────────────────
+
+      Vivía en la vista «Cuenta» de `app/index.astro`, que se fue con el
+      duplicado; se muda aquí, que es la pantalla de cuenta de verdad. Sin ella
+      se pierde una salida real: desde #339, quien tiene sesión y pide
+      `/entrar/` es redirigido a la casa sin ver el formulario. Correcto casi
+      siempre —quien ya entró y pide entrar se equivocó de botón— y una trampa
+      en el caso que el dueño nombró: en una casa hay varias sesiones vivas y un
+      teléfono se comparte.
+
+      Va a `?cambiar=1`, la única cadena que ese script respeta. No cierra la
+      sesión actual: lleva al formulario.
+    */}
+    <p class="muted otra-cuenta">
+      <a href={`${ruta(locale, "entrar")}?cambiar=1`}>{m.casaOtraCuenta}</a>
+    </p>
   </article>
 
   <style>
@@ -208,10 +277,15 @@ const fecha = (s: number) =>
     .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
              padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
              background: transparent; color: var(--color-text); font-family: var(--font-sistema);
-             font-size: var(--text-base); cursor: pointer; }
+             font-size: var(--text-base); cursor: pointer;
+             /* `text-decoration: none` porque desde #346 `.boton` también viste
+                un <a> —el de crear el primer hijo—, y sin esto sale subrayado
+                por debajo del borde. */
+             text-decoration: none; }
     .boton:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
     .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-start: 0.5rem; }
     .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-start: 0.5rem; }
+    .otra-cuenta { margin-block-start: calc(var(--space) * 1.5); }
   </style>
 
   <script is:inline define:vars={{ MSG: {

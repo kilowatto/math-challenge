@@ -119,6 +119,38 @@ try {
   problems.push(`/api/health no respondió: ${err.message}`);
 }
 
+// 5b. Turnstile carga de verdad en el formulario de entrar (línea roja #1,
+// D-054). Nació de un incidente real: un despliegue desde un worktree limpio
+// —aislado a propósito del checkout compartido— nunca tuvo `.env` (está en
+// `.gitignore`, nunca se commitea), así que `TURNSTILE_SITE_KEY` quedó vacía
+// en el build y el widget entero desapareció de los 7 locales. El servidor
+// rechazaba cada intento con "sin_token" y nadie podía entrar ni registrarse,
+// en ningún idioma — y `run.mjs` en verde y este mismo archivo antes de este
+// punto no lo veían, porque ninguno mira el HTML servido de esta página en
+// concreto. Se repite la consulta de las rutas: cada locale trae su propio
+// slug (D-049), y "entrar" en inglés es "sign-in", no una traducción literal.
+try {
+  const { SEGMENTOS } = await import("../apps/web/src/i18n/rutas-tabla.mjs");
+  for (const locale of LOCALES) {
+    const slug = SEGMENTOS[locale]?.entrar;
+    if (!slug) {
+      problems.push(`no encontré el segmento "entrar" para ${locale} en rutas-tabla.mjs`);
+      continue;
+    }
+    const paginaEntrar = await (await get(`/${locale}/${slug}/`)).text();
+    if (paginaEntrar.includes("cf-turnstile") && paginaEntrar.includes("data-sitekey=")) {
+      ok.push(`turnstile en /${locale}/${slug}/`);
+    } else {
+      problems.push(
+        `/${locale}/${slug}/ NO tiene el widget de Turnstile — TURNSTILE_SITE_KEY pudo faltar en el ` +
+          "build (revisa que .env viajó al worktree de despliegue) y nadie puede entrar ni registrarse.",
+      );
+    }
+  }
+} catch (err) {
+  problems.push(`no se pudo comprobar Turnstile en /entrar/: ${err.message}`);
+}
+
 // 6. Instalabilidad
 const { default: _ } = { default: null };
 const manifest = await (await get("/manifest.webmanifest")).json();

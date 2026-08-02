@@ -106,9 +106,15 @@ const esFamilia = hijos.length > 0;
 
 /**
  * Las pestañas, derivadas de lo que la cuenta REALMENTE tiene — no de por
- * dónde se registró (D-065). "Cuenta" siempre está, pero no vive en ESTA
- * página: pasaporte, contraseña y passkeys viven en `/app/perfil/`, así que
- * esa pestaña navega afuera en vez de cambiar una vista interna.
+ * dónde se registró (D-065).
+ *
+ * "Cuenta" (passkey, contraseña) se pensó para vivir en `/app/perfil/`, una
+ * ruta aparte que otra sesión está construyendo en paralelo — pero mientras
+ * esa ruta no exista de verdad, apuntar la pestaña ahí es un 404 real: se
+ * vio pasar en vivo, un padre probando el cambio lo encontró de inmediato.
+ * Hasta que `/app/perfil/` esté desplegada, "Cuenta" se queda AQUÍ, como una
+ * vista más — un callejón sin salida es peor que una página que no se ve
+ * tan limpia como se planeó.
  *
  * Tope de 5 (HIG, Material 3 — mc-49). Progreso/Límite de pantalla son F8
  * (D-057, ya decidido, todavía sin construir); Practicar es F5b/F10 (D-034,
@@ -116,12 +122,12 @@ const esFamilia = hijos.length > 0;
  * prefirió dejar el hueco visible a rehacer la navegación cuando esas fases
  * lleguen.
  */
-type ClaveVista = "hijos" | "progreso" | "limite" | "practicar";
-type Clave = ClaveVista | "cuenta";
+type Clave = "hijos" | "progreso" | "limite" | "practicar" | "cuenta";
 const PROXIMAMENTE = new Set<Clave>(["progreso", "limite", "practicar"]);
-const vistasDisponibles: ClaveVista[] = [
-  ...(esFamilia ? (["hijos", "progreso", "limite"] as ClaveVista[]) : []),
-  ...(esSolo ? (["practicar"] as ClaveVista[]) : []),
+const vistasDisponibles: Clave[] = [
+  ...(esFamilia ? (["hijos", "progreso", "limite"] as Clave[]) : []),
+  ...(esSolo ? (["practicar"] as Clave[]) : []),
+  "cuenta",
 ];
 
 const ETIQUETAS: Record<Clave, string> = {
@@ -132,40 +138,22 @@ const ETIQUETAS: Record<Clave, string> = {
   cuenta: m.casaTabCuenta,
 };
 
-/**
- * Sin ninguna vista propia (ej. cuenta de maestro: sin hijos, no aprendiz —
- * F9 no existe todavía), esta página no tiene nada que enseñar. "Cuenta" en
- * `/app/perfil/` es lo único real que le queda a esa cuenta, así que se manda
- * directo — una página vacía con una sola pestaña no es una pantalla, es un
- * paso de más.
- */
-if (vistasDisponibles.length === 0) return Astro.redirect(`/${locale}/app/perfil/`);
-
 // La vista de aterrizaje es la primera pestaña REAL, no la primera de la
 // lista: un aprendiz solo vería "Practicar" (próximamente) como bienvenida
 // si el orden mandara, y eso es un callejón sin salida en la primera pantalla
-// que ve.
-const vistaPedida = Astro.url.searchParams.get("vista") as ClaveVista | null;
+// que ve. "Cuenta" siempre es real, así que esto nunca queda sin destino.
+const vistaPedida = Astro.url.searchParams.get("vista") as Clave | null;
 const vistaPorDefecto = vistasDisponibles.find((c) => !PROXIMAMENTE.has(c)) ?? vistasDisponibles[0];
-const vista: ClaveVista =
+const vista: Clave =
   vistaPedida && vistasDisponibles.includes(vistaPedida) ? vistaPedida : vistaPorDefecto;
 
-const pestanas = [
-  ...vistasDisponibles.map((clave) => ({
-    clave,
-    label: ETIQUETAS[clave],
-    href: `/${locale}/app/?vista=${clave}`,
-    activa: clave === vista,
-    proximamente: PROXIMAMENTE.has(clave),
-  })),
-  {
-    clave: "cuenta" as const,
-    label: ETIQUETAS.cuenta,
-    href: `/${locale}/app/perfil/`,
-    activa: false,
-    proximamente: false,
-  },
-];
+const pestanas = vistasDisponibles.map((clave) => ({
+  clave,
+  label: ETIQUETAS[clave],
+  href: `/${locale}/app/?vista=${clave}`,
+  activa: clave === vista,
+  proximamente: PROXIMAMENTE.has(clave),
+}));
 
 const titulo = esFamilia ? m.casaTitulo : m.casaTituloSolo;
 const lead = esFamilia ? m.casaLead : m.casaLeadSolo;
@@ -237,6 +225,40 @@ const lead = esFamilia ? m.casaLead : m.casaLeadSolo;
       </section>
     )}
 
+    {vista === "cuenta" && (
+      <Fragment>
+        {/* ── La passkey, DESPUÉS del registro (D-038) ────────────────────── */}
+        <section class="bloque" id="bloque-passkey" hidden>
+          <h2>{m.casaPasskeyTitulo}</h2>
+          <p class="muted">{m.casaPasskeyTexto}</p>
+          <button type="button" class="boton" id="passkey">{m.casaPasskeyCta}</button>
+          <p class="ok" id="passkey-ok" hidden>{m.casaPasskeyListo}</p>
+        </section>
+
+        {/* ── Cambiar la contraseña (#313) ────────────────────────────────── */}
+        <section class="bloque">
+          <h2>{m.casaClaveTitulo}</h2>
+          {/*
+            Se pide la ACTUAL aunque haya sesión. La sesión dura 30 días y vive en el
+            teléfono: quien toma un aparato desbloqueado la tiene y no tiene la
+            contraseña. Sin este campo, esa persona deja al padre fuera de su cuenta
+            y de las de sus hijos. El porqué completo está en `/api/clave`.
+          */}
+          <div class="campo">
+            <label for="clave-actual">{m.casaClaveActual}</label>
+            <input type="password" id="clave-actual" autocomplete="current-password" />
+          </div>
+          <div class="campo">
+            <label for="clave-nueva">{m.casaClaveNueva}</label>
+            <input type="password" id="clave-nueva" autocomplete="new-password" minlength="8" maxlength="64" />
+          </div>
+          <button type="button" class="boton" id="cambiar-clave">{m.casaClaveCta}</button>
+          <p class="ok" id="clave-ok" hidden>{m.casaClaveListo}</p>
+          <p class="mal" id="clave-mal" hidden></p>
+        </section>
+      </Fragment>
+    )}
+
   </article>
 
   <style>
@@ -265,20 +287,33 @@ const lead = esFamilia ? m.casaLead : m.casaLeadSolo;
     .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
     .boton:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
     .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-start: 0.5rem; }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-start: 0.5rem; }
+    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space); }
+    label { font-family: var(--font-sistema); font-size: var(--text-sm); }
+    input { font-family: var(--font-sistema); font-size: var(--text-base); min-height: 44px;
+            padding-inline: 0.75rem; color: var(--color-text); background: var(--color-surface);
+            border: 1px solid var(--color-border); border-radius: var(--radius); }
+    input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
   </style>
 
-  <script>
+  <script define:vars={{
+    MSG: {
+      credenciales: m.formErrCredenciales,
+      rango: m.formErrClave,
+      igual: m.formErrGenerico,
+      generico: m.formErrGenerico,
+    },
+  }}>
+    // `define:vars` implica `is:inline` (Astro no lo compila): JS PURO aquí
+    // abajo, sin `as Tipo`, sin anotaciones — es exactamente la clase de bug
+    // que rompió el login el 2026-08-02 (ver CLAUDE.md § Cloudflare). El
+    // guardián `audits/script-cliente-sin-ts.mjs` vigila esto en cada commit.
+
     // ── Marcar el aparato (D-012) ────────────────────────────────────────
-    // Passkey, contraseña y salir viven en /app/perfil/ y en Privada.astro
-    // desde D-065 — esta página solo conserva lo que es de "Hijos".
-    //
-    // Sin `define:vars`: este <script> SÍ pasa por el compilador de Astro, así
-    // que el tipado de abajo es real, no decorativo — a diferencia de un
-    // inline, aquí un error de tipos SÍ se ve antes de llegar al navegador.
-    const bMarcar = document.getElementById("marcar") as HTMLButtonElement | null;
+    const bMarcar = document.getElementById("marcar");
     bMarcar?.addEventListener("click", async () => {
       bMarcar.disabled = true;
-      const r: { ok?: boolean } = await fetch("/api/casa?accion=dispositivo", { method: "POST" })
+      const r = await fetch("/api/casa?accion=dispositivo", { method: "POST" })
         .then((res) => res.json())
         .catch(() => ({}));
       if (r.ok) {
@@ -290,6 +325,106 @@ const lead = esFamilia ? m.casaLead : m.casaLeadSolo;
         return;
       }
       bMarcar.disabled = false;
+    });
+
+    // ── Añadir una passkey a una cuenta que ya existe (D-038) ───────────
+    //
+    // El bloque nace `hidden` y solo aparece si el navegador tiene la API. Al
+    // revés —pintarlo y esconderlo— enseñaría un botón muerto a quien no puede
+    // usarlo.
+    const bloquePasskey = document.getElementById("bloque-passkey");
+    const bPasskey = document.getElementById("passkey");
+    if (bloquePasskey && "PublicKeyCredential" in window) bloquePasskey.hidden = false;
+
+    const b64urlABytes = (s) =>
+      Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+    const bytesAB64url = (b) =>
+      btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+    bPasskey?.addEventListener("click", async () => {
+      bPasskey.disabled = true;
+      try {
+        const reto = await (await fetch("/api/passkey-reto", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ proposito: "registrar" }),
+        })).json();
+        if (!reto.ok) throw new Error(reto.motivo);
+
+        const cred = await navigator.credentials.create({
+          publicKey: {
+            challenge: b64urlABytes(reto.reto),
+            rp: { id: reto.rpId, name: "Math Challenge" },
+            user: {
+              id: b64urlABytes(reto.usuarioId),
+              name: reto.usuarioNombre ?? "",
+              displayName: reto.usuarioNombre ?? "",
+            },
+            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+            authenticatorSelection: { userVerification: "preferred", residentKey: "preferred" },
+            timeout: 60000,
+          },
+        });
+        if (!cred) throw new Error("cancelado");
+
+        const r = cred.response;
+        const res = await (await fetch("/api/passkey-registrar", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            retoId: reto.id,
+            credentialId: cred.id,
+            clientDataJSON: bytesAB64url(r.clientDataJSON),
+            attestationObject: bytesAB64url(r.attestationObject),
+          }),
+        })).json();
+
+        if (res.ok) {
+          document.getElementById("passkey-ok").hidden = false;
+          bPasskey.hidden = true;
+          return;
+        }
+        throw new Error(res.motivo);
+      } catch {
+        // Si falla —cancelada, sin autenticador, lo que sea— NO se enseña un
+        // error: la contraseña sigue funcionando y el bloque entero es opcional.
+        bPasskey.disabled = false;
+      }
+    });
+
+    // ── Cambiar la contraseña ───────────────────────────────────────────
+    const bClave = document.getElementById("cambiar-clave");
+    bClave?.addEventListener("click", async () => {
+      const actual = document.getElementById("clave-actual").value;
+      const nueva = document.getElementById("clave-nueva").value;
+      const ok = document.getElementById("clave-ok");
+      const mal = document.getElementById("clave-mal");
+      ok.hidden = true; mal.hidden = true;
+      bClave.disabled = true;
+      const r = await fetch("/api/clave", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ actual, nueva }),
+      }).then((x) => x.json()).catch(() => ({}));
+      bClave.disabled = false;
+      if (r.ok) {
+        ok.hidden = false;
+        document.getElementById("clave-actual").value = "";
+        document.getElementById("clave-nueva").value = "";
+        return;
+      }
+      /*
+        El mensaje sale de una tabla cerrada, igual que en `AvisoDeError`: lo que
+        el servidor devuelve es una CLAVE, y pintar una clave cruda deja
+        `credenciales` en pantalla.
+      */
+      const TEXTOS = {
+        credenciales: MSG.credenciales,
+        clave_fuera_de_rango: MSG.rango,
+        clave_igual: MSG.igual,
+      };
+      mal.textContent = TEXTOS[r.error] ?? MSG.generico;
+      mal.hidden = false;
     });
   </script>
 </Privada>

@@ -1939,3 +1939,80 @@ fijo con `overflow: hidden` sobre cajas con texto.
 verdad desborda. Eso exige un motor de maquetación aplicando el espaciado y midiendo cajas.
 Su verde significa «no tiene las formas que lo rompen», no «cumple 1.4.12». La comprobación
 real sigue necesitando un navegador y no está hecha.
+
+---
+
+## D-060 — La primera sesión ES la ubicación; no existe pantalla de examen · 2026-08-01
+
+**Decisión del dueño** (mc-44 Q1, criterio #100 de F4).
+
+No hay secuencia dedicada de ubicación. El niño entra a jugar, `birth_year` siembra el ítem 1,
+y el motor ubica con los primeros hasta-15 ítems **mientras el niño juega retos de verdad**. El
+criterio #100 ya pedía esto para kinder —«no se llama prueba ni lo parece»— y esta decisión lo
+extiende a las seis bandas.
+
+**Lo que cuesta y no se esconde:** los primeros ítems tienen más ruido que un examen dedicado, y
+hasta el ítem 8 la dificultad puede oscilar de forma perceptible. Se compra con K decreciente
+(criterio #91) y con la parada temprana, no con una pantalla de examen.
+
+**Lo que NO se puede construir después de esta decisión:** una puerta de ubicación. Si alguien
+escribe una pantalla que hay que terminar antes de practicar, contradice esta entrada y la
+línea roja #4 en su forma no-económica: una barrera entre un niño y la práctica.
+
+---
+
+## D-061 — Una discrepancia entre edad y nivel NO se interpreta, en ninguna dirección · 2026-08-01
+
+**Decisión del dueño**, y no es la opción que le ofrecí. Sus palabras: *«Pueden pasar varias
+razones, un niño prodigio o un adulto con problemas. No juzguemos.»*
+
+Yo pregunté qué hacer cuando la ubicación contradice fuerte a la edad —un niño de 5 años
+ubicando en N5— y ofrecí tres salidas que asumían todas lo mismo: que la discrepancia significa
+algo. La corrección es que **no significa nada que el producto pueda saber**.
+
+Concretamente:
+
+- **La dificultad se muestra tal cual.** D-002 ya separa los ejes: la edad decide el TEMA
+  visual, la ubicación decide la DIFICULTAD. El niño de 5 años ve la Sabana de kinder con
+  matemáticas de N5, y eso no se suaviza.
+- **Nadie recibe una alerta.** Ni el padre, ni Larry, ni el panel.
+- **Y va en las DOS direcciones.** Un adulto aprendiz ubicando en N1 es exactamente el mismo
+  caso, y merece exactamente el mismo silencio. El producto va «de los 4 años al matemático
+  profesional» y eso incluye a un adulto que empieza por abajo.
+
+**Esto acota D-020.** D-020 permite una nota suave al padre por «patrón imposible para la
+edad»; esta entrada la deja **solo** para el patrón temporal que sugiere que alguien más está
+respondiendo —velocidad sobrehumana sostenida— y **nunca** para un nivel alto en sí. Un nivel
+alto no es evidencia de nada. `audits/adaptativo-simulacion.mjs` tiene que poder demostrar que
+la nota no se dispara por nivel.
+
+---
+
+## D-062 — No hay re-ubicación periódica: la estimación siempre está viva · 2026-08-01
+
+**Decisión del dueño** (mc-44 Q6). El Elo se actualiza en cada respuesta, así que la ubicación
+nunca envejece y no hay nada que re-ejecutar. Lo que sí entra en v1 es la histéresis del
+criterio #92: tras N fallos seguidos el motor baja de escalón solo, sin ceremonia.
+
+**El hueco, dicho:** un niño que estuvo tres meses sin entrar vuelve con la estimación de hace
+tres meses y el sistema no lo sabe. No se tapa en v1. La opción de subir K tras una ausencia
+larga quedó descartada por una constante que nadie ha medido con niños reales, y meterla a
+ciegas sería peor que el hueco.
+
+---
+
+## D-063 — La maestría en dos etapas NO bloquea el avance · 2026-08-01
+
+**Decisión del dueño** (mc-05 Q5). El avance va por su propio umbral —la estimación de
+habilidad— y la maestría en dos etapas (3 seguidas → `provisional_at`; repaso correcto a ≥3
+días → `mastered_at`) **solo** decide cuándo toca repasar y qué ve el padre como «aprendido»
+frente a «practicado».
+
+**Por qué la alternativa fiel a la evidencia se rechazó:** bloquear hasta el repaso a ≥3 días
+le dice al niño «vuelve en tres días», y el criterio #94 lo prohíbe con esas palabras — un
+cronograma que agota el contenido del día es una vida disfrazada, y cobrarlo sería línea
+roja #4.
+
+**Lo que cuesta:** un niño puede avanzar sobre un nodo que todavía no probó durable y arrastrar
+el hueco. Lo que lo atrapa es el repaso: el nodo sigue vencido y vuelve a aparecer intercalado,
+solo que sin puerta.

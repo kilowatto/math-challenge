@@ -133,5 +133,21 @@
   "formErrClave": "Le mot de passe doit faire entre 8 et 64 caractères.",
   "formErrDemasiados": "Trop de tentatives. Attends une minute et réessaie.",
   "formErrAlias": "Ce nom est déjà utilisé dans ton compte. Choisis-en un autre.",
-  "formErrEdadAdulto": "Cette année est celle d'un adulte. Un adulte ouvre son propre compte."
+  "formErrEdadAdulto": "Cette année est celle d'un adulte. Un adulte ouvre son propre compte.",
+  "casaTitulo": "Chez toi",
+  "casaLead": "Tout ce qui concerne tes enfants est ici.",
+  "casaHijos": "Tes enfants",
+  "casaSinHijos": "Pas encore de profil. Crée le premier pour commencer à jouer.",
+  "casaNuevoHijo": "Ajouter un enfant",
+  "casaAparatoTitulo": "Cet appareil est celui de la maison ?",
+  "casaAparatoTexto": "Tes enfants ne peuvent jouer que sur les appareils que tu marques. Sur un appareil prêté ou public, ne le marque pas.",
+  "casaAparatoCta": "Oui, c'est le nôtre",
+  "casaAparatoListo": "C'est fait. Tes enfants peuvent jouer ici.",
+  "casaJugar": "Aller à l'écran des enfants",
+  "casaPasskeyTitulo": "Se connecter sans mot de passe",
+  "casaPasskeyTexto": "Ajoute une clé d'accès et connecte-toi ensuite avec ton visage ou ton empreinte. Ton mot de passe continue de marcher.",
+  "casaPasskeyCta": "Ajouter une clé d'accès",
+  "casaPasskeyListo": "C'est fait. Tu peux t'en servir pour te connecter.",
+  "casaSalir": "Se déconnecter",
+  "navCasa": "Chez toi"
 }

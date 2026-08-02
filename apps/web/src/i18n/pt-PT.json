@@ -133,5 +133,21 @@
   "formErrClave": "A palavra-passe precisa de ter entre 8 e 64 caracteres.",
   "formErrDemasiados": "Demasiadas tentativas. Espera um minuto e tenta outra vez.",
   "formErrAlias": "Esse nome já está em uso na tua conta. Escolhe outro.",
-  "formErrEdadAdulto": "Esse ano é de um adulto. Um adulto abre a sua própria conta."
+  "formErrEdadAdulto": "Esse ano é de um adulto. Um adulto abre a sua própria conta.",
+  "casaTitulo": "A tua casa",
+  "casaLead": "Está aqui tudo o que é dos teus filhos.",
+  "casaHijos": "Os teus filhos",
+  "casaSinHijos": "Ainda não há perfis. Cria o primeiro para começar a jogar.",
+  "casaNuevoHijo": "Adicionar um filho",
+  "casaAparatoTitulo": "Este aparelho é de casa?",
+  "casaAparatoTexto": "Os teus filhos só podem jogar nos aparelhos que marcares. Se for emprestado ou público, não o marques.",
+  "casaAparatoCta": "Sim, é cá de casa",
+  "casaAparatoListo": "Pronto. Os teus filhos já podem jogar aqui.",
+  "casaJugar": "Ir para o ecrã das crianças",
+  "casaPasskeyTitulo": "Entrar sem palavra-passe",
+  "casaPasskeyTexto": "Adiciona uma chave de acesso e entra da próxima vez com a cara ou a impressão digital. A tua palavra-passe continua a funcionar.",
+  "casaPasskeyCta": "Adicionar chave de acesso",
+  "casaPasskeyListo": "Pronto. Já podes entrar com ela.",
+  "casaSalir": "Terminar sessão",
+  "navCasa": "A tua casa"
 }

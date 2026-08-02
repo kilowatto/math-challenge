@@ -51,5 +51,32 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // exactamente eso aquí: dos sitios con el mismo dominio se separan en el
   // primer cambio, y el síntoma sería una passkey que deja de funcionar sin que
   // nada falle al desplegar.
-  return Response.json({ ok: true, id, reto, rpId: RP_ID });
+  /**
+   * ─── Para REGISTRAR hace falta el identificador de usuario ────────────────
+   *
+   * `navigator.credentials.create()` exige `user.id`, y la especificación es
+   * explícita en que **no debe llevar información personal**: el autenticador
+   * lo guarda y puede acabar visible en el gestor de contraseñas. Va el
+   * `userId` opaco de la cuenta, nunca el correo.
+   *
+   * `user.name` se manda vacío por lo mismo. La consecuencia, dicha: en el
+   * selector del sistema la llave aparece sin nombre, y quien tenga dos cuentas
+   * verá dos entradas iguales. Se prefiere eso a poner el correo de alguien en
+   * el almacén del sistema operativo — donde ya no lo controlamos y no lo
+   * alcanza ningún borrado nuestro (GDPR art. 17).
+   *
+   * Faltaba, y no lo atrapó nada: `Entrar.astro` solo hacía `.get()`, que no
+   * pide `user`. El hueco apareció al construir la pantalla que sí registra
+   * (issue #311) — hasta entonces **no había ninguna superficie que creara una
+   * passkey después del registro**, así que el campo nunca se pidió.
+   */
+  return Response.json({
+    ok: true,
+    id,
+    reto,
+    rpId: RP_ID,
+    ...(proposito === "registrar" && userId
+      ? { usuarioId: bytesAB64url(new TextEncoder().encode(userId)), usuarioNombre: "" }
+      : {}),
+  });
 };

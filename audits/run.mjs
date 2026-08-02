@@ -90,6 +90,11 @@ const ACTIVE = [
   // se comete — pensando en la fila de D1 que se ve y no en el Durable Object
   // que no se ve.
   ["borrado-alcanza-al-modelo", "borrar el perfil borra también su modelo",  "F4 #104, D-030, GDPR 17"],
+  // Lo encontró el dueño entrando en su teléfono: `marcarDispositivoDelHogar`
+  // estaba escrita, probada y sin un solo llamador, así que `mc_h` no se podía
+  // poner y el motor adaptativo entero era inalcanzable desde una cuenta real.
+  // Ninguna prueba podía verlo — la prueba ERA el único llamador.
+  ["funcion-sin-llamar",      "una puerta escrita se llama desde algún sitio", "#311, D-012, D-038"],
 
   // S0 ya tiene sitio: estos dos se escribieron y corrían por su cuenta, pero
   // nadie los movió aquí — quedaron en PENDING diciendo "cuando haya sitio"

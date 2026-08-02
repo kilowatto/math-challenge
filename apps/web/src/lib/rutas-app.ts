@@ -19,6 +19,14 @@
 import type { Locale } from "../i18n";
 
 /** Donde el niño elige su cara (D-012). */
+/**
+ * La casa del adulto: a donde llega tras entrar. Issue #311.
+ *
+ * Antes se aterrizaba en `rutaKids`, que exige la cookie del dispositivo de la
+ * casa y rebotaba a una pantalla de relleno. La casa es lo que faltaba en medio.
+ */
+export const rutaCasa = (locale: Locale | string) => `/${locale}/app/`;
+
 export const rutaKids = (locale: Locale | string) => `/${locale}/app/kids/`;
 
 /** El PIN de imágenes. */

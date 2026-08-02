@@ -101,5 +101,15 @@
   "k.cardinalidad.ultimo": "Larry contou até {n}. Então, quantos patinhos tem?",
   "k.recta.hueco": "Qual número vai no buraco, logo depois do {antes}?",
   "k.marco.faltan": "O quadro tem {llenas} preenchidas. Quantas faltam para encher?",
-  "k.patron.sigue": "O padrão se repete e se repete. Qual vem depois?"
+  "k.patron.sigue": "O padrão se repete e se repete. Qual vem depois?",
+  "k.flash.estrellas": "Quantas estrelinhas você viu?",
+  "k.flash.patos": "Quantos patinhos você viu?",
+  "k.contar.estrellas": "Toque em cada estrelinha para contar.",
+  "k.contar.piedras": "Toque em cada pedrinha para contar.",
+  "k.recta.antes": "Qual número vem logo antes do {despues}?",
+  "k.recta.entre": "Qual número fica entre o {antes} e o {despues}?",
+  "k.marco.llenas": "O quadro tem algumas preenchidas. Quantas estão preenchidas?",
+  "k.suma.estrellas": "{a} estrelinhas e mais {b} estrelinhas. Quantas estrelinhas ficam?",
+  "k.resta.estrellas": "Tinha {a} estrelinhas. {b} apagaram. Quantas ficaram?",
+  "k.patron.sigue_tres": "Este padrão repete três coisas. Qual vem depois?"
 }

@@ -101,5 +101,15 @@
   "k.cardinalidad.ultimo": "Larry hat bis {n} gezählt. Wie viele Enten sind es also?",
   "k.recta.hueco": "Welche Zahl gehört in die Lücke, gleich nach der {antes}?",
   "k.marco.faltan": "Im Zehnerfeld sind {llenas} voll. Wie viele fehlen noch?",
-  "k.patron.sigue": "Das Muster geht immer weiter. Welches kommt als Nächstes?"
+  "k.patron.sigue": "Das Muster geht immer weiter. Welches kommt als Nächstes?",
+  "k.flash.estrellas": "Wie viele Sterne hast du gesehen?",
+  "k.flash.patos": "Wie viele Enten hast du gesehen?",
+  "k.contar.estrellas": "Tippe jeden Stern an und zähle mit.",
+  "k.contar.piedras": "Tippe jeden Stein an und zähle mit.",
+  "k.recta.antes": "Welche Zahl kommt direkt vor der {despues}?",
+  "k.recta.entre": "Welche Zahl steht zwischen {antes} und {despues}?",
+  "k.marco.llenas": "Im Zehnerfeld sind einige voll. Wie viele sind voll?",
+  "k.suma.estrellas": "{a} Sterne und noch {b} Sterne. Wie viele Sterne sind das?",
+  "k.resta.estrellas": "Da waren {a} Sterne. {b} sind erloschen. Wie viele bleiben?",
+  "k.patron.sigue_tres": "Dieses Muster wiederholt drei Dinge. Welches kommt als Nächstes?"
 }

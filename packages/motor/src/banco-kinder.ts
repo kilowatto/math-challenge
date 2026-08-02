@@ -72,13 +72,13 @@ export const K11: Plantilla = {
   formato: "toca_la_respuesta",
   nivel: 2,
   proposito: "interpretar",
-  generar({ a, b }, variacion) {
+  generar({ a, b, ctx }, variacion) {
     return {
-      id: id("K11", { a, b }),
+      id: id("K11", { a, b, ctx }),
       habilidad: "K11",
       nivel: 2,
       formato: "toca_la_respuesta",
-      enunciado: { clave: "k.suma.patos", vars: { a, b } },
+      enunciado: { clave: ctx === 0 ? "k.suma.patos" : "k.suma.estrellas", vars: { a, b } },
       respuesta: { valor: a + b, tol: 0 },
       // Los distractores se CALCULAN. Un error escrito a mano puede acabar
       // siendo la respuesta correcta de otro ítem de la misma plantilla.
@@ -94,11 +94,15 @@ export const K11: Plantilla = {
   },
   parametros() {
     const out: Array<{ params: Record<string, number>; variacion: string }> = [];
-    for (const a of rango(1, 5)) {
-      for (const b of rango(1, 5)) {
+    // El rango va hasta 10 y NO se corta en 5: `1+7` y `7+1` son el mismo
+    // resultado y **no la misma tarea** — la estrategia de contar desde el mayor
+    // solo se ve cuando el mayor cambia de lado. Con `a,b ≤ 5` esa asimetría no
+    // aparecía nunca, y eran 25 sumas para toda la habilidad.
+    for (const a of rango(0, 9)) {
+      for (const b of rango(1, 9)) {
         if (a + b > 10) continue;
-        out.push({
-          params: { a, b },
+        for (const ctx of [0, 1]) out.push({
+          params: { a, b, ctx },
           variacion: {
             varia: `el sumando mayor pasa a ${Math.max(a, b)}`,
             constante: "sumar contando desde el mayor",
@@ -119,13 +123,13 @@ export const K12: Plantilla = {
   formato: "toca_la_respuesta",
   nivel: 2,
   proposito: "interpretar",
-  generar({ a, b }, variacion) {
+  generar({ a, b, ctx }, variacion) {
     return {
-      id: id("K12", { a, b }),
+      id: id("K12", { a, b, ctx }),
       habilidad: "K12",
       nivel: 2,
       formato: "toca_la_respuesta",
-      enunciado: { clave: "k.resta.patos", vars: { a, b } },
+      enunciado: { clave: ctx === 0 ? "k.resta.patos" : "k.resta.estrellas", vars: { a, b } },
       respuesta: { valor: a - b, tol: 0 },
       errores: [
         { valor: a + b, causa: "error.sumo" },
@@ -141,8 +145,8 @@ export const K12: Plantilla = {
     const out: Array<{ params: Record<string, number>; variacion: string }> = [];
     for (const a of rango(2, 10)) {
       for (const b of rango(1, a - 1)) {
-        out.push({
-          params: { a, b },
+        for (const ctx of [0, 1]) out.push({
+          params: { a, b, ctx },
           variacion: {
             varia: `se quitan ${b}`,
             constante: "el conjunto de partida se ve entero antes de quitar",
@@ -163,13 +167,13 @@ const contar = (habilidad: "K03" | "K04", tope: number, nivel: number): Plantill
   formato: "toca_para_contar",
   nivel,
   proposito: "interpretar",
-  generar({ n }, variacion) {
+  generar({ n, cosa }, variacion) {
     return {
-      id: id(habilidad, { n }),
+      id: id(habilidad, { n, cosa }),
       habilidad,
       nivel,
       formato: "toca_para_contar",
-      enunciado: { clave: "k.contar.patos", vars: { n } },
+      enunciado: { clave: COSAS_CONTAR[cosa] ?? "k.contar.patos", vars: { n } },
       respuesta: { valor: n, tol: 0 },
       errores: [
         { valor: n - 1, causa: "error.se_salto_uno" },
@@ -182,16 +186,27 @@ const contar = (habilidad: "K03" | "K04", tope: number, nivel: number): Plantill
   },
   parametros() {
     const desde = habilidad === "K03" ? 1 : 11;
-    return rango(desde, tope).map((n) => ({
-      params: { n },
-      variacion: {
-        varia: `${n} objetos que contar`,
-        constante: "se toca cada uno una vez y el último dice cuántos hay",
-        por_que: "cambiar la cantidad sin cambiar el gesto enseña la cardinalidad",
-      },
-    }));
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
+    for (const n of rango(desde, tope)) {
+      for (let cosa = 0; cosa < COSAS_CONTAR.length; cosa++) {
+        out.push({
+          params: { n, cosa },
+          variacion: {
+            varia: `${n} objetos que contar`,
+            constante: "se toca cada uno una vez y el último dice cuántos hay",
+            por_que:
+              "cambiar el objeto sin cambiar el gesto enseña que contar es la misma acción " +
+              "para patos, estrellas o piedras — que es justo lo que un niño de cuatro todavía no da por hecho",
+          },
+        });
+      }
+    }
+    return out;
   },
 });
+
+/** Los tres objetos que se cuentan. Cada uno con su clave, por el género y el artículo. */
+const COSAS_CONTAR = ["k.contar.patos", "k.contar.estrellas", "k.contar.piedras"] as const;
 
 export const K03 = contar("K03", 10, 1);
 export const K04 = contar("K04", 20, 2);
@@ -199,18 +214,40 @@ export const K04 = contar("K04", 20, 2);
 // ---------------------------------------------------------------------------
 // K01 / K02 — subitizar (flash)
 // ---------------------------------------------------------------------------
+/**
+ * Las disposiciones del destello. **No son decoración: son el eje del subitizar.**
+ *
+ * Reconocer cuatro puntos en patrón de dado es casi instantáneo; los mismos
+ * cuatro dispersos obligan a contar. Un banco que solo enseña una disposición
+ * mide una sola cosa y además se le acaba enseguida — K01 tenía TRES ítems para
+ * toda la habilidad, así que un niño veía el mismo destello tres veces y se
+ * acababa.
+ *
+ * `disposicion` viaja en las variables del enunciado y la pinta el cliente; el
+ * texto no cambia, porque la pregunta es la misma.
+ */
+const DISPOSICIONES = ["dado", "linea", "disperso", "par"] as const;
+
+/** Los tres objetos del destello. El enunciado los nombra, así que cada uno tiene clave propia. */
+const COSAS_FLASH = [
+  ["k.flash.puntos", 0],
+  ["k.flash.estrellas", 1],
+  ["k.flash.patos", 2],
+] as const;
+
 const subitizar = (habilidad: "K01" | "K02", desde: number, hasta: number): Plantilla => ({
   habilidad,
   formato: "flash",
   nivel: 1,
   proposito: "clasificar",
-  generar({ n }, variacion) {
+  generar({ n, disp, cosa }, variacion) {
+    const clave = COSAS_FLASH[cosa]?.[0] ?? "k.flash.puntos";
     return {
-      id: id(habilidad, { n }),
+      id: id(habilidad, { n, disp, cosa }),
       habilidad,
       nivel: 1,
       formato: "flash",
-      enunciado: { clave: "k.flash.puntos", vars: { n } },
+      enunciado: { clave, vars: { n, disposicion: disp } },
       respuesta: { valor: n, tol: 0 },
       errores: [
         { valor: n - 1, causa: "error.subestimo" },
@@ -221,14 +258,27 @@ const subitizar = (habilidad: "K01" | "K02", desde: number, hasta: number): Plan
     };
   },
   parametros() {
-    return rango(desde, hasta).map((n) => ({
-      params: { n },
-      variacion: {
-        varia: `${n} puntos`,
-        constante: "la exposición es la misma y no da tiempo a contar",
-        por_que: "subir la cantidad sin dar tiempo marca dónde acaba el subitizar",
-      },
-    }));
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
+    for (const n of rango(desde, hasta)) {
+      for (let disp = 0; disp < DISPOSICIONES.length; disp++) {
+        for (let cosa = 0; cosa < COSAS_FLASH.length; cosa++) {
+          // El patrón de "par" solo existe para cantidades pares: cuatro puntos
+          // en dos parejas es una disposición; tres, no.
+          if (DISPOSICIONES[disp] === "par" && n % 2 !== 0) continue;
+          out.push({
+            params: { n, disp, cosa },
+            variacion: {
+              varia: `${n} en disposición «${DISPOSICIONES[disp]}»`,
+              constante: "la exposición es la misma y no da tiempo a contar",
+              por_que:
+                "la misma cantidad en otra disposición es lo que separa reconocer de contar — " +
+                "el dado se ve, el disperso se cuenta",
+            },
+          });
+        }
+      }
+    }
+    return out;
   },
 });
 
@@ -498,13 +548,13 @@ export const K06: Plantilla = {
   formato: "toca_la_respuesta",
   nivel: 1,
   proposito: "interpretar",
-  generar({ n }, variacion) {
+  generar({ n, cosa }, variacion) {
     return {
-      id: id("K06", { n }),
+      id: id("K06", { n, cosa }),
       habilidad: "K06",
       nivel: 1,
       formato: "toca_la_respuesta",
-      enunciado: { clave: "k.cardinalidad.ultimo", vars: { n } },
+      enunciado: { clave: "k.cardinalidad.ultimo", vars: { n, cosa } },
       respuesta: { valor: n, tol: 0 },
       errores: [
         // Un número intermedio de la propia cuenta, no uno cualquiera.
@@ -518,14 +568,16 @@ export const K06: Plantilla = {
     };
   },
   parametros() {
-    return rango(3, 10).map((n) => ({
-      params: { n },
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
+    for (const n of rango(2, 12)) for (const cosa of [0, 1, 2]) out.push({
+      params: { n, cosa },
       variacion: {
         varia: `la cuenta llega a ${n}`,
         constante: "la pregunta es siempre «entonces cuántos hay»",
         por_que: "cambiar solo el final deja ver si el niño recita o si entiende que el último resume",
       },
-    }));
+    });
+    return out;
   },
 };
 
@@ -542,14 +594,22 @@ export const K08: Plantilla = {
   formato: "toca_la_respuesta",
   nivel: 2,
   proposito: "interpretar",
-  generar({ antes }, variacion) {
+  generar({ antes, modo }, variacion) {
     const falta = antes + 1;
     return {
-      id: id("K08", { antes }),
+      id: id("K08", { antes, modo }),
       habilidad: "K08",
       nivel: 2,
       formato: "toca_la_respuesta",
-      enunciado: { clave: "k.recta.hueco", vars: { antes } },
+      // Tres preguntas sobre la misma recta: qué va después, qué va antes y qué
+      // va en medio. La tercera es la que de verdad exige leer la recta y no
+      // recitar la secuencia hacia adelante.
+      enunciado:
+        modo === 0
+          ? { clave: "k.recta.hueco", vars: { antes } }
+          : modo === 1
+            ? { clave: "k.recta.antes", vars: { despues: antes + 2 } }
+            : { clave: "k.recta.entre", vars: { antes, despues: antes + 2 } },
       respuesta: { valor: falta, tol: 0 },
       errores: [
         { valor: antes, causa: "error.repitio_la_parte" },
@@ -561,14 +621,18 @@ export const K08: Plantilla = {
     };
   },
   parametros() {
-    return rango(0, 9).map((antes) => ({
-      params: { antes },
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
+    for (const antes of rango(0, 8)) for (const modo of [0, 1, 2]) out.push({
+      params: { antes, modo },
       variacion: {
-        varia: `el hueco está después del ${antes}`,
+        varia: `el hueco está ${modo === 0 ? "después del" : modo === 1 ? "antes del" : "entre el"} ${antes}`,
         constante: "la recta va del 0 al 10 y se lee de izquierda a derecha",
-        por_que: "mover el hueco por toda la recta impide resolverlo por la posición en pantalla",
+        por_que:
+          "preguntar «qué va antes» y «qué va en medio», y no solo «qué sigue», es lo que " +
+          "distingue leer la recta de recitar la secuencia hacia adelante",
       },
-    }));
+    });
+    return out;
   },
 };
 
@@ -588,33 +652,47 @@ export const K09: Plantilla = {
   formato: "arma_el_numero",
   nivel: 2,
   proposito: "crear",
-  generar({ llenas }, variacion) {
+  generar({ llenas, pregunta }, variacion) {
     const faltan = 10 - llenas;
     return {
-      id: id("K09", { llenas }),
+      id: id("K09", { llenas, pregunta }),
       habilidad: "K09",
       nivel: 2,
       formato: "arma_el_numero",
-      enunciado: { clave: "k.marco.faltan", vars: { llenas } },
-      respuesta: { valor: faltan, tol: 0 },
-      errores: [
-        { valor: 10, causa: "error.puso_el_total" },
-        { valor: llenas, causa: "error.repitio_la_parte" },
-        { valor: 10 + llenas, causa: "error.sumo_en_vez_de_completar" },
-      ].filter((e) => e.valor !== faltan),
+      // Las dos preguntas del marco. «Cuántas hay» parece más fácil y no lo es:
+      // el marco se lee de vista —una fila y dos más— y esa lectura es lo que
+      // enseña el diez como referencia.
+      enunciado: pregunta === 0
+        ? { clave: "k.marco.faltan", vars: { llenas } }
+        : { clave: "k.marco.llenas", vars: { llenas } },
+      respuesta: { valor: pregunta === 0 ? faltan : llenas, tol: 0 },
+      errores: (pregunta === 0
+        ? [
+            { valor: 10, causa: "error.puso_el_total" },
+            { valor: llenas, causa: "error.repitio_la_parte" },
+            { valor: 10 + llenas, causa: "error.sumo_en_vez_de_completar" },
+          ]
+        : [
+            { valor: faltan, causa: "error.repitio_la_parte" },
+            { valor: 10, causa: "error.puso_el_total" },
+            { valor: llenas + 1, causa: "error.conto_uno_dos_veces" },
+          ]
+      ).filter((e) => e.valor !== (pregunta === 0 ? faltan : llenas)),
       proposito: "crear",
       variacion,
     };
   },
   parametros() {
-    return rango(1, 9).map((llenas) => ({
-      params: { llenas },
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
+    for (const llenas of rango(1, 9)) for (const pregunta of [0, 1]) out.push({
+      params: { llenas, pregunta },
       variacion: {
-        varia: `ya hay ${llenas} llenas`,
+        varia: `${llenas} llenas, se pregunta ${pregunta === 0 ? "cuántas faltan" : "cuántas hay"}`,
         constante: "el marco siempre es de diez",
         por_que: "el total constante es lo que hace que los pares del diez se aprendan de vista",
       },
-    }));
+    });
+    return out;
   },
 };
 
@@ -637,20 +715,27 @@ export const K14: Plantilla = {
   formato: "toca_la_respuesta",
   nivel: 1,
   proposito: "analizar",
-  generar({ largo, primero }, variacion) {
+  generar({ largo, primero, ciclo }, variacion) {
     // Con `largo` elementos ya puestos, el siguiente es el que ocupa la
     // posición `largo` (contando desde 0) en la alternancia.
-    const sigue = (primero + largo) % 2;
+    // `ciclo` es 2 para AB y 3 para ABC. La regla no cambia —se repite un
+    // grupo— y el salto de dos a tres elementos es lo que separa «veo que se
+    // alternan» de «veo que hay un grupo que vuelve», que es lo que un patrón
+    // es de verdad.
+    const sigue = (primero + largo) % ciclo;
     return {
-      id: id("K14", { largo, primero }),
+      id: id("K14", { largo, primero, ciclo }),
       habilidad: "K14",
       nivel: 1,
       formato: "toca_la_respuesta",
-      enunciado: { clave: "k.patron.sigue", vars: { largo, primero } },
+      enunciado: {
+        clave: ciclo === 2 ? "k.patron.sigue" : "k.patron.sigue_tres",
+        vars: { largo, primero, ciclo },
+      },
       respuesta: { valor: sigue, tol: 0 },
       errores: [
-        { valor: 1 - sigue, causa: "error.repitio_el_ultimo" },
-        { valor: (primero + largo + 1) % 2, causa: "error.siguio_el_patron_al_reves" },
+        { valor: (sigue + ciclo - 1) % ciclo, causa: "error.repitio_el_ultimo" },
+        { valor: (sigue + 1) % ciclo, causa: "error.siguio_el_patron_al_reves" },
       ].filter((e) => e.valor !== sigue),
       proposito: "analizar",
       variacion,
@@ -658,13 +743,13 @@ export const K14: Plantilla = {
   },
   parametros() {
     const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
-    for (const largo of rango(4, 9)) {
-      for (const primero of [0, 1]) {
-        out.push({
-          params: { largo, primero },
+    for (const ciclo of [2, 3]) {
+      for (const largo of rango(3, 11)) {
+        for (const primero of rango(0, ciclo - 1)) out.push({
+          params: { largo, primero, ciclo },
           variacion: {
-            varia: `se enseñan ${largo} antes del hueco y empieza por el ${primero === 0 ? "primero" : "segundo"}`,
-            constante: "la regla es siempre alternar dos",
+            varia: `${ciclo === 2 ? "AB" : "ABC"}, ${largo} antes del hueco, empieza por el ${primero + 1}`,
+            constante: "la regla es siempre repetir un grupo",
             por_que: "alternar cuál empieza es lo que impide acertar tocando siempre el mismo dibujo",
           },
         });

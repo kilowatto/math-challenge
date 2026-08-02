@@ -149,5 +149,10 @@
   "casaPasskeyCta": "Agregar llave de acceso",
   "casaPasskeyListo": "Listo. Ya puedes entrar con ella.",
   "casaSalir": "Cerrar sesión",
-  "navCasa": "Tu casa"
+  "navCasa": "Tu casa",
+  "casaClaveTitulo": "Cambiar tu contraseña",
+  "casaClaveActual": "Contraseña actual",
+  "casaClaveNueva": "Contraseña nueva",
+  "casaClaveCta": "Cambiarla",
+  "casaClaveListo": "Listo. Tus otros aparatos siguen dentro hasta que caduquen."
 }

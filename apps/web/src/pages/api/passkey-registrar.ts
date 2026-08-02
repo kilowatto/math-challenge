@@ -8,7 +8,7 @@
  * aquí se lee solo lo que hace falta.
  */
 import type { APIRoute } from "astro";
-import { leerAuthData, comprobarCliente, bytesAB64url, importarLlaveCose, hashDelRpId } from "../../lib/webauthn";
+import { authDataDeAttestation, leerAuthData, comprobarCliente, bytesAB64url, importarLlaveCose, hashDelRpId } from "../../lib/webauthn";
 import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../lib/sesiones";
 import { llaveDelReto } from "./passkey-reto";
 
@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const b = await request.json().catch(() => null) as
     | { retoId?: string; credentialId?: string; clientDataJSON?: string; authenticatorData?: string; transports?: string[] }
     | null;
-  if (!b?.retoId || !b.credentialId || !b.clientDataJSON || !b.authenticatorData) return error("cuerpo_incompleto");
+  if (!b?.retoId || !b.credentialId || !b.clientDataJSON || !b.attestationObject) return error("cuerpo_incompleto");
 
   // El reto se lee Y SE BORRA. La caducidad sola no lo hace de un solo uso.
   const crudo = await env.SESSION_KV.get(llaveDelReto(b.retoId));
@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!cliente.ok) return error(cliente.motivo);
 
   let ad;
-  try { ad = leerAuthData(deB64url(b.authenticatorData)); } catch { return error("authData_ilegible"); }
+  try { ad = leerAuthData(authDataDeAttestation(deB64url(b.attestationObject))); } catch { return error("authData_ilegible"); }
   if (!ad.cosePublicKey) return error("sin_llave_publica");
 
   // El RP ID tiene que ser el nuestro: si no, la llave se creó para otro sitio.

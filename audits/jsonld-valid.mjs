@@ -365,16 +365,45 @@ for (const archivo of todas) {
   // inLanguage del original — el marcado queda diciendo que la página alemana
   // está en inglés.
   const conIdioma = nodos.filter(({ nodo }) => nodo.inLanguage);
+  const idiomaDe = (nodo) =>
+    typeof nodo.inLanguage === "string" ? nodo.inLanguage : nodo.inLanguage?.["@id"] ?? "";
+
   if (locale) {
     if (conIdioma.length === 0) {
       problemas.push(`${rel}: ningún nodo declara inLanguage. Cada versión localizada debe declarar el suyo (mc-48 §3).`);
     }
+
+    // 1. Los nodos de una misma página no pueden contradecirse entre sí.
+    //
+    // Esta comprobación es la que faltaba, y su ausencia costó 52 páginas
+    // reales (#319). La regla de abajo compara cada nodo contra el locale de la
+    // RUTA, y exime al `ScholarlyArticle` cuando cae honestamente al inglés. El
+    // nodo `WebPage` no estaba exento… pero tampoco podía fallar: el layout
+    // escribía `inLanguage: locale` sin condición, así que comparar ese valor
+    // con el locale de la ruta era comparar `locale` con `locale`. Verde
+    // garantizado, y mientras tanto la misma página declaraba el mismo titular
+    // como francés en un nodo y como inglés en el otro.
+    //
+    // Comparar los nodos ENTRE SÍ no se puede satisfacer por construcción: hace
+    // falta que el layout sepa de verdad en qué idioma está el texto que le
+    // pasaron.
+    const idiomas = [...new Set(conIdioma.map(({ nodo }) => idiomaDe(nodo)))];
+    if (idiomas.length > 1) {
+      const detalle = conIdioma.map((e) => `${etiqueta(e)}=${idiomaDe(e.nodo)}`).join(", ");
+      problemas.push(
+        `${rel}: los nodos JSON-LD de la MISMA página declaran idiomas distintos (${detalle}). ` +
+          "El mismo texto no puede estar en dos idiomas a la vez; Google descarta el marcado " +
+          "contradictorio o publica el equivocado (mc-48 §3).",
+      );
+    }
+
+    // 2. Y el idioma que declaran es el de la ruta — salvo la caída honesta a
+    //    inglés de un documento del corpus todavía sin traducción verificada,
+    //    que ahora aplica a la página ENTERA y no solo al artículo.
+    const caidaHonesta = !traduccionVerificada(locale, ruta);
     for (const entrada of conIdioma) {
-      const { nodo } = entrada;
-      const decl = typeof nodo.inLanguage === "string" ? nodo.inLanguage : nodo.inLanguage?.["@id"] ?? "";
-      if (decl === "en" && [nodo["@type"]].flat().includes("ScholarlyArticle") && !traduccionVerificada(locale, ruta)) {
-        continue; // caída honesta a inglés en un documento aún no traducido — no es el bug que esta regla busca
-      }
+      const decl = idiomaDe(entrada.nodo);
+      if (decl === "en" && caidaHonesta) continue;
       if (decl !== locale) {
         problemas.push(`${rel}: inLanguage "${decl}" en ${etiqueta(entrada)}, pero la página es "${locale}".`);
       }

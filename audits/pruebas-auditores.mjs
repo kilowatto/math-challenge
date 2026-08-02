@@ -236,6 +236,39 @@ const CASOS = [
     contenido: "export const DECIMAL = ',';\n",
     espera: "separador fuera",
   },
+  // Los tres de #321/#322. Ninguno es código: son cadenas que escribió una
+  // persona, y estuvieron en producción en los siete locales sin romper nada.
+  {
+    // Solo corre con `dist/` construido; sin él el auditor sale en verde
+    // diciéndolo, y este caso fallaría por la razón equivocada. Es el mismo
+    // trato que ya tienen `axe-a11y` y `jsonld-valid`.
+    auditor: "sitemap-completo",
+    que: "una página construida que el sitemap no anuncia",
+    archivo: "apps/web/dist/prueba-huerfana/index.html",
+    contenido: "<!doctype html><html lang=\"en\"><title>huérfana</title>\n",
+    espera: "el sitemap no la anuncia",
+  },
+  {
+    auditor: "notacion-locale",
+    que: "un texto pt-PT que agrupa los millares con espacio en vez de punto",
+    archivo: "apps/web/src/i18n/paginas/prueba-millares.json",
+    contenido: JSON.stringify({ "pt-PT": { x: "cerca de 157 000 palavras" } }, null, 2) + "\n",
+    espera: "agrupa con espacio normal",
+  },
+  {
+    auditor: "notacion-locale",
+    que: "un texto fr-FR con apóstrofo recto en vez del tipográfico",
+    archivo: "apps/web/src/i18n/paginas/prueba-apostrofo.json",
+    contenido: JSON.stringify({ "fr-FR": { x: "un jeu d'enfant" } }, null, 2) + "\n",
+    espera: "apóstrofo recto",
+  },
+  {
+    auditor: "notacion-locale",
+    que: "un texto fr-FR con espacio normal antes de un signo doble",
+    archivo: "apps/web/src/i18n/paginas/prueba-espacio.json",
+    contenido: JSON.stringify({ "fr-FR": { x: "Deux axes distincts : voici pourquoi" } }, null, 2) + "\n",
+    espera: "espacio NORMAL antes de",
+  },
   {
     auditor: "ipad-usabilidad",
     que: "un min-width de 900px sin acotar por media query",
@@ -263,6 +296,19 @@ const CASOS = [
     archivo: "apps/web/src/pages/[locale]/app/prueba-layout.astro",
     contenido: '---\nimport Base from "../../../layouts/Base.astro";\n---\n<Base locale="en" seccion={null} title="x" description="x"></Base>\n',
     espera: "Base.astro",
+  },
+  {
+    // El auditor se llama `script-cliente-sin-ts`, no `scripts-inline-validos`.
+    // Dos sesiones encontraron el mismo bug el mismo día —TypeScript dentro de
+    // un `<script define:vars>`, que viaja crudo al navegador y mata el script
+    // entero— y una registró un auditor que nunca escribió. Ese renglón muerto
+    // reventaba `run.mjs` con MODULE_NOT_FOUND y bloqueaba el commit de todos.
+    // El caso se conserva tal cual y apunta al auditor que sí existe.
+    auditor: "script-cliente-sin-ts",
+    que: "un <script define:vars> con sintaxis de TypeScript que el navegador no puede parsear",
+    archivo: "apps/web/src/components/PruebaScriptTS.astro",
+    contenido: '---\n---\n<script define:vars={{ x: 1 }}>\n  const el = (document.body as HTMLElement);\n</script>\n',
+    espera: "lleva TypeScript",
   },
 ];
 

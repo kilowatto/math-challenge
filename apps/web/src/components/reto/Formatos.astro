@@ -63,7 +63,18 @@ const { formato, opciones, cantidad = 10, flashMs = 500, etiquetaGrupo } = Astro
   <ul class="contables" aria-label={etiquetaGrupo}>
     {Array.from({ length: cantidad }, (_, i) => (
       <li>
-        <button class="contable" type="button" aria-pressed="false" data-indice={i}>🦆</button>
+        {/* Con nombre y POSICIÓN, igual que las casillas del marco de abajo
+            (#334). Sin `aria-label` el nombre accesible era el emoji, así que
+            un lector de pantalla anunciaba «pato, botón» seis veces seguidas,
+            todas indistinguibles: quien cuenta con lector no puede saber cuál
+            ya tocó. El marco de diez ya lo hacía bien y este formato no. */}
+        <button
+          class="contable"
+          type="button"
+          aria-pressed="false"
+          data-indice={i}
+          aria-label={`${etiquetaGrupo}: ${i + 1}`}
+        >🦆</button>
       </li>
     ))}
   </ul>

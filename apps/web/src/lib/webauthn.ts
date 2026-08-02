@@ -66,6 +66,17 @@ function leerCbor(b: Uint8Array, i: number): { valor: unknown; siguiente: number
     case 0: return { valor: n, siguiente: j };           // entero
     case 1: return { valor: -1 - n, siguiente: j };      // negativo
     case 2: return { valor: b.slice(j, j + n), siguiente: j + n }; // bytes
+    /*
+      Cadena de texto. Faltaba, y no por descuido: **COSE usa claves NUMÉRICAS**
+      (1 = kty, 3 = alg, -1 = crv…), así que para importar una llave pública
+      nunca hizo falta. El `attestationObject` sí las usa —`"fmt"`, `"attStmt"`,
+      `"authData"`— y sin este caso el lector lanzaba «tipo no soportado» sobre
+      la primera clave.
+    */
+    case 3: return {
+      valor: new TextDecoder().decode(b.slice(j, j + n)),
+      siguiente: j + n,
+    };
     case 5: {                                             // mapa
       const m = new Map<unknown, unknown>();
       let k = j;
@@ -125,6 +136,41 @@ export function leerAuthData(datos: Uint8Array): AuthData {
  * algoritmos aquí sería aceptar más formas de equivocarse, y este producto solo
  * necesita uno.
  */
+/**
+ * Saca el `authData` de dentro de un `attestationObject`.
+ *
+ * ─── El bug que esto arregla, y por qué no lo vio nadie ────────────────────
+ *
+ * `navigator.credentials.create()` devuelve `attestationObject`: un mapa CBOR
+ * con `{ fmt, attStmt, authData }`. `navigator.credentials.get()` devuelve
+ * `authenticatorData` **directamente**. Son dos formas distintas para dos
+ * ceremonias distintas, y es fácil escribir el servidor esperando la segunda.
+ *
+ * Eso pasó: `/api/passkey-registrar` exigía `authenticatorData` y el cliente
+ * —correctamente— mandaba `attestationObject`, así que **el registro devolvía
+ * 400 en todo intento real** y `user_passkeys` se quedó con cero filas.
+ *
+ * No lo atrapó nada: `webauthn.prueba.mjs` prueba esta librería con `authData`
+ * ya desenvuelto, y ninguna prueba llama al endpoint. Se descubrió inventariando
+ * el código, no ejecutándolo.
+ *
+ * **No se valida `fmt` ni `attStmt`.** El cliente pide `attestation: "none"` por
+ * omisión, así que `attStmt` viene vacío y `fmt` es `"none"`: no hay nada que
+ * verificar. Comprobar la atestación exigiría la lista de AAGUIDs de FIDO y
+ * decidir a qué fabricantes se les cree — una decisión de producto que nadie ha
+ * tomado, y cuyo valor aquí es dudoso: el ataque que previene es «un
+ * autenticador falso», y el atacante ya tiene la sesión del adulto.
+ */
+export function authDataDeAttestation(attestationObject: Uint8Array): Uint8Array {
+  const { valor } = leerCbor(attestationObject, 0);
+  if (!(valor instanceof Map)) throw new Error("attestationObject no es un mapa CBOR");
+  const authData = valor.get("authData");
+  if (!(authData instanceof Uint8Array)) {
+    throw new Error("el attestationObject no trae authData");
+  }
+  return authData;
+}
+
 export async function importarLlaveCose(cose: Uint8Array): Promise<CryptoKey> {
   const { valor } = leerCbor(cose, 0);
   if (!(valor instanceof Map)) throw new Error("cose: no es un mapa");

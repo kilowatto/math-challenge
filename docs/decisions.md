@@ -2140,3 +2140,155 @@ siempre el sitio público, nunca `/app/**`) y agrega `docs/guia-de-estilo.md` §
 F5b/F10, sin fecha. Si F9 (maestro/salón) llega a construirse, esta decisión no dice si el
 maestro recibe una 6ª pestaña aquí o un área separada — el tope de 5 asumía familia+aprendiz, no
 maestro; queda como pregunta abierta para quien construya F9.
+
+---
+
+## D-066 — Lo que separa JR de PRO es el PERFIL, no el ítem · 2026-08-02
+
+**Decisión del dueño**, cierra la duda §9.
+
+D-017 le da a JR y PRO la misma fila (`N11–N12`) y D-010 les da parámetros
+distintos (`d=30, a=0.8` contra `d=20, a=1.0`). Los dos documentos son correctos
+por separado y juntos no decidían nada: dado un ítem de N11, no había regla que
+dijera cómo puntuarlo.
+
+**La banda sale de la cuenta.** El mismo problema de olimpiada vale distinto
+según quién lo resuelve — igual que un tiempo de 100 metros se juzga distinto en
+juvenil que en absoluto. El ítem no lleva banda.
+
+**Lo que cuesta, y hay que decirlo en la interfaz:** dos personas resolviendo
+exactamente el mismo reto ven puntajes distintos. En un tablero eso parece un
+error si nadie lo explica. La explicación no está escrita todavía.
+
+**Lo que esto NO resuelve:** cómo se decide si una cuenta es JR o PRO. Hoy
+`users` no tiene esa columna y no hay forma de elegirlo. Queda abierto.
+
+---
+
+## D-067 — `es-MX` y `fr-FR` se reintentan: nunca corrieron · 2026-08-02
+
+**Decisión del dueño**, cierra la duda §12. **Enmienda acotada a D-050.**
+
+De los nueve agentes de traducción, dos murieron antes de traducir una línea:
+`blocked by safety classifier: Stage 2 classifier error`. El propio mensaje dice
+que suele ser transitorio.
+
+Son exactamente los dos locales que seguían en cero y los dos mercados grandes.
+
+**Reintentar esos dos NO es traducción nueva** — que es lo que D-050 pausa. Es
+terminar la que ya se lanzó y no llegó a ejecutarse. Se anota como enmienda
+explícita y con fecha para que nadie lea después que la pausa se saltó.
+
+**El límite es estricto: SOLO esos dos.** Cualquier otro locale sigue pausado.
+
+**Lo que no se investigó:** por qué el clasificador bloqueó justo esos dos de
+nueve. Puede ser azar y puede ser algo del contenido; el dueño eligió reintentar
+antes que averiguarlo, y si vuelve a bloquear, eso ya no es azar.
+
+---
+
+## D-068 — Las 421 páginas se miran con capturas automáticas · 2026-08-02
+
+**Decisión del dueño**, cierra la duda §8 — «el hueco más grande que tiene hoy el
+proyecto», escrito así desde que se abrió.
+
+Hay 421 páginas verificadas con `curl`: códigos 200, JSON-LD, hreflang,
+presupuestos de peso. **Ninguna persona ha mirado cómo se ven.** Un `curl` no ve
+un texto que se sale de su caja, ni un contraste insuficiente, ni una tabla que
+desborda en un iPad en Split View — que es literalmente lo que
+`ipad-usabilidad.mjs` declara que no puede comprobar.
+
+**Un navegador real recorre las 421 y guarda una imagen de cada una.** Encuentra
+la clase de fallo que ningún auditor estático ve.
+
+**Lo que cuesta:** 421 imágenes que alguien tiene que mirar, y la mayoría estarán
+bien. Es trabajo humano real y no se puede automatizar la parte de mirar.
+
+**Y lo que esto NO sustituye:** que un niño de cuatro años se siente delante. Una
+captura dice si el marco de diez se dibuja; no dice si se entiende.
+
+---
+
+## D-069 — Ningún reporte de un agente se actúa sin verificarlo con un comando · 2026-08-02
+
+**Decisión del dueño**, cierra la duda §13. **Es una regla, no una preferencia.**
+
+Ya pasó dos veces. Un agente reportó que `de-DE/mc-48` tenía «7 literales
+perdidos, `WCAG 2.2` convertido a `WCAG 2,2` siete veces» — con conteo exacto y
+una explicación correcta de por qué sería grave: una versión de norma no es una
+cantidad y no lleva coma. `grep "WCAG 2,2"` no devuelve nada. El defecto no
+existía. Antes había pasado igual con `locale-pt-PT`.
+
+**El patrón es el peligroso: la explicación es buena y el hecho es falso.** Un
+informe convincente sobre un defecto inventado cuesta más que uno confuso, porque
+se actúa sobre él.
+
+**La regla:** un hallazgo de agente no se toca hasta re-ejecutar la comprobación
+que lo demuestra. Es la regla 2 de commit —«toda afirmación factual debe poder
+re-ejecutarse»— aplicada a los agentes.
+
+**Lo que cuesta:** un paso extra en cada hallazgo, incluidos los ciertos. Se paga
+igual, porque distinguirlos antes de verificar es exactamente lo imposible.
+
+---
+
+## D-070 — Ninguna comprobación de un auditor puede ser cierta por construcción · 2026-08-02
+
+**Encontrado arreglando `#319`**, y es la razón de que 52 páginas estuvieran mal
+durante semanas con el gate en verde.
+
+`audits/jsonld-valid.mjs` comprobaba que `inLanguage` coincidiera con el locale
+de la ruta. La comprobación era correcta y el auditor estaba bien escrito. El
+problema es que `Base.astro` escribía `inLanguage: locale` **sin condición**:
+comparar ese valor con el locale de la ruta era comparar `locale` con `locale`.
+La aserción no podía fallar nunca. Verde garantizado, para siempre, sin importar
+lo que dijera la página.
+
+Mientras tanto la misma página declaraba su titular inglés como francés en el
+nodo `WebPage` y como inglés en el `ScholarlyArticle` — porque **ese** nodo sí
+calculaba el idioma de verdad.
+
+**La decisión:** al escribir un auditor, la pregunta no es «¿esta regla es
+correcta?» sino **«¿existe alguna entrada que la haga fallar?»**. Si el código
+vigilado escribe el valor esperado por construcción, la comprobación es
+decorativa. La forma de arreglarla suele ser comparar **dos fuentes
+independientes** en vez de una fuente contra sí misma: aquí, los nodos de la
+página entre ellos, que solo pueden coincidir si el layout sabe de verdad en qué
+idioma está el texto.
+
+**Cómo se demuestra:** el control negativo de `pruebas-auditores.mjs` no basta si
+el caso de prueba se escribe a mano. Aquí se degradó el HTML **ya construido**
+—el archivo real de `/fr-FR/recherche/mc-05-…/`— y se vio al auditor bloquear con
+el nombre de esa página. Una prueba que nunca se vio fallar no prueba nada
+(CLAUDE.md § Git, regla 3), y una que solo puede pasar tampoco.
+
+---
+
+## D-071 — Se formatea con el separador canónico y se lee cualquiera · 2026-08-02
+
+**Encontrado arreglando `#321`/`#322`.** El auditor de la flota lo cazó antes que
+un usuario, y solo porque la prueba de ida y vuelta probaba los siete locales.
+
+`fr-FR` agrupa los millares con **espacio fino insecable** (U+202F) y `pt-PT` con
+**punto**; los dos estaban escritos con un espacio normal. No es cosmética: con un
+espacio normal el navegador puede partir «157 000» en dos líneas —«157» al final
+de una y «000» al principio de la siguiente— y eso es un número roto en un
+producto de matemáticas.
+
+Al corregir la tabla, `parsear("1 543,2", "fr-FR")` empezó a devolver `null`:
+comparaba el separador con `" "` literal y U+202F no es `" "`. **Nadie teclea
+U+202F.** Un francés que escribe un número con millares escribe un espacio
+normal.
+
+**La decisión, que vale para todo dato de entrada del producto:**
+
+- **Al escribir**, el canónico y solo el canónico. El formateador no negocia.
+- **Al leer**, cualquier forma razonable que una persona real produzca con su
+  teclado. Rechazar la entrada de alguien porque usó el espacio que su teclado
+  produce es castigarle por no ser Unicode.
+
+Lo mismo aplica al apóstrofo: se escribe `’` y se acepta `'`.
+
+**Lo que cuesta:** el lector tiene que ser más permisivo que el escritor, así que
+las dos mitades no son simétricas y no se pueden derivar la una de la otra. Es
+más código, y es el correcto.

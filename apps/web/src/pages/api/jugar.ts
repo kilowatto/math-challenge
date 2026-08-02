@@ -34,7 +34,13 @@
  *    cambia de habilidad en vez de cerrar la sesión.
  */
 import type { APIRoute } from "astro";
-import { COOKIE_NINO, leerCookies, leerSesionNino } from "../../lib/sesiones";
+import {
+  COOKIE_NINO,
+  COOKIE_ADULTO,
+  leerCookies,
+  leerSesionNino,
+  leerSesionAdulto,
+} from "../../lib/sesiones";
 import { registrarEnModelo, leerModelo, type Resumen } from "../../lib/aprendiz";
 import {
   estadoInicial,
@@ -104,13 +110,41 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const env = (locals as { runtime?: { env: Env } }).runtime?.env;
   if (!env?.INGEST) return json({ error: "sin ingesta" }, 503);
 
-  // ─── La puerta: sin sesión de niño no se sirve nada ──────────────────────
-  //
-  // Se falla CERRADO. Un endpoint de juego abierto sería una forma de leer el
-  // banco entero —con sus opciones— sin cuenta.
+  /**
+   * ─── La puerta: un NIÑO o un ADULTO que practica ──────────────────────────
+   *
+   * Se falla CERRADO en los dos casos. Un endpoint de juego abierto sería una
+   * forma de leer el banco entero —con sus opciones— sin cuenta.
+   *
+   * **Por qué el adulto entra por aquí y no por un endpoint propio.** D-034 dice
+   * que el caso del adulto que practica solo es el que empezó el proyecto: «un
+   * adulto a veinticinco años de haber estudiado matemáticas que quiere retar su
+   * propia mente». Y hay tres razones más que el dueño nombró y que ninguna
+   * decisión había escrito: ver qué van a hacer sus hijos, ganar confianza de
+   * que el producto es seguro antes de dárselo a un menor, y jugar por gusto.
+   *
+   * Ninguna de las tres necesita un motor distinto. Duplicar el endpoint sería
+   * duplicar la selección, el modelo y la telemetría para servir exactamente los
+   * mismos ítems — y el segundo se quedaría sin los arreglos del primero.
+   *
+   * **La identidad del modelo cambia y eso importa.** Para un niño el objeto del
+   * Durable Object es su `child_profile_id`; para un adulto es su `userId`. Son
+   * espacios de identificadores distintos —UUID contra UUID— así que no pueden
+   * chocar, y el modelo de un adulto no se mezcla nunca con el de sus hijos.
+   */
   const cookies = leerCookies(request.headers.get("cookie"));
-  const sesion = await leerSesionNino(env.SESSION_KV, cookies[COOKIE_NINO]);
-  if (!sesion) return json({ error: "sin_sesion" }, 401);
+  const nino = await leerSesionNino(env.SESSION_KV, cookies[COOKIE_NINO]);
+
+  let quien: { id: string; esAdulto: boolean } | null = nino
+    ? { id: nino.childProfileId, esAdulto: false }
+    : null;
+
+  if (!quien) {
+    const adulto = await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]);
+    if (adulto) quien = { id: adulto.userId, esAdulto: true };
+  }
+  if (!quien) return json({ error: "sin_sesion" }, 401);
+  const sesion = { childProfileId: quien.id };
 
   const accion = url.searchParams.get("accion");
   let cuerpo: Record<string, unknown>;
@@ -125,7 +159,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   // El año de nacimiento siembra el ítem 1 y **nada más** (D-060, criterio #88).
   // Se lee aquí, una vez, y no entra a ninguna función del motor salvo
   // `nivelSemilla`. El motor no recibe la edad ni la banda.
-  const semilla = await nivelSemillaDe(env, sesion.childProfileId);
+  const semilla = await nivelSemillaDe(env, quien.id, quien.esAdulto);
 
   if (accion === "siguiente") {
     return servirSiguiente(env, sesion.childProfileId, locale, semilla, cuerpo);
@@ -144,7 +178,14 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
  * caso. Sin base de datos también se arranca: **nunca se le niega el juego a un
  * niño por un fallo de infraestructura.**
  */
-async function nivelSemillaDe(env: Env, childProfileId: string): Promise<number> {
+async function nivelSemillaDe(env: Env, childProfileId: string, esAdulto = false): Promise<number> {
+  /*
+    Un adulto no tiene fila en `child_profiles` y **no se le pregunta la edad**:
+    la cuenta no la guarda y preguntarla para sembrar un ítem sería pedir un dato
+    personal por una decisión que el motor corrige en tres respuestas (D-060,
+    criterio #88). Arranca donde arranca «no se preguntó».
+  */
+  if (esAdulto) return nivelSemilla(0, new Date().getUTCFullYear());
   if (!env.DB) return nivelSemilla(0, new Date().getUTCFullYear());
   try {
     const fila = await env.DB.prepare("SELECT birth_year FROM child_profiles WHERE id = ?")

@@ -142,6 +142,16 @@ const lead = m[puerta.lead];
           minlength="8"
           maxlength="64"
           autocomplete="new-password"
+          {/*
+            Sin esto la pista existe, se ve, y un lector de pantalla no la
+            anuncia nunca (#333): `<label>` da el nombre del campo, y NADA
+            asocia el párrafo de abajo con el campo salvo la cercanía visual.
+            Quien navega con VoiceOver o NVDA oye «Contraseña, campo de texto
+            protegido» y llega al mínimo de 8 caracteres chocando contra el
+            error. No es una regla estándar de axe-core, así que ningún auditor
+            determinista lo habría cazado.
+          */}
+          aria-describedby="pista-clave"
         />
         <p class="pista" id="pista-clave">{m.signupPasswordHint}</p>
       </div>
@@ -293,14 +303,15 @@ const lead = m[puerta.lead];
      * aparato, y en Android de gama baja va a pasar mucho.
      */
     const campoClave = document.getElementById("campo-clave");
-    const clave = document.getElementById("clave") as HTMLInputElement | null;
+    const clave = document.getElementById("clave");
     const enviar = document.getElementById("enviar");
 
     async function hayPasskey(): Promise<boolean> {
       if (!("PublicKeyCredential" in window)) return false;
-      const PKC = window.PublicKeyCredential as unknown as {
-        isUserVerifyingPlatformAuthenticatorAvailable?: () => Promise<boolean>;
-      };
+      // Sin anotación de tipo: este script es INLINE y los inline no se
+      // compilan, así que un `as {…}` viajaría crudo al navegador y mataría el
+      // script entero. Ver `audits/script-cliente-sin-ts.mjs`.
+      const PKC = window.PublicKeyCredential;
       if (typeof PKC.isUserVerifyingPlatformAuthenticatorAvailable !== "function") return false;
       try {
         return await PKC.isUserVerifyingPlatformAuthenticatorAvailable();

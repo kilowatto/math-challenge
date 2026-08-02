@@ -1,0 +1,124 @@
+---
+/**
+ * La página 404 del sitio. Issue #334, primer punto.
+ *
+ * ─── Lo que había ──────────────────────────────────────────────────────────
+ *
+ * Nada. El issue decía «plantilla 404 con `lang="en"` fijo», y al pedir una URL
+ * inexistente en producción resultó ser peor: lo que respondía era la página
+ * por defecto de Astro —`<html lang="en">`, `404: Not Found`, tipografía gris,
+ * cero marca, cero enlace de vuelta— en los siete locales. No es que estuviera
+ * mal traducida: es que no era del proyecto.
+ *
+ * ─── Por qué el idioma se elige en el cliente y no en el servidor ──────────
+ *
+ * `astro.config.mjs` tiene `output: "static"`, así que este archivo se compila
+ * UNA vez a `dist/404.html` y Cloudflare lo sirve para cualquier ruta que no
+ * exista. En el momento de compilar no hay petición y no hay locale: la única
+ * forma de saber que alguien pidió `/de-DE/algo-que-no-existe/` es leer la URL
+ * en el navegador.
+ *
+ * Es exactamente el mismo mecanismo que usa `src/pages/index.astro` para la
+ * raíz, y por la misma razón. Con dos diferencias que importan:
+ *
+ *   1. **Sin `<meta http-equiv="refresh">`**, igual que la raíz: un refresco
+ *      retardado es violación CRÍTICA de WCAG 2.2.1.
+ *   2. **Los siete textos viajan en el HTML** y el script solo enseña uno. Si
+ *      el script no corre, se ve el inglés —que es el que va escrito en el
+ *      servidor— y todos los enlaces funcionan. Nunca una pantalla en blanco.
+ *
+ * ─── El script es JavaScript, no TypeScript ────────────────────────────────
+ *
+ * `define:vars` implica `is:inline`, y un script inline **no lo compila Astro**:
+ * el TypeScript viaja crudo al navegador y muere entero con un `SyntaxError`
+ * que no rompe el build ni ninguna prueba. Así estuvo la entrada con passkey en
+ * producción. `audits/script-cliente-sin-ts.mjs` lo bloquea desde entonces; que
+ * este archivo no tenga ni una anotación de tipo es a propósito.
+ */
+import { LOCALES, DEFAULT_LOCALE } from "../i18n";
+
+/**
+ * Autorado por locale, no traducido. `pt-PT` dice «ligação» y `pt-BR`
+ * «conexão»; el alemán no dice «Seite nicht gefunden» sino que nombra lo que
+ * pasó. Ninguno culpa a quien llegó.
+ */
+const TEXTOS = {
+  "en":    { titulo: "This page isn’t here", cuerpo: "The link may be old, or the address may have a typo. Nothing is broken on your side.", volver: "Back to the home page" },
+  "es-MX": { titulo: "Esta página no está aquí", cuerpo: "Puede que el enlace sea viejo o que la dirección tenga un error de dedo. No hiciste nada mal.", volver: "Volver al inicio" },
+  "es-ES": { titulo: "Esta página no está aquí", cuerpo: "Puede que el enlace sea antiguo o que la dirección tenga una errata. No has hecho nada mal.", volver: "Volver al inicio" },
+  "fr-FR": { titulo: "Cette page n’est pas ici", cuerpo: "Le lien est peut-être ancien, ou l’adresse contient une faute de frappe. Vous n’avez rien fait de travers.", volver: "Retour à l’accueil" },
+  "pt-BR": { titulo: "Esta página não está aqui", cuerpo: "O link pode estar velho, ou o endereço pode ter um erro de digitação. Você não fez nada de errado.", volver: "Voltar ao início" },
+  "pt-PT": { titulo: "Esta página não está aqui", cuerpo: "A ligação pode estar desatualizada, ou o endereço pode ter uma gralha. Não fez nada de errado.", volver: "Voltar ao início" },
+  "de-DE": { titulo: "Diese Seite gibt es hier nicht", cuerpo: "Der Link ist vielleicht alt, oder in der Adresse steckt ein Tippfehler. Bei dir ist nichts kaputt.", volver: "Zurück zur Startseite" },
+};
+
+const porDefecto = TEXTOS[DEFAULT_LOCALE];
+---
+
+<!doctype html>
+<html lang={DEFAULT_LOCALE}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{porDefecto.titulo} — Math Challenge</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0;
+        min-block-size: 100dvh;
+        display: grid;
+        place-content: center;
+        gap: 1rem;
+        padding: 2rem;
+        /* `--font-sistema` de `tokens.css`, escrito literal a propósito y con
+           permiso explícito: esta página se sirve como último recurso para
+           CUALQUIER ruta, incluidas las que fallan antes de que llegue una hoja
+           de estilo, así que no puede depender de un token que quizá no cargó.
+           Es la misma cadena que define ese token — si D-036 la cambia, cambia
+           en los dos sitios, y por eso `band-typography` la vigila. */
+        font-family: var(--font-sistema, system-ui, sans-serif);
+        line-height: 1.5;
+        text-align: center;
+      }
+      h1 { font-size: 1.5rem; margin: 0; }
+      p { margin: 0; max-inline-size: 34rem; }
+      a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-block-size: 44px;
+        padding-inline: 1rem;
+        border-radius: 8px;
+        /* Naranja de Ignia como FONDO con texto blanco: 3.03:1, válido para un
+           control y nunca para texto normal (docs/guia-de-estilo.md). */
+        background: #F36B1C;
+        color: #FFFFFF;
+        text-decoration: none;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="titulo">{porDefecto.titulo}</h1>
+    <p id="cuerpo">{porDefecto.cuerpo}</p>
+    <a id="volver" href={`/${DEFAULT_LOCALE}/`}>{porDefecto.volver}</a>
+
+    <script is:inline define:vars={{ TEXTOS, LOCALES, DEFAULT_LOCALE }}>
+      // JavaScript puro. Ni una anotación de tipo: ver el encabezado.
+      var primero = location.pathname.split("/")[1];
+      var loc = LOCALES.indexOf(primero) >= 0 ? primero : DEFAULT_LOCALE;
+      if (loc !== DEFAULT_LOCALE) {
+        var texto = TEXTOS[loc];
+        document.documentElement.lang = loc;
+        document.getElementById("titulo").textContent = texto.titulo;
+        document.getElementById("cuerpo").textContent = texto.cuerpo;
+        var volver = document.getElementById("volver");
+        volver.textContent = texto.volver;
+        volver.href = "/" + loc + "/";
+        document.title = texto.titulo + " — Math Challenge";
+      }
+    </script>
+  </body>
+</html>

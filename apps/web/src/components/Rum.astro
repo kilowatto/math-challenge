@@ -22,7 +22,27 @@ interface Props {
 const { banda = "PUBLICO", locale = "en" } = Astro.props;
 ---
 
-<script is:inline define:vars={{ banda, locale }}>
+{/*
+  ─── El marcador lleva los valores; el script se COMPILA ────────────────────
+
+  Era `<script is:inline define:vars={{ banda, locale }}>`, y `define:vars`
+  implica `is:inline`: Astro no lo toca, así que **viajaba a cada página con
+  todos sus comentarios**, 2.573 bytes crudos por visita. En una página de
+  marketing eso es documentación descargándose a un Android de gama baja sobre
+  4G lento, que es el dispositivo de referencia (`mc-47` §5).
+
+  Los valores pasan ahora por `data-`, así que el `<script>` es normal, Vite lo
+  minifica y los comentarios se quedan **aquí**, que es donde sirven. Lo destapó
+  `bundle-budget`: `de-DE/architektur` se pasó 77 bytes del presupuesto de 12 KB
+  gz y el culpable no era el contenido de la página.
+*/}
+<span data-rum hidden data-banda={banda} data-locale={locale}></span>
+
+<script>
+  const marca = document.querySelector("[data-rum]");
+  const banda = marca?.getAttribute("data-banda") ?? "PUBLICO";
+  const locale = marca?.getAttribute("data-locale") ?? "en";
+
   // Se manda con sendBeacon para que no bloquee la descarga ni se pierda al
   // salir de la página. Si no existe, se calla: la telemetría nunca rompe nada.
   const enviar = (metrica, valor) => {

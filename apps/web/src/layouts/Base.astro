@@ -44,9 +44,27 @@ interface Props {
   seccion?: Seccion | null;
   /** Slug del documento, para las páginas de artículo del corpus. */
   slug?: string;
+  /**
+   * El idioma REAL del `title` y la `description` que se acaban de pasar.
+   *
+   * Casi siempre es el locale, y por eso tiene ese valor por defecto. No lo es
+   * en las páginas del corpus sin traducción verificada: ahí `title` llega en
+   * inglés a propósito —`[slug].astro` cae de vuelta al original en vez de
+   * inventar un titular alemán— y el `<h1>`, el `<title>` y el cuerpo se pintan
+   * en inglés.
+   *
+   * Sin este prop el layout escribía `inLanguage: locale` sin condición, así
+   * que la MISMA página declaraba su título inglés como francés en el nodo
+   * `WebPage` y como inglés en el `ScholarlyArticle`. 52 páginas reales (#319).
+   * El auditor no podía verlo: comparaba `inLanguage` contra el locale de la
+   * ruta, y el nodo que siempre escribía `locale` pasaba esa comprobación por
+   * definición — una aserción tautológicamente cierta.
+   */
+  contentLang?: string;
 }
 
-const { locale, title, description, seccion = null, slug } = Astro.props;
+const { locale, title, description, seccion = null, slug, contentLang } = Astro.props;
+const idiomaDelTexto = contentLang ?? locale;
 const m = t(locale);
 const site = "https://math.kilowatto.com";
 
@@ -178,7 +196,7 @@ const jsonLd = {
       url: site,
       name: title,
       description,
-      inLanguage: locale,
+      inLanguage: idiomaDelTexto,
       publisher: { "@id": `${site}/#organization` },
     },
     {
@@ -194,7 +212,7 @@ const jsonLd = {
       url: canonical,
       name: title,
       description,
-      inLanguage: locale,
+      inLanguage: idiomaDelTexto,
       isPartOf: { "@id": `${site}/#website` },
     },
   ],
@@ -527,6 +545,15 @@ const jsonLd = {
         color: var(--color-on-accent);
       }
       .acciones .registro:hover { background: var(--color-accent-hover); }
+      /* «Entrar» no tenía `:hover` y su hermano de al lado sí (#331). Dos
+         botones pegados, uno responde al ratón y el otro no: en macOS y
+         Windows eso se lee como que el segundo está deshabilitado. La carta
+         adversarial `nativo-macos` caza exactamente esto — ratón como entrada
+         primaria sin retroalimentación. */
+      .acciones .entrar:hover {
+        background: var(--color-surface-suave, var(--color-surface));
+        border-color: var(--color-accent);
+      }
       .acciones [aria-current] { opacity: 0.6; pointer-events: none; }
 
       @media (min-width: 40rem) {
@@ -551,6 +578,8 @@ const jsonLd = {
         color: var(--color-text-muted);
         text-decoration: none;
       }
+      /* Los 6 enlaces del nav tampoco tenían `:hover` (#331). */
+      nav.sitio a:hover { color: var(--color-text); text-decoration: underline; }
       /* El naranja de Ignia da 3.03:1 sobre blanco y NO alcanza el 4.5:1 de
          texto normal: la página actual se marca con el color de texto y una
          línea inferior, no con el naranja. El naranja se queda en el borde,
@@ -784,6 +813,8 @@ const jsonLd = {
          azul-subrayado por default del navegador se cuela en el pie —
          el enlace al idioma y al repositorio, entre otros. */
       footer a { color: var(--color-text-muted); text-decoration: none; }
+      /* Y el pie, por la misma razón que el nav (#331). */
+      footer a:hover { color: var(--color-text); text-decoration: underline; }
       footer [aria-current] { color: var(--color-text-muted); }
 
       .muted { color: var(--color-text-muted); font-size: var(--text-xs); }

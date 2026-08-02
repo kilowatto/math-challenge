@@ -682,7 +682,7 @@ if (doc.faq.length >= FAQ_MIN_PAIRS) {
 const jsonLd = { "@context": "https://schema.org", "@graph": graph };
 ---
 
-<Base locale={locale} seccion="investigacion" slug={doc.slug} title={titulo} description={lead}>
+<Base locale={locale} seccion="investigacion" slug={doc.slug} title={titulo} description={lead} contentLang={ARTICLE_LANG}>
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
   <nav class="migas" aria-label={c.breadcrumbResearch}>

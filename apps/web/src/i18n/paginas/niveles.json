@@ -1,6 +1,5 @@
 {
   "_nota": "Textos de /{locale}/niveles/ — la escalera y los cinco modos. Fuentes: D-002 (edad vs dificultad), D-017 (12 niveles x 5 temas), D-018 (item, reto, modos), master-plan.md 4.1 y 4.2, mc-15 (currículos por país), mc-10 (ansiedad matemática y reloj), mc-05 (práctica intercalada), mc-44 (ubicación adaptativa). Las siete versiones NO son traducciones: `gradesLocal` y los nombres de tema se autoran por locale, que es la regla de D-022. Las llaves son idénticas en los siete; `title` debe coincidir literalmente con `h1` y `description` con `lead`, porque Base.astro los usa como name/description del JSON-LD y el esquema tiene que coincidir con lo visible (mc-48 §3).",
-
   "en": {
     "title": "Twelve levels, five themes",
     "description": "Difficulty and age are two separate axes here, and no level is named after a school grade — because the same topic arrives at a different age in every country we ship into.",
@@ -67,7 +66,6 @@
     "sourcesHeading": "Where this comes from",
     "sourcesNote": "The ladder and the modes are decisions D-002, D-017 and D-018. The evidence is research mc-15 on school ladders across countries, mc-10 on math anxiety and timing, mc-05 on spacing and interleaving, and mc-44 on adaptive placement. All of it is published, including the parts that argue against what we built."
   },
-
   "es-MX": {
     "title": "Doce niveles, cinco temas",
     "description": "La dificultad y la edad son dos ejes separados, y ningún nivel lleva nombre de grado escolar: el mismo tema llega a edades distintas en cada país donde sale este producto.",
@@ -134,7 +132,6 @@
     "sourcesHeading": "De dónde sale esto",
     "sourcesNote": "La escalera y los modos son las decisiones D-002, D-017 y D-018. La evidencia es la investigación mc-15 sobre escaleras escolares entre países, mc-10 sobre ansiedad matemática y cronómetro, mc-05 sobre repaso espaciado e intercalado, y mc-44 sobre ubicación adaptativa. Todo está publicado, incluidas las partes que argumentan en contra de lo que construimos."
   },
-
   "es-ES": {
     "title": "Doce niveles, cinco temas",
     "description": "La dificultad y la edad son dos ejes separados, y ningún nivel lleva nombre de curso escolar: el mismo contenido llega a edades distintas en cada país donde sale este producto.",
@@ -201,15 +198,14 @@
     "sourcesHeading": "De dónde sale esto",
     "sourcesNote": "La escalera y los modos son las decisiones D-002, D-017 y D-018. La evidencia es la investigación mc-15 sobre escaleras escolares entre países, mc-10 sobre ansiedad matemática y cronómetro, mc-05 sobre repaso espaciado e intercalado, y mc-44 sobre ubicación adaptativa. Todo está publicado, incluidas las partes que argumentan en contra de lo que construimos."
   },
-
   "fr-FR": {
     "title": "Douze niveaux, cinq thèmes",
-    "description": "La difficulté et l'âge sont deux axes distincts, et aucun niveau ne porte de nom de classe : la même notion arrive à un âge différent dans chaque pays visé.",
+    "description": "La difficulté et l’âge sont deux axes distincts, et aucun niveau ne porte de nom de classe\u00a0: la même notion arrive à un âge différent dans chaque pays visé.",
     "backToHome": "Math Challenge",
-    "axesHeading": "L'âge décide de l'apparence. Le positionnement décide de la difficulté.",
-    "axes1": "Le parent saisit l'âge de l'enfant, et l'âge choisit le thème visuel : l'allure de l'écran, la taille des zones tactiles, la présence ou non d'une histoire racontée par Larry. Un test de positionnement adaptatif distinct, de 10 à 15 items, choisit la difficulté — par notion, et non sous la forme d'un seul chiffre global.",
-    "axes2": "Les deux axes sont séparés à dessein. Un enfant de huit ans qui travaille l'algèbre garde le thème de l'élémentaire ; personne ne reçoit une interface d'adulte en récompense d'être bon en fractions, et personne n'est freiné par l'apparence de l'écran.",
-    "ladderHeading": "L'échelle",
+    "axesHeading": "L’âge décide de l’apparence. Le positionnement décide de la difficulté.",
+    "axes1": "Le parent saisit l’âge de l’enfant, et l’âge choisit le thème visuel\u00a0: l’allure de l’écran, la taille des zones tactiles, la présence ou non d’une histoire racontée par Larry. Un test de positionnement adaptatif distinct, de 10 à 15 items, choisit la difficulté — par notion, et non sous la forme d’un seul chiffre global.",
+    "axes2": "Les deux axes sont séparés à dessein. Un enfant de huit ans qui travaille l’algèbre garde le thème de l’élémentaire\u202f; personne ne reçoit une interface d’adulte en récompense d’être bon en fractions, et personne n’est freiné par l’apparence de l’écran.",
+    "ladderHeading": "L’échelle",
     "ladderIntro": "Douze niveaux de difficulté, de N1 à N12, croisés avec cinq thèmes visuels. Chaque thème couvre une plage de niveaux, et les plages se chevauchent.",
     "tableCaption": "Thèmes visuels par âge, et niveaux de difficulté couverts par chacun",
     "thTheme": "Thème visuel",
@@ -230,18 +226,18 @@
     "levels3": "N6-N8",
     "levels4": "N8-N10",
     "levels5": "N11-N12",
-    "overlap": "Le chevauchement est voulu. N3 appartient aux deux premiers thèmes et N6 à deux autres, de sorte qu'un enfant rapide n'a pas à quitter le thème qui correspond à son âge pour trouver du travail plus difficile, et qu'un adulte qui recommence n'atterrit pas sur un écran conçu pour un enfant de quatre ans.",
-    "themeNameNote": "Les thèmes portent des noms familiers parce qu'ils décrivent un âge et une apparence : taille des boutons, couleurs, présence d'une histoire. Les niveaux, eux, décrivent les mathématiques, et portent des numéros. Cette séparation est exactement le sujet de la section suivante.",
-    "gradesHeading": "Pourquoi aucun niveau ne s'appelle CM1",
-    "grades1": "Parce que la même notion arrive à un âge différent selon le pays. Dans les systèmes scolaires visés par ce produit, les fractions formelles apparaissent entre 6 et 9 ans, les nombres négatifs entre 9 et 12 ans, et l'algèbre formelle entre 10 et 14 ans.",
-    "gradesLocal": "En France l'école est découpée en cycles et non en années isolées : le cycle 3 réunit CM1, CM2 et la 6e, et traverse volontairement la frontière entre l'école et le collège. Un nouveau programme de cycle 4 entre par ailleurs en vigueur progressivement, 5e en 2026-27, 4e en 2027-28, 3e en 2028-29 — rappel utile qu'un programme « en vigueur » a une date de bascule et ne se suppose pas stable.",
-    "grades2": "Un niveau nommé d'après une classe serait donc faux dans la plupart des marchés où il s'affiche, et faux d'une manière que le parent qui le lit ne peut pas vérifier. Nous publions la tranche d'âge et le numéro de niveau, et laissons le positionnement décider où chacun commence.",
-    "unitHeading": "Un item n'est pas un défi",
-    "unit1": "Un item est une question atomique, avec sa réponse et son catalogue d'erreurs nommées — pas seulement « c'est faux », mais quelle erreur a produit ce résultat. Un défi est ce que l'enfant joue et ce qui rapporte des points, et il se compose de 1 à N items.",
-    "unit2": "C'est cette distinction qui décide du chronomètre. Un défi peut être un seul problème difficile ou une série de trente items simples : le chronomètre suit le type de défi, jamais l'âge de l'enfant.",
+    "overlap": "Le chevauchement est voulu. N3 appartient aux deux premiers thèmes et N6 à deux autres, de sorte qu’un enfant rapide n’a pas à quitter le thème qui correspond à son âge pour trouver du travail plus difficile, et qu’un adulte qui recommence n’atterrit pas sur un écran conçu pour un enfant de quatre ans.",
+    "themeNameNote": "Les thèmes portent des noms familiers parce qu’ils décrivent un âge et une apparence\u00a0: taille des boutons, couleurs, présence d’une histoire. Les niveaux, eux, décrivent les mathématiques, et portent des numéros. Cette séparation est exactement le sujet de la section suivante.",
+    "gradesHeading": "Pourquoi aucun niveau ne s’appelle CM1",
+    "grades1": "Parce que la même notion arrive à un âge différent selon le pays. Dans les systèmes scolaires visés par ce produit, les fractions formelles apparaissent entre 6 et 9 ans, les nombres négatifs entre 9 et 12 ans, et l’algèbre formelle entre 10 et 14 ans.",
+    "gradesLocal": "En France l’école est découpée en cycles et non en années isolées\u00a0: le cycle 3 réunit CM1, CM2 et la 6e, et traverse volontairement la frontière entre l’école et le collège. Un nouveau programme de cycle 4 entre par ailleurs en vigueur progressivement, 5e en 2026-27, 4e en 2027-28, 3e en 2028-29 — rappel utile qu’un programme «\u202fen vigueur\u202f» a une date de bascule et ne se suppose pas stable.",
+    "grades2": "Un niveau nommé d’après une classe serait donc faux dans la plupart des marchés où il s’affiche, et faux d’une manière que le parent qui le lit ne peut pas vérifier. Nous publions la tranche d’âge et le numéro de niveau, et laissons le positionnement décider où chacun commence.",
+    "unitHeading": "Un item n’est pas un défi",
+    "unit1": "Un item est une question atomique, avec sa réponse et son catalogue d’erreurs nommées — pas seulement «\u202fc’est faux\u202f», mais quelle erreur a produit ce résultat. Un défi est ce que l’enfant joue et ce qui rapporte des points, et il se compose de 1 à N items.",
+    "unit2": "C’est cette distinction qui décide du chronomètre. Un défi peut être un seul problème difficile ou une série de trente items simples\u00a0: le chronomètre suit le type de défi, jamais l’âge de l’enfant.",
     "modesHeading": "Cinq modes",
-    "modesIntro": "Le mode Entraînement mélange délibérément les types de problèmes au lieu de les regrouper. Dans les études de Rohrer et Taylor, la pratique entrelacée a dégradé la performance pendant la séance et doublé celle du test du lendemain. C'est censé sembler plus difficile sur le moment.",
-    "tableCaptionModes": "Les cinq modes, leur composition et la présence ou non d'un chronomètre",
+    "modesIntro": "Le mode Entraînement mélange délibérément les types de problèmes au lieu de les regrouper. Dans les études de Rohrer et Taylor, la pratique entrelacée a dégradé la performance pendant la séance et doublé celle du test du lendemain. C’est censé sembler plus difficile sur le moment.",
+    "tableCaptionModes": "Les cinq modes, leur composition et la présence ou non d’un chronomètre",
     "thMode": "Mode",
     "thComp": "Composition",
     "thClock": "Chrono",
@@ -251,24 +247,23 @@
     "mode4": "Duel",
     "mode5": "Histoire",
     "comp1": "6 à 10 items mélangés du niveau",
-    "comp2": "20 à 30 items faciles d'affilée, uniquement sur des notions déjà maîtrisées",
-    "comp3": "un item qui demande de réfléchir ; effacer et revenir est autorisé",
+    "comp2": "20 à 30 items faciles d’affilée, uniquement sur des notions déjà maîtrisées",
+    "comp3": "un item qui demande de réfléchir\u202f; effacer et revenir est autorisé",
     "comp4": "la même série contre votre ligue — sur inscription, à partir de 8 ans",
     "comp5": "une chaîne de défis dans la Savane de Larry",
     "clockNo": "Non",
     "clockYes": "Oui",
     "clockDepends": "Selon le défi",
     "clockHeading": "Quels modes sont chronométrés, et pourquoi",
-    "clockWhy1": "Les expériences d'Ashcraft en sont la raison. Les mêmes problèmes d'arithmétique n'ont produit aucun effet lié à l'anxiété sur papier sans limite de temps, et un effet important lorsqu'ils étaient résolus mentalement contre la montre. C'est le chronomètre l'amplificateur — pas l'évaluation, pas la note, pas le fait de se tromper.",
-    "clockWhy2": "Le chronomètre n'apparaît donc que là où la vitesse est elle-même la compétence travaillée : la fluidité sur des notions déjà maîtrisées, et un duel auquel quelqu'un a choisi de participer. Il n'apparaît jamais sur un problème qui demande de réfléchir, et jamais dans la tranche maternelle.",
-    "clockWhy3": "Une note sur les sources, puisque cette page est publique. L'affirmation la plus célèbre sur les tests chronométrés — qu'ils seraient la cause directe de l'anxiété mathématique précoce — n'avait aucune référence dans sa forme d'origine, et ses versions ultérieures citent des travaux qui parlent d'autre chose. Nous ne l'avons pas utilisée. Nous avons utilisé les expériences contrôlées qui la sous-tendent, qui affirment moins et tiennent.",
-    "limitsHeading": "Ce que cette page n'affirme pas",
-    "limits1": "Rien de ce qui précède ne dit que ce produit apprend quoi que ce soit à qui que ce soit. Il n'existe pas d'étude propre avec pré-test, post-test et rétention différée, donc il n'y a pas d'affirmation de ce type à faire. Ce qui est décrit ici, c'est comment la chose est construite, et ce que dit réellement la recherche derrière chaque choix.",
-    "limits2": "La banque d'items n'est pas calibrée non plus. En version un, la difficulté est attribuée par un humain sur une échelle de 1 à 100 et le positionnement met à jour une estimation après chaque réponse ; le vrai calibrage psychométrique attend que chaque item compte 200 à 400 réponses réelles.",
-    "sourcesHeading": "D'où cela vient",
-    "sourcesNote": "L'échelle et les modes sont les décisions D-002, D-017 et D-018. Les preuves sont les recherches mc-15 sur les échelles scolaires selon les pays, mc-10 sur l'anxiété mathématique et le chronomètre, mc-05 sur l'espacement et l'entrelacement, et mc-44 sur le positionnement adaptatif. Tout est publié, y compris les passages qui contredisent ce que nous avons construit."
+    "clockWhy1": "Les expériences d’Ashcraft en sont la raison. Les mêmes problèmes d’arithmétique n’ont produit aucun effet lié à l’anxiété sur papier sans limite de temps, et un effet important lorsqu’ils étaient résolus mentalement contre la montre. C’est le chronomètre l’amplificateur — pas l’évaluation, pas la note, pas le fait de se tromper.",
+    "clockWhy2": "Le chronomètre n’apparaît donc que là où la vitesse est elle-même la compétence travaillée\u00a0: la fluidité sur des notions déjà maîtrisées, et un duel auquel quelqu’un a choisi de participer. Il n’apparaît jamais sur un problème qui demande de réfléchir, et jamais dans la tranche maternelle.",
+    "clockWhy3": "Une note sur les sources, puisque cette page est publique. L’affirmation la plus célèbre sur les tests chronométrés — qu’ils seraient la cause directe de l’anxiété mathématique précoce — n’avait aucune référence dans sa forme d’origine, et ses versions ultérieures citent des travaux qui parlent d’autre chose. Nous ne l’avons pas utilisée. Nous avons utilisé les expériences contrôlées qui la sous-tendent, qui affirment moins et tiennent.",
+    "limitsHeading": "Ce que cette page n’affirme pas",
+    "limits1": "Rien de ce qui précède ne dit que ce produit apprend quoi que ce soit à qui que ce soit. Il n’existe pas d’étude propre avec pré-test, post-test et rétention différée, donc il n’y a pas d’affirmation de ce type à faire. Ce qui est décrit ici, c’est comment la chose est construite, et ce que dit réellement la recherche derrière chaque choix.",
+    "limits2": "La banque d’items n’est pas calibrée non plus. En version un, la difficulté est attribuée par un humain sur une échelle de 1 à 100 et le positionnement met à jour une estimation après chaque réponse\u202f; le vrai calibrage psychométrique attend que chaque item compte 200 à 400 réponses réelles.",
+    "sourcesHeading": "D’où cela vient",
+    "sourcesNote": "L’échelle et les modes sont les décisions D-002, D-017 et D-018. Les preuves sont les recherches mc-15 sur les échelles scolaires selon les pays, mc-10 sur l’anxiété mathématique et le chronomètre, mc-05 sur l’espacement et l’entrelacement, et mc-44 sur le positionnement adaptatif. Tout est publié, y compris les passages qui contredisent ce que nous avons construit."
   },
-
   "pt-BR": {
     "title": "Doze níveis, cinco temas",
     "description": "Dificuldade e idade são dois eixos separados, e nenhum nível leva nome de ano escolar: o mesmo conteúdo chega em idades diferentes em cada país onde este produto sai.",
@@ -335,7 +330,6 @@
     "sourcesHeading": "De onde isto vem",
     "sourcesNote": "A escada e os modos são as decisões D-002, D-017 e D-018. A evidência é a pesquisa mc-15 sobre escadas escolares entre países, mc-10 sobre ansiedade matemática e cronômetro, mc-05 sobre espaçamento e intercalação, e mc-44 sobre posicionamento adaptativo. Tudo está publicado, inclusive as partes que contrariam o que construímos."
   },
-
   "pt-PT": {
     "title": "Doze níveis, cinco temas",
     "description": "Dificuldade e idade são dois eixos separados, e nenhum nível tem nome de ano de escolaridade: o mesmo conteúdo chega em idades diferentes em cada país onde este produto sai.",
@@ -402,7 +396,6 @@
     "sourcesHeading": "De onde vem isto",
     "sourcesNote": "A escada e os modos são as decisões D-002, D-017 e D-018. A evidência é a investigação mc-15 sobre escadas escolares entre países, mc-10 sobre ansiedade matemática e cronómetro, mc-05 sobre espaçamento e intercalação, e mc-44 sobre posicionamento adaptativo. Está tudo publicado, incluindo as partes que contrariam aquilo que construímos."
   },
-
   "de-DE": {
     "title": "Zwölf Stufen, fünf Themen",
     "description": "Schwierigkeit und Alter sind zwei getrennte Achsen, und keine Stufe trägt einen Klassennamen: derselbe Stoff kommt in jedem Zielland in einem anderen Alter.",

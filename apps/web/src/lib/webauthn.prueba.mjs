@@ -181,5 +181,54 @@ const cdCrear = clientData(reto, ORIGEN_ESPERADO, "webauthn.create");
 const r9 = await comprobarCliente(cdCrear, reto, "webauthn.get");
 ok(!r9.ok && r9.motivo === "tipo_incorrecto", "una respuesta de REGISTRO no vale para entrar");
 
+
+
+// ---------------------------------------------------------------------------
+// attestationObject: la forma que devuelve REGISTRAR, no entrar
+// ---------------------------------------------------------------------------
+//
+// `create()` devuelve `attestationObject` —CBOR con `{fmt, attStmt, authData}`—
+// y `get()` devuelve `authenticatorData` desnudo. Son dos formas para dos
+// ceremonias, y el servidor esperaba la segunda en el endpoint de la primera:
+// `/api/passkey-registrar` devolvía 400 en TODO intento real, así que
+// `user_passkeys` tenía cero filas y ninguna passkey del producto funcionaba.
+//
+// No lo atrapó nada porque estos casos probaban la librería con `authData` ya
+// desenvuelto, y ninguna prueba llamaba al endpoint.
+//
+// SE VE FALLAR: quita el `case 3` del lector CBOR y esto lanza «tipo no
+// soportado» sobre la clave "fmt".
+{
+  const { authDataDeAttestation } = await import("./webauthn.ts");
+
+  /** Arma un `attestationObject` CBOR a mano: `{fmt:"none", attStmt:{}, authData}`. */
+  const texto = (s) => {
+    const b = new TextEncoder().encode(s);
+    return new Uint8Array([0x60 | b.length, ...b]);
+  };
+  const bytes = (b) =>
+    b.length < 24
+      ? new Uint8Array([0x40 | b.length, ...b])
+      : new Uint8Array([0x58, b.length, ...b]);
+
+  const ad = await authDataDe(11);
+  const attObj = new Uint8Array([
+    0xa3, // mapa de 3
+    ...texto("fmt"), ...texto("none"),
+    ...texto("attStmt"), 0xa0, // mapa vacío
+    ...texto("authData"), ...bytes(ad),
+  ]);
+
+  const sacado = authDataDeAttestation(attObj);
+  ok(sacado.length === ad.length, "el authData sale del attestationObject con el mismo largo");
+  ok(sacado.every((v, i) => v === ad[i]), "y byte por byte es el mismo");
+  ok(leerAuthData(sacado).signCount === 11, "y se puede leer: el contador sobrevive el desenvuelto");
+
+  let lanzo2 = false;
+  try { authDataDeAttestation(new Uint8Array([0xa1, ...texto("fmt"), ...texto("none")])); }
+  catch { lanzo2 = true; }
+  ok(lanzo2, "un attestationObject SIN authData se rechaza en vez de devolver basura");
+}
+
 console.log(fallos === 0 ? "\n✓ webauthn — todos los casos" : `\n✗ webauthn — ${fallos} caso(s) fallaron`);
 process.exit(fallos === 0 ? 0 : 1);

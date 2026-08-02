@@ -102,7 +102,31 @@ if (env?.DB) {
 /** ¿Ya está marcado este aparato? La cookie basta: la fila la valida `/app/kids`. */
 const aparatoMarcado = Boolean(cookies[COOKIE_HOGAR]);
 
-const esFamilia = hijos.length > 0;
+/**
+ * Una cuenta es de FAMILIA por lo que es, no por lo que ya alcanzó a hacer.
+ *
+ * Esto decía `hijos.length > 0`, y con eso un padre que acababa de registrarse
+ * —cero hijos todavía, que es el estado de TODA cuenta nueva— no era ni familia
+ * ni aprendiz. Se quedaba con una sola pestaña, «Cuenta», así que:
+ *
+ *   · la franja de pestañas no se pintaba (`Privada.astro` la oculta con una
+ *     sola: un menú de un elemento no es un menú), y el dueño lo reportó como
+ *     «sin menú»;
+ *   · la vista de aterrizaje era «Cuenta», o sea que entrar te dejaba en
+ *     contraseñas y llaves de acceso — el mismo aterrizaje equivocado que ya se
+ *     había corregido antes;
+ *   · y no había **ninguna** forma de crear el primer perfil de hijo, porque el
+ *     botón vive en la pestaña «Hijos», que no existía.
+ *
+ * Un padre recién registrado quedaba encerrado en la pantalla de ajustes de su
+ * cuenta. La pantalla vacía correcta ya estaba escrita —«todavía no hay nadie»
+ * más el botón de añadir— y era inalcanzable.
+ *
+ * `is_learner` marca a quien se registró por la puerta «quiero aprender yo»
+ * (D-026). Todo lo demás es una cuenta de adulto a cargo de alguien, tenga hijos
+ * cargados o no. Quien es las dos cosas ve las dos.
+ */
+const esFamilia = hijos.length > 0 || !esSolo;
 
 /**
  * Las pestañas, derivadas de lo que la cuenta REALMENTE tiene — no de por

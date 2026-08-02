@@ -124,6 +124,26 @@ coma; `pt-PT` y `pt-BR` son dos locales distintos. Ver
   `CLOUDFLARE_API_TOKEN` de Workers AI que vive ahí **eclipsa** su sesión OAuth y
   hace fallar el despliegue con `Authentication error [code: 10000]`.
 
+- **Si compilas desde un worktree aislado (recomendado para no pisar el
+  checkout compartido), copia `.env` ahí ANTES de `astro build` — es un
+  archivo distinto del `--env-file` de arriba, y falta de la misma manera.**
+  `.env` vive en `.gitignore` a propósito (nunca se commitea), así que un
+  `git worktree add` limpio **no lo trae**. `TURNSTILE_SITE_KEY` se hornea en
+  el HTML en tiempo de build (`import.meta.env`, no algo que el Worker lea
+  después), así que un build sin `.env` no falla — compila perfecto y
+  despliega perfecto — y sencillamente omite el widget entero de Turnstile en
+  las tres puertas de registro y en `/entrar/`, en los siete locales. El
+  servidor rechaza cada intento con `turnstile:sin_token`, y nadie puede
+  entrar ni registrarse. Pasó de verdad, en producción, el 2026-08-02: un
+  despliegue desde worktree sin este paso rompió el login del sitio entero
+  durante el tiempo que tardó en notarse. `node audits/live.mjs` ahora
+  comprueba el widget en las 7 rutas reales de `/entrar/` — pero es más barato
+  no olvidar el archivo que confiar en que el auditor lo atrape después.
+
+  ```
+  cp /Users/estebanrey/Documents/dev/math-challenge/.env <ruta-del-worktree>/.env
+  ```
+
 - **Tras desplegar, verifica.** `node audits/live.mjs`. Los primeros segundos
   dan 404 intermitentes en rutas nuevas: es propagación del manifest de assets
   entre nodos, no un archivo faltante — se midió en F0 y se confirmó asentado al

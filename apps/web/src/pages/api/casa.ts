@@ -101,7 +101,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     // `mc_h` NO se borra: el aparato sigue siendo de la casa aunque el adulto
     // salga. Borrarlo obligaría a volver a marcarlo cada vez, y marcarlo es la
     // decisión que D-012 quiere que se tome UNA vez y de forma consciente.
-    return json({ ok: true }, 200, [fuera, borrarCookie(COOKIE_NINO)]);
+    return json({ ok: true }, 200, [...fuera, borrarCookie(COOKIE_NINO)]);
   }
 
   return json({ error: "accion_desconocida" }, 400);

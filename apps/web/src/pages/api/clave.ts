@@ -103,11 +103,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // La sesión se renueva: el token viejo se borra de KV y se emite otro. Ver el
   // encabezado sobre qué cubre esto y qué no.
   const fuera = await cerrarSesionAdulto(env.SESSION_KV, token);
-  const { cookie } = await abrirSesionAdulto(env.SESSION_KV, {
+  const { cookies: nuevas } = await abrirSesionAdulto(env.SESSION_KV, {
     userId: sesion.userId,
     creadaEn: ahora,
     intent: sesion.intent,
   });
 
-  return json({ ok: true }, 200, [fuera, cookie]);
+  return json({ ok: true }, 200, [...fuera, ...nuevas]);
 };

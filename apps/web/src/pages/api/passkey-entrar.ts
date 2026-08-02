@@ -86,13 +86,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     "UPDATE user_passkeys SET sign_count = ?, last_used_at = ? WHERE credential_id = ?",
   ).bind(r.signCount, Math.floor(Date.now() / 1000), b.credentialId).run();
 
-  const { cookie } = await abrirSesionAdulto(env.SESSION_KV, {
+  const { cookies } = await abrirSesionAdulto(env.SESSION_KV, {
     userId: fila.user_id,
     creadaEn: Math.floor(Date.now() / 1000),
     intent: null,
   });
 
   const h = new Headers({ "content-type": "application/json; charset=utf-8" });
-  h.append("set-cookie", cookie);
+  for (const c of cookies) h.append("set-cookie", c);
   return new Response(JSON.stringify({ ok: true, contadorNoDisponible: r.contadorNoDisponible }), { status: 200, headers: h });
 };

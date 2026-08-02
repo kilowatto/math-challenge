@@ -120,24 +120,46 @@ if (!arregloCinco) {
   }
 }
 
-// ─── 6. Sin JavaScript nuevo para la navegación ───────────────────────────
-// Antes de D-064, Base.astro tenía exactamente 2 <script>: detección de
-// plataforma y registro del service worker. El menú de D-064 se construyó a
-// propósito con <details>/<summary> nativo para no sumar un tercero — es la
-// decisión "sin librería" del punto 7 de D-064, y el conteo de <script> es
-// la forma más simple de comprobar que nadie la revirtió en silencio.
-// `<script type="application/ld+json">` es un bloque de DATOS, no lógica — no
-// cuenta. Solo los `is:inline` ejecutan JavaScript de verdad.
-const SCRIPTS_ESPERADOS = 2;
+// ─── 6. Sin JavaScript nuevo para la NAVEGACIÓN ───────────────────────────
+//
+// Antes de D-064, Base.astro tenía exactamente 2 `<script is:inline>`. El menú
+// de D-064 se construyó a propósito con `<details>/<summary>` nativo para no
+// sumar un tercero — la decisión "sin librería" del punto 7.
+//
+// Contar scripts a secas resultó ser la regla equivocada, y se vio en cuanto
+// hizo falta un script que NO es de navegación: el de #339, que redirige a
+// quien ya tiene sesión y pide `/entrar/`. Bloqueó, y bloqueó por la razón
+// equivocada — subir el número a 3 sin más habría apagado la comprobación para
+// el cuarto script, que sí podría ser un menú.
+//
+// Así que ahora la lista es NOMINAL: cada `is:inline` de `Base.astro` está
+// declarado aquí con lo que hace y por qué se le permite. Uno nuevo bloquea
+// igual que antes, y además obliga a escribir a qué vino.
+const SCRIPTS_PERMITIDOS = [
+  ["data-platform", "detección de plataforma sin destello (D-031)"],
+  ["serviceWorker", "registro del service worker (mc-33)"],
+  ["mc_p", "redirección de quien ya tiene sesión fuera de /entrar/ (#339)"],
+];
 const scripts = (base.match(/<script\s+is:inline\b/g) ?? []).length;
-if (scripts > SCRIPTS_ESPERADOS) {
+if (scripts > SCRIPTS_PERMITIDOS.length) {
   problemas.push(
-    `${BASE} tiene ${scripts} <script is:inline> — antes de D-064 eran ${SCRIPTS_ESPERADOS} (detección de ` +
-      "plataforma, service worker). D-064 eligió <details>/<summary> nativo exactamente para no sumar " +
-      "JavaScript a la navegación; un script nuevo aquí sugiere que esa decisión se está revirtiendo sin " +
-      "documentarlo.",
+    `${BASE} tiene ${scripts} <script is:inline> y solo ${SCRIPTS_PERMITIDOS.length} están declarados ` +
+      `(${SCRIPTS_PERMITIDOS.map(([m]) => m).join(", ")}). D-064 eligió <details>/<summary> nativo ` +
+      "exactamente para no sumar JavaScript a la navegación. Si el script nuevo NO es de navegación, " +
+      "añádelo a SCRIPTS_PERMITIDOS con lo que hace; si lo es, la decisión se está revirtiendo.",
   );
 }
+// Y cada uno declarado tiene que seguir existiendo: si alguien borra el de
+// plataforma y añade un menú, el conteo cuadraría y la regla no vería nada.
+for (const [marca, para] of SCRIPTS_PERMITIDOS) {
+  if (!base.includes(marca)) {
+    problemas.push(
+      `${BASE} ya no contiene "${marca}" (${para}), pero sigue declarado en SCRIPTS_PERMITIDOS. ` +
+        "Un conteo que cuadra por casualidad no comprueba nada: quita el renglón o restaura el script.",
+    );
+  }
+}
+notas.push(`${scripts} <script is:inline> en Base.astro, los ${SCRIPTS_PERMITIDOS.length} declarados`);
 
 // ─── 7. Ninguna librería de "look nativo" declarada en package.json ───────
 const pkg = leer(PKG);

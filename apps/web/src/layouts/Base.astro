@@ -61,9 +61,17 @@ interface Props {
    * definición — una aserción tautológicamente cierta.
    */
   contentLang?: string;
+  /**
+   * A dónde mandar a quien YA tiene sesión. Issue #339.
+   *
+   * Solo lo pasa `/entrar/`. Si se omite, la página no redirige a nadie — que
+   * es lo correcto para la portada y para las páginas de contenido: alguien con
+   * sesión abierta que quiere leer `/investigacion/` la quiere leer.
+   */
+  siHaySesionIrA?: string;
 }
 
-const { locale, title, description, seccion = null, slug, contentLang } = Astro.props;
+const { locale, title, description, seccion = null, slug, contentLang, siHaySesionIrA } = Astro.props;
 const idiomaDelTexto = contentLang ?? locale;
 const m = t(locale);
 const site = "https://math.kilowatto.com";
@@ -237,6 +245,48 @@ const jsonLd = {
       `is:inline` a propósito: si Astro lo empaquetara, dejaría de ser
       bloqueante y volvería el destello que este bloque existe para evitar.
     */}
+    {/*
+      ─── Quien ya entró no vuelve a ver el formulario de entrar (#339) ───────
+
+      El dueño llegó a `/es-MX/entrar/` con sesión válida y el sitio le pidió la
+      contraseña como a un desconocido.
+
+      No se arregla en el servidor, y merece la pena decir por qué: esta página
+      está PRERENDERIZADA. Es un archivo HTML escrito en el build, así que no
+      puede leer una cookie —cuando se generó no existía la petición— y el
+      Worker tampoco la ve, porque el enrutador de assets de Cloudflare sirve un
+      archivo prerenderizado ANTES de que el Worker corra. Este repo aprendió esa
+      segunda parte rompiendo el login entero durante 45 minutos.
+
+      Así que se hace aquí, con la misma técnica exacta que la detección de
+      plataforma de abajo: un script BLOQUEANTE en el `<head>`, que corre antes
+      de que el navegador construya una sola caja. Sin destello: nadie ve el
+      formulario un instante antes del salto.
+
+      Lee `mc_p`, que no es la sesión. Es un `1` sin secreto que se pone junto a
+      `mc_s` (ver `lib/sesiones.ts`). Falsificarla en el propio navegador
+      consigue exactamente una cosa: que te lleven a una página que te va a
+      pedir sesión y no te la va a dar.
+
+      `?cambiar=1` salta la redirección. Es el caso del teléfono compartido: en
+      esta casa puede haber varias sesiones vivas a la vez —el adulto y cada
+      hijo tienen la suya— y quien quiere entrar con otra cuenta necesita poder
+      llegar al formulario. La casa enseña ese enlace; sin él, redirigir sería
+      una trampa sin salida.
+
+      `location.replace` y no `href`: no deja la página de entrar en el
+      historial, así que «atrás» no devuelve a un formulario que ya no aplica.
+    */}
+    {siHaySesionIrA && (
+      <script is:inline define:vars={{ destino: siHaySesionIrA }}>
+        (function () {
+          if (location.search.indexOf("cambiar=1") >= 0) return;
+          if (document.cookie.indexOf("mc_p=1") < 0) return;
+          location.replace(destino);
+        })();
+      </script>
+    )}
+
     <script is:inline>
       (function () {
         var d = document.documentElement;

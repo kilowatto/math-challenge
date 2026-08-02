@@ -45,7 +45,18 @@ const cookies = leerCookies(Astro.request.headers.get("cookie"));
 const sesion = env?.SESSION_KV
   ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
   : null;
-if (!sesion) return Astro.redirect(ruta(locale, "entrar"));
+// `?cambiar=1` y no `/entrar/` a secas: sin eso hay un bucle infinito real.
+// Desde #339, `/entrar/` lleva un script que redirige a la casa si encuentra la
+// pista `mc_p`. Las dos cookies caducan juntas, pero una sesión se puede
+// invalidar ANTES que su cookie —cambiar la contraseña cierra las demás, y KV
+// expira por su cuenta—, y en ese hueco:
+//
+//     /app/ → sin sesión → /entrar/ → hay mc_p → /app/ → sin sesión → …
+//
+// El navegador gira hasta rendirse, delante de alguien que solo quería volver a
+// entrar. `?cambiar=1` es la única cadena que ese script respeta. Se vio
+// probando la redirección con la pista puesta y la sesión ausente, no razonando.
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
 
 /**
  * Los datos de la cuenta. **Solo lo que se pinta.**

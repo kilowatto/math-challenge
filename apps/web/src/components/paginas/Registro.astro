@@ -132,6 +132,20 @@ const lead = m[puerta.lead];
         />
       </div>
 
+      {/*
+        `aria-describedby` — sin él la pista existe, se ve, y un lector de
+        pantalla no la anuncia nunca (#333): `<label>` da el nombre del campo, y
+        NADA asocia el párrafo de abajo con el campo salvo la cercanía visual.
+        Quien navega con VoiceOver u NVDA oye «Contraseña, campo de texto
+        protegido» y llega al mínimo de 8 caracteres chocando contra el error.
+        No es regla estándar de axe-core, así que ningún auditor lo habría visto.
+
+        Va AQUÍ y no entre los atributos del `<input>`: ahí el compilador de
+        Astro lo tolera y el HTML sale bien, pero `astro check` lo lee como
+        TypeScript y reporta «Unterminated string literal». Un error falso en
+        esa lista es exactamente lo que hizo que se pasara por alto uno real
+        —el TypeScript en un script inline— durante cuatro PRs seguidos.
+      */}
       <div class="campo" id="campo-clave">
         <label for="clave">{m.signupPassword}</label>
         <input
@@ -142,15 +156,6 @@ const lead = m[puerta.lead];
           minlength="8"
           maxlength="64"
           autocomplete="new-password"
-          {/*
-            Sin esto la pista existe, se ve, y un lector de pantalla no la
-            anuncia nunca (#333): `<label>` da el nombre del campo, y NADA
-            asocia el párrafo de abajo con el campo salvo la cercanía visual.
-            Quien navega con VoiceOver o NVDA oye «Contraseña, campo de texto
-            protegido» y llega al mínimo de 8 caracteres chocando contra el
-            error. No es una regla estándar de axe-core, así que ningún auditor
-            determinista lo habría cazado.
-          */}
           aria-describedby="pista-clave"
         />
         <p class="pista" id="pista-clave">{m.signupPasswordHint}</p>

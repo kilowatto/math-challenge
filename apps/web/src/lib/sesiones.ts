@@ -45,6 +45,42 @@
 
 /** Nombres. En un solo sitio: un nombre escrito dos veces se separa una vez. */
 export const COOKIE_ADULTO = "mc_s";
+/**
+ * La PISTA de sesión. Issue #339.
+ *
+ * Es la única cookie de este archivo que **no** es `HttpOnly`, y eso es el
+ * punto entero: un script tiene que poder leerla.
+ *
+ * ─── Por qué hace falta ────────────────────────────────────────────────────
+ *
+ * El dueño llegó a `/es-MX/entrar/` con sesión válida y el sitio le pidió la
+ * contraseña como a un desconocido. La causa no es un `if` que falte: esa
+ * página está **prerenderizada** (`output: "static"`), o sea que es un archivo
+ * HTML escrito en el build, y un archivo no puede leer una cookie porque cuando
+ * se generó no había ninguna petición. Es la misma trampa que ya costó tres
+ * bugs aquí — `searchParams` vacío, `request.headers` de nadie, la plataforma
+ * saliendo siempre `otro`.
+ *
+ * Las salidas eran tres: hacer la página SSR (y perder el caché de borde en las
+ * 7 portadas de entrada), mirar la cookie en el Worker (que **no corre** para
+ * una ruta prerenderizada: el enrutador de assets la sirve antes, cosa que este
+ * repo aprendió rompiendo el login entero), o esta.
+ *
+ * ─── Qué contiene, y por qué no es un riesgo ───────────────────────────────
+ *
+ * Un `1`. Nada más. No es un token, no identifica a nadie, no sirve para
+ * autenticar y el servidor **jamás la lee** — quien la falsifique en su propio
+ * navegador consigue exactamente una cosa: que le redirijan a una página que
+ * le va a pedir sesión y no se la va a dar. `mc_s` sigue siendo `HttpOnly` y
+ * sigue siendo la única que decide algo.
+ *
+ * Viven y mueren juntas: se ponen en la misma respuesta y se borran en la misma
+ * respuesta. Por eso `abrirSesionAdulto` devuelve un ARRAY de cookies y no una:
+ * con dos valores sueltos, el día que alguien añada una cuarta puerta de
+ * entrada se acordaría de la sesión y se olvidaría de la pista, y el síntoma
+ * sería este mismo bug otra vez, solo en esa puerta.
+ */
+export const COOKIE_PISTA = "mc_p";
 export const COOKIE_HOGAR = "mc_h";
 export const COOKIE_NINO = "mc_k";
 
@@ -94,6 +130,13 @@ export interface OpcionesCookie {
   maxAge: number;
   /** Ruta. Por defecto la raíz: las tres viajan a todo el sitio. */
   path?: string;
+  /**
+   * Omitir `HttpOnly`. **Solo `mc_p`.**
+   *
+   * Se pide explícitamente y no se deduce del nombre para que quede en el sitio
+   * de la llamada, a la vista de quien lea el código y de quien lo revise.
+   */
+  legiblePorJs?: boolean;
 }
 
 /**
@@ -115,7 +158,10 @@ export function armarCookie(nombre: string, valor: string, o: OpcionesCookie): s
     `${nombre}=${valor}`,
     `Path=${o.path ?? "/"}`,
     `Max-Age=${o.maxAge}`,
-    "HttpOnly",
+    // La ÚNICA que se salta esto es `mc_p`, que no lleva secreto y existe
+    // justamente para que un script la lea (ver COOKIE_PISTA). Se pide
+    // explícitamente con `legibleporJs`, así que nunca se omite por descuido.
+    ...(o.legiblePorJs ? [] : ["HttpOnly"]),
     "Secure",
     "SameSite=Lax",
   ];
@@ -124,7 +170,8 @@ export function armarCookie(nombre: string, valor: string, o: OpcionesCookie): s
 
 /** Borra una cookie. `Max-Age=0` y valor vacío, con los mismos atributos. */
 export function borrarCookie(nombre: string, path = "/"): string {
-  return `${nombre}=; Path=${path}; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
+  const httpOnly = nombre === COOKIE_PISTA ? "" : "HttpOnly; ";
+  return `${nombre}=; Path=${path}; Max-Age=0; ${httpOnly}Secure; SameSite=Lax`;
 }
 
 /**
@@ -180,10 +227,20 @@ export const llaveNino = (token: string) => `k:${token}`;
 export async function abrirSesionAdulto(
   kv: KVNamespace,
   datos: SesionAdulto,
-): Promise<{ token: string; cookie: string }> {
+): Promise<{ token: string; cookies: string[] }> {
   const token = nuevoToken();
   await kv.put(llaveAdulto(token), JSON.stringify(datos), { expirationTtl: VIDA_ADULTO_S });
-  return { token, cookie: armarCookie(COOKIE_ADULTO, token, { maxAge: VIDA_ADULTO_S }) };
+  // DOS cookies, siempre juntas y en la misma respuesta. Ver COOKIE_PISTA: el
+  // array existe para que ninguna puerta de entrada pueda poner una y olvidar
+  // la otra — un descuido cuyo síntoma sería que esa puerta, y solo esa, siga
+  // pidiendo la contraseña a quien ya entró.
+  return {
+    token,
+    cookies: [
+      armarCookie(COOKIE_ADULTO, token, { maxAge: VIDA_ADULTO_S }),
+      armarCookie(COOKIE_PISTA, "1", { maxAge: VIDA_ADULTO_S, legiblePorJs: true }),
+    ],
+  };
 }
 
 export async function leerSesionAdulto(
@@ -214,9 +271,9 @@ export async function leerSesionAdulto(
  * tras un robo de cuenta— el mecanismo no es KV: es una lista de revocación en
  * D1 consultada en la misma petición.
  */
-export async function cerrarSesionAdulto(kv: KVNamespace, token: string | undefined): Promise<string> {
+export async function cerrarSesionAdulto(kv: KVNamespace, token: string | undefined): Promise<string[]> {
   if (token && esTokenOpaco(token)) await kv.delete(llaveAdulto(token));
-  return borrarCookie(COOKIE_ADULTO);
+  return [borrarCookie(COOKIE_ADULTO), borrarCookie(COOKIE_PISTA)];
 }
 
 /**
@@ -315,5 +372,5 @@ export async function leerSesionNino(
  * que ya no está autenticada. Es el caso de la tablet que se presta.
  */
 export function cerrarTodo(): string[] {
-  return [borrarCookie(COOKIE_ADULTO), borrarCookie(COOKIE_NINO)];
+  return [borrarCookie(COOKIE_ADULTO), borrarCookie(COOKIE_PISTA), borrarCookie(COOKIE_NINO)];
 }

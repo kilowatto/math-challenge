@@ -110,6 +110,10 @@ const ACTIVE = [
   // vez (un default "display: none" que faltaba), así que este auditor
   // existe para que la tercera vez no haga falta un iPhone real.
   ["navegacion-unica",       "una sola navegación primaria a la vez",          "D-064, mc-49"],
+
+  // El área privada nunca hereda el layout público — encontrado en una
+  // segunda captura real, esta vez del panel del padre ya con sesión abierta.
+  ["area-privada",           "el área privada nunca hereda el layout público", "D-065"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

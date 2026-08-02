@@ -1,6 +1,6 @@
 ---
 /**
- * `/{locale}/app/` — **la casa del adulto.** Issue #311.
+ * `/{locale}/app/` — **la casa del adulto.** Issue #311, D-065.
  *
  * ─── Existía la puerta y no existía la casa ────────────────────────────────
  *
@@ -16,6 +16,22 @@
  * que F3, F4 y F5 construyeron. El motor adaptativo, el programador, los 344
  * ítems: desplegados y sin ningún camino desde una cuenta real.
  *
+ * ─── D-065: no todo adulto tiene hijos ─────────────────────────────────────
+ *
+ * Este archivo heredaba `layouts/Base.astro` — el nav de MARKETING, con
+ * "Entrar"/"Crear cuenta" como acciones principales para alguien que ya iba
+ * inició sesión. El dueño lo encontró en una segunda captura real. La causa de
+ * fondo era más profunda que el layout equivocado: la pantalla asumía que todo
+ * adulto es un padre. `users.is_learner` existe desde la migración 0001 —
+ * "¿este adulto usa el producto para sí mismo?"— y nadie lo leía nunca. Un
+ * adulto que se registró por `registro-aprendo` veía la misma sección "Tus
+ * hijos" que un padre, vacía y sin sentido para él.
+ *
+ * Ahora la pantalla lee `is_learner` igual que ya leía `child_profiles`, y las
+ * pestañas que se enseñan dependen de lo que la cuenta REALMENTE es — que
+ * pueden ser las dos cosas a la vez (D-034 cita al propio dueño como ejemplo:
+ * papá y aprendiz adulto en la misma cuenta).
+ *
  * ─── Esto es SSR, y no por gusto ───────────────────────────────────────────
  *
  * Lee cookies y consulta la base. Una página prerrenderizada no ve ni lo uno ni
@@ -25,12 +41,13 @@
  *
  * ─── Superficie de ADULTO ──────────────────────────────────────────────────
  *
- * Tipografía del sistema, blancos de 44px —no los 88 de kinder— y ni una palabra
- * dirigida a un menor. Un niño que llegue aquí no encuentra nada suyo.
+ * `layouts/Privada.astro` (D-065): tokens SERIO, blancos de 44px —no los 88 de
+ * kinder—, y ni una palabra dirigida a un menor. Un niño que llegue aquí no
+ * encuentra nada suyo.
  */
 export const prerender = false;
 
-import Base from "../../../layouts/Base.astro";
+import Privada from "../../../layouts/Privada.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
 import { rutaKids, rutaPerfilNuevo } from "../../../lib/rutas-app";
@@ -50,7 +67,7 @@ const sesion = env?.SESSION_KV
   : null;
 
 // Sin sesión, a la puerta. **Se falla cerrado**: esta página lista a los hijos
-// de alguien.
+// de alguien y lee si la cuenta practica por su cuenta.
 if (!sesion) return Astro.redirect(ruta(locale, "entrar"));
 
 /**
@@ -59,107 +76,178 @@ if (!sesion) return Astro.redirect(ruta(locale, "entrar"));
  * que no se pide (`mc-25`, D-013).
  */
 let hijos: Array<{ id: string; alias: string; theme_band: string }> = [];
+let esSolo = false;
 if (env?.DB) {
   try {
-    const r = await env.DB.prepare(
-      "SELECT id, alias, theme_band FROM child_profiles WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at",
-    )
-      .bind(sesion.userId)
-      .all<{ id: string; alias: string; theme_band: string }>();
-    hijos = r.results ?? [];
+    const [rHijos, rUsuario] = await Promise.all([
+      env.DB.prepare(
+        "SELECT id, alias, theme_band FROM child_profiles WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at",
+      )
+        .bind(sesion.userId)
+        .all<{ id: string; alias: string; theme_band: string }>(),
+      env.DB.prepare("SELECT is_learner FROM users WHERE id = ?")
+        .bind(sesion.userId)
+        .first<{ is_learner: number }>(),
+    ]);
+    hijos = rHijos.results ?? [];
+    esSolo = rUsuario?.is_learner === 1;
   } catch {
     // Sin base, la casa se enseña vacía en vez de dar un 500. El adulto puede
     // marcar el aparato y añadir su passkey igual.
     hijos = [];
+    esSolo = false;
   }
 }
 
 /** ¿Ya está marcado este aparato? La cookie basta: la fila la valida `/app/kids`. */
 const aparatoMarcado = Boolean(cookies[COOKIE_HOGAR]);
+
+const esFamilia = hijos.length > 0;
+
+/**
+ * Las pestañas, derivadas de lo que la cuenta REALMENTE tiene — no de por
+ * dónde se registró (D-065). "Cuenta" siempre está, pero no vive en ESTA
+ * página: pasaporte, contraseña y passkeys viven en `/app/perfil/`, así que
+ * esa pestaña navega afuera en vez de cambiar una vista interna.
+ *
+ * Tope de 5 (HIG, Material 3 — mc-49). Progreso/Límite de pantalla son F8
+ * (D-057, ya decidido, todavía sin construir); Practicar es F5b/F10 (D-034,
+ * también sin construir). Se enseñan igual, marcadas "Próximamente": el dueño
+ * prefirió dejar el hueco visible a rehacer la navegación cuando esas fases
+ * lleguen.
+ */
+type ClaveVista = "hijos" | "progreso" | "limite" | "practicar";
+type Clave = ClaveVista | "cuenta";
+const PROXIMAMENTE = new Set<Clave>(["progreso", "limite", "practicar"]);
+const vistasDisponibles: ClaveVista[] = [
+  ...(esFamilia ? (["hijos", "progreso", "limite"] as ClaveVista[]) : []),
+  ...(esSolo ? (["practicar"] as ClaveVista[]) : []),
+];
+
+const ETIQUETAS: Record<Clave, string> = {
+  hijos: m.casaTabHijos,
+  progreso: m.casaTabProgreso,
+  limite: m.casaTabLimite,
+  practicar: m.casaTabPracticar,
+  cuenta: m.casaTabCuenta,
+};
+
+/**
+ * Sin ninguna vista propia (ej. cuenta de maestro: sin hijos, no aprendiz —
+ * F9 no existe todavía), esta página no tiene nada que enseñar. "Cuenta" en
+ * `/app/perfil/` es lo único real que le queda a esa cuenta, así que se manda
+ * directo — una página vacía con una sola pestaña no es una pantalla, es un
+ * paso de más.
+ */
+if (vistasDisponibles.length === 0) return Astro.redirect(`/${locale}/app/perfil/`);
+
+// La vista de aterrizaje es la primera pestaña REAL, no la primera de la
+// lista: un aprendiz solo vería "Practicar" (próximamente) como bienvenida
+// si el orden mandara, y eso es un callejón sin salida en la primera pantalla
+// que ve.
+const vistaPedida = Astro.url.searchParams.get("vista") as ClaveVista | null;
+const vistaPorDefecto = vistasDisponibles.find((c) => !PROXIMAMENTE.has(c)) ?? vistasDisponibles[0];
+const vista: ClaveVista =
+  vistaPedida && vistasDisponibles.includes(vistaPedida) ? vistaPedida : vistaPorDefecto;
+
+const pestanas = [
+  ...vistasDisponibles.map((clave) => ({
+    clave,
+    label: ETIQUETAS[clave],
+    href: `/${locale}/app/?vista=${clave}`,
+    activa: clave === vista,
+    proximamente: PROXIMAMENTE.has(clave),
+  })),
+  {
+    clave: "cuenta" as const,
+    label: ETIQUETAS.cuenta,
+    href: `/${locale}/app/perfil/`,
+    activa: false,
+    proximamente: false,
+  },
+];
+
+const titulo = esFamilia ? m.casaTitulo : m.casaTituloSolo;
+const lead = esFamilia ? m.casaLead : m.casaLeadSolo;
 ---
 
-<Base locale={locale} seccion={null} title={m.casaTitulo} description={m.casaLead}>
+<Privada locale={locale} title={titulo} description={lead} pestanas={pestanas}>
   <article class="casa">
-    <h1>{m.casaTitulo}</h1>
-    <p class="lead">{m.casaLead}</p>
+    <h1>{titulo}</h1>
+    <p class="lead">{lead}</p>
 
-    {/* ── Los hijos ─────────────────────────────────────────────────────── */}
-    <section class="bloque">
-      <h2>{m.casaHijos}</h2>
-      {hijos.length === 0 ? (
-        <p class="muted">{m.casaSinHijos}</p>
-      ) : (
-        <ul class="hijos">
-          {hijos.map((h) => (
-            <li class="hijo">
-              <span class="alias">{h.alias}</span>
-              <span class="banda">{h.theme_band}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <a class="boton" href={rutaPerfilNuevo(locale)}>{m.casaNuevoHijo}</a>
-      {aparatoMarcado && hijos.length > 0 && (
-        <a class="boton primario" href={rutaKids(locale)}>{m.casaJugar}</a>
-      )}
-    </section>
+    {vista === "hijos" && (
+      <Fragment>
+        {/* ── Los hijos ───────────────────────────────────────────────────── */}
+        <section class="bloque">
+          <h2>{m.casaHijos}</h2>
+          {hijos.length === 0 ? (
+            <p class="muted">{m.casaSinHijos}</p>
+          ) : (
+            <ul class="hijos">
+              {hijos.map((h) => (
+                <li class="hijo">
+                  <span class="alias">{h.alias}</span>
+                  <span class="banda">{h.theme_band}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <a class="boton" href={rutaPerfilNuevo(locale)}>{m.casaNuevoHijo}</a>
+          {aparatoMarcado && hijos.length > 0 && (
+            <a class="boton primario" href={rutaKids(locale)}>{m.casaJugar}</a>
+          )}
+        </section>
 
-    {/* ── El aparato de la casa (D-012) ─────────────────────────────────── */}
-    {!aparatoMarcado && (
-      <section class="bloque">
-        <h2>{m.casaAparatoTitulo}</h2>
-        {/*
-          El texto dice qué significa marcar, no solo pide que se marque. D-012:
-          la protección real la da el dispositivo, y una decisión que protege
-          solo funciona si quien la toma sabe qué está decidiendo.
-        */}
-        <p class="muted">{m.casaAparatoTexto}</p>
-        <button type="button" class="boton primario" id="marcar">{m.casaAparatoCta}</button>
-        <p class="ok" id="marcado" hidden>{m.casaAparatoListo}</p>
+        {/* ── El aparato de la casa (D-012) ───────────────────────────────── */}
+        {!aparatoMarcado && (
+          <section class="bloque">
+            <h2>{m.casaAparatoTitulo}</h2>
+            {/*
+              El texto dice qué significa marcar, no solo pide que se marque. D-012:
+              la protección real la da el dispositivo, y una decisión que protege
+              solo funciona si quien la toma sabe qué está decidiendo.
+            */}
+            <p class="muted">{m.casaAparatoTexto}</p>
+            <button type="button" class="boton primario" id="marcar">{m.casaAparatoCta}</button>
+            <p class="ok" id="marcado" hidden>{m.casaAparatoListo}</p>
+          </section>
+        )}
+      </Fragment>
+    )}
+
+    {vista === "progreso" && (
+      <section class="bloque proximamente">
+        <h2>{m.casaTabProgreso}</h2>
+        <p class="muted">{m.casaProgresoProximamente}</p>
       </section>
     )}
 
-    {/* ── La passkey, DESPUÉS del registro (D-038) ──────────────────────── */}
-    <section class="bloque" id="bloque-passkey" hidden>
-      <h2>{m.casaPasskeyTitulo}</h2>
-      <p class="muted">{m.casaPasskeyTexto}</p>
-      <button type="button" class="boton" id="passkey">{m.casaPasskeyCta}</button>
-      <p class="ok" id="passkey-ok" hidden>{m.casaPasskeyListo}</p>
-    </section>
+    {vista === "limite" && (
+      <section class="bloque proximamente">
+        <h2>{m.casaTabLimite}</h2>
+        <p class="muted">{m.casaLimiteProximamente}</p>
+      </section>
+    )}
 
-    {/* ── Cambiar la contraseña (#313) ──────────────────────────────────── */}
-    <section class="bloque">
-      <h2>{m.casaClaveTitulo}</h2>
-      {/*
-        Se pide la ACTUAL aunque haya sesión. La sesión dura 30 días y vive en el
-        teléfono: quien toma un aparato desbloqueado la tiene y no tiene la
-        contraseña. Sin este campo, esa persona deja al padre fuera de su cuenta
-        y de las de sus hijos. El porqué completo está en `/api/clave`.
-      */}
-      <div class="campo">
-        <label for="clave-actual">{m.casaClaveActual}</label>
-        <input type="password" id="clave-actual" autocomplete="current-password" />
-      </div>
-      <div class="campo">
-        <label for="clave-nueva">{m.casaClaveNueva}</label>
-        <input type="password" id="clave-nueva" autocomplete="new-password" minlength="8" maxlength="64" />
-      </div>
-      <button type="button" class="boton" id="cambiar-clave">{m.casaClaveCta}</button>
-      <p class="ok" id="clave-ok" hidden>{m.casaClaveListo}</p>
-      <p class="mal" id="clave-mal" hidden></p>
-    </section>
+    {vista === "practicar" && (
+      <section class="bloque proximamente">
+        <h2>{m.casaTabPracticar}</h2>
+        <p class="muted">{m.casaPracticarProximamente}</p>
+      </section>
+    )}
 
-    <button type="button" class="boton salir" id="salir">{m.casaSalir}</button>
   </article>
 
   <style>
-    .casa { max-width: var(--measure); margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    .casa { padding-block: calc(var(--space) * 2); }
     h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
          color: var(--color-text-brand); margin-block-end: var(--space); }
     .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
             margin-block-end: calc(var(--space) * 2); }
     .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
               padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .bloque.proximamente { color: var(--color-text-muted); }
     h2 { font-family: var(--font-sistema); font-size: var(--text-base); font-weight: var(--weight-subtitle);
          margin: 0 0 calc(var(--space) * 0.5); }
     .muted { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-body);
@@ -176,41 +264,26 @@ const aparatoMarcado = Boolean(cookies[COOKIE_HOGAR]);
              font-family: var(--font-sistema); font-size: var(--text-base); text-decoration: none; cursor: pointer; }
     .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
     .boton:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
-    .salir { margin-block-start: var(--space); color: var(--color-text-muted); }
     .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-start: 0.5rem; }
-    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-start: 0.5rem; }
-    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space); }
-    label { font-family: var(--font-sistema); font-size: var(--text-sm); }
-    input { font-family: var(--font-sistema); font-size: var(--text-base); min-height: 44px;
-            padding-inline: 0.75rem; color: var(--color-text); background: var(--color-surface);
-            border: 1px solid var(--color-border); border-radius: var(--radius); }
-    input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
   </style>
 
-  <script define:vars={{
-    destinoKids: rutaKids(locale),
-    portada: `/${locale}/`,
-    MSG: {
-      credenciales: m.formErrCredenciales,
-      rango: m.formErrClave,
-      igual: m.formErrGenerico,
-      generico: m.formErrGenerico,
-    },
-  }}>
-    const pedir = (accion, cuerpo) =>
-      fetch(`/api/casa?accion=${accion}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(cuerpo ?? {}),
-      }).then((r) => r.json().catch(() => ({})));
-
-    // ── Marcar el aparato ───────────────────────────────────────────────
-    const bMarcar = document.getElementById("marcar");
+  <script>
+    // ── Marcar el aparato (D-012) ────────────────────────────────────────
+    // Passkey, contraseña y salir viven en /app/perfil/ y en Privada.astro
+    // desde D-065 — esta página solo conserva lo que es de "Hijos".
+    //
+    // Sin `define:vars`: este <script> SÍ pasa por el compilador de Astro, así
+    // que el tipado de abajo es real, no decorativo — a diferencia de un
+    // inline, aquí un error de tipos SÍ se ve antes de llegar al navegador.
+    const bMarcar = document.getElementById("marcar") as HTMLButtonElement | null;
     bMarcar?.addEventListener("click", async () => {
       bMarcar.disabled = true;
-      const r = await pedir("dispositivo");
+      const r: { ok?: boolean } = await fetch("/api/casa?accion=dispositivo", { method: "POST" })
+        .then((res) => res.json())
+        .catch(() => ({}));
       if (r.ok) {
-        document.getElementById("marcado").hidden = false;
+        const marcado = document.getElementById("marcado");
+        if (marcado) marcado.hidden = false;
         // Se recarga para que aparezca el botón de ir con los niños: la página
         // es del servidor y él es quien sabe si ya hay cookie.
         location.reload();
@@ -218,116 +291,5 @@ const aparatoMarcado = Boolean(cookies[COOKIE_HOGAR]);
       }
       bMarcar.disabled = false;
     });
-
-    // ── Añadir una passkey a una cuenta que ya existe (D-038) ───────────
-    //
-    // El bloque nace `hidden` y solo aparece si el navegador tiene la API. Al
-    // revés —pintarlo y esconderlo— enseñaría un botón muerto a quien no puede
-    // usarlo. Es la misma lección que dejó el registro roto en Macs con Touch
-    // ID: no se esconde el camino que funciona a cambio de uno que puede fallar.
-    const bloque = document.getElementById("bloque-passkey");
-    const bPasskey = document.getElementById("passkey");
-    if (bloque && "PublicKeyCredential" in window) bloque.hidden = false;
-
-    const b64urlABytes = (s) =>
-      Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
-    const bytesAB64url = (b) =>
-      btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-
-    bPasskey?.addEventListener("click", async () => {
-      bPasskey.disabled = true;
-      try {
-        const reto = await (await fetch("/api/passkey-reto", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ proposito: "registrar" }),
-        })).json();
-        if (!reto.ok) throw new Error(reto.motivo);
-
-        const cred = await navigator.credentials.create({
-          publicKey: {
-            challenge: b64urlABytes(reto.reto),
-            rp: { id: reto.rpId, name: "Math Challenge" },
-            user: {
-              // El identificador que viaja al autenticador lo da el servidor y
-              // es opaco: el correo no entra aquí.
-              id: b64urlABytes(reto.usuarioId),
-              name: reto.usuarioNombre ?? "",
-              displayName: reto.usuarioNombre ?? "",
-            },
-            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-            authenticatorSelection: { userVerification: "preferred", residentKey: "preferred" },
-            timeout: 60000,
-          },
-        });
-        if (!cred) throw new Error("cancelado");
-
-        const r = cred.response;
-        const res = await (await fetch("/api/passkey-registrar", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            retoId: reto.id,
-            credentialId: cred.id,
-            clientDataJSON: bytesAB64url(r.clientDataJSON),
-            attestationObject: bytesAB64url(r.attestationObject),
-          }),
-        })).json();
-
-        if (res.ok) {
-          document.getElementById("passkey-ok").hidden = false;
-          bPasskey.hidden = true;
-          return;
-        }
-        throw new Error(res.motivo);
-      } catch {
-        // Si falla —cancelada, sin autenticador, lo que sea— NO se enseña un
-        // error: la contraseña sigue funcionando y el bloque entero es opcional.
-        bPasskey.disabled = false;
-      }
-    });
-
-    // ── Cambiar la contraseña ───────────────────────────────────────────
-    const bClave = document.getElementById("cambiar-clave");
-    bClave?.addEventListener("click", async () => {
-      const actual = document.getElementById("clave-actual").value;
-      const nueva = document.getElementById("clave-nueva").value;
-      const ok = document.getElementById("clave-ok");
-      const mal = document.getElementById("clave-mal");
-      ok.hidden = true; mal.hidden = true;
-      bClave.disabled = true;
-      const r = await fetch("/api/clave", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ actual, nueva }),
-      }).then((x) => x.json()).catch(() => ({}));
-      bClave.disabled = false;
-      if (r.ok) {
-        ok.hidden = false;
-        document.getElementById("clave-actual").value = "";
-        document.getElementById("clave-nueva").value = "";
-        return;
-      }
-      /*
-        El mensaje sale de una tabla cerrada, igual que en `AvisoDeError`: lo que
-        el servidor devuelve es una CLAVE, y pintar una clave cruda deja
-        `credenciales` en pantalla. `credenciales` es ambiguo a propósito — no
-        dice si falló la contraseña o si no había ninguna, porque eso es
-        información sobre la cuenta.
-      */
-      const TEXTOS = {
-        credenciales: MSG.credenciales,
-        clave_fuera_de_rango: MSG.rango,
-        clave_igual: MSG.igual,
-      };
-      mal.textContent = TEXTOS[r.error] ?? MSG.generico;
-      mal.hidden = false;
-    });
-
-    // ── Salir ───────────────────────────────────────────────────────────
-    document.getElementById("salir")?.addEventListener("click", async () => {
-      await pedir("salir");
-      location.href = portada;
-    });
   </script>
-</Base>
+</Privada>

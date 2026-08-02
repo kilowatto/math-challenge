@@ -28,7 +28,7 @@
  * con ninguno de los siete, `en`. Es el único sitio del producto donde el idioma
  * se adivina, y se adivina porque la alternativa es no decir nada.
  */
-import Base from "../../../layouts/Base.astro";
+import Privada from "../../../layouts/Privada.astro";
 import { LOCALES, t, type Locale } from "../../../i18n";
 import { ruta } from "../../../i18n/rutas";
 
@@ -76,7 +76,7 @@ Astro.response.headers.set("x-robots-tag", "noindex");
 Astro.response.headers.set("cache-control", "no-store, private");
 ---
 
-<Base locale={locale} seccion={null} title={m.signinTitle} description={m.signinLead}>
+<Privada locale={locale} title={m.signinTitle} description={m.signinLead}>
   <article class="signin">
     <h1>{m.signinTitle}</h1>
     <p class="lead">{m.signinLead}</p>
@@ -144,4 +144,4 @@ Astro.response.headers.set("cache-control", "no-store, private");
       outline-offset: 2px;
     }
   </style>
-</Base>
+</Privada>

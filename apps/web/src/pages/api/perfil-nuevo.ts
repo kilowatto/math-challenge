@@ -152,29 +152,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const ahora = Math.floor(Date.now() / 1000);
   const childId = crypto.randomUUID();
 
-  // `birth_month` sigue siendo NOT NULL en la migración 0002 y D-053 decidió
-  // que no se pregunta. Se escribe 1 como relleno hasta que la migración 0005
-  // lo quite — el mecanismo está en docs/dudas.md porque tocar el auditor que
-  // protege el borrado de datos de menores necesita decisión del dueño.
-  // **Ese 1 no significa enero: significa "no se preguntó".**
-  const MES_RELLENO = 1;
-
-  // Y lo mismo con el año cuando el adulto lo saltó. `birth_year` es NOT NULL en
-  // la migración 0002, así que algo tiene que ir; **0 no es un año, es la marca
-  // de "no se preguntó"**, igual que el mes.
+  // `birth_month` ya no existe: la migración 0006 la retiró con el marcador de
+  // minimización que exige nombrar la columna (D-053, D-013). El centinela que
+  // vivía aquí —un `1` que significaba «no se preguntó», no enero— se fue con
+  // ella.
   //
-  // Los dos centinelas desaparecen juntos en la migración 0005, que hará
-  // `birth_month` innecesario y `birth_year` nullable. Está en `docs/dudas.md`
-  // porque quitar una columna de `child_profiles` exige tocar el auditor que
-  // protege el borrado de datos de menores, y eso no se hace de paso.
+  // `birth_year` sí admite 0, y también significa «no se preguntó»: el adulto
+  // puede saltarse el paso con «Ahora no» y el niño practica igual (línea roja
+  // #4). Cero no es un año, así que no hace falta que la columna sea nullable.
   const ANIO_NO_PREGUNTADO = 0;
 
   try {
     await env.DB.batch([
       env.DB.prepare(
-        "INSERT INTO child_profiles (id, parent_user_id, alias, alias_locale, birth_year, birth_month, theme_band, locale, created_at, updated_at) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      ).bind(childId, sesion.userId, alias, locale, sinAnio ? ANIO_NO_PREGUNTADO : anio, MES_RELLENO, tema, locale, ahora, ahora),
+        "INSERT INTO child_profiles (id, parent_user_id, alias, alias_locale, birth_year, theme_band, locale, created_at, updated_at) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ).bind(childId, sesion.userId, alias, locale, sinAnio ? ANIO_NO_PREGUNTADO : anio, tema, locale, ahora, ahora),
       // El consentimiento va en el MISMO batch. O están los dos o no está
       // ninguno: un perfil sin su fila sería un menor cuyos datos guardamos sin
       // poder demostrar que alguien lo autorizó (D-013, D-051).

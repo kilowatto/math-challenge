@@ -1885,3 +1885,57 @@ sigue en 6 hasta que exista una decisión de monetización real que lo reemplace
 **Condición de revisión:** cuando exista una decisión de negocio sobre cobro real, esta entrada se
 enmienda (mismo patrón que D-035 enmendó D-015) para especificar el mecanismo de gateo — no se
 reescribe D-021, que sigue siendo la fuente del *qué* se cobra; esta entrada gobierna el *cuándo*.
+
+---
+
+## D-058 — La superficie clara sube a blanco puro; el naranja de la marca no se toca · 2026-08-01
+
+**Decisión del dueño**, preguntada en modo interactivo y contra mi recomendación, que era
+oscurecer el naranja para bordes.
+
+`--color-surface: #F7F7F8` → `#FFFFFF`. Los tres pares que `audits/contrast.mjs` reportaba
+por debajo de umbral pasan, y **ningún color de marca cambió** — que es exactamente lo que mi
+recomendación no conseguía: un `--color-accent-borde` más oscuro habría metido un segundo
+naranja al producto para siempre.
+
+| par | antes | después | exige |
+|---|---|---|---|
+| `--color-accent` sobre superficie | 2.83:1 | **3.03:1** | 3:1 (gráfico) |
+| `--color-text-muted` | 4.38:1 | **4.58:1** | 4.5:1 (texto) |
+| `--color-text-brand-warm` | 4.28:1 | **4.69:1** | 4.5:1 (texto) |
+
+**El 3.03:1 pasa por 0.03 y eso no se celebra.** El naranja de Ignia sigue sin servir para
+texto normal sobre ningún fondo —CLAUDE.md ya lo decía— y cualquier superficie que no sea
+blanco puro lo vuelve a tumbar. Por eso `contrast` pasó de PENDING a ACTIVO en la flota: no
+para dejar constancia del verde, sino para que el día que alguien vuelva a poner un gris de
+fondo el commit se detenga solo.
+
+**Lo que se pierde:** `#F7F7F8` existía para que las tarjetas se distinguieran del fondo. Con
+la superficie en blanco, esa separación pasa a depender del borde y de la sombra. No está
+medido si alcanza en un teléfono de gama baja con luz de sol, que es nuestro dispositivo de
+referencia — queda dicho como residuo conocido.
+
+---
+
+## D-059 — El espaciado accesible se TOLERA, no se aplica · 2026-08-01
+
+**Decisión del dueño.** `docs/guia-de-estilo.md` § Dislexia cita `mc-21` con «0.12em entre
+letras, 0.16em entre palabras, 1.5× de interlineado». El token del repo es
+`--tracking-readable: 0.012em` — **diez veces menos** — y no existe token de espaciado entre
+palabras. Parecía un error de implementación durante meses.
+
+No lo era. **Esas tres cifras exactas son las de WCAG 2.1/2.2 SC 1.4.12 «Text Spacing», que
+NO pide aplicarlas.** Pide que el contenido no se rompa cuando la persona usuaria las aplique
+por su cuenta: con una extensión, con una hoja de estilo propia, con el modo lectura de su
+navegador. Aplicarlas por defecto a todo el producto no es lo que la pauta pide y cambia la
+tipografía para las seis personas de cada siete que no lo necesitan.
+
+Entonces: el token de 0.012em **se queda como decisión estética**, y lo que faltaba —lo único
+que faltaba— era la prueba de que la maquetación aguanta. Es
+`audits/espaciado-tolerante.mjs`, activo en el gancho: prohíbe `line-height` en px y alto
+fijo con `overflow: hidden` sobre cajas con texto.
+
+**Lo que ese auditor NO comprueba, dicho para que su verde no se lea de más:** si el texto de
+verdad desborda. Eso exige un motor de maquetación aplicando el espaciado y midiendo cajas.
+Su verde significa «no tiene las formas que lo rompen», no «cumple 1.4.12». La comprobación
+real sigue necesitando un navegador y no está hecha.

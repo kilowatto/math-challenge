@@ -69,6 +69,17 @@ const ACTIVE = [
   // Activarlo hoy bloquearía cada commit por una decisión que no es del código.
   ["axe-a11y",               "axe-core sin violaciones",                     "WCAG 2.2 AA, mc-38"],
   ["touch-targets",          "24px WCAG / 44px HIG / 88px kinder",           "mc-20, WCAG 2.5.8"],
+  // El último que esperaba (#129). Estuvo en PENDING mientras tres pares de la
+  // paleta clara quedaban por debajo de su umbral — decisión de marca, no de
+  // código. El dueño la resolvió el 2026-08-01 llevando `--color-surface` a
+  // blanco puro: los tres pasan y ningún color de marca cambió.
+  ["contrast",               "contraste 4.5:1 texto, 3:1 gráficos",          "mc-38, WCAG 2.2 AA"],
+  // La otra mitad de la duda §14: `guia-de-estilo.md` cita mc-21 con «0.12em /
+  // 0.16em / 1.5×», que son literalmente las cifras de WCAG 1.4.12 — una pauta
+  // que NO pide aplicarlas, sino aguantarlas. El dueño decidió el 2026-08-01
+  // TOLERAR y no aplicar: el token de 0.012em se queda, y lo que faltaba era
+  // la prueba de que la maquetación no se rompe. Este es ese auditor.
+  ["espaciado-tolerante",    "la maquetación aguanta el espaciado del usuario", "WCAG 1.4.12, mc-21, mc-38"],
   ["passkey-rp-id",          "el rp.id de las passkeys no se toca",          "D-038, #112, #263"],
   ["turnstile-solo-adulto",   "Turnstile jamás delante de un niño",           "línea roja #1, D-054, #113"],
   ["corpus-manifiesto",      "el manifiesto del corpus traducido está al día", "D-033, D-022, mc-48 §3"],
@@ -85,7 +96,6 @@ const ACTIVE = [
 // --- Deterministas: esperando la fase que los habilita -------------------
 const PENDING = [
   ["cwv-budget",        "INP ≤150ms, LCP ≤2.5s, CLS ≤0.1 — datos de CAMPO", "D-037 · cuando el beacon lleve semanas recolectando"],
-  ["contrast",          "contraste 4.5:1 texto, 3:1 gráficos",       "F2 · cuando haya interfaz"],
   ["precache-budget",   "≤5 MB de audio en la primera instalación",  "F5 · cuando haya audio"],
 ];
 

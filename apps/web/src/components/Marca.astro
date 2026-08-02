@@ -35,8 +35,20 @@
  */
 import { t, type Locale } from "../i18n";
 
-/** Los cinco momentos. Coinciden con el CHECK de la migración 0003. */
-export type CodigoDeMarca =
+/**
+ * Los cinco momentos. Coinciden con el CHECK de la migración 0003.
+ *
+ * `type` y no `export type`: con `export`, esbuild revienta el build entero con
+ * «Unexpected "|"» y una ubicación que apunta al `<style>`, que no tiene nada
+ * que ver. Nadie importa este tipo desde fuera —comprobado—, así que exportarlo
+ * no compraba nada.
+ *
+ * Este archivo NUNCA se había compilado: `Marca` se usaba en `PerfilNuevo.astro`
+ * sin importarla, así que el empaquetador jamás lo miró. Un componente que no
+ * se importa no es código muerto inofensivo — es código que nadie sabe si
+ * siquiera compila, y este no compilaba.
+ */
+type CodigoDeMarca =
   | "PRIMER_PERFIL"
   | "PRIMER_RETO"
   | "LIMITE_PANTALLA"

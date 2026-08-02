@@ -125,6 +125,23 @@
  */
 import { t, type Locale } from "../../i18n";
 import AvisoDeError from "../AvisoDeError.astro";
+/*
+ * `Marca` se USABA en dos sitios y NO estaba importada.
+ *
+ * En Astro, una referencia a un componente que no existe **revienta al
+ * renderizar**, no al compilar. El build pasaba, el despliegue pasaba, el gate
+ * entero pasaba en verde, y `/app/perfil-nuevo/` respondía **200 con cero
+ * bytes**: una página en blanco. O sea que el botón «Agregar un hijo» de la
+ * casa no llevaba a ninguna parte, y como no se puede crear un perfil, **no se
+ * podía llegar a un solo reto**. Toda la promesa de F3/F4/F5 estaba detrás de
+ * esta línea que faltaba.
+ *
+ * `astro check` SÍ lo decía —`ts(2304): Cannot find name 'Marca'`— y estaba
+ * enterrado en la lista de errores «preexistentes» que ya hizo pasar por alto
+ * el TypeScript en un script inline durante cuatro PRs. Es la segunda vez que
+ * esa lista esconde un bug que rompe el producto entero.
+ */
+import Marca from "../Marca.astro";
 import "../../styles/fonts.css";
 import "../../styles/tokens.css";
 import {

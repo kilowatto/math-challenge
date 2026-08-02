@@ -158,10 +158,21 @@ const esFamilia = hijos.length > 0 || !esSolo;
  * lleguen.
  */
 type Clave = "hijos" | "progreso" | "limite" | "practicar" | "cuenta";
-const PROXIMAMENTE = new Set<Clave>(["progreso", "limite", "practicar"]);
+// «Practicar» YA no es próximamente: `/app/practicar/` existe y sirve retos
+// reales del mismo motor. Lo que sigue sin construirse son Progreso y Límite
+// de pantalla (F8, D-057).
+const PROXIMAMENTE = new Set<Clave>(["progreso", "limite"]);
 const vistasDisponibles: Clave[] = [
   ...(esFamilia ? (["hijos", "progreso", "limite"] as Clave[]) : []),
-  ...(esSolo ? (["practicar"] as Clave[]) : []),
+  // **Practicar la ve TODO EL MUNDO**, no solo quien se registró por la puerta
+  // «quiero aprender yo». Math Challenge tiene dos modos —familia y solo— y son
+  // igual de importantes: un padre también puede querer jugar, y alguien sin
+  // hijos tiene que poder jugar sin leer una palabra sobre familia.
+  //
+  // Estaba condicionada a `esSolo`, así que un adulto que se registró como
+  // padre no tenía forma de jugar ni siquiera el contenido de kinder — que no
+  // es «de niños», es el principio de la escalera y hoy es lo único autorado.
+  "practicar",
   "cuenta",
 ];
 
@@ -253,10 +264,21 @@ const lead = esFamilia ? m.casaLead : m.casaLeadSolo;
       </section>
     )}
 
+    {/*
+      «Practicar» ya no es un cartel de «próximamente»: es la puerta a un reto
+      de verdad. No pide marcar el aparato ni un PIN — esas dos protegen a un
+      NIÑO en un aparato compartido (D-012), y quien está aquí ya demostró
+      quién es con su sesión.
+
+      El comentario va FUERA del `&& (`: dentro, es un segundo hijo del
+      paréntesis y el build revienta con «Expected ) but found $$render».
+    */}
     {vista === "practicar" && (
-      <section class="bloque proximamente">
-        <h2>{m.casaTabPracticar}</h2>
-        <p class="muted">{m.casaPracticarProximamente}</p>
+      <section class="bloque">
+        <h2>{m.practicarTitulo}</h2>
+        <p class="muted">{m.practicarLead}</p>
+        <p class="muted">{m.practicarAviso}</p>
+        <a class="boton primario" href={`/${locale}/app/practicar/`}>{m.casaJugar}</a>
       </section>
     )}
 

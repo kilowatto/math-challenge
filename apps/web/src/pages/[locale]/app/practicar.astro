@@ -1,0 +1,133 @@
+---
+/**
+ * `/{locale}/app/practicar/` — **un adulto juega. Sin hijos, sin familia.**
+ *
+ * ─── Por qué existe ────────────────────────────────────────────────────────
+ *
+ * Math Challenge tiene dos modos y son igual de importantes: **familia** y
+ * **solo**. Hasta hoy solo se podía jugar en el primero, y no por una decisión
+ * de producto sino por accidente: la pantalla del reto vivía dentro de
+ * `/app/kids/jugar/`, detrás de cinco puertas que son todas del modo familia —
+ * tener un hijo creado, haber marcado el aparato como de la casa, elegir una
+ * cara y teclear un PIN de imágenes.
+ *
+ * Quien no tiene hijos no podía jugar **nada**. Ni siquiera el contenido de
+ * kinder, que no es «de niños»: es el principio de la escalera y hoy es lo
+ * único que el banco tiene autorado (653 ítems, 14 habilidades).
+ *
+ * ─── El motor nunca fue el problema ────────────────────────────────────────
+ *
+ * `/api/jugar` ya aceptaba una sesión de adulto y ya usaba `userId` como
+ * identidad del modelo, en un espacio de identificadores separado del de
+ * cualquier hijo. Comprobado en producción **antes** de escribir esta página:
+ *
+ *     POST /api/jugar?accion=siguiente   (solo con la cookie de adulto)
+ *     → 200 · formato "flash" · «¿Cuántos patitos viste?» · 2 opciones
+ *
+ * Lo único que faltaba era esto: una URL a la que llegar.
+ *
+ * ─── Lo que esta pantalla NO pide ──────────────────────────────────────────
+ *
+ * Ni `mc_h` ni PIN. Las dos protegen a un NIÑO en un aparato compartido
+ * (D-012): el PIN existe para que el hermano pequeño no entre al perfil del
+ * mayor. Un adulto ya demostró quién es con su sesión; pedirle un PIN de
+ * imágenes encima sería fricción sin nada detrás.
+ *
+ * Tampoco dice «tus hijos», ni «tu casa», ni «marca este aparato». Quien juega
+ * solo no tiene por qué leer una palabra sobre familia.
+ *
+ * ─── Lo que sí avisa, y por qué ────────────────────────────────────────────
+ *
+ * Que el banco hoy es de kinder. Decirlo por adelantado es la diferencia entre
+ * «esto es lo que hay por ahora» y «este producto es un juguete»: alguien que
+ * espera álgebra y recibe patitos sin aviso concluye lo segundo. Los niveles de
+ * adulto están decididos (D-034) y no construidos.
+ */
+import { LOCALES, isLocale, t, type Locale } from "../../../i18n";
+import { ruta } from "../../../i18n/rutas";
+import { rutaCasa } from "../../../lib/rutas-app";
+import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../../lib/sesiones";
+import Pantalla from "../../../components/reto/Pantalla.astro";
+import "../../../styles/reto.css";
+
+import en from "../../../i18n/reto/en.json";
+import esMX from "../../../i18n/reto/es-MX.json";
+import esES from "../../../i18n/reto/es-ES.json";
+import frFR from "../../../i18n/reto/fr-FR.json";
+import ptBR from "../../../i18n/reto/pt-BR.json";
+import ptPT from "../../../i18n/reto/pt-PT.json";
+import deDE from "../../../i18n/reto/de-DE.json";
+
+// Lee cookies, así que la sirve el Worker en cada petición.
+export const prerender = false;
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale: rawLocale } = Astro.params;
+if (!isLocale(rawLocale)) return Astro.redirect("/en/");
+const locale: Locale = rawLocale;
+const m = t(locale);
+
+const env = (Astro.locals as any).runtime?.env;
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(
+      env.SESSION_KV,
+      leerCookies(Astro.request.headers.get("cookie"))[COOKIE_ADULTO],
+    )
+  : null;
+
+// `?cambiar=1` para no chocar con la redirección de #339: sin eso,
+// /practicar/ → /entrar/ → (hay pista) → /app/ → … y el navegador gira.
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+const CATALOGOS: Record<string, Record<string, unknown>> = {
+  en, "es-MX": esMX, "es-ES": esES, "fr-FR": frFR, "pt-BR": ptBR, "pt-PT": ptPT, "de-DE": deDE,
+};
+const c = CATALOGOS[locale] ?? en;
+const texto = (clave: string, respaldo: string) =>
+  typeof c[clave] === "string" ? (c[clave] as string) : respaldo;
+
+// Los mismos rótulos que el niño: es el mismo reto. Solo cambia «terminar»,
+// que aquí devuelve a la casa y no a la reja de caras.
+const rotulos = {
+  bien: texto("juego.bien", "That's it!"),
+  otra: texto("juego.otra", "Not this time. Look again."),
+  siguiente: texto("juego.siguiente", "Next"),
+  salir: texto("juego.salir", "Done for now"),
+  cargando: texto("juego.cargando", "Here it comes…"),
+  mirar: texto("juego.mirar", "Look!"),
+};
+---
+
+<!doctype html>
+<html lang={locale} dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{m.practicarTitulo}</title>
+    {/* Detrás de sesión: un buscador no debe tener nunca esta URL. */}
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+  </head>
+  <body class="jugar-body">
+    <p class="aviso-banco">{m.practicarAviso}</p>
+    <Pantalla locale={locale} rotulos={rotulos} salirA={rutaCasa(locale)} />
+
+    <style>
+      /* Va arriba y en voz del sistema: es una nota del producto, no parte del
+         reto. Discreta a propósito — se lee una vez y deja de importar. */
+      .aviso-banco {
+        max-inline-size: var(--measure, 46rem);
+        margin: 0 auto;
+        padding: 0.75rem 1.25rem;
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+        line-height: var(--leading-body);
+        color: var(--color-text-muted);
+        text-align: center;
+      }
+    </style>
+  </body>
+</html>

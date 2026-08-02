@@ -25,6 +25,7 @@
 import { App } from "astro/app";
 import { handle } from "@astrojs/cloudflare/handler";
 import { RateLimiter } from "./lib/ratelimiter";
+import { Aprendiz } from "./lib/aprendiz";
 
 export function createExports(manifest: ConstructorParameters<typeof App>[0]) {
   const app = new App(manifest);
@@ -33,7 +34,11 @@ export function createExports(manifest: ConstructorParameters<typeof App>[0]) {
       fetch: (request: Request, env: never, context: ExecutionContext) =>
         handle(manifest, app, request, env, context),
     },
-    // La clase del Durable Object viaja aquí, junto al manejador.
+    // Las clases de los Durable Objects viajan aquí, junto al manejador. Cada
+    // una que se añada tiene que estar TAMBIÉN en `namedExports` de
+    // `astro.config.mjs` y en `migrations` de `wrangler.jsonc` — son tres
+    // sitios y olvidar cualquiera de los tres rompe el despliegue distinto.
     RateLimiter,
+    Aprendiz,
   };
 }

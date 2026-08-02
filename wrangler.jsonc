@@ -102,6 +102,13 @@
       {
         "name": "RATE_LIMITER",
         "class_name": "RateLimiter"
+      },
+      {
+        // math-challenge-learner-do — el estado vivo del modelo adaptativo,
+        // UN OBJETO POR NIÑO (`idFromName(child_profile_id)`). Ver
+        // `apps/web/src/lib/aprendiz.ts` y docs/infrastructure.md.
+        "name": "LEARNER_DO",
+        "class_name": "Aprendiz"
       }
     ]
   },
@@ -112,6 +119,13 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["RateLimiter"]
+    },
+    {
+      // Una migración de DO es INMUTABLE una vez desplegada: no se edita la v1
+      // para añadir una clase, se agrega una etiqueta nueva. Editar la v1 deja
+      // el despliegue rechazado con «migration tag mismatch».
+      "tag": "v2",
+      "new_sqlite_classes": ["Aprendiz"]
     }
   ],
 

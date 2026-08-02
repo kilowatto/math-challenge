@@ -90,6 +90,7 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 | 2026-07-31 | `math-challenge-config-kv` (KV) | `76bfad78247544bbb8fbd447a06ad933` | Esteban | Binding `CONFIG_KV` |
 | 2026-07-31 | `math-challenge-media` (R2) | *(el nombre es el id)* | Esteban | Binding `MEDIA_BUCKET`. Arte de la Sabana, imágenes y audio |
 | 2026-07-31 | `math-challenge-exports` (R2) | *(el nombre es el id)* | Esteban | Binding `EXPORTS_BUCKET`. Archivo frío y exportaciones COPPA/GDPR |
+| 2026-08-01 | `math-challenge-learner-do` (Durable Object, clase `Aprendiz`) | *(la clase es el id)* | Claude | Binding `LEARNER_DO`, migración de DO `v2` con `new_sqlite_classes`. **Un objeto por niño** (`idFromName(child_profile_id)`) — un DO global topa en 500-1.000 req/s (`mc-32` riesgo #2) y, sobre todo, hace imposible que borrar el perfil sea `deleteAll()`. Guarda **estado derivado**: estimaciones, contadores y fechas; jamás el intento crudo, que va a `math-challenge-attempts-ae`. Tres sitios hay que tocar para añadir una clase de DO y olvidar cualquiera rompe distinto: `worker.ts` (export con nombre), `astro.config.mjs` (`namedExports`) y `wrangler.jsonc` (binding + `migrations`) |
 
 > **Regla:** quien crea un recurso de Cloudflare escribe su renglón aquí en el
 > mismo PR (`CLAUDE.md` § Cloudflare).

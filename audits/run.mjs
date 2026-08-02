@@ -156,6 +156,7 @@ for (const prueba of [
   // bajarlas no rompería nada visible.
   "packages/motor/src/adaptativo.prueba.mjs",
   "packages/motor/src/programador.prueba.mjs",
+  "apps/web/src/lib/aprendiz.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

@@ -1,0 +1,234 @@
+---
+/*
+ * ─── Las hojas de estilo, que faltaban ──────────────────────────────────────
+ *
+ * `Base.astro` las importa y este layout no lo hacía, así que **toda pantalla
+ * privada se renderizaba sin un solo token**: sin colores, sin tipografía, sin
+ * espaciado. Las páginas se veían como HTML crudo de 1995.
+ *
+ * No falla en ningún sitio y no lo atrapa ningún auditor: los estilos de cada
+ * componente compilan bien, referencian `var(--color-text)` como deben, y esa
+ * variable sencillamente no existe en el documento. El dueño lo encontró
+ * mirando su propia pantalla de cuenta.
+ *
+ * `fonts.css` y `tokens.css` son obligatorias. `plataformas.css` también:
+ * D-031 y D-064 dependen de `data-platform` y de las consultas de
+ * `display-mode`, y sin ella la navegación privada no sabe si está instalada.
+ */
+import "../styles/fonts.css";
+import "../styles/tokens.css";
+import "../styles/plataformas.css";
+import Rum from "../components/Rum.astro";
+import Instalar from "../components/Instalar.astro";
+import { t, type Locale } from "../i18n";
+import { plataformaDe } from "../lib/plataforma";
+
+/**
+ * Layout del área privada — `/app/**` fuera de `app/kids/**`. D-065.
+ *
+ * ─── Por qué no es `layouts/Base.astro` ────────────────────────────────────
+ *
+ * `Base.astro` es el sitio público: nav de marketing (Origen, Investigación,
+ * Código abierto…) y "Entrar"/"Crear cuenta" como acciones principales. Nada
+ * de eso tiene sentido para alguien que YA inició sesión — y hasta D-065 era
+ * exactamente lo que `app/index.astro` heredaba, sin que ningún comentario lo
+ * explicara: la única superficie de `/app/**` sin una razón escrita para su
+ * propio layout, en un repo donde `app/kids/**` documenta la suya tres veces.
+ *
+ * ─── Qué SÍ comparte con `Base.astro` ──────────────────────────────────────
+ *
+ * Los tokens (`tokens.css`/`fonts.css`), la detección de plataforma (D-031,
+ * mismo mecanismo: servidor primero, script bloqueante de respaldo) y
+ * `Instalar.astro` — esto es superficie de ADULTO, y quien vuelve aquí a
+ * diario es exactamente a quien más le conviene instalar. Lo que NO comparte
+ * es la navegación en sí: esta es una franja de pestañas simple, no los
+ * cuatro bloques de D-064, porque aquí no hay un nav de marketing con el que
+ * competir — esa complejidad existía para resolver un problema que esta
+ * pantalla no tiene.
+ *
+ * ─── RUM: SERIO, no PUBLICO ────────────────────────────────────────────────
+ *
+ * `Base.astro` manda `banda="PUBLICO"`. Esto es adulto autenticado — D-037 sí
+ * permite medir aquí, pero con la banda real, no con la del sitio de marketing.
+ * `audits/telemetria-infantil.mjs` exige que nunca sea KINDER/PRIMARIA; SERIO
+ * pasa esa regla y además evita mezclar tráfico de marketing con uso real del
+ * producto en el mismo balde de métricas.
+ */
+
+interface Pestana {
+  clave: string;
+  label: string;
+  href: string;
+  activa: boolean;
+  proximamente?: boolean;
+}
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  /** Vacío = sin franja de pestañas (una sola sección no necesita menú). */
+  pestanas?: Pestana[];
+}
+
+const { locale, title, description, pestanas = [] } = Astro.props;
+const m = t(locale);
+const plataforma = plataformaDe(Astro.request.headers);
+---
+
+<!doctype html>
+<html lang={m.htmlLang} data-platform={plataforma} data-band="SERIO">
+  <head>
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        var ua = navigator.userAgent;
+        var uad = navigator.userAgentData;
+        var p = "otro";
+        var plat = uad && uad.platform ? String(uad.platform).toLowerCase() : "";
+        var movil = uad ? !!uad.mobile : /\bMobile\b/.test(ua);
+        if (plat) {
+          p = plat === "android" ? "android"
+            : plat === "ios" ? "ios"
+            : plat === "windows" ? "windows"
+            : plat === "macos" ? (movil ? "ios" : "macos")
+            : "otro";
+        } else if (/\bAndroid\b/i.test(ua)) p = "android";
+        else if (/\b(iPhone|iPad|iPod)\b/i.test(ua)) p = "ios";
+        else if (/\bMacintosh\b/i.test(ua)) p = (navigator.maxTouchPoints > 1) ? "ios" : "macos";
+        else if (/\bWindows\b/i.test(ua)) p = "windows";
+        d.setAttribute("data-platform", p);
+      })();
+    </script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    {/* Autenticada, nunca indexada. */}
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#F36B1C" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="preload" href="/fonts/raleway-var-latin.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+
+  <body>
+    <a class="skip" href="#main">{m.skipToContent}</a>
+
+    {pestanas.length > 1 && (
+      <nav class="pestanas" aria-label={title}>
+        <ul>
+          {pestanas.map((p) => (
+            <li>
+              <a href={p.href} aria-current={p.activa ? "page" : undefined}>
+                {p.label}
+                {p.proximamente && <span class="chip">{m.casaProximamenteEtiqueta}</span>}
+              </a>
+            </li>
+          ))}
+        </ul>
+        {/* Salir vive aquí, no en el contenido de una pestaña: es transversal,
+            no depende de qué pestaña estés viendo, y así ninguna página del
+            área privada tiene que repetirla.
+
+            Botón con JS, no una regla nueva de D-064: esa decisión restringe
+            la ESTRUCTURA de la navegación (nunca dos apiladas, sin librería),
+            no cada botón de una pantalla de cuenta — el passkey y el cambio
+            de contraseña de esta misma superficie ya son JS-mejorados por la
+            misma razón. `/api/casa?accion=salir` responde JSON, no una
+            redirección; un <form> normal aterrizaría en JSON crudo. */}
+        <button type="button" class="salir" id="salir-privada">{m.casaSalir}</button>
+      </nav>
+    )}
+
+    <main id="main">
+      <slot />
+      <Instalar locale={locale} plataforma={plataforma} />
+    </main>
+
+    <style>
+      .skip {
+        position: absolute;
+        inset-inline-start: -9999px;
+        padding: 0.5rem 1rem;
+        background: var(--color-accent);
+        color: var(--color-on-accent);
+      }
+      .skip:focus { inset-inline-start: 0; z-index: 10; }
+
+      /* D-036: la navegación habla en la voz del sistema, no en Raleway. */
+      nav.pestanas {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 10;
+        display: flex;
+        align-items: stretch;
+        background: var(--color-surface);
+        border-block-end: 1px solid var(--color-border);
+        font-family: var(--font-sistema);
+      }
+      nav.pestanas ul {
+        list-style: none;
+        display: flex;
+        flex: 1 1 auto;
+        overflow-x: auto;
+        scrollbar-width: none;
+        gap: 0 0.5rem;
+        min-inline-size: 0;
+        padding-inline-start: 1.25rem;
+      }
+      nav.pestanas ul::-webkit-scrollbar { display: none; }
+      nav.pestanas li { flex: 0 0 auto; }
+      nav.pestanas a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        min-block-size: var(--tap-primaria);
+        padding-inline: 0.75rem;
+        color: var(--color-text-muted);
+        text-decoration: none;
+        font-size: var(--text-sm, var(--text-xs));
+        white-space: nowrap;
+        border-block-end: 3px solid transparent;
+      }
+      nav.pestanas a[aria-current="page"] {
+        color: var(--color-text);
+        font-weight: var(--weight-subtitle);
+        border-block-end-color: var(--color-accent);
+      }
+      nav.pestanas .chip {
+        font-size: 0.65rem;
+        color: var(--color-text-muted);
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        padding-inline: 0.4rem;
+      }
+      nav.pestanas .salir {
+        flex: 0 0 auto;
+        margin-inline-start: auto;
+        min-block-size: var(--tap-primaria);
+        padding-inline: 0.75rem;
+        color: var(--color-text-muted);
+        background: none;
+        border: 0;
+        font-family: var(--font-sistema);
+        font-size: var(--text-sm, var(--text-xs));
+        cursor: pointer;
+      }
+      nav.pestanas .salir:focus-visible { outline: 3px solid var(--color-text); outline-offset: -3px; }
+
+      main#main { max-inline-size: var(--measure, 46rem); margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+    </style>
+
+    <Rum banda="SERIO" locale={locale} />
+
+    <script define:vars={{ portada: `/${locale}/` }}>
+      document.getElementById("salir-privada")?.addEventListener("click", async (e) => {
+        e.target.disabled = true;
+        await fetch("/api/casa?accion=salir", { method: "POST" }).catch(() => {});
+        location.href = portada;
+      });
+    </script>
+  </body>
+</html>

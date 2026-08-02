@@ -176,5 +176,6 @@
   "perfilDatos": "Daten",
   "perfilDesde": "Konto erstellt am",
   "perfilLlaveDesde": "Hinzugefügt am",
-  "perfilSinLlaves": "Noch keine Passkeys."
+  "perfilSinLlaves": "Noch keine Passkeys.",
+  "signinPasskeyDesconocida": "Dieser Passkey ist hier noch nicht registriert. Melde dich mit deinem Passwort an und füge ihn in deinem Konto hinzu."
 }

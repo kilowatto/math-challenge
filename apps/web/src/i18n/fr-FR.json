@@ -176,5 +176,6 @@
   "perfilDatos": "Informations",
   "perfilDesde": "Compte créé le",
   "perfilLlaveDesde": "Ajoutée le",
-  "perfilSinLlaves": "Pas encore de clé d'accès."
+  "perfilSinLlaves": "Pas encore de clé d'accès.",
+  "signinPasskeyDesconocida": "Cette clé n'est pas encore enregistrée ici. Connecte-toi avec ton mot de passe, puis ajoute-la depuis ton compte."
 }

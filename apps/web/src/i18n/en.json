@@ -176,5 +176,6 @@
   "perfilDatos": "Details",
   "perfilDesde": "Member since",
   "perfilLlaveDesde": "Added",
-  "perfilSinLlaves": "No passkeys yet."
+  "perfilSinLlaves": "No passkeys yet.",
+  "signinPasskeyDesconocida": "That passkey isn't registered here yet. Sign in with your password, then add one from your account."
 }

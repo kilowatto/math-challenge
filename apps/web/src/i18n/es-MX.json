@@ -176,5 +176,6 @@
   "perfilDatos": "Datos",
   "perfilDesde": "Cuenta creada el",
   "perfilLlaveDesde": "Agregada el",
-  "perfilSinLlaves": "Todavía no tienes llaves de acceso."
+  "perfilSinLlaves": "Todavía no tienes llaves de acceso.",
+  "signinPasskeyDesconocida": "Esa llave todavía no está registrada aquí. Entra con tu contraseña y agrégala desde tu cuenta."
 }

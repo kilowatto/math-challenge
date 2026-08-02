@@ -2074,3 +2074,158 @@ dependencia nueva — no encaja en "arte" de Recraft ni en "pieza compleja de in
 per CLAUDE.md § Imágenes, así que se resuelve como glifo de línea simple, monocromo, en SVG
 inline con `currentColor`, sin pasar por ninguna de las dos herramientas de imagen); y el
 detalle exacto del riel de iPad, que queda para cuando se construya esa pieza.
+
+---
+
+## D-065 — El área privada tiene su propio layout, y sus pestañas dependen de la cuenta real · 2026-08-02
+
+**Origen:** el dueño reportó, con una captura real de "Tu casa" (el panel del padre) ya con
+sesión abierta, que seguía enseñando el nav de MARKETING — "Entrar"/"Crear cuenta" como acción
+principal para alguien que ya había entrado. La investigación interna confirmó que era omisión,
+no decisión: los tres archivos de `app/kids/**` tienen razonamiento extenso y citado para NO usar
+`Base.astro` (cero telemetría de niño, cero navegación de marca, cero JavaScript — línea roja
+#2, D-037); `app/index.astro` y `app/signin.astro` eran los dos únicos archivos bajo `/app/**`
+sin un solo comentario que explicara su elección de layout.
+
+**El hallazgo de fondo no era de layout: era de modelo de datos.** La pantalla asumía que todo
+adulto es un padre. `users.is_learner` existe desde la migración 0001 —"¿este adulto usa el
+producto para sí mismo?"— y nada río abajo lo leía nunca. Un adulto que se registró por
+`registro-aprendo` veía la misma sección "Tus hijos" vacía, sin sentido para él, y **sin ningún
+lugar a donde ir**: no existe pantalla de práctica para un adulto que aprende solo (F5b/F10, D-034,
+sin construir todavía).
+
+**Decisión del dueño**, tras investigar `mc-20`/`mc-21`/`mc-22`/`mc-23`, `mc-49`, y el análogo
+real más cercano (Google Family Link, `mc-50`), en dos rondas de preguntas de opción múltiple más
+una petición explícita de replantear el primer borrador cuando el dueño señaló el hueco de
+"modo solo":
+
+1. **`layouts/Privada.astro`**, no `Base.astro`, para toda pantalla autenticada de adulto fuera
+   de `app/kids/**`. Tokens SERIO (`bandas.css`, oscuro por defecto), detección de plataforma
+   igual que el sitio público (D-031), `Instalar.astro` (esta SÍ es superficie donde instalar
+   tiene sentido), y `Rum banda="SERIO"` — no `PUBLICO`, que mezclaría tráfico de marketing con
+   uso real del producto en el mismo balde de métricas.
+2. **Una franja de pestañas simple, fija arriba — no los cuatro bloques de D-064.** Esta pantalla
+   tiene 2-5 destinos, no "6 secciones + desbordamiento compitiendo con un nav de marketing": el
+   problema que la máquina de D-064 resuelve no existe aquí. Family Link usa exactamente este
+   patrón (3 pestañas fijas) para el mismo tipo de cuenta —un adulto gestionando el uso de un
+   menor.
+3. **Las pestañas se derivan de lo que la cuenta REALMENTE tiene, no de por dónde se registró.**
+   `esFamilia` = tiene ≥1 hijo. `esSolo` = `users.is_learner = 1`. No son excluyentes — la
+   migración ya documentaba que una persona puede ser las dos cosas (cita al propio dueño como
+   ejemplo). Con ninguna de las dos (ej. cuenta de maestro, F9 sin construir), la página redirige
+   directo a `/app/perfil/`: una pantalla con una sola pestaña no es una pantalla.
+4. **Tope de 5** (HIG, Material 3 — mismo límite que `mc-49` ya fijó para el sitio público).
+5. **Progreso, Límite de pantalla (F8, D-057) y Practicar (F5b/F10, D-034) se enseñan ya,
+   marcadas "Próximamente".** El dueño prefirió explícitamente dejar el hueco visible ahora a
+   rehacer la navegación cuando esas fases lleguen de verdad.
+6. **La pestaña de aterrizaje es la primera REAL, no la primera de la lista** — un aprendiz solo
+   vería "Practicar" (próximamente) como bienvenida si el orden mandara, un callejón sin salida
+   en la primera pantalla que ve. "Cuenta" siempre es real.
+7. **"Cuenta" (passkey, contraseña) vive en `/app/perfil/`, una ruta separada — no una vista
+   dentro de `app/index.astro`.** División de trabajo en paralelo con otra sesión: el layout y las
+   pestañas van aquí; el contenido de cuenta, aparte. "Salir" queda en el propio `Privada.astro`
+   (la navegación compartida), porque es transversal y no depende de qué pestaña se esté viendo.
+8. **El lineamiento para las bandas de niño futuras (PRIMARIA, SECUNDARIA) se escribe ya, no se
+   pospone** (el dueño lo pidió explícitamente en vez de esperar a que esas fases arranquen): cero
+   navegación de cuenta, siempre — la rejilla de caras sigue siendo la navegación completa en
+   cualquier banda de niño. Lo que cambia por banda es la DENSIDAD de contenido dentro de la
+   pantalla de práctica (`mc-21`: franja ligera de "dónde estoy"; `mc-22`: riel lateral solo en
+   escritorio), nunca una estructura de cuenta. Un niño nunca llega a `Privada.astro` — ese layout
+   es de adulto por construcción.
+
+**Investigación relacionada:** `mc-50`. Enmienda implícita de D-064 (aclara que su alcance era
+siempre el sitio público, nunca `/app/**`) y agrega `docs/guia-de-estilo.md` § Navegación privada.
+
+**Lo que esto no resuelve todavía:** cuándo "Practicar" pasa de próximamente a real depende de
+F5b/F10, sin fecha. Si F9 (maestro/salón) llega a construirse, esta decisión no dice si el
+maestro recibe una 6ª pestaña aquí o un área separada — el tope de 5 asumía familia+aprendiz, no
+maestro; queda como pregunta abierta para quien construya F9.
+
+---
+
+## D-066 — Lo que separa JR de PRO es el PERFIL, no el ítem · 2026-08-02
+
+**Decisión del dueño**, cierra la duda §9.
+
+D-017 le da a JR y PRO la misma fila (`N11–N12`) y D-010 les da parámetros
+distintos (`d=30, a=0.8` contra `d=20, a=1.0`). Los dos documentos son correctos
+por separado y juntos no decidían nada: dado un ítem de N11, no había regla que
+dijera cómo puntuarlo.
+
+**La banda sale de la cuenta.** El mismo problema de olimpiada vale distinto
+según quién lo resuelve — igual que un tiempo de 100 metros se juzga distinto en
+juvenil que en absoluto. El ítem no lleva banda.
+
+**Lo que cuesta, y hay que decirlo en la interfaz:** dos personas resolviendo
+exactamente el mismo reto ven puntajes distintos. En un tablero eso parece un
+error si nadie lo explica. La explicación no está escrita todavía.
+
+**Lo que esto NO resuelve:** cómo se decide si una cuenta es JR o PRO. Hoy
+`users` no tiene esa columna y no hay forma de elegirlo. Queda abierto.
+
+---
+
+## D-067 — `es-MX` y `fr-FR` se reintentan: nunca corrieron · 2026-08-02
+
+**Decisión del dueño**, cierra la duda §12. **Enmienda acotada a D-050.**
+
+De los nueve agentes de traducción, dos murieron antes de traducir una línea:
+`blocked by safety classifier: Stage 2 classifier error`. El propio mensaje dice
+que suele ser transitorio.
+
+Son exactamente los dos locales que seguían en cero y los dos mercados grandes.
+
+**Reintentar esos dos NO es traducción nueva** — que es lo que D-050 pausa. Es
+terminar la que ya se lanzó y no llegó a ejecutarse. Se anota como enmienda
+explícita y con fecha para que nadie lea después que la pausa se saltó.
+
+**El límite es estricto: SOLO esos dos.** Cualquier otro locale sigue pausado.
+
+**Lo que no se investigó:** por qué el clasificador bloqueó justo esos dos de
+nueve. Puede ser azar y puede ser algo del contenido; el dueño eligió reintentar
+antes que averiguarlo, y si vuelve a bloquear, eso ya no es azar.
+
+---
+
+## D-068 — Las 421 páginas se miran con capturas automáticas · 2026-08-02
+
+**Decisión del dueño**, cierra la duda §8 — «el hueco más grande que tiene hoy el
+proyecto», escrito así desde que se abrió.
+
+Hay 421 páginas verificadas con `curl`: códigos 200, JSON-LD, hreflang,
+presupuestos de peso. **Ninguna persona ha mirado cómo se ven.** Un `curl` no ve
+un texto que se sale de su caja, ni un contraste insuficiente, ni una tabla que
+desborda en un iPad en Split View — que es literalmente lo que
+`ipad-usabilidad.mjs` declara que no puede comprobar.
+
+**Un navegador real recorre las 421 y guarda una imagen de cada una.** Encuentra
+la clase de fallo que ningún auditor estático ve.
+
+**Lo que cuesta:** 421 imágenes que alguien tiene que mirar, y la mayoría estarán
+bien. Es trabajo humano real y no se puede automatizar la parte de mirar.
+
+**Y lo que esto NO sustituye:** que un niño de cuatro años se siente delante. Una
+captura dice si el marco de diez se dibuja; no dice si se entiende.
+
+---
+
+## D-069 — Ningún reporte de un agente se actúa sin verificarlo con un comando · 2026-08-02
+
+**Decisión del dueño**, cierra la duda §13. **Es una regla, no una preferencia.**
+
+Ya pasó dos veces. Un agente reportó que `de-DE/mc-48` tenía «7 literales
+perdidos, `WCAG 2.2` convertido a `WCAG 2,2` siete veces» — con conteo exacto y
+una explicación correcta de por qué sería grave: una versión de norma no es una
+cantidad y no lleva coma. `grep "WCAG 2,2"` no devuelve nada. El defecto no
+existía. Antes había pasado igual con `locale-pt-PT`.
+
+**El patrón es el peligroso: la explicación es buena y el hecho es falso.** Un
+informe convincente sobre un defecto inventado cuesta más que uno confuso, porque
+se actúa sobre él.
+
+**La regla:** un hallazgo de agente no se toca hasta re-ejecutar la comprobación
+que lo demuestra. Es la regla 2 de commit —«toda afirmación factual debe poder
+re-ejecutarse»— aplicada a los agentes.
+
+**Lo que cuesta:** un paso extra en cada hallazgo, incluidos los ciertos. Se paga
+igual, porque distinguirlos antes de verificar es exactamente lo imposible.

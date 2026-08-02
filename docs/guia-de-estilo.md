@@ -282,6 +282,74 @@ existe en el resto del sitio.
 
 ---
 
+## Navegación privada — el área autenticada nunca hereda el nav público (D-065)
+
+`layouts/Base.astro` es el sitio de MARKETING. Ninguna pantalla detrás de
+sesión lo usa — ni las de niño (`app/kids/**`, que ya tenían su propio
+razonamiento citado tres veces) ni las de adulto (`app/index.astro`,
+`app/signin.astro`, antes de D-065). Toda pantalla autenticada de adulto usa
+`layouts/Privada.astro`; toda pantalla de niño sigue construyendo su propio
+árbol mínimo, sin heredar ningún layout compartido. Investigación completa
+en `mc-50`.
+
+### El área de adulto (`layouts/Privada.astro`)
+
+Una franja de pestañas simple, fija arriba — **no** los cuatro bloques de
+D-064. Esa máquina existe para un problema que aquí no hay: 2-5 destinos,
+sin un nav de marketing con el que competir ni una pestaña de navegador que
+evitar. Family Link —el análogo real más cercano, un adulto gestionando el
+uso de un menor— resuelve lo mismo con exactamente este patrón: pestañas
+fijas, sin importar si la app está instalada.
+
+**Las pestañas se derivan de la cuenta real, nunca de la puerta de
+registro:**
+
+| Señal | Pestaña |
+|---|---|
+| `hijos.length > 0` | Hijos, Progreso*, Límite de pantalla* |
+| `users.is_learner = 1` | Practicar* |
+| Siempre | Cuenta (`/app/perfil/`, ruta aparte — passkey, contraseña) |
+
+\* "Próximamente" hasta que F8 (Progreso, Límite de pantalla) o F5b/F10
+(Practicar) existan de verdad. Se enseñan igual: el hueco visible ahora
+cuesta menos que rehacer la navegación cuando esas fases lleguen.
+
+Tope de 5 (HIG, Material 3 — el mismo límite que `mc-49` ya fijó para el
+sitio público). Sin ninguna pestaña real propia (ej. cuenta de maestro, F9
+sin construir), la página redirige directo a `/app/perfil/` — una pantalla
+con una sola pestaña no es una pantalla. La pestaña de aterrizaje es la
+primera REAL, no la primera de la lista: un aprendiz solo no debe abrir la
+app y encontrar un "Próximamente" como bienvenida.
+
+Tokens SERIO (`bandas.css`, oscuro por defecto) — es superficie de adulto
+por construcción, nunca de niño. `Rum banda="SERIO"`, no `PUBLICO`: D-037
+permite medir aquí, pero mezclar tráfico de marketing con uso real del
+producto en el mismo balde de métricas sería un dato mentiroso.
+
+### Las bandas de niño futuras (PRIMARIA, SECUNDARIA): cero navegación de cuenta, siempre
+
+Esto se decidió ahora, antes de que esas fases arranquen, a pedido expreso
+del dueño — para no tener que redecidirlo por partes. La regla que
+`app/kids/**` ya aplica hoy para KINDER **no cambia por banda**: la rejilla
+de caras es la navegación completa, máximo 2 toques de abrir la app a
+"respondiendo un reto", cero menú, cero configuración de cuenta a la vista
+de un niño. Ningún niño llega nunca a `layouts/Privada.astro` — ese layout
+es de adulto por construcción, no por convención que alguien podría romper
+sin querer.
+
+Lo que sí cambia por banda es la **densidad de contenido dentro de la
+pantalla de práctica**, nunca la navegación de cuenta:
+
+- **PRIMARIA** (`mc-21`): una franja ligera de "dónde estoy en la sesión"
+  (progreso/racha) — es la primera banda donde ese contexto tiene sentido,
+  pero sigue sin ser un menú.
+- **SECUNDARIA** (`mc-22`): riel lateral persistente **solo en escritorio**
+  dentro de la pantalla de práctica; en teléfono, el teclado numérico anclado
+  abajo, sin chrome añadido.
+- **Adulto/PRO, cuando "Practicar" pase de próximamente a real** (`mc-23`,
+  F5b/F10): navegación de salto visible (saltar de tema) **dentro** de esa
+  pantalla — vive en el mismo `Privada.astro`, no en un layout nuevo.
+
 ## iPad — primera clase, no un teléfono ancho (D-041)
 
 El iPad y el teléfono se diseñan por separado. Lo que sigue es la tabla que

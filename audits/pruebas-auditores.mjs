@@ -257,6 +257,13 @@ const CASOS = [
     contenido: '---\nimport Framework7 from "framework7";\n---\n<div></div>\n',
     espera: "framework7",
   },
+  {
+    auditor: "area-privada",
+    que: "una pantalla de /app/ que importa el layout público en vez del privado",
+    archivo: "apps/web/src/pages/[locale]/app/prueba-layout.astro",
+    contenido: '---\nimport Base from "../../../layouts/Base.astro";\n---\n<Base locale="en" seccion={null} title="x" description="x"></Base>\n',
+    espera: "Base.astro",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

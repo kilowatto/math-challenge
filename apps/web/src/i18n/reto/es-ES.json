@@ -76,5 +76,30 @@
   "juego.siguiente": "Siguiente",
   "juego.salir": "Ya he terminado",
   "juego.cargando": "Ahí va…",
-  "juego.mirar": "¡Mira!"
+  "juego.mirar": "¡Mira!",
+  "error.conto_los_dos_grupos": [
+    "Has contado los dos grupos juntos.",
+    "Solo sobran los que se han quedado sin gorro."
+  ],
+  "error.dijo_otro_numero_de_la_cuenta": [
+    "Ese número ha salido al contar, pero no es el total.",
+    "El total es el ÚLTIMO que has dicho."
+  ],
+  "error.conto_desde_uno": [
+    "Has empezado otra vez desde el uno.",
+    "La recta ya te dice dónde estás."
+  ],
+  "error.siguio_el_patron_al_reves": [
+    "Has seguido el patrón al revés.",
+    "Mira los dos últimos y sigue hacia delante."
+  ],
+  "error.repitio_el_ultimo": [
+    "Has repetido el último.",
+    "En un patrón AB se van turnando."
+  ],
+  "k.unoauno.gorros": "{patos} patos y {gorros} gorros. ¿Cuántos patos se quedan sin gorro?",
+  "k.cardinalidad.ultimo": "Larry ha contado hasta {n}. Entonces, ¿cuántos patos hay?",
+  "k.recta.hueco": "¿Qué número va en el hueco, justo después del {antes}?",
+  "k.marco.faltan": "El marco tiene {llenas} llenas. ¿Cuántas faltan para llenarlo?",
+  "k.patron.sigue": "El patrón se repite y se repite. ¿Cuál sigue?"
 }

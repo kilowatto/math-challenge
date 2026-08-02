@@ -426,10 +426,268 @@ export const K13: Plantilla = {
 };
 
 /** Las plantillas que hoy generan. Las otras siete esperan curaduría humana. */
-export const PLANTILLAS: Plantilla[] = [K01, K02, K03, K04, K07, K10, K11, K12, K13];
+// ---------------------------------------------------------------------------
+// K05 — correspondencia uno a uno
+// ---------------------------------------------------------------------------
+//
+// **Uno a uno no es contar.** Es la idea de que a cada pato le toca un gorro, y
+// se puede saber quién sobra SIN contar ninguno de los dos grupos — emparejando.
+// Por eso el enunciado pregunta cuántos se quedan sin gorro y no cuántos hay:
+// preguntar «cuántos» convertiría este ítem en uno de K03.
+//
+// Los distractores nombran los dos errores reales: sumar los dos grupos (contó
+// en vez de emparejar) y responder con el grupo más grande (leyó «cuántos
+// patos»).
+export const K05: Plantilla = {
+  habilidad: "K05",
+  formato: "toca_la_respuesta",
+  nivel: 1,
+  proposito: "analizar",
+  generar({ patos, gorros }, variacion) {
+    const sobran = patos - gorros;
+    return {
+      id: id("K05", { patos, gorros }),
+      habilidad: "K05",
+      nivel: 1,
+      formato: "toca_la_respuesta",
+      enunciado: { clave: "k.unoauno.gorros", vars: { patos, gorros } },
+      respuesta: { valor: sobran, tol: 0 },
+      errores: [
+        { valor: patos + gorros, causa: "error.conto_los_dos_grupos" },
+        { valor: patos, causa: "error.puso_el_total" },
+        { valor: gorros, causa: "error.repitio_la_parte" },
+      ].filter((e) => e.valor !== sobran),
+      proposito: "analizar",
+      contexto: "los patos del lago de Larry",
+      variacion,
+    };
+  },
+  parametros() {
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
+    for (const patos of rango(2, 8)) {
+      for (const gorros of rango(1, patos)) {
+        out.push({
+          params: { patos, gorros },
+          variacion: {
+            varia: `sobran ${patos - gorros}`,
+            constante: "emparejar uno con uno, sin contar",
+            por_que: "incluir el caso en que no sobra ninguno es lo que impide aprender «siempre sobra alguno»",
+          },
+        });
+      }
+    }
+    return out;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// K06 — cardinalidad
+// ---------------------------------------------------------------------------
+//
+// **El último número que dices ES cuántos hay.** Suena obvio a un adulto y no lo
+// es a los cuatro años: un niño puede contar «uno, dos, tres, cuatro»
+// perfectamente y, al preguntarle cuántos hay, volver a contar. Esa es la
+// distinción entre recitar la secuencia y entender que el último número resume
+// el conjunto.
+//
+// El distractor que importa es `error.dijo_otro_numero_de_la_cuenta`: un número
+// que SÍ salió al contar pero no es el último. Un distractor al azar no habría
+// distinguido a quien no entiende la cardinalidad de quien no sabe contar.
+export const K06: Plantilla = {
+  habilidad: "K06",
+  formato: "toca_la_respuesta",
+  nivel: 1,
+  proposito: "interpretar",
+  generar({ n }, variacion) {
+    return {
+      id: id("K06", { n }),
+      habilidad: "K06",
+      nivel: 1,
+      formato: "toca_la_respuesta",
+      enunciado: { clave: "k.cardinalidad.ultimo", vars: { n } },
+      respuesta: { valor: n, tol: 0 },
+      errores: [
+        // Un número intermedio de la propia cuenta, no uno cualquiera.
+        { valor: Math.max(1, n - 2), causa: "error.dijo_otro_numero_de_la_cuenta" },
+        { valor: n - 1, causa: "error.se_salto_uno" },
+        { valor: n + 1, causa: "error.conto_uno_dos_veces" },
+      ].filter((e) => e.valor !== n && e.valor > 0),
+      proposito: "interpretar",
+      contexto: "los patos del lago de Larry",
+      variacion,
+    };
+  },
+  parametros() {
+    return rango(3, 10).map((n) => ({
+      params: { n },
+      variacion: {
+        varia: `la cuenta llega a ${n}`,
+        constante: "la pregunta es siempre «entonces cuántos hay»",
+        por_que: "cambiar solo el final deja ver si el niño recita o si entiende que el último resume",
+      },
+    }));
+  },
+};
+
+// ---------------------------------------------------------------------------
+// K08 — recta numérica 0-10
+// ---------------------------------------------------------------------------
+//
+// La recta es lo que convierte el conteo en **posición**: el 7 no es solo lo que
+// sigue del 6, está en un sitio. `error.conto_desde_uno` nombra el error propio
+// de esta habilidad — el niño que, en vez de leer la recta, vuelve a contar
+// desde el principio.
+export const K08: Plantilla = {
+  habilidad: "K08",
+  formato: "toca_la_respuesta",
+  nivel: 2,
+  proposito: "interpretar",
+  generar({ antes }, variacion) {
+    const falta = antes + 1;
+    return {
+      id: id("K08", { antes }),
+      habilidad: "K08",
+      nivel: 2,
+      formato: "toca_la_respuesta",
+      enunciado: { clave: "k.recta.hueco", vars: { antes } },
+      respuesta: { valor: falta, tol: 0 },
+      errores: [
+        { valor: antes, causa: "error.repitio_la_parte" },
+        { valor: falta + 1, causa: "error.se_salto_uno" },
+        { valor: 1, causa: "error.conto_desde_uno" },
+      ].filter((e) => e.valor !== falta),
+      proposito: "interpretar",
+      variacion,
+    };
+  },
+  parametros() {
+    return rango(0, 9).map((antes) => ({
+      params: { antes },
+      variacion: {
+        varia: `el hueco está después del ${antes}`,
+        constante: "la recta va del 0 al 10 y se lee de izquierda a derecha",
+        por_que: "mover el hueco por toda la recta impide resolverlo por la posición en pantalla",
+      },
+    }));
+  },
+};
+
+// ---------------------------------------------------------------------------
+// K09 — marco de diez
+// ---------------------------------------------------------------------------
+//
+// El marco de diez enseña el 10 como referencia: seis llenas se VEN como «una
+// fila y una más», no como seis cosas contadas. Por eso la pregunta es cuántas
+// faltan y no cuántas hay.
+//
+// Es la misma pregunta que K10 —completar hasta un total— y se distingue en que
+// **aquí el total es siempre diez**. Esa constancia es el punto: el niño acaba
+// sabiendo los pares del diez sin contarlos.
+export const K09: Plantilla = {
+  habilidad: "K09",
+  formato: "arma_el_numero",
+  nivel: 2,
+  proposito: "crear",
+  generar({ llenas }, variacion) {
+    const faltan = 10 - llenas;
+    return {
+      id: id("K09", { llenas }),
+      habilidad: "K09",
+      nivel: 2,
+      formato: "arma_el_numero",
+      enunciado: { clave: "k.marco.faltan", vars: { llenas } },
+      respuesta: { valor: faltan, tol: 0 },
+      errores: [
+        { valor: 10, causa: "error.puso_el_total" },
+        { valor: llenas, causa: "error.repitio_la_parte" },
+        { valor: 10 + llenas, causa: "error.sumo_en_vez_de_completar" },
+      ].filter((e) => e.valor !== faltan),
+      proposito: "crear",
+      variacion,
+    };
+  },
+  parametros() {
+    return rango(1, 9).map((llenas) => ({
+      params: { llenas },
+      variacion: {
+        varia: `ya hay ${llenas} llenas`,
+        constante: "el marco siempre es de diez",
+        por_que: "el total constante es lo que hace que los pares del diez se aprendan de vista",
+      },
+    }));
+  },
+};
+
+// ---------------------------------------------------------------------------
+// K14 — patrones AB
+// ---------------------------------------------------------------------------
+//
+// **Un patrón no es una serie de cosas bonitas: es una regla.** El niño tiene
+// que ver que se alternan y decir cuál toca, no adivinar cuál le gusta.
+//
+// `largo` es cuántos elementos se enseñan antes del hueco, y **la respuesta es 0
+// o 1** —cuál de los dos dibujos— y no un conteo. Con `largo` par toca el
+// primero; con impar, el segundo. Los dos casos aparecen el mismo número de
+// veces a propósito: si el hueco siempre cayera en el mismo, el niño acertaría
+// tocando siempre lo mismo sin haber visto ningún patrón. Ese fallo ya ocurrió
+// una vez en este banco —en K07, donde el grupo mayor era siempre el segundo— y
+// está escrito en su encabezado.
+export const K14: Plantilla = {
+  habilidad: "K14",
+  formato: "toca_la_respuesta",
+  nivel: 1,
+  proposito: "analizar",
+  generar({ largo, primero }, variacion) {
+    // Con `largo` elementos ya puestos, el siguiente es el que ocupa la
+    // posición `largo` (contando desde 0) en la alternancia.
+    const sigue = (primero + largo) % 2;
+    return {
+      id: id("K14", { largo, primero }),
+      habilidad: "K14",
+      nivel: 1,
+      formato: "toca_la_respuesta",
+      enunciado: { clave: "k.patron.sigue", vars: { largo, primero } },
+      respuesta: { valor: sigue, tol: 0 },
+      errores: [
+        { valor: 1 - sigue, causa: "error.repitio_el_ultimo" },
+        { valor: (primero + largo + 1) % 2, causa: "error.siguio_el_patron_al_reves" },
+      ].filter((e) => e.valor !== sigue),
+      proposito: "analizar",
+      variacion,
+    };
+  },
+  parametros() {
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
+    for (const largo of rango(4, 9)) {
+      for (const primero of [0, 1]) {
+        out.push({
+          params: { largo, primero },
+          variacion: {
+            varia: `se enseñan ${largo} antes del hueco y empieza por el ${primero === 0 ? "primero" : "segundo"}`,
+            constante: "la regla es siempre alternar dos",
+            por_que: "alternar cuál empieza es lo que impide acertar tocando siempre el mismo dibujo",
+          },
+        });
+      }
+    }
+    return out;
+  },
+};
+
+export const PLANTILLAS: Plantilla[] = [
+  K01, K02, K03, K04, K05, K06, K07, K08, K09, K10, K11, K12, K13, K14,
+];
 
 /** Habilidades sin plantilla todavía, dichas en voz alta y no escondidas. */
-export const SIN_PLANTILLA: HabilidadKinder[] = ["K05", "K06", "K08", "K09", "K14"];
+/**
+ * Las habilidades sin plantilla. **Vacío desde F5**: las catorce están.
+ *
+ * Se queda como lista y no se borra porque es lo que hace visible el hueco el
+ * día que alguien añada una habilidad nueva a `HABILIDADES_KINDER` sin escribir
+ * su plantilla — sin esta lista, la habilidad existiría en la tabla y no
+ * produciría ni un ítem, en silencio.
+ */
+export const SIN_PLANTILLA: HabilidadKinder[] = [];
 
 /**
  * Genera el banco entero desde las plantillas.

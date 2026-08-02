@@ -76,5 +76,30 @@
   "juego.siguiente": "Next",
   "juego.salir": "Done for now",
   "juego.cargando": "Here it comes…",
-  "juego.mirar": "Look!"
+  "juego.mirar": "Look!",
+  "error.conto_los_dos_grupos": [
+    "You counted both groups together.",
+    "Only the ones with no hat are left over."
+  ],
+  "error.dijo_otro_numero_de_la_cuenta": [
+    "That number came up while counting, but it isn't the total.",
+    "The total is the LAST one you said."
+  ],
+  "error.conto_desde_uno": [
+    "You started again from one.",
+    "The line already tells you where you are."
+  ],
+  "error.siguio_el_patron_al_reves": [
+    "You went backwards in the pattern.",
+    "Look at the last two and keep going forward."
+  ],
+  "error.repitio_el_ultimo": [
+    "You repeated the last one.",
+    "In an AB pattern they take turns."
+  ],
+  "k.unoauno.gorros": "{patos} ducks and {gorros} hats. How many ducks get no hat?",
+  "k.cardinalidad.ultimo": "Larry counted up to {n}. So how many ducks are there?",
+  "k.recta.hueco": "Which number goes in the empty spot, right after {antes}?",
+  "k.marco.faltan": "The ten-frame has {llenas} filled. How many more to fill it?",
+  "k.patron.sigue": "The pattern goes on and on. Which one comes next?"
 }

@@ -451,3 +451,86 @@ además se decide aplicar, es cambiar dos tokens.
 pantalla de F2 depende de esto para funcionar. Pero `audits/contrast.mjs`,
 `axe-a11y` y `touch-targets` están en PENDING esperando que haya interfaz — ya la
 hay— y cuando se activen, esta pregunta hay que tenerla contestada.
+
+---
+
+## 21. La voz de Larry: medida contra Workers AI, no supuesta · 2026-08-02
+
+**El hecho.** El dueño pidió «revisa que las voces de Larry funcionen bien».
+**No hay voces que revisar:** F6 está diseñada al detalle en
+[`docs/planes/f6-larry-profe.md`](planes/f6-larry-profe.md) y no hay ni una línea
+de código de audio, ni un clip, ni nada en `math-challenge-media`. Las seis
+issues de F6 (#131-#137) están abiertas.
+
+Lo que sí se puede revisar hoy es **si la voz que F6 necesita existe en la
+plataforma**, y eso se midió en vez de repetir la investigación.
+
+### Lo que hay en Workers AI, comprobado llamándolo
+
+| locale | modelo | ¿sirve? |
+|---|---|---|
+| `en` | `@cf/deepgram/aura-2-en` | **sí** — Whisper lo devuelve al 1.00 de confianza |
+| `es-MX`, `es-ES` | `@cf/deepgram/aura-2-es` | **sí** — 0.81 en frase corta, 1.00 en frase larga |
+| `fr-FR` | — | **no** |
+| `pt-BR`, `pt-PT` | — | **no** |
+| `de-DE` | — | **no** |
+
+**Tres de siete.** Coincide con lo que `mc-42` avisaba, ahora con medición.
+
+### El hallazgo que no estaba en la investigación, y es una trampa
+
+**`@cf/myshell-ai/melotts` acepta `lang` y devuelve 200 y audio distinto para
+cada idioma — pero habla SIEMPRE en inglés.** No falla. No avisa. Devuelve más
+bytes para el francés que para el inglés, que es justo lo que haría un modelo que
+sí cambia de idioma.
+
+Se comprobó devolviendo el audio a `@cf/openai/whisper-large-v3-turbo`:
+
+```
+pedido  detectado  conf   lo que Whisper oyó
+EN      en OK      1.00   How many dots did you see?
+ES      en MAL     0.71   Quantos pontos vist?
+FR      en MAL     1.00   Kambionde points as two views.
+PT      en MAL     0.67   Quantos pontinhos vos viu?
+DE      en MAL     0.89   We veal punk tasks do geshin.
+```
+
+«Wie viele Punkte hast du gesehen» sale como **«We veal punk tasks do geshin»**:
+fonética inglesa aplicada a ortografía alemana. Sin esta comprobación de ida y
+vuelta, alguien pregenera 2.400 clips, los ve pesar lo que deben, los sube a R2,
+y el error aparece cuando un niño francés de cuatro años oye a Larry hablar en
+inglés macarrónico — y como no lee, no puede decir qué pasa.
+
+**Consecuencia para F6:** cualquier pipeline de pregeneración tiene que llevar
+la vuelta por Whisper como paso obligatorio, comparando el idioma detectado
+contra el pedido. Es barato y es lo único que atrapa este fallo.
+
+### Lo otro que se midió: MeloTTS es poco fiable
+
+De 5 llamadas por idioma, entre 2 y 4 devolvieron audio; el resto dio
+`Internal server error (code 3043)` de forma intermitente. Aura-2 respondió
+siempre en las corridas que hice. Para un pipeline de pregeneración con
+reintentos no es bloqueante, pero descarta MeloTTS como camino en vivo — que ya
+estaba descartado por latencia y por offline (§4.1 del plan de F6).
+
+### Las salidas, con su costo
+
+1. **Lanzar la voz solo en `en` y `es`.** Es lo único que hoy funciona en
+   Cloudflare. En kinder **la voz es la interfaz** (issue #135: el niño no lee),
+   así que esto significa que kinder no existe en francés, portugués ni alemán —
+   revierte D-022 de hecho aunque no en el texto.
+2. **Generar fuera de Cloudflare** (ElevenLabs, Azure, Google) y subir los clips
+   a R2. El audio queda pregenerado, así que en ejecución no hay dependencia
+   externa y D-047 sigue en pie. **Toca D-035** —todo en Cloudflare— pero solo en
+   tiempo de autoría, no en producción.
+3. **Voz humana grabada.** Es lo que más se parece a lo que `mc-42` recomienda
+   para kinder y lo único que da un Larry con personalidad de verdad. ~158 clips
+   residentes por locale (§4.3 del plan de F6). Cuesta dinero y semanas.
+
+Mi recomendación es la **2 para arrancar y la 3 para kinder** cuando haya
+presupuesto: la síntesis alcanza para probar el producto con personas, y la voz
+del personaje de marca no debería salir de un modelo genérico.
+
+**Esta duda no bloquea nada de lo que está construido hoy** — el bucle de juego
+funciona sin voz, con el enunciado escrito. Bloquea a kinder de verdad, que es
+donde el niño no lee.

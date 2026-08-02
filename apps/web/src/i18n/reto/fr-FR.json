@@ -76,5 +76,30 @@
   "juego.siguiente": "Suivant",
   "juego.salir": "J'ai fini",
   "juego.cargando": "Ça arrive…",
-  "juego.mirar": "Regarde !"
+  "juego.mirar": "Regarde !",
+  "error.conto_los_dos_grupos": [
+    "Tu as compté les deux groupes ensemble.",
+    "Il ne reste que ceux qui n'ont pas de chapeau."
+  ],
+  "error.dijo_otro_numero_de_la_cuenta": [
+    "Ce nombre est passé pendant le comptage, mais ce n'est pas le total.",
+    "Le total, c'est le DERNIER que tu as dit."
+  ],
+  "error.conto_desde_uno": [
+    "Tu as recommencé à partir de un.",
+    "La ligne te dit déjà où tu es."
+  ],
+  "error.siguio_el_patron_al_reves": [
+    "Tu as suivi le motif à l'envers.",
+    "Regarde les deux derniers et continue vers l'avant."
+  ],
+  "error.repitio_el_ultimo": [
+    "Tu as répété le dernier.",
+    "Dans un motif AB, ils alternent."
+  ],
+  "k.unoauno.gorros": "{patos} canards et {gorros} chapeaux. Combien de canards n'ont pas de chapeau ?",
+  "k.cardinalidad.ultimo": "Larry a compté jusqu'à {n}. Alors, combien y a-t-il de canards ?",
+  "k.recta.hueco": "Quel nombre va dans le trou, juste après {antes} ?",
+  "k.marco.faltan": "La grille en a {llenas} de remplies. Combien en manque-t-il pour la remplir ?",
+  "k.patron.sigue": "Le motif se répète encore et encore. Lequel vient ensuite ?"
 }

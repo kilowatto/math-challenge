@@ -10,6 +10,8 @@
   "navArchitecture": "Architecture",
   "navResearch": "Research",
   "navOpen": "Open source",
+  "navMore": "More",
+  "navMenu": "Menu",
   "exploreHeading": "Read further",
   "title": "Math Challenge",
   "tagline": "From counting ducks to algebraic topology.",
@@ -124,5 +126,12 @@
   "markDismiss": "Dismiss",
   "markProfileNotUser": "Your child is a profile inside your account — never a user. They have no email, no password of their own, and nothing they write is stored, because they never write anything.",
   "markAgeVsDifficulty": "Age decides how the app LOOKS; a placement decides where they START. Two separate axes, on purpose: a seven-year-old can be at level 2 and another at level 5, and both see the same interface.",
-  "signinPasskeyCta": "Use a passkey"
+  "signinPasskeyCta": "Use a passkey",
+  "formErrGenerico": "That didn't go through. Please try again.",
+  "formErrCredenciales": "That email and password don't match an account.",
+  "formErrCorreo": "Check the email address.",
+  "formErrClave": "The password needs between 8 and 64 characters.",
+  "formErrDemasiados": "Too many tries. Wait a minute and try again.",
+  "formErrAlias": "That name is already taken in your account. Pick another.",
+  "formErrEdadAdulto": "That year is an adult's. An adult opens their own account."
 }

@@ -63,5 +63,18 @@
   "inesperada": [
     "Ese no.",
     "Inténtalo otra vez, sin prisa."
-  ]
+  ],
+  "k.flash.puntos": "¿Cuántos puntos has visto?",
+  "k.contar.patos": "Toca cada pato para contarlos.",
+  "k.comparar.grupos": "¿En qué lado hay más?",
+  "k.descomponer.marco": "Ya hay {parte}. ¿Cuántos faltan para {total}?",
+  "k.suma.patos": "{a} patos y {b} patos más. ¿Cuántos patos hay?",
+  "k.resta.patos": "Había {a} patos. Se fueron {b}. ¿Cuántos quedan?",
+  "k.formas.cual_sobra": "¿Cuál no va con los demás?",
+  "juego.bien": "¡Eso es!",
+  "juego.otra": "Esta vez no. Míralo otra vez.",
+  "juego.siguiente": "Siguiente",
+  "juego.salir": "Ya he terminado",
+  "juego.cargando": "Ahí va…",
+  "juego.mirar": "¡Mira!"
 }

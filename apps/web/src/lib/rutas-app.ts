@@ -24,6 +24,17 @@ export const rutaKids = (locale: Locale | string) => `/${locale}/app/kids/`;
 /** El PIN de imágenes. */
 export const rutaPin = (locale: Locale | string) => `/${locale}/app/kids/pin`;
 
+/**
+ * Donde el niño JUEGA. Es el destino real de todo el embudo infantil.
+ *
+ * Vive aquí y no escrito a mano en cada archivo por lo mismo que las otras: el
+ * literal repetido es el que un día cambia en tres sitios y en el cuarto no.
+ */
+// Con barra final, igual que `rutaKids`: sin ella Cloudflare devuelve un 307 y
+// el niño paga un salto de red extra en cada entrada, sobre un Android de gama
+// baja que es el dispositivo de referencia (`mc-47` §5).
+export const rutaJugar = (locale: Locale | string) => `/${locale}/app/kids/jugar/`;
+
 /** La puerta del adulto cuando el dispositivo no está marcado. */
 export const rutaSignin = (locale: Locale | string) => `/${locale}/app/signin`;
 

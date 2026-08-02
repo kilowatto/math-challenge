@@ -48,6 +48,7 @@
  * fracción enorme del trabajo total.
  */
 import Base from "../../layouts/Base.astro";
+import AvisoDeError from "../AvisoDeError.astro";
 import { t, type Locale } from "../../i18n";
 import type { Seccion } from "../../i18n/rutas";
 import { idiomaWidget } from "../../lib/turnstile";
@@ -97,12 +98,15 @@ const siteKey =
   "";
 const titulo = m[puerta.titulo];
 const lead = m[puerta.lead];
+
 ---
 
 <Base locale={locale} seccion={seccion} title={titulo} description={lead}>
   <article class="registro">
     <h1>{titulo}</h1>
     <p class="lead">{lead}</p>
+
+    <AvisoDeError locale={locale} />
 
     <form method="post" action="/api/registro" id="form-registro" novalidate>
       <!--

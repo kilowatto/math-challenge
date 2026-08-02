@@ -37,6 +37,10 @@
  * envío exista— diciéndole que alguien intentó registrarse con su dirección.
  */
 import type { APIRoute } from "astro";
+import { terminarBien, terminarMal } from "../../lib/respuesta-de-formulario";
+import { rutaPerfilNuevo } from "../../lib/rutas-app";
+import { ruta } from "../../i18n/rutas";
+import type { Locale } from "../../i18n";
 import { hashear, largoValido, LARGO_MINIMO, LARGO_MAXIMO } from "../../lib/passwords";
 import { abrirSesionAdulto } from "../../lib/sesiones";
 import { verificar as verificarTurnstile, CAMPO_TOKEN } from "../../lib/turnstile";
@@ -71,23 +75,31 @@ interface Env {
   FUNNEL_AE?: AnalyticsEngineDataset;
 }
 
-/** Respuesta común. Nunca dice si el correo existía (ver el encabezado). */
-function respuesta(cookies: string[] = [], estado = 200) {
-  const h = new Headers({ "content-type": "application/json; charset=utf-8" });
-  for (const c of cookies) h.append("set-cookie", c);
-  return new Response(JSON.stringify({ ok: true }), { status: estado, headers: h });
+/**
+ * Respuesta común. Nunca dice si el correo existía (ver el encabezado).
+ *
+ * Redirige si vino de un `<form>` y devuelve JSON si vino de `fetch`. Antes
+ * devolvía JSON siempre, y el dueño creó una cuenta en su teléfono y se quedó
+ * mirando `{"ok":true}` a pantalla completa, sin siguiente paso ni forma de
+ * volver. El registro había funcionado. El producto estaba roto igual.
+ * Ver `lib/respuesta-de-formulario.ts`.
+ */
+function respuesta(request: Request, locale: Locale, cookies: string[] = []) {
+  // A crear el perfil del hijo, que es lo único que tiene sentido hacer justo
+  // después de registrarse como padre.
+  return terminarBien(request, rutaPerfilNuevo(locale), cookies);
 }
 
-function error(motivo: string, estado = 400) {
-  return new Response(JSON.stringify({ ok: false, motivo }), {
-    status: estado,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
+function error(request: Request, locale: Locale, motivo: string, estado = 400) {
+  return terminarMal(request, ruta(locale, "registro-padre"), motivo, estado);
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  // El locale se calcula ARRIBA porque ahora también decide a dónde volver
+  // cuando algo falla; antes solo se usaba para la fila de `users`.
+  const locale = localeDelReferente(request.headers.get("referer"));
   const env = (locals as any).runtime?.env as Env | undefined;
-  if (!env?.DB || !env?.SESSION_KV) return error("sin_bindings", 503);
+  if (!env?.DB || !env?.SESSION_KV) return error(request, locale, "sin_bindings", 503);
 
   // ── 0-RTT y por qué este endpoint lo rechaza ──────────────────────────────
   //
@@ -106,10 +118,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // nada. Se pierde el ahorro de un viaje en la ÚNICA petición del registro que
   // escribe; el resto del sitio —que es todo lectura— lo conserva entero.
   if (request.headers.get("early-data") === "1") {
-    return new Response(JSON.stringify({ ok: false, motivo: "reintenta" }), {
-      status: 425,
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
+    // 425 «Too Early» para quien llame por `fetch`; para un formulario, de
+    // vuelta a la página con el motivo. Los dos caminos los decide `terminarMal`.
+    return terminarMal(request, ruta(locale, "registro-padre"), "reintenta", 425);
   }
 
   // Se acepta `application/x-www-form-urlencoded` porque el formulario funciona
@@ -133,14 +144,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
       tokenTurnstile = String(f.get(CAMPO_TOKEN) ?? "");
     }
   } catch {
-    return error("cuerpo_ilegible");
+    return error(request, locale, "cuerpo_ilegible");
   }
 
   correo = correo.trim().toLowerCase();
-  if (!CORREO.test(correo) || correo.length > 254) return error("correo_invalido");
-  if (!INTENCIONES.has(intent)) return error("intencion_invalida");
+  if (!CORREO.test(correo) || correo.length > 254) return error(request, locale, "correo_invalido");
+  if (!INTENCIONES.has(intent)) return error(request, locale, "intencion_invalida");
   if (!largoValido(clave)) {
-    return error(`clave_fuera_de_rango:${LARGO_MINIMO}-${LARGO_MAXIMO}`);
+    return error(request, locale, `clave_fuera_de_rango:${LARGO_MINIMO}-${LARGO_MAXIMO}`);
   }
 
   // ── Turnstile, y falla CERRADO ────────────────────────────────────────────
@@ -162,7 +173,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     env.TURNSTILE_SECRET_KEY,
     request.headers.get("cf-connecting-ip"),
   );
-  if (!veredicto.ok) return error(`turnstile:${veredicto.motivo}`, veredicto.motivo === "no_configurado" ? 503 : 403);
+  if (!veredicto.ok) {
+    return error(request, locale, `turnstile:${veredicto.motivo}`, veredicto.motivo === "no_configurado" ? 503 : 403);
+  }
 
   // ── El límite de tasa, DESPUÉS de Turnstile ──────────────────────────────
   // Ese orden importa: un bot que no pasa Turnstile no debe gastar una consulta
@@ -171,13 +184,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const ip = request.headers.get("cf-connecting-ip") ?? "sin-ip";
   const limite = await consultarLimite(env.RATE_LIMITER, "registro", ip);
   if (!limite.permitido) {
-    return new Response(JSON.stringify({ ok: false, motivo: "demasiados_intentos" }), {
-      status: 429,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "retry-after": String(limite.esperaS),
-      },
-    });
+    // Se pierde el `retry-after` en el camino del formulario, y es deliberado:
+    // una persona que ve la página de vuelta con «demasiados intentos» no lee
+    // cabeceras. Quien llame por `fetch` recibe el 429 y puede volver a
+    // preguntarle al limitador cuánto falta.
+    return terminarMal(request, ruta(locale, "registro-padre"), "demasiados_intentos", 429);
   }
 
   // ── MISMO_TIEMPO ──────────────────────────────────────────────────────────
@@ -194,7 +205,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (ya) {
     // Misma forma, mismo costo, ninguna sesión. Quien ya tiene cuenta no
     // aprende nada nuevo, y quien está probando direcciones tampoco.
-    return respuesta();
+    return respuesta(request, locale);
   }
 
   const ahora = Math.floor(Date.now() / 1000);
@@ -214,8 +225,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // El locale sale de la URL de la que vino el formulario, no de
   // `Accept-Language`: si alguien está leyendo la puerta en alemán, su cuenta
   // nace en alemán aunque su teléfono esté en inglés.
-  const locale = localeDelReferente(request.headers.get("referer"));
-
   await env.DB.batch([
     env.DB.prepare(
       "INSERT INTO users (id, email, email_verified, locale, is_learner, created_at, updated_at, country, timezone, data_region, signup_intent) " +
@@ -236,7 +245,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // `lib/embudo.ts`. No lanza, así que no puede impedir el registro.
   anotarPaso(env.FUNNEL_AE, "registro", { pais, locale, intent });
 
-  return respuesta([cookie], 201);
+  return respuesta(request, locale, [cookie]);
 };
 
 /**
@@ -251,7 +260,9 @@ const PAISES_UE = new Set([
   "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK",
 ]);
 
-const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
+const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"] as const;
+const esLocale = (v: string | undefined): v is Locale =>
+  typeof v === "string" && (LOCALES as readonly string[]).includes(v);
 
 /**
  * El locale de la página desde la que se envió el formulario.
@@ -261,11 +272,14 @@ const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
  * `users.locale` rompería el CHECK de la migración 0001 y tiraría el registro
  * entero por un encabezado que nadie controla.
  */
-function localeDelReferente(referer: string | null): string {
+function localeDelReferente(referer: string | null): Locale {
   if (!referer) return "en";
   try {
     const primero = new URL(referer).pathname.split("/").filter(Boolean)[0];
-    return LOCALES.includes(primero) ? primero : "en";
+    // `includes` no estrecha el tipo por sí solo: hace falta el predicado, y sin
+    // él TypeScript deja pasar cualquier cadena hacia `ruta()`, que sí exige un
+    // locale de la lista.
+    return esLocale(primero) ? primero : "en";
   } catch {
     return "en";
   }

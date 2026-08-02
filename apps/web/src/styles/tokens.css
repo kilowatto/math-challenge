@@ -46,6 +46,23 @@
 
   /* El naranja de Ignia vive aquí: superficies, no texto chico. En gráficos y
    * controles el umbral es 3:1 y lo pasa (3.03:1). */
+  /*
+    ─── El color de error, DERIVADO y no inventado ───────────────────────────
+
+    La paleta de Ignia no tiene rojo, y meter uno habría sido un color de marca
+    nuevo decidido por un componente de formulario. Se usa el naranja oscuro, que
+    ya está en la paleta y da 4.58:1 sobre blanco — suficiente para texto normal.
+
+    El fondo sale de `color-mix` sobre la superficie, así que **no hay un hex
+    nuevo en el repositorio**: `audits/brand-image.mjs` compara contra la lista de
+    la paleta y un literal aquí lo habría detenido, con razón.
+
+    El 8% está elegido para que el fondo se note y el texto encima siga siendo el
+    de siempre: con más, `--color-text` deja de cumplir sobre él.
+  */
+  --color-error: var(--ignia-naranja-oscuro);
+  --color-error-suave: color-mix(in srgb, var(--ignia-naranja-oscuro) 8%, var(--color-surface));
+
   --color-accent: var(--ignia-naranja);
   --color-accent-hover: var(--ignia-naranja-oscuro);
   --color-on-accent: var(--ignia-blanco);          /* 3.03:1 — solo texto grande */
@@ -120,6 +137,20 @@
 
     --color-text-brand: var(--ignia-naranja);       /* 6.93:1 ✓ aquí sí */
     --color-text-brand-warm: var(--ignia-naranja-claro); /* 10.29:1 ✓ */
+
+    /*
+      En oscuro el error usa el naranja CLARO, no el oscuro: sobre `#1F2224` el
+      `#CE4912` da 2.4:1 y no se ve. `--ignia-naranja-claro` da 10.29:1, que es
+      el mismo cambio que ya hace `--color-text-brand-warm` dos líneas más
+      arriba y por la misma razón.
+
+      El fondo sigue saliendo de `color-mix` sobre la superficie del tema, así
+      que se aclara solo. Sin este bloque, el aviso de error era ilegible en
+      oscuro — que es el tema por defecto para adolescentes y adultos (mc-22,
+      mc-23).
+    */
+    --color-error: var(--ignia-naranja-claro);
+    --color-error-suave: color-mix(in srgb, var(--ignia-naranja-claro) 12%, var(--color-surface));
 
     --color-accent: var(--ignia-naranja);
     --color-accent-hover: var(--ignia-naranja-claro);

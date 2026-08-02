@@ -63,5 +63,18 @@
   "inesperada": [
     "Not that one.",
     "Try again, no rush."
-  ]
+  ],
+  "k.flash.puntos": "How many dots did you see?",
+  "k.contar.patos": "Tap each duck to count them.",
+  "k.comparar.grupos": "Which side has more?",
+  "k.descomponer.marco": "{parte} are already here. How many more make {total}?",
+  "k.suma.patos": "{a} ducks and {b} more ducks. How many ducks now?",
+  "k.resta.patos": "There were {a} ducks. {b} swam away. How many are left?",
+  "k.formas.cual_sobra": "Which one does not belong?",
+  "juego.bien": "That's it!",
+  "juego.otra": "Not this time. Look again.",
+  "juego.siguiente": "Next",
+  "juego.salir": "Done for now",
+  "juego.cargando": "Here it comes…",
+  "juego.mirar": "Look!"
 }

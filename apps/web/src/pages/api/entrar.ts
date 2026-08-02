@@ -22,6 +22,9 @@
  * que ya tuviera cuenta.
  */
 import type { APIRoute } from "astro";
+import { terminarMal } from "../../lib/respuesta-de-formulario";
+import { ruta } from "../../i18n/rutas";
+import type { Locale } from "../../i18n";
 import { verificar, hashear, largoValido } from "../../lib/passwords";
 import { abrirSesionAdulto } from "../../lib/sesiones";
 import { verificar as verificarTurnstile, CAMPO_TOKEN } from "../../lib/turnstile";
@@ -55,19 +58,26 @@ async function hashSenuelo(): Promise<string> {
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function error(motivo: string, estado = 400) {
-  return new Response(JSON.stringify({ ok: false, motivo }), {
-    status: estado,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
+/**
+ * El error vuelve al FORMULARIO, no a una pantalla de JSON.
+ *
+ * Escribir mal la contraseña y recibir `{"ok":false,"motivo":"credenciales"}` a
+ * pantalla completa es el mismo bug que el dueño encontró en el registro, con
+ * peor cara: la persona no hizo nada raro y el producto le contesta con un
+ * objeto. Ver `lib/respuesta-de-formulario.ts`.
+ */
+function error(request: Request, locale: Locale, motivo: string, estado = 400) {
+  return terminarMal(request, ruta(locale, "entrar"), motivo, estado);
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  // Arriba porque ahora también decide a dónde volver si algo falla.
+  const locale = localeDelReferente(request.headers.get("referer"));
   const env = (locals as any).runtime?.env as Env | undefined;
-  if (!env?.DB || !env?.SESSION_KV) return error("sin_bindings", 503);
+  if (!env?.DB || !env?.SESSION_KV) return error(request, locale, "sin_bindings", 503);
 
   // Iniciar sesión escribe una sesión, y `early data` es replicable (RFC 8470).
-  if (request.headers.get("early-data") === "1") return error("reintenta", 425);
+  if (request.headers.get("early-data") === "1") return error(request, locale, "reintenta", 425);
 
   let correo = "", clave = "", token = "";
   try {
@@ -84,15 +94,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
       token = String(f.get(CAMPO_TOKEN) ?? "");
     }
   } catch {
-    return error("cuerpo_ilegible");
+    return error(request, locale, "cuerpo_ilegible");
   }
 
   correo = correo.trim().toLowerCase();
 
   // Se comprueba la FORMA antes de Turnstile: no vale gastar una llamada de red
   // en un cuerpo que ya se sabe malformado.
-  if (!CORREO.test(correo) || correo.length > 254) return error("credenciales");
-  if (!largoValido(clave)) return error("credenciales");
+  if (!CORREO.test(correo) || correo.length > 254) return error(request, locale, "credenciales");
+  if (!largoValido(clave)) return error(request, locale, "credenciales");
 
   const veredicto = await verificarTurnstile(
     token,
@@ -100,7 +110,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     request.headers.get("cf-connecting-ip"),
   );
   if (!veredicto.ok) {
-    return error(`turnstile:${veredicto.motivo}`, veredicto.motivo === "no_configurado" ? 503 : 403);
+    return error(request, locale, `turnstile:${veredicto.motivo}`, veredicto.motivo === "no_configurado" ? 503 : 403);
   }
 
   // ── El límite de tasa, DESPUÉS de Turnstile ──────────────────────────────
@@ -110,6 +120,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const ip = request.headers.get("cf-connecting-ip") ?? "sin-ip";
   const limite = await consultarLimite(env.RATE_LIMITER, "entrar", ip);
   if (!limite.permitido) {
+    // El `retry-after` se pierde en el camino del formulario a propósito: quien
+    // ve la página de vuelta no lee cabeceras. Quien llame por `fetch` recibe
+    // el 429 y puede volver a preguntarle al limitador.
+    return terminarMal(request, ruta(locale, "entrar"), "demasiados_intentos", 429);
+    // eslint-disable-next-line no-unreachable
     return new Response(JSON.stringify({ ok: false, motivo: "demasiados_intentos" }), {
       status: 429,
       headers: {
@@ -133,7 +148,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const hash = fila?.hash ?? (await hashSenuelo());
   const r = await verificar(clave, hash);
 
-  if (!fila?.hash || !r.ok) return error("credenciales", 401);
+  if (!fila?.hash || !r.ok) return error(request, locale, "credenciales", 401);
 
   // Único momento con la contraseña en claro: si el hash quedó por debajo del
   // trabajo de hoy, se re-escribe ahora o no se re-escribe nunca.
@@ -155,7 +170,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // 302: obliga a seguir con GET, y con 302 algunos navegadores reenvían el POST
   // al pulsar «atrás» — aquí eso sería una segunda sesión abierta.
   const quiereJson = (request.headers.get("accept") ?? "").includes("application/json");
-  const locale = localeDelReferente(request.headers.get("referer"));
   if (!quiereJson) {
     const h = new Headers({ location: `/${locale}/app/kids/` });
     h.append("set-cookie", cookie);
@@ -167,13 +181,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers: h });
 };
 
-const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
+const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"] as const;
+const esLocale = (v: string | undefined): v is Locale =>
+  typeof v === "string" && (LOCALES as readonly string[]).includes(v);
 
-function localeDelReferente(referer: string | null): string {
+function localeDelReferente(referer: string | null): Locale {
   if (!referer) return "en";
   try {
     const primero = new URL(referer).pathname.split("/").filter(Boolean)[0];
-    return LOCALES.includes(primero) ? primero : "en";
+    // `includes` no estrecha el tipo por sí solo: hace falta el predicado, y sin
+    // él TypeScript deja pasar cualquier cadena hacia `ruta()`, que sí exige un
+    // locale de la lista.
+    return esLocale(primero) ? primero : "en";
   } catch {
     return "en";
   }

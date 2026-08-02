@@ -39,6 +39,41 @@ export interface AttemptInput {
   responseTimeMs: number;
   themeBand: "KINDER" | "PRIMARIA" | "SECUNDARIA" | "SERIO" | "JR" | "PRO";
   locale: string;
+
+  /**
+   * ─── Los campos de ARRANQUE EN FRÍO (F4 criterio #101) ───────────────────
+   *
+   * `mc-13` impl. 7 y `mc-44` impl. 8: la recalibración Rasch necesita 200-400
+   * respuestas POR ÍTEM, y esas respuestas solo existen si se guardaron desde el
+   * primer día. Un campo que se añade en el mes seis no tiene los primeros seis
+   * meses — y esos son justo los del banco sin calibrar, que son los que más
+   * información traen.
+   *
+   * Todos son opcionales porque el motor de F3 ya está desplegado y llama a
+   * `recordAttempt` sin ellos. Un campo obligatorio aquí habría roto lo que ya
+   * funciona; lo que se pierde es que un intento sin estos campos no sirve para
+   * recalibrar, y se escribe `-1` para que eso sea legible en la consulta en vez
+   * de un cero que se confunde con un valor medido.
+   */
+  /** La dificultad que el AUTOR le puso al ítem, 1-100. Distinta de la Elo viva. */
+  authoredDifficulty?: number;
+  /** La calificación Elo del ítem antes y después de este intento, en logits. */
+  itemEloBefore?: number;
+  itemEloAfter?: number;
+  /** La estimación del niño para esta habilidad, antes y después. En logits. */
+  learnerBefore?: number;
+  learnerAfter?: number;
+  /** El K que se usó. Es lo que permite reconstruir el paso sin adivinarlo. */
+  kUsed?: number;
+  /** Qué posición ocupó dentro de la sesión, empezando en 1. */
+  indexInSession?: number;
+  /**
+   * Qué motor lo sirvió (F4 criterio #103). Sin esto no se puede comparar el
+   * adaptativo contra la escalera fija, y sin esa comparación no se le puede
+   * atribuir nada al adaptativo — los niños aprenden con el tiempo de todos
+   * modos.
+   */
+  selectionMode?: "adaptativo" | "escalera_fija";
 }
 
 export class Ingest extends WorkerEntrypoint<Env> {
@@ -110,12 +145,27 @@ export class Ingest extends WorkerEntrypoint<Env> {
         input.locale,
         veredicto.regla,
         imposible ? "piso" : "",
+        // El brazo: `adaptativo` o `escalera_fija` (criterio #103). Va en blobs
+        // y no en indexes porque **el índice ya está gastado en `skillId`** —
+        // Analytics Engine admite UNO— y agrupar por habilidad es lo que más
+        // consultas necesitan.
+        input.selectionMode ?? "",
       ],
       doubles: [
         input.correct,
         esKinder ? 0 : input.responseTimeMs,
         veredicto.puntos,
         input.level,
+        // Los campos de arranque en frío. `-1` significa «no se mandó», que no
+        // es lo mismo que cero: un Elo de 0 logits es el centro de la escala y
+        // un K de 0 sería un motor que no aprende. Ver `AttemptInput`.
+        input.authoredDifficulty ?? -1,
+        input.itemEloBefore ?? -1,
+        input.itemEloAfter ?? -1,
+        input.learnerBefore ?? -1,
+        input.learnerAfter ?? -1,
+        input.kUsed ?? -1,
+        input.indexInSession ?? -1,
       ],
     });
 

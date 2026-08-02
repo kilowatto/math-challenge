@@ -133,5 +133,21 @@
   "formErrClave": "Das Passwort braucht zwischen 8 und 64 Zeichen.",
   "formErrDemasiados": "Zu viele Versuche. Warte eine Minute und versuche es erneut.",
   "formErrAlias": "Dieser Name wird in deinem Konto schon verwendet. Wähle einen anderen.",
-  "formErrEdadAdulto": "Dieses Jahr gehört zu einem Erwachsenen. Erwachsene eröffnen ein eigenes Konto."
+  "formErrEdadAdulto": "Dieses Jahr gehört zu einem Erwachsenen. Erwachsene eröffnen ein eigenes Konto.",
+  "casaTitulo": "Dein Zuhause",
+  "casaLead": "Hier ist alles für deine Kinder.",
+  "casaHijos": "Deine Kinder",
+  "casaSinHijos": "Noch keine Profile. Lege das erste an, um loszuspielen.",
+  "casaNuevoHijo": "Kind hinzufügen",
+  "casaAparatoTitulo": "Gehört dieses Gerät zu euch?",
+  "casaAparatoTexto": "Deine Kinder können nur auf Geräten spielen, die du markierst. Ein geliehenes oder öffentliches Gerät nicht markieren.",
+  "casaAparatoCta": "Ja, das ist unseres",
+  "casaAparatoListo": "Fertig. Deine Kinder können hier spielen.",
+  "casaJugar": "Zum Kinderbildschirm",
+  "casaPasskeyTitulo": "Ohne Passwort anmelden",
+  "casaPasskeyTexto": "Füge einen Passkey hinzu und melde dich künftig mit Gesicht oder Fingerabdruck an. Dein Passwort funktioniert weiterhin.",
+  "casaPasskeyCta": "Passkey hinzufügen",
+  "casaPasskeyListo": "Fertig. Du kannst dich damit anmelden.",
+  "casaSalir": "Abmelden",
+  "navCasa": "Dein Zuhause"
 }

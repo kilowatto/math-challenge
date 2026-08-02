@@ -133,5 +133,21 @@
   "formErrClave": "La contraseña necesita entre 8 y 64 caracteres.",
   "formErrDemasiados": "Demasiados intentos. Espera un minuto y vuelve a intentarlo.",
   "formErrAlias": "Ese nombre ya está usado en tu cuenta. Elige otro.",
-  "formErrEdadAdulto": "Ese año es de un adulto. Un adulto abre su propia cuenta."
+  "formErrEdadAdulto": "Ese año es de un adulto. Un adulto abre su propia cuenta.",
+  "casaTitulo": "Tu casa",
+  "casaLead": "Aquí está todo lo de tus hijos.",
+  "casaHijos": "Tus hijos",
+  "casaSinHijos": "Todavía no hay perfiles. Crea el primero para empezar a jugar.",
+  "casaNuevoHijo": "Añadir un hijo",
+  "casaAparatoTitulo": "¿Este aparato es de casa?",
+  "casaAparatoTexto": "Tus hijos solo pueden jugar en los aparatos que marques. Si es prestado o público, no lo marques.",
+  "casaAparatoCta": "Sí, es de casa",
+  "casaAparatoListo": "Listo. Tus hijos ya pueden jugar aquí.",
+  "casaJugar": "Ir a la pantalla de los niños",
+  "casaPasskeyTitulo": "Entrar sin contraseña",
+  "casaPasskeyTexto": "Añade una llave de acceso y la próxima vez entra con tu cara o tu huella. Tu contraseña sigue funcionando.",
+  "casaPasskeyCta": "Añadir llave de acceso",
+  "casaPasskeyListo": "Listo. Ya puedes entrar con ella.",
+  "casaSalir": "Cerrar sesión",
+  "navCasa": "Tu casa"
 }

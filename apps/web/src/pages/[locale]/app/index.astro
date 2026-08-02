@@ -1,0 +1,258 @@
+---
+/**
+ * `/{locale}/app/` — **la casa del adulto.** Issue #311.
+ *
+ * ─── Existía la puerta y no existía la casa ────────────────────────────────
+ *
+ * Lo encontró el dueño entrando en su iPhone: inicias sesión y aterrizas en una
+ * pantalla que no dice nada. `/api/entrar` mandaba a `/app/kids/`, esa página
+ * exige la cookie `mc_h` del dispositivo de la casa (D-012), no la tienes, y te
+ * rebota a `/app/signin` — que es un relleno escrito **antes** de que existiera
+ * la ruta de entrada y que sigue diciendo que no existe.
+ *
+ * Y el fondo del problema era peor: **`marcarDispositivoDelHogar()` no la
+ * llamaba nadie.** Escrita, probada, y jamás invocada. Sin ella `mc_h` no se
+ * puede poner nunca, así que `/app/kids/` era inalcanzable — y con ella todo lo
+ * que F3, F4 y F5 construyeron. El motor adaptativo, el programador, los 344
+ * ítems: desplegados y sin ningún camino desde una cuenta real.
+ *
+ * ─── Esto es SSR, y no por gusto ───────────────────────────────────────────
+ *
+ * Lee cookies y consulta la base. Una página prerrenderizada no ve ni lo uno ni
+ * lo otro, y este repositorio ya se llevó ese golpe tres veces. Es la excepción
+ * que justifica el costo: una página por visita, detrás de sesión, que nadie
+ * cachea de todas formas.
+ *
+ * ─── Superficie de ADULTO ──────────────────────────────────────────────────
+ *
+ * Tipografía del sistema, blancos de 44px —no los 88 de kinder— y ni una palabra
+ * dirigida a un menor. Un niño que llegue aquí no encuentra nada suyo.
+ */
+export const prerender = false;
+
+import Base from "../../../layouts/Base.astro";
+import { t, isLocale, type Locale } from "../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
+import { rutaKids, rutaPerfilNuevo } from "../../../lib/rutas-app";
+import { ruta } from "../../../i18n/rutas";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const m = t(locale);
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+
+// Sin sesión, a la puerta. **Se falla cerrado**: esta página lista a los hijos
+// de alguien.
+if (!sesion) return Astro.redirect(ruta(locale, "entrar"));
+
+/**
+ * Los hijos de esta cuenta. Solo alias y banda — lo que hace falta para
+ * reconocerlos. Ni el año de nacimiento sale de la base aquí: no se pinta, así
+ * que no se pide (`mc-25`, D-013).
+ */
+let hijos: Array<{ id: string; alias: string; theme_band: string }> = [];
+if (env?.DB) {
+  try {
+    const r = await env.DB.prepare(
+      "SELECT id, alias, theme_band FROM child_profiles WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at",
+    )
+      .bind(sesion.userId)
+      .all<{ id: string; alias: string; theme_band: string }>();
+    hijos = r.results ?? [];
+  } catch {
+    // Sin base, la casa se enseña vacía en vez de dar un 500. El adulto puede
+    // marcar el aparato y añadir su passkey igual.
+    hijos = [];
+  }
+}
+
+/** ¿Ya está marcado este aparato? La cookie basta: la fila la valida `/app/kids`. */
+const aparatoMarcado = Boolean(cookies[COOKIE_HOGAR]);
+---
+
+<Base locale={locale} seccion={null} title={m.casaTitulo} description={m.casaLead}>
+  <article class="casa">
+    <h1>{m.casaTitulo}</h1>
+    <p class="lead">{m.casaLead}</p>
+
+    {/* ── Los hijos ─────────────────────────────────────────────────────── */}
+    <section class="bloque">
+      <h2>{m.casaHijos}</h2>
+      {hijos.length === 0 ? (
+        <p class="muted">{m.casaSinHijos}</p>
+      ) : (
+        <ul class="hijos">
+          {hijos.map((h) => (
+            <li class="hijo">
+              <span class="alias">{h.alias}</span>
+              <span class="banda">{h.theme_band}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <a class="boton" href={rutaPerfilNuevo(locale)}>{m.casaNuevoHijo}</a>
+      {aparatoMarcado && hijos.length > 0 && (
+        <a class="boton primario" href={rutaKids(locale)}>{m.casaJugar}</a>
+      )}
+    </section>
+
+    {/* ── El aparato de la casa (D-012) ─────────────────────────────────── */}
+    {!aparatoMarcado && (
+      <section class="bloque">
+        <h2>{m.casaAparatoTitulo}</h2>
+        {/*
+          El texto dice qué significa marcar, no solo pide que se marque. D-012:
+          la protección real la da el dispositivo, y una decisión que protege
+          solo funciona si quien la toma sabe qué está decidiendo.
+        */}
+        <p class="muted">{m.casaAparatoTexto}</p>
+        <button type="button" class="boton primario" id="marcar">{m.casaAparatoCta}</button>
+        <p class="ok" id="marcado" hidden>{m.casaAparatoListo}</p>
+      </section>
+    )}
+
+    {/* ── La passkey, DESPUÉS del registro (D-038) ──────────────────────── */}
+    <section class="bloque" id="bloque-passkey" hidden>
+      <h2>{m.casaPasskeyTitulo}</h2>
+      <p class="muted">{m.casaPasskeyTexto}</p>
+      <button type="button" class="boton" id="passkey">{m.casaPasskeyCta}</button>
+      <p class="ok" id="passkey-ok" hidden>{m.casaPasskeyListo}</p>
+    </section>
+
+    <button type="button" class="boton salir" id="salir">{m.casaSalir}</button>
+  </article>
+
+  <style>
+    .casa { max-width: var(--measure); margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    h2 { font-family: var(--font-sistema); font-size: var(--text-base); font-weight: var(--weight-subtitle);
+         margin: 0 0 calc(var(--space) * 0.5); }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-body);
+             margin-block-end: var(--space); }
+    .hijos { list-style: none; padding: 0; margin: 0 0 var(--space); display: flex; flex-direction: column; gap: 0.5rem; }
+    .hijo { display: flex; justify-content: space-between; align-items: center; gap: var(--space);
+            padding: 0.6rem 0.8rem; border: 1px solid var(--color-border); border-radius: var(--radius); }
+    .alias { font-family: var(--font-sistema); font-weight: var(--weight-subtitle); }
+    .banda { font-size: var(--text-xs); color: var(--color-text-muted); }
+    /* 44px, la vara del ADULTO. Los 88 de kinder son para las superficies de niño. */
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; margin-inline-end: 0.5rem; border-radius: var(--radius);
+             border: 1px solid var(--color-border); background: transparent; color: var(--color-text);
+             font-family: var(--font-sistema); font-size: var(--text-base); text-decoration: none; cursor: pointer; }
+    .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
+    .boton:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+    .salir { margin-block-start: var(--space); color: var(--color-text-muted); }
+    .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-start: 0.5rem; }
+  </style>
+
+  <script define:vars={{ destinoKids: rutaKids(locale), portada: `/${locale}/` }}>
+    const pedir = (accion, cuerpo) =>
+      fetch(`/api/casa?accion=${accion}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cuerpo ?? {}),
+      }).then((r) => r.json().catch(() => ({})));
+
+    // ── Marcar el aparato ───────────────────────────────────────────────
+    const bMarcar = document.getElementById("marcar");
+    bMarcar?.addEventListener("click", async () => {
+      bMarcar.disabled = true;
+      const r = await pedir("dispositivo");
+      if (r.ok) {
+        document.getElementById("marcado").hidden = false;
+        // Se recarga para que aparezca el botón de ir con los niños: la página
+        // es del servidor y él es quien sabe si ya hay cookie.
+        location.reload();
+        return;
+      }
+      bMarcar.disabled = false;
+    });
+
+    // ── Añadir una passkey a una cuenta que ya existe (D-038) ───────────
+    //
+    // El bloque nace `hidden` y solo aparece si el navegador tiene la API. Al
+    // revés —pintarlo y esconderlo— enseñaría un botón muerto a quien no puede
+    // usarlo. Es la misma lección que dejó el registro roto en Macs con Touch
+    // ID: no se esconde el camino que funciona a cambio de uno que puede fallar.
+    const bloque = document.getElementById("bloque-passkey");
+    const bPasskey = document.getElementById("passkey");
+    if (bloque && "PublicKeyCredential" in window) bloque.hidden = false;
+
+    const b64urlABytes = (s) =>
+      Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+    const bytesAB64url = (b) =>
+      btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+    bPasskey?.addEventListener("click", async () => {
+      bPasskey.disabled = true;
+      try {
+        const reto = await (await fetch("/api/passkey-reto", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ proposito: "registrar" }),
+        })).json();
+        if (!reto.ok) throw new Error(reto.motivo);
+
+        const cred = await navigator.credentials.create({
+          publicKey: {
+            challenge: b64urlABytes(reto.reto),
+            rp: { id: reto.rpId, name: "Math Challenge" },
+            user: {
+              // El identificador que viaja al autenticador lo da el servidor y
+              // es opaco: el correo no entra aquí.
+              id: b64urlABytes(reto.usuarioId),
+              name: reto.usuarioNombre ?? "",
+              displayName: reto.usuarioNombre ?? "",
+            },
+            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+            authenticatorSelection: { userVerification: "preferred", residentKey: "preferred" },
+            timeout: 60000,
+          },
+        });
+        if (!cred) throw new Error("cancelado");
+
+        const r = cred.response;
+        const res = await (await fetch("/api/passkey-registrar", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            retoId: reto.id,
+            credentialId: cred.id,
+            clientDataJSON: bytesAB64url(r.clientDataJSON),
+            attestationObject: bytesAB64url(r.attestationObject),
+          }),
+        })).json();
+
+        if (res.ok) {
+          document.getElementById("passkey-ok").hidden = false;
+          bPasskey.hidden = true;
+          return;
+        }
+        throw new Error(res.motivo);
+      } catch {
+        // Si falla —cancelada, sin autenticador, lo que sea— NO se enseña un
+        // error: la contraseña sigue funcionando y el bloque entero es opcional.
+        bPasskey.disabled = false;
+      }
+    });
+
+    // ── Salir ───────────────────────────────────────────────────────────
+    document.getElementById("salir")?.addEventListener("click", async () => {
+      await pedir("salir");
+      location.href = portada;
+    });
+  </script>
+</Base>

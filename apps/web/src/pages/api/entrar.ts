@@ -24,6 +24,7 @@
 import type { APIRoute } from "astro";
 import { terminarMal } from "../../lib/respuesta-de-formulario";
 import { ruta } from "../../i18n/rutas";
+import { rutaCasa } from "../../lib/rutas-app";
 import type { Locale } from "../../i18n";
 import { verificar, hashear, largoValido } from "../../lib/passwords";
 import { abrirSesionAdulto } from "../../lib/sesiones";
@@ -171,7 +172,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // al pulsar «atrás» — aquí eso sería una segunda sesión abierta.
   const quiereJson = (request.headers.get("accept") ?? "").includes("application/json");
   if (!quiereJson) {
-    const h = new Headers({ location: `/${locale}/app/kids/` });
+    // A la CASA, no a la pantalla de los niños. `/app/kids/` exige `mc_h` y sin
+    // esa cookie rebotaba a un relleno — el adulto entraba y no llegaba a
+    // ninguna parte (issue #311). El literal vive en `lib/rutas-app.ts`.
+    const h = new Headers({ location: rutaCasa(locale) });
     h.append("set-cookie", cookie);
     return new Response(null, { status: 303, headers: h });
   }

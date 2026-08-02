@@ -38,7 +38,7 @@
  */
 import type { APIRoute } from "astro";
 import { terminarMal } from "../../lib/respuesta-de-formulario";
-import { rutaPerfilNuevo } from "../../lib/rutas-app";
+import { rutaPerfilNuevo, rutaCasa } from "../../lib/rutas-app";
 import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../lib/sesiones";
 import { anotarPaso } from "../../lib/embudo";
 import { generarAlias, type LocaleAlias } from "../../../../../packages/motor/src/alias.ts";
@@ -219,7 +219,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!quiereJson) {
     return new Response(null, {
       status: 303,
-      headers: { location: `/${locale}/app/kids/` },
+      // A la casa: desde ahí se marca el aparato, que es lo que abre
+      // `/app/kids/`. Mandar directo a los niños rebotaba (issue #311).
+      headers: { location: rutaCasa(locale) },
     });
   }
 

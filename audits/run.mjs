@@ -83,6 +83,13 @@ const ACTIVE = [
   ["passkey-rp-id",          "el rp.id de las passkeys no se toca",          "D-038, #112, #263"],
   ["turnstile-solo-adulto",   "Turnstile jamás delante de un niño",           "línea roja #1, D-054, #113"],
   ["corpus-manifiesto",      "el manifiesto del corpus traducido está al día", "D-033, D-022, mc-48 §3"],
+  // El criterio #104 de F4 pide que borrar el perfil borre el modelo del niño.
+  // La función existe y está probada; lo que NO existe todavía es una ruta que
+  // borre perfiles. Este auditor es la parte que sobrevive a esa ausencia:
+  // bloquea el día que alguien escriba la primera, que es justo cuando el error
+  // se comete — pensando en la fila de D1 que se ve y no en el Durable Object
+  // que no se ve.
+  ["borrado-alcanza-al-modelo", "borrar el perfil borra también su modelo",  "F4 #104, D-030, GDPR 17"],
 
   // S0 ya tiene sitio: estos dos se escribieron y corrían por su cuenta, pero
   // nadie los movió aquí — quedaron en PENDING diciendo "cuando haya sitio"
@@ -157,6 +164,7 @@ for (const prueba of [
   "packages/motor/src/adaptativo.prueba.mjs",
   "packages/motor/src/programador.prueba.mjs",
   "apps/web/src/lib/aprendiz.prueba.mjs",
+  "packages/motor/src/comparacion.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

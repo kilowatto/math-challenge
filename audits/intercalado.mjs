@@ -68,6 +68,77 @@ for (const archivo of fuentes) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// La parte que NO es estática: se generan sesiones de verdad (F4 criterio #98)
+// ---------------------------------------------------------------------------
+//
+// Todo lo de arriba lee código. Eso atrapa a quien escribe «agrupado por tema» y
+// no atrapa a quien escribe un intercalador que agrupa igual — que es el caso
+// que importa, porque ese código se ve bien.
+//
+// Desde F4 existe `ordenDeSesion()`, así que aquí se le pide que arme sesiones
+// y se mira lo que sale. Es la diferencia entre comprobar que alguien dijo la
+// palabra y comprobar que la cosa hace lo que la palabra promete.
+{
+  const { ordenDeSesion, bloqueMasLargo, repasoInicial, REPASO_MINIMO, REPASO_MAXIMO } =
+    await import("../packages/motor/src/programador.ts");
+
+  const DIA = 86_400_000;
+  const AHORA = 1_800_000_000_000; // fijo: un auditor no lee el reloj
+  let generadas = 0;
+
+  // Se barren tamaños de rotación y de sesión porque el modo de falla clásico
+  // —una cola se vacía antes que la otra— solo aparece en ciertas proporciones.
+  for (const cuantasVencidas of [1, 2, 3, 4, 6, 9]) {
+    for (const cuantasFrescas of [0, 1, 3, 7]) {
+      for (const huecos of [4, 6, 8, 10, 14, 20]) {
+        const rotacion = [
+          ...Array.from({ length: cuantasVencidas }, (_, i) => ({
+            skillId: `V${i}`,
+            estado: { ...repasoInicial(), venceEn: AHORA - (i + 1) * DIA, intentos: 5 },
+          })),
+          ...Array.from({ length: cuantasFrescas }, (_, i) => ({
+            skillId: `F${i}`,
+            estado: { ...repasoInicial(), venceEn: AHORA + 30 * DIA, intentos: 5 },
+          })),
+        ];
+        const orden = ordenDeSesion(rotacion, AHORA, huecos);
+        generadas++;
+
+        const distintas = new Set(orden).size;
+        const bloque = bloqueMasLargo(orden);
+
+        // Con 2+ habilidades distintas en la sesión NO puede haber bloques.
+        if (distintas >= 2 && bloque > 1) {
+          problemas.push(
+            `ordenDeSesion(${cuantasVencidas} vencidas, ${cuantasFrescas} frescas, ${huecos} huecos) ` +
+              `produjo un bloque de ${bloque} de la misma habilidad con ${distintas} en rotación: ` +
+              `${orden.join(" ")}. mc-05: el bloque da fluidez que se evapora.`,
+          );
+        }
+        if (orden.length !== Math.min(huecos, huecos)) {
+          problemas.push(
+            `ordenDeSesion pidió ${huecos} huecos y devolvió ${orden.length}: una sesión corta ` +
+              "es «vuelve mañana» por la puerta de atrás (criterio #94).",
+          );
+        }
+        // La mezcla 40-60%, solo cuando hay las dos clases que mezclar.
+        if (cuantasVencidas > 0 && cuantasFrescas > 0) {
+          const repaso = orden.filter((s) => s.startsWith("V")).length / orden.length;
+          if (repaso < REPASO_MINIMO - 1e-9 || repaso > REPASO_MAXIMO + 1e-9) {
+            problemas.push(
+              `ordenDeSesion(${cuantasVencidas}v/${cuantasFrescas}f/${huecos}) dio ` +
+                `${(repaso * 100).toFixed(0)}% de repaso, fuera de [${REPASO_MINIMO * 100}%, ` +
+                `${REPASO_MAXIMO * 100}%] (criterio #98).`,
+            );
+          }
+        }
+      }
+    }
+  }
+  notas.unshift(`${generadas} sesiones GENERADAS y medidas, no solo código leído (F4 #98)`);
+}
+
 notas.unshift(
   series > 0
     ? `${series} archivo(s) definen series`

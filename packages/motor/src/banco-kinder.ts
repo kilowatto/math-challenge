@@ -247,7 +247,10 @@ const subitizar = (habilidad: "K01" | "K02", desde: number, hasta: number): Plan
       habilidad,
       nivel: 1,
       formato: "flash",
-      enunciado: { clave, vars: { n, disposicion: disp } },
+      // El NOMBRE de la disposición, no su índice: es lo que el cliente pone en
+      // `data-disposicion` para elegir la retícula. Un índice ahí obligaría a
+      // repetir la lista de nombres en el cliente, y dos listas se separan.
+      enunciado: { clave, vars: { n, disposicion: DISPOSICIONES[disp] ?? "linea" } },
       respuesta: { valor: n, tol: 0 },
       errores: [
         { valor: n - 1, causa: "error.subestimo" },

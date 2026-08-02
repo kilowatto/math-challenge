@@ -204,6 +204,22 @@ const rutaCaras = `/${locale}/app/kids/`;
         padding-inline: 1.5rem;
         text-decoration: none;
       }
+      .grupo { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; align-items: center; }
+      .separador { font-size: 2rem; color: var(--color-text-muted); }
+      .pato.chico { font-size: 2rem; }
+      .figura { font-size: 2.4rem; line-height: 1; }
+      .figura.hueco { color: var(--color-text-muted); }
+      .marco-diez { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.3rem; }
+      .recta { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: center; }
+      .casilla { width: 40px; height: 40px; border: 2px solid var(--color-border);
+                 border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
+                 font-family: var(--font-sistema); font-size: 1rem; color: var(--color-text); }
+      .casilla.llena { background: var(--color-accent); border-color: transparent; }
+      .casilla.hueco { border-style: dashed; color: var(--color-text-muted); }
+      /* Las cuatro disposiciones del destello (K01/K02). */
+      .escena[data-disposicion="dado"] { display: grid; grid-template-columns: repeat(3, 44px); justify-content: center; }
+      .escena[data-disposicion="linea"] { flex-wrap: nowrap; }
+      .escena[data-disposicion="par"] { display: grid; grid-template-columns: repeat(2, 44px); justify-content: center; }
       .punto {
         width: 44px;
         height: 44px;
@@ -263,27 +279,131 @@ const rutaCaras = `/${locale}/app/kids/`;
       };
 
       /** Dibuja la escena de cada formato. Todo decorativo: el texto ya lo dice. */
+      /**
+       * Dibuja lo que el enunciado pregunta.
+       *
+       * ─── Por qué esto no es decoración ─────────────────────────────────
+       *
+       * La primera versión solo dibujaba `flash` y `toca_para_contar`, y con el
+       * banco de F5 completo eso dejó **ítems incontestables**: «¿de qué lado
+       * hay más?» sin ver los dos lados, «¿cuántas casillas están llenas?» sin
+       * ver el marco, «¿cuál no va con los demás?» sin ver las figuras. Un niño
+       * de cuatro años no puede decir que la pantalla está incompleta: toca al
+       * azar y el motor registra un fallo que no cometió.
+       *
+       * Se descubrió jugando 30 ítems seguidos contra producción y leyendo lo
+       * que salía, no revisando el código — el código estaba bien, le faltaba la
+       * mitad del banco.
+       */
+      const cajita = (clase, texto) => {
+        const e = document.createElement("span");
+        e.className = clase;
+        if (texto) e.textContent = texto;
+        return e;
+      };
+
+      /** Un grupo de N figuras iguales. */
+      function grupo(n, glifo, clase) {
+        const g = document.createElement("div");
+        g.className = "grupo";
+        for (let i = 0; i < n; i++) g.append(cajita(clase, glifo));
+        return g;
+      }
+
+      const FIGURAS = ["●", "▲", "■", "★"];
+
       function pintarEscena(item) {
         $escena.replaceChildren();
-        const n = Number(item.vars.n ?? item.vars.a ?? 0);
-        if (item.formato === "flash" && n > 0) {
-          for (let i = 0; i < n; i++) {
-            const d = document.createElement("span");
-            d.className = "punto";
-            $escena.append(d);
+        const v = item.vars ?? {};
+        const num = (k) => Number(v[k] ?? 0);
+
+        switch (item.formato) {
+          case "flash": {
+            const n = num("n");
+            /*
+              La DISPOSICIÓN es el eje de esta habilidad: cuatro puntos en patrón
+              de dado se reconocen de un vistazo y los mismos cuatro dispersos
+              obligan a contar. Si todas se dibujaran igual, el banco tendría
+              cuatro veces el mismo ítem con cuatro ids distintos.
+            */
+            $escena.dataset.disposicion = String(v.disposicion ?? "linea");
+            for (let i = 0; i < n; i++) $escena.append(cajita("punto"));
+            // Se ve y se esconde. NO es un cronómetro: no cuenta hacia atrás, no
+            // se muestra y no penaliza. Es la exposición breve que define
+            // subitizar.
+            setTimeout(() => { $escena.replaceChildren(); }, 900);
+            break;
           }
-          // El destello de `flash`: se ve y se esconde. NO es un cronómetro —
-          // no cuenta hacia atrás, no se muestra, y no penaliza. Es la
-          // exposición breve que define subitizar (K01/K02).
-          setTimeout(() => { $escena.replaceChildren(); }, 900);
-        } else if (item.formato === "toca_para_contar" && n > 0) {
-          for (let i = 0; i < n; i++) {
-            const d = document.createElement("span");
-            d.className = "pato";
-            d.textContent = "🦆";
-            $escena.append(d);
+          case "toca_para_contar": {
+            const n = num("n");
+            for (let i = 0; i < n; i++) $escena.append(cajita("pato", "🦆"));
+            break;
+          }
+          case "arma_el_numero": {
+            // El marco de diez (K09) y la descomposición (K10). Diez casillas,
+            // las llenas marcadas. Se lee de un vistazo —una fila y dos más— y
+            // esa lectura es lo que enseña el diez como referencia.
+            const llenas = v.llenas !== undefined ? num("llenas") : num("parte");
+            const total = v.llenas !== undefined ? 10 : num("total");
+            const marco = document.createElement("div");
+            marco.className = "marco-diez";
+            for (let i = 0; i < total; i++) {
+              marco.append(cajita(i < llenas ? "casilla llena" : "casilla"));
+            }
+            $escena.append(marco);
+            break;
+          }
+          case "cual_sobra": {
+            // K13: tres de una familia y un intruso. El intruso NO va siempre
+            // al final — con la posición fija se acierta sin mirar.
+            const fam = FIGURAS[num("familia") % FIGURAS.length];
+            const intruso = FIGURAS[num("intruso") % FIGURAS.length];
+            const donde = (num("familia") + num("intruso")) % 4;
+            for (let i = 0; i < 4; i++) {
+              $escena.append(cajita("figura", i === donde ? intruso : fam));
+            }
+            break;
+          }
+          default: {
+            // `toca_la_respuesta` cubre varias habilidades y cada una necesita
+            // ver algo distinto.
+            if (v.izq !== undefined) {
+              // K07: dos montones. El enunciado pregunta de qué lado hay más, y
+              // sin los montones la pregunta no existe.
+              $escena.append(grupo(num("izq"), "🦆", "pato chico"));
+              $escena.append(cajita("separador", "·"));
+              $escena.append(grupo(num("der"), "🦆", "pato chico"));
+            } else if (v.patos !== undefined) {
+              // K05: patos arriba, gorros abajo, para poder emparejar de vista.
+              $escena.append(grupo(num("patos"), "🦆", "pato chico"));
+              $escena.append(grupo(num("gorros"), "🎩", "pato chico"));
+            } else if (v.largo !== undefined) {
+              // K14: el patrón, con el hueco al final.
+              const ciclo = num("ciclo") || 2;
+              const primero = num("primero");
+              const fila = document.createElement("div");
+              fila.className = "grupo";
+              for (let i = 0; i < num("largo"); i++) {
+                fila.append(cajita("figura", FIGURAS[(primero + i) % ciclo]));
+              }
+              fila.append(cajita("figura hueco", "?"));
+              $escena.append(fila);
+            } else if (v.antes !== undefined || v.despues !== undefined) {
+              // K08: la recta del 0 al 10 con un hueco.
+              const falta = v.antes !== undefined ? num("antes") + 1 : num("despues") - 1;
+              const recta = document.createElement("div");
+              recta.className = "recta";
+              for (let i = 0; i <= 10; i++) {
+                recta.append(cajita(i === falta ? "casilla hueco" : "casilla numero",
+                                    i === falta ? "?" : String(i)));
+              }
+              $escena.append(recta);
+            }
+            break;
           }
         }
+        // Decorativo: el enunciado ya dice qué se pregunta, y un lector de
+        // pantalla que enumere veinte casillas no ayuda a nadie.
         $escena.setAttribute("aria-hidden", "true");
       }
 

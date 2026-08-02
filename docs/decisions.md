@@ -2292,3 +2292,64 @@ Lo mismo aplica al apóstrofo: se escribe `’` y se acepta `'`.
 **Lo que cuesta:** el lector tiene que ser más permisivo que el escritor, así que
 las dos mitades no son simétricas y no se pueden derivar la una de la otra. Es
 más código, y es el correcto.
+
+---
+
+## D-072 — El banco de ítems de primaria vive en D1, no en código · 2026-08-02
+
+**Decisión del dueño**, tomada al abrir F5c y **en contra de mi recomendación**.
+Queda escrito qué compra y qué cuesta, porque las dos cosas son reales.
+
+**Lo que compra:** el banco deja de ser código. Un ítem se corrige sin
+desplegar, y quien autora contenido no necesita TypeScript ni esperar un build.
+Para un producto cuyo cuello de botella declarado es el contenido (`mc-40`), eso
+no es un detalle: es la diferencia entre corregir un enunciado en un minuto o en
+un ciclo de despliegue.
+
+**Lo que cuesta:** una migración, un camino de lectura nuevo en el motor, y **un
+banco híbrido** — KINDER seguirá en `banco-kinder.ts` (código) y PRIMARIA en D1.
+Dos fuentes para el mismo tipo de ítem es deuda desde el día uno. La forma de
+que no se pudra es que KINDER migre después; si en seis meses sigue siendo la
+excepción, la excepción se volvió la regla.
+
+**Lo que NO cambia, y conviene decirlo porque se parece:** los **intentos**
+siguen fuera de D1 (`mc-32` riesgo #1, auditor `no-attempts-in-d1`). Un banco de
+ítems es lectura alta y escritura casi nula; un intento es exactamente lo
+contrario, y esa asimetría es la razón entera de aquella decisión. Que el banco
+entre a D1 no abre la puerta a que entren los intentos.
+
+---
+
+## D-073 — Primaria antes que kinder, y por qué no es rendirse · 2026-08-02
+
+**Decisión del dueño** tras jugar los primeros retos reales en su teléfono y
+encontrar seis fallos en quince minutos.
+
+Su razón fue «kinder requiere mucha atención». La investigación la respalda más
+de lo que él planteó, y por dos caminos independientes:
+
+**1. Kinder está bloqueado por F6, no retrasado.** `mc-20` no lista el audio
+como mejora: lista su ausencia como **antipatrón** — *«text-only prompts or
+instructions with no audio equivalent — unusable by the age band»*. Y `mc-06`
+subraya que el Number Knowledge Test de Number Worlds es **oral**, «algo
+directamente relevante para una app pre-lectora». Sin voz, kinder no es un
+producto peor: es un producto que su usuario no puede usar. `mc-21` no dice nada
+equivalente de los 7-11.
+
+**2. De los cinco formatos, exactamente uno funciona hoy — y es el único que
+primaria necesita.** Medido sobre producción: `flash` no dibuja el estímulo,
+`toca_para_contar` dibuja patos diga lo que diga el enunciado, `arma_el_numero`
+sale como un borrón, `cual_sobra` ofrece `casilla3` como respuesta. El que
+funciona es `toca_la_respuesta`, que es leer y tocar un número — exactamente lo
+que primaria pide.
+
+**Lo que esta decisión NO dice:** que kinder se abandone. #345, #347 y #349
+siguen abiertos y siguen siendo necesarios. Lo que cambia es que el producto
+deja de estar bloqueado detrás de ellos.
+
+**Y un hallazgo que sale de aquí:** `mc-36` describe *Which One Doesn't Belong*
+como «sin respuesta única, **discurso obligatorio**» — el valor está en que el
+niño **explique**. La línea roja #3 prohíbe el texto libre de un niño. Ese
+formato **no encaja en este producto tal como está concebido**, y eso explica
+por qué `cual_sobra` salió deformado: no es solo mala implementación, es un
+molde que no cabe. Queda como pregunta abierta para el dueño.

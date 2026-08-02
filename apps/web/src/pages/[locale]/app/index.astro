@@ -189,7 +189,19 @@ const ETIQUETAS: Record<Clave, string> = {
 // si el orden mandara, y eso es un callejón sin salida en la primera pantalla
 // que ve. "Cuenta" siempre es real, así que esto nunca queda sin destino.
 const vistaPedida = Astro.url.searchParams.get("vista") as Clave | null;
-const vistaPorDefecto = vistasDisponibles.find((c) => !PROXIMAMENTE.has(c)) ?? vistasDisponibles[0];
+/*
+ * Sin hijos, se aterriza en PRACTICAR. Con hijos, en Hijos.
+ *
+ * Antes era «la primera pestaña real», que siempre daba «Hijos», así que quien
+ * no tiene un solo hijo entraba a una pantalla que le habla de sus hijos, le
+ * ofrece crear uno y le pregunta si el aparato es de la casa. Es lo que el
+ * dueño leyó en su teléfono, con mayúsculas: «No tengo hijos».
+ *
+ * Los dos modos son iguales de importantes. Quien juega solo entra a jugar.
+ */
+const vistaPorDefecto: Clave = hijos.length > 0
+  ? "hijos"
+  : (vistasDisponibles.find((c) => !PROXIMAMENTE.has(c) && c !== "hijos") ?? "practicar");
 const vista: Clave =
   vistaPedida && vistasDisponibles.includes(vistaPedida) ? vistaPedida : vistaPorDefecto;
 
@@ -201,8 +213,23 @@ const pestanas = vistasDisponibles.map((clave) => ({
   proximamente: PROXIMAMENTE.has(clave),
 }));
 
-const titulo = esFamilia ? m.casaTitulo : m.casaTituloSolo;
-const lead = esFamilia ? m.casaLead : m.casaLeadSolo;
+/*
+ * El título y la entradilla dependen de si HAY HIJOS, no del tipo de cuenta.
+ *
+ * Estaban colgados de `esFamilia`, y desde que `esFamilia` pasó a ser «no es
+ * aprendiz» —el arreglo de la pantalla sin menú— eso significó que a alguien
+ * SIN un solo hijo el producto le decía «Aquí está todo lo de tus hijos».
+ *
+ * El dueño lo leyó en su teléfono: «me sigue diciendo algo de hijos. No tengo
+ * hijos». Arreglar el menú rompió la voz, y las dos cosas venían de colgar
+ * demasiadas decisiones de una sola bandera.
+ *
+ * `esFamilia` sigue decidiendo qué PESTAÑAS existen —hay que poder crear el
+ * primer hijo— y `tieneHijos` decide qué se DICE. Son preguntas distintas.
+ */
+const tieneHijos = hijos.length > 0;
+const titulo = tieneHijos ? m.casaTitulo : m.casaTituloSolo;
+const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
 ---
 
 <Privada locale={locale} title={titulo} description={lead} pestanas={pestanas}>
@@ -278,7 +305,7 @@ const lead = esFamilia ? m.casaLead : m.casaLeadSolo;
         <h2>{m.practicarTitulo}</h2>
         <p class="muted">{m.practicarLead}</p>
         <p class="muted">{m.practicarAviso}</p>
-        <a class="boton primario" href={`/${locale}/app/practicar/`}>{m.casaJugar}</a>
+        <a class="boton primario" href={`/${locale}/app/practicar/`}>{m.casaPracticarCta}</a>
       </section>
     )}
 

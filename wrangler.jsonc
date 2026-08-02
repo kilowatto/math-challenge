@@ -13,14 +13,7 @@
 
   "assets": {
     "directory": "apps/web/dist",
-    "binding": "ASSETS",
-    // Sin esta línea, `dist/404.html` se construye y NO se sirve nunca: lo que
-    // responde a una URL inexistente es la página por defecto de Astro —gris,
-    // en inglés, sin marca y sin enlace de vuelta— en los siete locales. Se
-    // descubrió desplegando la 404 propia y viendo que producción seguía
-    // devolviendo `<title>404: Not Found</title>`. El archivo estaba ahí; nadie
-    // le había dicho a Cloudflare que lo usara.
-    "not_found_handling": "404-page"
+    "binding": "ASSETS"
   },
 
   "observability": {

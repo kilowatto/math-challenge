@@ -151,6 +151,85 @@ try {
   problems.push(`no se pudo comprobar Turnstile en /entrar/: ${err.message}`);
 }
 
+// 5-bis. Un formulario de verdad puede enviarse — no solo `fetch`
+//
+// Se añade después de romper la entrada en producción durante 45 minutos con
+// una línea de configuración de tres palabras. `not_found_handling: "404-page"`
+// hace que el enrutador de assets de Cloudflare reclame las peticiones de
+// NAVEGACIÓN antes de que corra el Worker, y para un POST contesta **405 Method
+// Not Allowed** sin que el Worker se entere. Ni `/api/entrar` ni `/api/registro`
+// llegaban a ejecutarse: nadie podía entrar ni crear cuenta, en los 7 locales.
+//
+// Lo que hace esto tan malo de cazar es que **`curl` no lo reproduce**. La
+// diferencia entera está en `Sec-Fetch-Mode: navigate`, que un navegador manda
+// al enviar un `<form>` y `curl` no manda nunca:
+//
+//     curl pelado             → 303   (correcto)
+//     curl + sec-fetch-mode   → 405   (roto)
+//
+// Así que se comprueba con las cabeceras de una navegación de verdad. Un 405, o
+// cualquier `content-type: application/json`, significa que el formulario está
+// roto — en Safari eso se ve como un diálogo ofreciendo DESCARGAR «entrar».
+//
+// Se manda a propósito una contraseña que no existe: lo que se comprueba es la
+// FORMA de la respuesta, no que alguien entre. Nunca credenciales reales aquí.
+for (const [ruta, nombre] of [["/api/entrar", "entrar"], ["/api/registro", "registro"]]) {
+  try {
+    const res = await fetch(`${ORIGIN}${ruta}`, {
+      method: "POST",
+      redirect: "manual",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "origin": ORIGIN,
+        "referer": `${ORIGIN}/es-MX/entrar/`,
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-dest": "document",
+        "sec-fetch-site": "same-origin",
+      },
+      body: "correo=no-existe@ejemplo.invalid&clave=contrasena-que-no-es",
+    });
+    const tipo = res.headers.get("content-type") ?? "";
+    if (res.status === 405) {
+      problems.push(
+        `POST ${ruta} desde un formulario devuelve 405: el enrutador de assets se está comiendo ` +
+          "la petición y el Worker no corre. NADIE puede " +
+          `${nombre === "entrar" ? "entrar" : "crear cuenta"}. Revisa \`not_found_handling\` en wrangler.jsonc.`,
+      );
+    } else if (res.status >= 300 && res.status < 400) {
+      ok.push(`POST ${ruta} desde formulario → ${res.status} a ${res.headers.get("location")}`);
+    } else if (tipo.includes("application/json")) {
+      problems.push(
+        `POST ${ruta} desde un formulario devuelve JSON (${res.status}). El navegador lo DESCARGA ` +
+          "en vez de navegar — en Safari sale un diálogo ofreciendo guardar un archivo. " +
+          "Usa `terminarBien`/`terminarMal` de lib/respuesta-de-formulario.ts.",
+      );
+    } else {
+      problems.push(`POST ${ruta} desde un formulario devuelve ${res.status} (${tipo || "sin content-type"}), y se esperaba una redirección.`);
+    }
+  } catch (err) {
+    problems.push(`no se pudo comprobar el envío de formulario a ${ruta}: ${err.message}`);
+  }
+}
+
+// 5-ter. Una URL que no existe devuelve NUESTRA 404, no la de Astro
+try {
+  const res = await fetch(`${ORIGIN}/de-DE/esta-ruta-no-existe-nunca/`);
+  const cuerpo = await res.text();
+  if (res.status !== 404) {
+    problems.push(`una URL inexistente devolvió ${res.status} en vez de 404`);
+  } else if (cuerpo.includes("404: Not Found")) {
+    problems.push(
+      "una URL inexistente devuelve la página POR DEFECTO de Astro —gris, en inglés, sin marca y " +
+        "sin enlace de vuelta— en vez de `src/pages/404.astro`.",
+    );
+  } else {
+    ok.push("404 propia servida en una ruta inexistente");
+  }
+} catch (err) {
+  problems.push(`no se pudo comprobar la 404: ${err.message}`);
+}
+
 // 6. Instalabilidad
 const { default: _ } = { default: null };
 const manifest = await (await get("/manifest.webmanifest")).json();

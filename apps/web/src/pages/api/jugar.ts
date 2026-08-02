@@ -86,8 +86,19 @@ const json = (cuerpo: unknown, status = 200) =>
     },
   });
 
-/** Cuántos ítems se planean por sesión. No es un límite: es el largo del plan. */
-const HUECOS_POR_SESION = 12;
+/**
+ * Cuántos huecos se planean. No es un límite de sesión: es el largo del plan del
+ * que sale la habilidad de cada ítem.
+ *
+ * **Tiene que ser al menos tantos como habilidades haya en rotación.** Con 12
+ * huecos y las 14 habilidades de F5, las dos últimas —K13 formas y K14
+ * patrones— no entraban al plan **nunca**: existían en el banco, se generaban
+ * sus 52 ítems, y ningún niño las iba a ver jamás. Se descubrió jugando 24
+ * ítems seguidos y contando cuántas habilidades distintas salían: 12 de 14.
+ *
+ * No falla, no avisa, y no se ve leyendo el código: hay que contar.
+ */
+const HUECOS_MINIMOS = 12;
 
 export const POST: APIRoute = async ({ request, locals, url }) => {
   const env = (locals as { runtime?: { env: Env } }).runtime?.env;
@@ -204,7 +215,7 @@ async function servirSiguiente(
     };
   });
 
-  const plan = ordenDeSesion(rotacion, Date.now(), HUECOS_POR_SESION);
+  const plan = ordenDeSesion(rotacion, Date.now(), Math.max(HUECOS_MINIMOS, rotacion.length));
 
   // ─── De dónde sale la POSICIÓN dentro del plan ───────────────────────────
   //

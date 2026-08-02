@@ -36,6 +36,28 @@ import { plataformaDe } from "../lib/plataforma";
  * producto en el mismo balde de métricas.
  */
 
+/*
+ * ─── Las tres hojas, importadas de VERDAD ──────────────────────────────────
+ *
+ * El comentario de arriba dice desde el primer día que este layout «comparte
+ * los tokens (`tokens.css`/`fonts.css`) con `Base.astro`». No los compartía:
+ * no había un solo `import`, y una hoja de estilo no se hereda por estar
+ * documentada. Toda `/app/**` se servía con la tipografía por defecto del
+ * navegador —Times, negro sobre blanco, sin franja de pestañas— mientras el
+ * archivo afirmaba lo contrario.
+ *
+ * Ya se arregló una vez (commit `4ceae86`) y volvió al resolver un conflicto de
+ * merge tomando la otra versión del archivo. Por eso la comprobación no puede
+ * ser un comentario: `audits/area-privada.mjs` exige ahora los tres imports.
+ *
+ * `Base.astro` los importa con estas mismas tres líneas. Son globales, así que
+ * importarlos en los dos layouts no los duplica en el bundle: Vite los emite
+ * una vez y las dos páginas apuntan al mismo archivo con hash.
+ */
+import "../styles/fonts.css";
+import "../styles/tokens.css";
+import "../styles/plataformas.css";
+
 interface Pestana {
   clave: string;
   label: string;

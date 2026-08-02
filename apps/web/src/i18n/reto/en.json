@@ -101,5 +101,15 @@
   "k.cardinalidad.ultimo": "Larry counted up to {n}. So how many ducks are there?",
   "k.recta.hueco": "Which number goes in the empty spot, right after {antes}?",
   "k.marco.faltan": "The ten-frame has {llenas} filled. How many more to fill it?",
-  "k.patron.sigue": "The pattern goes on and on. Which one comes next?"
+  "k.patron.sigue": "The pattern goes on and on. Which one comes next?",
+  "k.flash.estrellas": "How many stars did you see?",
+  "k.flash.patos": "How many ducks did you see?",
+  "k.contar.estrellas": "Tap each star to count them.",
+  "k.contar.piedras": "Tap each stone to count them.",
+  "k.recta.antes": "Which number goes right before {despues}?",
+  "k.recta.entre": "Which number goes between {antes} and {despues}?",
+  "k.marco.llenas": "The ten-frame has some filled. How many are filled?",
+  "k.suma.estrellas": "{a} stars and {b} more stars. How many stars now?",
+  "k.resta.estrellas": "There were {a} stars. {b} went out. How many are left?",
+  "k.patron.sigue_tres": "This pattern repeats three things. Which comes next?"
 }

@@ -101,5 +101,15 @@
   "k.cardinalidad.ultimo": "Larry contó hasta {n}. Entonces, ¿cuántos patitos hay?",
   "k.recta.hueco": "¿Qué número va en el hueco, justo después del {antes}?",
   "k.marco.faltan": "El marco tiene {llenas} llenas. ¿Cuántas faltan para llenarlo?",
-  "k.patron.sigue": "El patrón se repite y se repite. ¿Cuál sigue?"
+  "k.patron.sigue": "El patrón se repite y se repite. ¿Cuál sigue?",
+  "k.flash.estrellas": "¿Cuántas estrellas viste?",
+  "k.flash.patos": "¿Cuántos patitos viste?",
+  "k.contar.estrellas": "Toca cada estrella para contarlas.",
+  "k.contar.piedras": "Toca cada piedrita para contarlas.",
+  "k.recta.antes": "¿Qué número va justo antes del {despues}?",
+  "k.recta.entre": "¿Qué número va entre el {antes} y el {despues}?",
+  "k.marco.llenas": "El marco tiene algunas llenas. ¿Cuántas están llenas?",
+  "k.suma.estrellas": "{a} estrellas y {b} estrellas más. ¿Cuántas estrellas hay?",
+  "k.resta.estrellas": "Había {a} estrellas. Se apagaron {b}. ¿Cuántas quedan?",
+  "k.patron.sigue_tres": "Este patrón repite tres cosas. ¿Cuál sigue?"
 }

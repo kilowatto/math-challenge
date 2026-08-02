@@ -40,8 +40,15 @@ caso("ningún distractor coincide con la respuesta correcta de su propio ítem",
 });
 
 caso("los errores se DERIVAN del parámetro, con su causa nombrada", () => {
-  const suma = banco.find((i) => i.id === "k11-3-4");
-  if (!suma) throw new Error("no encontré k11-3-4");
+  // Se busca por PARÁMETROS y no por id literal. El id lleva dentro los ejes de
+  // la plantilla, así que añadir uno —el contexto del enunciado— lo cambia
+  // entero: `k11-3-4` pasó a `k11-3-4-0`. Un id escrito a mano en una prueba
+  // convierte cada variación nueva del banco en una prueba rota que no señala
+  // ningún defecto.
+  const suma = banco.find(
+    (i) => i.habilidad === "K11" && i.enunciado.vars.a === 3 && i.enunciado.vars.b === 4,
+  );
+  if (!suma) throw new Error("no encontré la suma 3 + 4");
   es(suma.respuesta.valor, 7);
   es(calificarRespuesta(suma, 12).causa, "error.multiplico", "3×4");
   es(calificarRespuesta(suma, 1).causa, "error.resto", "4−3");
@@ -49,7 +56,10 @@ caso("los errores se DERIVAN del parámetro, con su causa nombrada", () => {
 });
 
 caso("restar al revés tiene su propia causa", () => {
-  const resta = banco.find((i) => i.id === "k12-5-2");
+  const resta = banco.find(
+    (i) => i.habilidad === "K12" && i.enunciado.vars.a === 5 && i.enunciado.vars.b === 2,
+  );
+  if (!resta) throw new Error("no encontré la resta 5 − 2");
   es(resta.respuesta.valor, 3);
   es(calificarRespuesta(resta, 7).causa, "error.sumo");
 });

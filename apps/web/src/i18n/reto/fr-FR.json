@@ -101,5 +101,15 @@
   "k.cardinalidad.ultimo": "Larry a compté jusqu'à {n}. Alors, combien y a-t-il de canards ?",
   "k.recta.hueco": "Quel nombre va dans le trou, juste après {antes} ?",
   "k.marco.faltan": "La grille en a {llenas} de remplies. Combien en manque-t-il pour la remplir ?",
-  "k.patron.sigue": "Le motif se répète encore et encore. Lequel vient ensuite ?"
+  "k.patron.sigue": "Le motif se répète encore et encore. Lequel vient ensuite ?",
+  "k.flash.estrellas": "Combien d'étoiles as-tu vues ?",
+  "k.flash.patos": "Combien de canards as-tu vus ?",
+  "k.contar.estrellas": "Touche chaque étoile pour les compter.",
+  "k.contar.piedras": "Touche chaque caillou pour les compter.",
+  "k.recta.antes": "Quel nombre vient juste avant {despues} ?",
+  "k.recta.entre": "Quel nombre va entre {antes} et {despues} ?",
+  "k.marco.llenas": "La grille en a quelques-unes de remplies. Combien sont remplies ?",
+  "k.suma.estrellas": "{a} étoiles et encore {b} étoiles. Combien d'étoiles en tout ?",
+  "k.resta.estrellas": "Il y avait {a} étoiles. {b} se sont éteintes. Combien en reste-t-il ?",
+  "k.patron.sigue_tres": "Ce motif répète trois choses. Lequel vient ensuite ?"
 }

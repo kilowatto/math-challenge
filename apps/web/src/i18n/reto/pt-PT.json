@@ -101,5 +101,15 @@
   "k.cardinalidad.ultimo": "O Larry contou até {n}. Então, quantos patos há?",
   "k.recta.hueco": "Que número vai no espaço vazio, logo a seguir ao {antes}?",
   "k.marco.faltan": "O quadro tem {llenas} preenchidas. Quantas faltam para o encher?",
-  "k.patron.sigue": "O padrão repete-se e repete-se. Qual vem a seguir?"
+  "k.patron.sigue": "O padrão repete-se e repete-se. Qual vem a seguir?",
+  "k.flash.estrellas": "Quantas estrelas viste?",
+  "k.flash.patos": "Quantos patos viste?",
+  "k.contar.estrellas": "Toca em cada estrela para as contares.",
+  "k.contar.piedras": "Toca em cada pedra para as contares.",
+  "k.recta.antes": "Que número vem logo antes do {despues}?",
+  "k.recta.entre": "Que número fica entre o {antes} e o {despues}?",
+  "k.marco.llenas": "O quadro tem algumas preenchidas. Quantas estão preenchidas?",
+  "k.suma.estrellas": "{a} estrelas e mais {b} estrelas. Quantas estrelas ficam?",
+  "k.resta.estrellas": "Havia {a} estrelas. Apagaram-se {b}. Quantas ficam?",
+  "k.patron.sigue_tres": "Este padrão repete três coisas. Qual vem a seguir?"
 }

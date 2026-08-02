@@ -149,5 +149,10 @@
   "casaPasskeyCta": "Passkey hinzufügen",
   "casaPasskeyListo": "Fertig. Du kannst dich damit anmelden.",
   "casaSalir": "Abmelden",
-  "navCasa": "Dein Zuhause"
+  "navCasa": "Dein Zuhause",
+  "casaClaveTitulo": "Passwort ändern",
+  "casaClaveActual": "Aktuelles Passwort",
+  "casaClaveNueva": "Neues Passwort",
+  "casaClaveCta": "Ändern",
+  "casaClaveListo": "Fertig. Deine anderen Geräte bleiben angemeldet, bis sie ablaufen."
 }

@@ -127,6 +127,28 @@ const aparatoMarcado = Boolean(cookies[COOKIE_HOGAR]);
       <p class="ok" id="passkey-ok" hidden>{m.casaPasskeyListo}</p>
     </section>
 
+    {/* ── Cambiar la contraseña (#313) ──────────────────────────────────── */}
+    <section class="bloque">
+      <h2>{m.casaClaveTitulo}</h2>
+      {/*
+        Se pide la ACTUAL aunque haya sesión. La sesión dura 30 días y vive en el
+        teléfono: quien toma un aparato desbloqueado la tiene y no tiene la
+        contraseña. Sin este campo, esa persona deja al padre fuera de su cuenta
+        y de las de sus hijos. El porqué completo está en `/api/clave`.
+      */}
+      <div class="campo">
+        <label for="clave-actual">{m.casaClaveActual}</label>
+        <input type="password" id="clave-actual" autocomplete="current-password" />
+      </div>
+      <div class="campo">
+        <label for="clave-nueva">{m.casaClaveNueva}</label>
+        <input type="password" id="clave-nueva" autocomplete="new-password" minlength="8" maxlength="64" />
+      </div>
+      <button type="button" class="boton" id="cambiar-clave">{m.casaClaveCta}</button>
+      <p class="ok" id="clave-ok" hidden>{m.casaClaveListo}</p>
+      <p class="mal" id="clave-mal" hidden></p>
+    </section>
+
     <button type="button" class="boton salir" id="salir">{m.casaSalir}</button>
   </article>
 
@@ -156,9 +178,25 @@ const aparatoMarcado = Boolean(cookies[COOKIE_HOGAR]);
     .boton:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
     .salir { margin-block-start: var(--space); color: var(--color-text-muted); }
     .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-start: 0.5rem; }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-start: 0.5rem; }
+    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space); }
+    label { font-family: var(--font-sistema); font-size: var(--text-sm); }
+    input { font-family: var(--font-sistema); font-size: var(--text-base); min-height: 44px;
+            padding-inline: 0.75rem; color: var(--color-text); background: var(--color-surface);
+            border: 1px solid var(--color-border); border-radius: var(--radius); }
+    input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
   </style>
 
-  <script define:vars={{ destinoKids: rutaKids(locale), portada: `/${locale}/` }}>
+  <script define:vars={{
+    destinoKids: rutaKids(locale),
+    portada: `/${locale}/`,
+    MSG: {
+      credenciales: m.formErrCredenciales,
+      rango: m.formErrClave,
+      igual: m.formErrGenerico,
+      generico: m.formErrGenerico,
+    },
+  }}>
     const pedir = (accion, cuerpo) =>
       fetch(`/api/casa?accion=${accion}`, {
         method: "POST",
@@ -247,6 +285,43 @@ const aparatoMarcado = Boolean(cookies[COOKIE_HOGAR]);
         // error: la contraseña sigue funcionando y el bloque entero es opcional.
         bPasskey.disabled = false;
       }
+    });
+
+    // ── Cambiar la contraseña ───────────────────────────────────────────
+    const bClave = document.getElementById("cambiar-clave");
+    bClave?.addEventListener("click", async () => {
+      const actual = document.getElementById("clave-actual").value;
+      const nueva = document.getElementById("clave-nueva").value;
+      const ok = document.getElementById("clave-ok");
+      const mal = document.getElementById("clave-mal");
+      ok.hidden = true; mal.hidden = true;
+      bClave.disabled = true;
+      const r = await fetch("/api/clave", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ actual, nueva }),
+      }).then((x) => x.json()).catch(() => ({}));
+      bClave.disabled = false;
+      if (r.ok) {
+        ok.hidden = false;
+        document.getElementById("clave-actual").value = "";
+        document.getElementById("clave-nueva").value = "";
+        return;
+      }
+      /*
+        El mensaje sale de una tabla cerrada, igual que en `AvisoDeError`: lo que
+        el servidor devuelve es una CLAVE, y pintar una clave cruda deja
+        `credenciales` en pantalla. `credenciales` es ambiguo a propósito — no
+        dice si falló la contraseña o si no había ninguna, porque eso es
+        información sobre la cuenta.
+      */
+      const TEXTOS = {
+        credenciales: MSG.credenciales,
+        clave_fuera_de_rango: MSG.rango,
+        clave_igual: MSG.igual,
+      };
+      mal.textContent = TEXTOS[r.error] ?? MSG.generico;
+      mal.hidden = false;
     });
 
     // ── Salir ───────────────────────────────────────────────────────────

@@ -23,6 +23,35 @@ const RUNTIME = `runtime-${VERSION}`;
 
 const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
 
+/**
+ * La pantalla de último recurso, en los siete idiomas. Issue #326.
+ *
+ * Era una sola línea en español fijo y sin `<html lang>`. Dos cosas mal a la
+ * vez: un alemán sin red leía español, y un lector de pantalla no tenía forma
+ * de saber en qué idioma pronunciarlo (WCAG 3.1.1). Es la única superficie del
+ * producto que se saltaba la disciplina de idioma del resto — y justo la que
+ * aparece en el peor momento, cuando ya nada más funciona.
+ *
+ * El locale sale de la ruta que se pidió (`/de-DE/…`), que es lo único que hay
+ * cuando no hay red ni caché. `pt-PT` dice «ligação» y `pt-BR` «conexão`: son
+ * dos locales, no un idioma (D-022).
+ */
+const SIN_CONEXION = {
+  "en":    ["No connection", "No connection. This page isn’t saved on this device yet."],
+  "es-MX": ["Sin conexión", "Sin conexión. Esta página todavía no está guardada en este dispositivo."],
+  "es-ES": ["Sin conexión", "Sin conexión. Esta página todavía no está guardada en este dispositivo."],
+  "fr-FR": ["Hors connexion", "Hors connexion. Cette page n’est pas encore enregistrée sur cet appareil."],
+  "pt-BR": ["Sem conexão", "Sem conexão. Esta página ainda não está salva neste aparelho."],
+  "pt-PT": ["Sem ligação", "Sem ligação. Esta página ainda não está guardada neste dispositivo."],
+  "de-DE": ["Keine Verbindung", "Keine Verbindung. Diese Seite ist auf diesem Gerät noch nicht gespeichert."],
+};
+
+/** El locale que pide una ruta, o `en` si la ruta no lo dice. */
+const localeDeRuta = (pathname) => {
+  const primero = pathname.split("/")[1];
+  return LOCALES.includes(primero) ? primero : "en";
+};
+
 // Solo el shell mínimo. Los siete locales NO se precachean: serían siete
 // páginas completas descargadas para usar una. Se cachean al visitarse.
 //
@@ -101,9 +130,13 @@ self.addEventListener("fetch", (event) => {
             const fallback = await caches.match(`/${loc}/`);
             if (fallback) return fallback;
           }
+          const loc = localeDeRuta(url.pathname);
+          const [titulo, cuerpo] = SIN_CONEXION[loc];
           return new Response(
-            "<!doctype html><meta charset=utf-8><title>Sin conexión</title>" +
-              "<p style='font-family:system-ui;padding:2rem'>Sin conexión.</p>",
+            `<!doctype html><html lang="${loc}"><head><meta charset="utf-8">` +
+              `<meta name="viewport" content="width=device-width,initial-scale=1">` +
+              `<title>${titulo}</title></head>` +
+              `<body><p style="font-family:system-ui;padding:2rem">${cuerpo}</p></body></html>`,
             { headers: { "content-type": "text/html; charset=utf-8" }, status: 503 },
           );
         }),

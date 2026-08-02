@@ -238,6 +238,27 @@ const siteKey =
       border-color: var(--color-accent);
     }
     button:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+
+    /*
+      ─── «Crear cuenta»: subrayado A PROPÓSITO, no por default (#320) ───────
+
+      Este enlace no tenía ninguna regla, así que lo pintaba el navegador. La
+      corrección NO es quitarle el subrayado: va dentro de una oración gris, y
+      un enlace en prosa que solo se distingue por el color falla WCAG 1.4.1
+      para quien no distingue el azul del gris. Lo que cambia es que ahora el
+      subrayado es una decisión —con separación y grosor propios— y el color es
+      el token de marca, no el azul del navegador.
+
+      Es una de las dos páginas de conversión del producto; que se viera «sin
+      diseñar» era el peor sitio posible para que pasara.
+    */
+    .muted a {
+      color: var(--color-text-brand);
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+      text-decoration-thickness: 1px;
+    }
+    .muted a:hover { text-decoration-thickness: 2px; }
     .aviso-passkey {
       border-inline-start: 4px solid var(--color-error);
       background: var(--color-error-suave);

@@ -118,6 +118,11 @@ const ACTIVE = [
   // El área privada nunca hereda el layout público — encontrado en una
   // segunda captura real, esta vez del panel del padre ya con sesión abierta.
   ["area-privada",           "el área privada nunca hereda el layout público", "D-065"],
+  // `/sitemap.xml` daba 404 mientras `astro.config.mjs` tenía un comentario que
+  // daba por hecho que existía. Ahora existe y sale de las mismas tablas que las
+  // páginas, así que lo que hay que vigilar ya no es la ausencia: es que se
+  // desincronice en cualquiera de las dos direcciones (#324).
+  ["sitemap-completo",       "el sitemap anuncia todas las páginas y solo esas", "mc-48 §3, D-033, #324"],
   // Todo <script is:inline>/define:vars es JavaScript de verdad — pasó dos
   // veces por caminos distintos (reto-demo.js en producción, y de nuevo
   // durante la construcción de D-065).

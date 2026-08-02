@@ -1,6 +1,7 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { LOCALES, t, isLocale } from "../../i18n";
+import { ruta } from "../../i18n/rutas";
 import origen from "../../i18n/paginas/origen.json";
 import niveles from "../../i18n/paginas/niveles.json";
 import arquitectura from "../../i18n/paginas/arquitectura.json";
@@ -23,11 +24,22 @@ const m = t(locale);
  * traducción que mantener por página. (La navegación del layout sí usa
  * etiquetas cortas: ahí el espacio manda.)
  */
+/*
+ * Las URLs salen de `ruta()`, no de una plantilla con el segmento en español.
+ *
+ * Estaban escritas a mano —`/${locale}/origen/`— y eso fue correcto hasta
+ * D-049, que le dio a cada locale su propio segmento. Desde entonces esta lista
+ * apuntaba a `/de-DE/origen/` mientras la página vive en `/de-DE/ursprung/`:
+ * Cloudflare respondía 301 y el visitante llegaba bien, así que no se veía
+ * roto — solo costaba un salto HTTP de más en cada clic, en 5 de los 7 locales,
+ * y solo en esta lista, porque el nav de la misma página sí usaba `ruta()`
+ * (#323). Es el costo que la carta adversarial `red-lenta` vigila.
+ */
 const s2 = [
-  { href: `/${locale}/origen/`, texto: origen[locale].title },
-  { href: `/${locale}/niveles/`, texto: niveles[locale].title },
-  { href: `/${locale}/arquitectura/`, texto: arquitectura[locale].h1 },
-  { href: `/${locale}/codigo-abierto/`, texto: codigoAbierto[locale].tituloPagina },
+  { href: ruta(locale, "origen"), texto: origen[locale].title },
+  { href: ruta(locale, "niveles"), texto: niveles[locale].title },
+  { href: ruta(locale, "arquitectura"), texto: arquitectura[locale].h1 },
+  { href: ruta(locale, "codigo-abierto"), texto: codigoAbierto[locale].tituloPagina },
 ];
 ---
 
@@ -98,10 +110,16 @@ const s2 = [
     max-inline-size: var(--measure);
   }
   .explorar li { margin-block-end: 0.25rem; }
+  /* Sin `color`/`text-decoration` propios estos cuatro caían al azul-subrayado
+     por default del navegador (#320): la lista se leía como prosa enlazada y no
+     como los cuatro destinos que es. Mismo bug que el nav y el pie en PR #296. */
   .explorar a {
     display: inline-flex;
     align-items: center;
     min-block-size: var(--tap-min);
     padding-block: 0.25rem;
+    color: var(--color-text-brand);
+    text-decoration: none;
   }
+  .explorar a:hover { text-decoration: underline; }
 </style>

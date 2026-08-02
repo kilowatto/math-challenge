@@ -153,7 +153,14 @@ const fecha = (s: number) =>
       </div>
       <div class="campo">
         <label for="clave-nueva">{m.casaClaveNueva}</label>
-        <input type="password" id="clave-nueva" autocomplete="new-password" minlength="8" maxlength="64" />
+        {/* Mismo hueco que en el registro (#333): el campo exige 8-64 y no lo
+            decía en ningún sitio, ni a la vista ni al lector de pantalla. Se
+            reutiliza la pista del registro, que ya está autorada en los 7
+            locales — dos textos distintos para la misma regla es cómo empiezan
+            a contradecirse. */}
+        <input type="password" id="clave-nueva" autocomplete="new-password" minlength="8" maxlength="64"
+               aria-describedby="pista-clave-nueva" />
+        <p class="pista" id="pista-clave-nueva">{m.signupPasswordHint}</p>
       </div>
       <button type="button" class="boton" id="cambiar-clave">{m.casaClaveCta}</button>
       <p class="ok" id="clave-ok" hidden>{m.casaClaveListo}</p>
@@ -185,6 +192,7 @@ const fecha = (s: number) =>
             padding-inline: 0.75rem; color: var(--color-text); background: var(--color-surface);
             border: 1px solid var(--color-border); border-radius: var(--radius); }
     input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    .pista { font-size: var(--text-xs); color: var(--color-text-muted); line-height: var(--leading-body); margin: 0; }
     /* 44px, la vara del ADULTO. Los 88 de kinder son para superficies de niño. */
     .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
              padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);

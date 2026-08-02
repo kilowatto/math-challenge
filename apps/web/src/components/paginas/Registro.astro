@@ -142,6 +142,16 @@ const lead = m[puerta.lead];
           minlength="8"
           maxlength="64"
           autocomplete="new-password"
+          {/*
+            Sin esto la pista existe, se ve, y un lector de pantalla no la
+            anuncia nunca (#333): `<label>` da el nombre del campo, y NADA
+            asocia el párrafo de abajo con el campo salvo la cercanía visual.
+            Quien navega con VoiceOver o NVDA oye «Contraseña, campo de texto
+            protegido» y llega al mínimo de 8 caracteres chocando contra el
+            error. No es una regla estándar de axe-core, así que ningún auditor
+            determinista lo habría cazado.
+          */}
+          aria-describedby="pista-clave"
         />
         <p class="pista" id="pista-clave">{m.signupPasswordHint}</p>
       </div>

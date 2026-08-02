@@ -28,7 +28,13 @@ export type Locale = (typeof LOCALES)[number];
  */
 export const MATH_CONVENTIONS: Record<Locale, {
   decimal: "." | ",";
-  grouping: "," | "." | " ";
+  // El francés agrupa con espacio, y el espacio tiene que ser INSECABLE. Con un
+  // espacio normal el navegador puede partir «157 000» en dos líneas y el
+  // lector ve «157» al final de una y «000» al principio de la siguiente — un
+  // número roto en un producto de matemáticas. CLDR usa el fino (U+202F) para
+  // `fr-FR`. Se escribe con escape `\u202f` a propósito: literal es invisible en
+  // un editor y alguien lo sustituye por un espacio normal sin darse cuenta.
+  grouping: "," | "." | "\u202f";
   listSeparator: "," | ";";
   division: "÷" | ":";
   multiplication: "×" | "·";
@@ -39,7 +45,7 @@ export const MATH_CONVENTIONS: Record<Locale, {
   "es-MX": { decimal: ".", grouping: ",", listSeparator: ",", division: "÷", multiplication: "×", scale: "larga", longDivision: "anglo-esparsa" },
   "es-ES": { decimal: ",", grouping: ".", listSeparator: ";", division: "÷", multiplication: "×", scale: "larga", longDivision: "potencia" },
   "en":    { decimal: ".", grouping: ",", listSeparator: ",", division: "÷", multiplication: "×", scale: "corta", longDivision: "anglo" },
-  "fr-FR": { decimal: ",", grouping: " ", listSeparator: ";", division: ":", multiplication: "×", scale: "larga", longDivision: "potencia" },
+  "fr-FR": { decimal: ",", grouping: "\u202f", listSeparator: ";", division: ":", multiplication: "×", scale: "larga", longDivision: "potencia" },
   // Brasil es la excepción del portugués: escala corta, y división a la europea.
   "pt-BR": { decimal: ",", grouping: ".", listSeparator: ";", division: "÷", multiplication: "×", scale: "corta", longDivision: "potencia" },
   "pt-PT": { decimal: ",", grouping: ".", listSeparator: ";", division: ":", multiplication: "×", scale: "larga", longDivision: "potencia" },

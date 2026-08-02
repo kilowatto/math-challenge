@@ -60,7 +60,11 @@
   background: var(--color-bg);
   color: var(--color-text);
   border: 3px solid var(--color-border);
-  border-radius: 1rem;
+  /* El radio lo pone la plataforma, no este archivo (#320, D-031).
+     Estaba fijo en 1rem, así que los cinco formatos se veían idénticos en iOS,
+     Android, Windows y macOS — en la única pantalla donde el niño responde.
+     `Instalar.astro` ya usaba el patrón correcto; aquí no se aplicó. */
+  border-radius: var(--radius-control, var(--radius));
   cursor: pointer;
 
   /* Sin transición de tamaño: un blanco que se encoge al tocarlo se falla. */
@@ -127,7 +131,11 @@
 .casilla {
   min-block-size: var(--tap-kinder);
   border: 3px solid var(--color-border);
-  border-radius: 0.5rem;
+  /* `--radius`, NO `--radius-control`. La casilla de un marco de diez es una
+     figura del contenido matemático, no el chrome de un botón: con la cápsula
+     de Android (100px) las diez casillas se volverían círculos y el marco
+     dejaría de representar lo que representa. */
+  border-radius: var(--radius);
   background: none;
   cursor: pointer;
   font-size: 2rem;
@@ -165,7 +173,7 @@
 .veredicto {
   margin-block-start: 1.5rem;
   padding: 1rem 1.25rem;
-  border-radius: 1rem;
+  border-radius: var(--radius);
   border-inline-start: 6px solid var(--color-border);
   font-size: 1.125rem;
   line-height: 1.5;

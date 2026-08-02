@@ -2229,3 +2229,66 @@ re-ejecutarse»— aplicada a los agentes.
 
 **Lo que cuesta:** un paso extra en cada hallazgo, incluidos los ciertos. Se paga
 igual, porque distinguirlos antes de verificar es exactamente lo imposible.
+
+---
+
+## D-070 — Ninguna comprobación de un auditor puede ser cierta por construcción · 2026-08-02
+
+**Encontrado arreglando `#319`**, y es la razón de que 52 páginas estuvieran mal
+durante semanas con el gate en verde.
+
+`audits/jsonld-valid.mjs` comprobaba que `inLanguage` coincidiera con el locale
+de la ruta. La comprobación era correcta y el auditor estaba bien escrito. El
+problema es que `Base.astro` escribía `inLanguage: locale` **sin condición**:
+comparar ese valor con el locale de la ruta era comparar `locale` con `locale`.
+La aserción no podía fallar nunca. Verde garantizado, para siempre, sin importar
+lo que dijera la página.
+
+Mientras tanto la misma página declaraba su titular inglés como francés en el
+nodo `WebPage` y como inglés en el `ScholarlyArticle` — porque **ese** nodo sí
+calculaba el idioma de verdad.
+
+**La decisión:** al escribir un auditor, la pregunta no es «¿esta regla es
+correcta?» sino **«¿existe alguna entrada que la haga fallar?»**. Si el código
+vigilado escribe el valor esperado por construcción, la comprobación es
+decorativa. La forma de arreglarla suele ser comparar **dos fuentes
+independientes** en vez de una fuente contra sí misma: aquí, los nodos de la
+página entre ellos, que solo pueden coincidir si el layout sabe de verdad en qué
+idioma está el texto.
+
+**Cómo se demuestra:** el control negativo de `pruebas-auditores.mjs` no basta si
+el caso de prueba se escribe a mano. Aquí se degradó el HTML **ya construido**
+—el archivo real de `/fr-FR/recherche/mc-05-…/`— y se vio al auditor bloquear con
+el nombre de esa página. Una prueba que nunca se vio fallar no prueba nada
+(CLAUDE.md § Git, regla 3), y una que solo puede pasar tampoco.
+
+---
+
+## D-071 — Se formatea con el separador canónico y se lee cualquiera · 2026-08-02
+
+**Encontrado arreglando `#321`/`#322`.** El auditor de la flota lo cazó antes que
+un usuario, y solo porque la prueba de ida y vuelta probaba los siete locales.
+
+`fr-FR` agrupa los millares con **espacio fino insecable** (U+202F) y `pt-PT` con
+**punto**; los dos estaban escritos con un espacio normal. No es cosmética: con un
+espacio normal el navegador puede partir «157 000» en dos líneas —«157» al final
+de una y «000» al principio de la siguiente— y eso es un número roto en un
+producto de matemáticas.
+
+Al corregir la tabla, `parsear("1 543,2", "fr-FR")` empezó a devolver `null`:
+comparaba el separador con `" "` literal y U+202F no es `" "`. **Nadie teclea
+U+202F.** Un francés que escribe un número con millares escribe un espacio
+normal.
+
+**La decisión, que vale para todo dato de entrada del producto:**
+
+- **Al escribir**, el canónico y solo el canónico. El formateador no negocia.
+- **Al leer**, cualquier forma razonable que una persona real produzca con su
+  teclado. Rechazar la entrada de alguien porque usó el espacio que su teclado
+  produce es castigarle por no ser Unicode.
+
+Lo mismo aplica al apóstrofo: se escribe `’` y se acepta `'`.
+
+**Lo que cuesta:** el lector tiene que ser más permisivo que el escritor, así que
+las dos mitades no son simétricas y no se pueden derivar la una de la otra. Es
+más código, y es el correcto.

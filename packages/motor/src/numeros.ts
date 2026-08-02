@@ -48,7 +48,7 @@ export function formatear(n: number, locale: Locale, decimales?: number): string
   // Los millares se agrupan de tres en tres desde la derecha. En francés el
   // separador es un espacio fino insecable (U+202F), no un espacio normal: uno
   // normal permite que la línea se rompa en medio de un número.
-  const agrupada = entera.replace(/\B(?=(\d{3})+(?!\d))/g, c.grouping === " " ? " " : c.grouping);
+  const agrupada = entera.replace(/\B(?=(\d{3})+(?!\d))/g, c.grouping);
 
   const salida = fraccion === undefined ? agrupada : `${agrupada}${c.decimal}${fraccion}`;
   return negativo ? `-${salida}` : salida;
@@ -126,6 +126,22 @@ export function claveDeMagnitud(exponente: 9 | 12, locale: Locale): string {
  * Devuelve `null` si no se puede leer, en vez de `NaN`: `null` obliga a
  * decidir qué hacer y `NaN` se propaga en silencio hasta un puntaje.
  */
+/**
+ * ¿Este locale agrupa con un espacio?
+ *
+ * La pregunta NO es «¿es exactamente U+0020?». `fr-FR` agrupa con el espacio
+ * fino insecable (U+202F) porque un espacio normal deja que la línea se parta
+ * en medio del número — pero nadie teclea U+202F: un francés que escribe
+ * «1 543,2» a mano escribe un espacio normal, y su respuesta tiene que
+ * entenderse igual. Se formatea con el canónico y se lee cualquiera.
+ *
+ * Esto era una comparación literal con `" "`, y el día que la tabla pasó de
+ * espacio normal a U+202F (#322) el francés dejó de poder teclear un número con
+ * millares: `parsear("1 543,2", "fr-FR")` devolvía `null`. Lo cazó la prueba de
+ * ida y vuelta de los siete locales, no un usuario.
+ */
+const agrupaConEspacio = (sep: string) => /[\s\u00a0\u202f\u2009]/.test(sep);
+
 export function parsear(texto: string, locale: Locale): number | null {
   const c = MATH_CONVENTIONS[locale];
   const limpio = String(texto).trim();
@@ -135,14 +151,14 @@ export function parsear(texto: string, locale: Locale): number | null {
   // alemán se lee como 123 quitando los puntos — y 1.2.3 no es un número, es
   // una versión o una fecha mal escrita. Lo encontró el caso de basura de la
   // propia prueba, no un usuario.
-  const sep = c.grouping === " " ? "[\\s\\u00a0\\u202f\\u2009]" : `\\${c.grouping}`;
+  const sep = agrupaConEspacio(c.grouping) ? "[\\s\\u00a0\\u202f\\u2009]" : `\\${c.grouping}`;
   const dec = `\\${c.decimal}`;
   const FORMA = new RegExp(`^[+-]?\\d{1,3}(${sep}\\d{3})*(${dec}\\d+)?$|^[+-]?\\d+(${dec}\\d+)?$`);
   if (!FORMA.test(limpio)) return null;
 
   // Los separadores de millares se quitan; el decimal se normaliza a punto.
   // El orden importa: quitar primero el decimal dejaría "1.543,2" irreconocible.
-  const millares = c.grouping === " " ? /[\s\u00a0\u202f\u2009]/g : new RegExp(`\\${c.grouping}`, "g");
+  const millares = agrupaConEspacio(c.grouping) ? /[\s\u00a0\u202f\u2009]/g : new RegExp(`\\${c.grouping}`, "g");
   let normalizado = limpio.replace(millares, "");
   if (c.decimal === ",") normalizado = normalizado.replace(",", ".");
 

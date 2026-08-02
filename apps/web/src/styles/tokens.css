@@ -188,6 +188,25 @@ p { max-width: var(--measure); margin: 0 0 1em; }
 
 a { color: var(--color-text-brand); }
 
+/* ─── Migas de pan: navegación, no prosa (#320, misma clase que PR #296) ────
+ *
+ * `.migas` se pinta en cuatro componentes distintos, y los cuatro declaraban
+ * solo la caja del enlace —`display`, `min-block-size`— sin `color` ni
+ * `text-decoration`. El único selector que los alcanzaba era el `a` genérico de
+ * arriba, así que las migas de `/origen/`, `/investigacion/` y `/arquitectura/`
+ * salían subrayadas y en el azul por default del navegador: se leen como una
+ * web sin diseñar, justo encima del `<h1>` (D-031).
+ *
+ * Va aquí y no en cada componente a propósito. Cuatro copias de la misma regla
+ * es cómo tres de ellas se quedaron sin arreglar cuando la cuarta se arregló —
+ * que es literalmente la historia de este bug: PR #296 corrigió el nav y el pie
+ * y dejó estas fuera. */
+.migas a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.migas a:hover { color: var(--color-text); text-decoration: underline; }
+
 /* Foco visible siempre — WCAG 2.4.7, y el auditor axe-a11y de F2 lo exigirá. */
 :focus-visible {
   outline: 3px solid var(--color-accent);

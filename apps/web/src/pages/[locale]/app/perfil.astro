@@ -74,11 +74,28 @@ if (env?.DB) {
   }
 }
 
+/**
+ * ─── Las pestañas, que faltaban ────────────────────────────────────────────
+ *
+ * `Privada.astro` solo pinta la franja si se le pasan, y esta página no le
+ * pasaba ninguna: **el perfil era un callejón sin salida**. Se entraba y no
+ * había forma de volver a «Tu casa» ni de ir a ninguna otra parte — ni un
+ * enlace. El dueño lo vio en su teléfono.
+ *
+ * Se calculan aquí igual que en `app/index.astro` porque son dos rutas
+ * distintas y cada una tiene que saber cuál está activa. «Tu casa» siempre
+ * existe —es el punto de partida de todo lo demás— y «Cuenta» es esta.
+ */
+const pestanas = [
+  { clave: "casa", label: m.casaTitulo, href: `/${locale}/app/`, activa: false },
+  { clave: "cuenta", label: m.perfilTitulo, href: `/${locale}/app/perfil/`, activa: true },
+];
+
 const fecha = (s: number) =>
   new Date(s * 1000).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 ---
 
-<Privada locale={locale} title={m.perfilTitulo} description={m.perfilLead}>
+<Privada locale={locale} title={m.perfilTitulo} description={m.perfilLead} pestanas={pestanas}>
   <article class="perfil">
     <h1>{m.perfilTitulo}</h1>
     <p class="lead">{m.perfilLead}</p>

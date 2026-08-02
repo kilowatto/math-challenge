@@ -104,6 +104,9 @@ export function armarSerie(
   const conEjemplo = new Set<string>();
   let ultima: string | null = null;
   let seguidos = 0;
+  /** El formato del último ítem servido y cuántos seguidos lleva. */
+  let ultimoFormato: string | null = null;
+  let seguidosFormato = 0;
 
   while (pendientes.size > 0) {
     // La habilidad con más ítems pendientes, saltándose la última si ya se
@@ -112,8 +115,47 @@ export function armarSerie(
     const candidatas = [...pendientes.keys()].filter(
       (h) => !(h === ultima && seguidos >= MAX_SEGUIDOS) || pendientes.size === 1,
     );
-    const elegida = candidatas.sort(
-      (a, b) => (pendientes.get(b)!.length - pendientes.get(a)!.length) || a.localeCompare(b),
+    const porTamano = (a: string, b: string) =>
+      (pendientes.get(b)!.length - pendientes.get(a)!.length) || a.localeCompare(b);
+
+    // ─── También se alterna el FORMATO, no solo la habilidad ────────────────
+    //
+    // Alternar habilidades bastaba mientras el banco tenía nueve, porque los
+    // formatos venían repartidos. Con las catorce de F5, **nueve usan
+    // `toca_la_respuesta`** —el 65% de los ítems— así que dos habilidades
+    // distintas seguidas son casi siempre el mismo gesto, y `validarSerie` lo
+    // detectó: tres seguidos del mismo formato en el paso 5.
+    //
+    // Que dos ítems se sientan iguales es exactamente lo que `mc-05` llama
+    // bloque, aunque el tema cambie. Se prefiere una habilidad cuyo siguiente
+    // ítem tenga OTRO formato; si no hay ninguna, se sigue por tamaño — mejor
+    // repetir formato que dejar ítems fuera de la serie.
+    // ─── El formato se PACEA, no se alterna a la fuerza ────────────────────
+    //
+    // Forzar «siempre distinto del anterior» parece lo estricto y produce el
+    // resultado peor. Con las catorce habilidades de F5 el reparto es
+    // `toca_la_respuesta` 35 contra 31 de todo lo demás en una sesión típica:
+    // alternando uno a uno, los escasos se acaban a mitad de serie y la cola
+    // queda `RRRR`. Medido: racha de 4 en el paso 66 de 66.
+    //
+    // La regla que sí funciona es la de siempre en este tipo de problema:
+    // **prohibir el trío, permitir el par, y elegir siempre el formato al que
+    // más le queda.** Así el abundante gasta sus dobles repartidos y los
+    // escasos duran hasta el final. Es lo mismo que hace `ordenDeSesion()` en el
+    // programador, con la diferencia de que aquí el eje es el formato.
+    const restanPorFormato = new Map<string, number>();
+    for (const cola of pendientes.values()) {
+      for (const it of cola) restanPorFormato.set(it.formato, (restanPorFormato.get(it.formato) ?? 0) + 1);
+    }
+    const abundancia = (h: string) => restanPorFormato.get(pendientes.get(h)![0].formato) ?? 0;
+
+    // Solo se prohíbe el formato anterior cuando ya lleva MAX_SEGUIDOS seguidos.
+    const sinTrio = seguidosFormato >= MAX_SEGUIDOS
+      ? candidatas.filter((h) => pendientes.get(h)![0].formato !== ultimoFormato)
+      : candidatas;
+
+    const elegida = (sinTrio.length > 0 ? sinTrio : candidatas).sort(
+      (a, b) => (abundancia(b) - abundancia(a)) || porTamano(a, b),
     )[0];
 
     const cola = pendientes.get(elegida)!;
@@ -138,6 +180,8 @@ export function armarSerie(
 
     seguidos = elegida === ultima ? seguidos + 1 : 1;
     ultima = elegida;
+    seguidosFormato = item.formato === ultimoFormato ? seguidosFormato + 1 : 1;
+    ultimoFormato = item.formato;
   }
 
   return { pasos, habilidades };

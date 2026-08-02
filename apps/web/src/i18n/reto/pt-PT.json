@@ -76,5 +76,30 @@
   "juego.siguiente": "Seguinte",
   "juego.salir": "Já terminei",
   "juego.cargando": "Lá vai…",
-  "juego.mirar": "Olha!"
+  "juego.mirar": "Olha!",
+  "error.conto_los_dos_grupos": [
+    "Contaste os dois grupos juntos.",
+    "Só sobram os que ficaram sem chapéu."
+  ],
+  "error.dijo_otro_numero_de_la_cuenta": [
+    "Esse número apareceu na contagem, mas não é o total.",
+    "O total é o ÚLTIMO que disseste."
+  ],
+  "error.conto_desde_uno": [
+    "Começaste outra vez do um.",
+    "A reta já te diz onde estás."
+  ],
+  "error.siguio_el_patron_al_reves": [
+    "Seguiste o padrão ao contrário.",
+    "Olha os dois últimos e segue para a frente."
+  ],
+  "error.repitio_el_ultimo": [
+    "Repetiste o último.",
+    "Num padrão AB vão-se alternando."
+  ],
+  "k.unoauno.gorros": "{patos} patos e {gorros} chapéus. Quantos patos ficam sem chapéu?",
+  "k.cardinalidad.ultimo": "O Larry contou até {n}. Então, quantos patos há?",
+  "k.recta.hueco": "Que número vai no espaço vazio, logo a seguir ao {antes}?",
+  "k.marco.faltan": "O quadro tem {llenas} preenchidas. Quantas faltam para o encher?",
+  "k.patron.sigue": "O padrão repete-se e repete-se. Qual vem a seguir?"
 }

@@ -76,5 +76,30 @@
   "juego.siguiente": "Weiter",
   "juego.salir": "Fertig",
   "juego.cargando": "Gleich geht's los…",
-  "juego.mirar": "Schau!"
+  "juego.mirar": "Schau!",
+  "error.conto_los_dos_grupos": [
+    "Du hast beide Gruppen zusammengezählt.",
+    "Übrig bleiben nur die ohne Hut."
+  ],
+  "error.dijo_otro_numero_de_la_cuenta": [
+    "Diese Zahl kam beim Zählen vor, aber sie ist nicht die Gesamtzahl.",
+    "Die Gesamtzahl ist die LETZTE, die du gesagt hast."
+  ],
+  "error.conto_desde_uno": [
+    "Du hast wieder bei eins angefangen.",
+    "Die Linie zeigt dir schon, wo du bist."
+  ],
+  "error.siguio_el_patron_al_reves": [
+    "Du bist im Muster rückwärts gegangen.",
+    "Schau dir die letzten zwei an und mach vorwärts weiter."
+  ],
+  "error.repitio_el_ultimo": [
+    "Du hast das letzte wiederholt.",
+    "Bei einem AB-Muster wechseln sie sich ab."
+  ],
+  "k.unoauno.gorros": "{patos} Enten und {gorros} Hüte. Wie viele Enten bekommen keinen Hut?",
+  "k.cardinalidad.ultimo": "Larry hat bis {n} gezählt. Wie viele Enten sind es also?",
+  "k.recta.hueco": "Welche Zahl gehört in die Lücke, gleich nach der {antes}?",
+  "k.marco.faltan": "Im Zehnerfeld sind {llenas} voll. Wie viele fehlen noch?",
+  "k.patron.sigue": "Das Muster geht immer weiter. Welches kommt als Nächstes?"
 }

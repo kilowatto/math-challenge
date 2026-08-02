@@ -129,6 +129,26 @@
     }
   ],
 
+  // ─── Correo saliente (issue #313) ─────────────────────────────────────────
+  //
+  // `mail.kilowatto.com`, dado de alta en Cloudflare Email Service el
+  // 2026-08-02: envía a CUALQUIER destinatario, no solo a direcciones
+  // verificadas. Email Routing —que es otra cosa— solo recibiría.
+  //
+  // **La reputación ya está «At Risk» y eso condiciona quién puede usar este
+  // binding.** Con 10 envíos de prueba y 1 rebote, la tasa está en 10% contra
+  // un umbral de riesgo del 5%, y Cloudflare **pausa el envío de la cuenta**
+  // si no baja. Un endpoint que mande a la dirección que alguien tecleó es una
+  // máquina de generar rebotes: el reseteo de contraseña SOLO puede escribir a
+  // direcciones que ya estén en `users`, y aun así tiene que responder lo mismo
+  // exista o no la cuenta. El razonamiento completo está en el issue #313.
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "remote": true
+    }
+  ],
+
   "analytics_engine_datasets": [
     {
       "binding": "ATTEMPTS_AE",

@@ -150,7 +150,7 @@ const RETRO: Record<Locale, typeof retro> = {
     // una clase de CSS no le dice nada a nadie.
     document.querySelectorAll(".opciones, .contables, .marco").forEach((grupo) => {
       grupo.addEventListener("click", (e) => {
-        const b = (e.target as HTMLElement).closest("button");
+        const b = (e.target).closest("button");
         if (!b || !grupo.contains(b)) return;
         const unaSola = grupo.classList.contains("opciones");
         if (unaSola) {

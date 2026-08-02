@@ -65,7 +65,13 @@ const siteKey =
           id="correo"
           name="correo"
           required
-          autocomplete="username"
+          {/*
+            `username webauthn`, los dos valores separados por espacio, es lo que
+            le dice al navegador que puede ofrecer una passkey DENTRO de este
+            campo — en la misma lista donde ofrece los correos guardados. Sin el
+            `webauthn` no aparece, y no hay ningún otro modo de pedirlo.
+          */}
+          autocomplete="username webauthn"
           inputmode="email"
           autocapitalize="none"
           autocorrect="off"
@@ -119,10 +125,34 @@ const siteKey =
   </article>
 
   <style>
+    /*
+      ─── Un formulario de entrada NO usa `--measure` ────────────────────────
+
+      `--measure` es el ancho de una LÍNEA DE TEXTO cómoda de leer —unos 65
+      caracteres— y estirar dos campos y dos botones hasta ahí produce lo que el
+      dueño vio en su Mac: una tarjeta de 660 px con campos vacíos enormes y el
+      ojo viajando de una punta a otra para pasar del correo a la contraseña.
+
+      28rem es el ancho de campo que aguanta un correo largo sin obligar a
+      desplazar. En el teléfono no cambia nada —ahí manda `width: 100%`— y ése
+      es el orden: PWA primero, móvil segundo, escritorio tercero. Tercero no es
+      «roto».
+
+      Centrado vertical en pantallas altas: una tarjeta pequeña pegada arriba con
+      600 px de vacío debajo se lee como una página que no terminó de cargar.
+    */
     .entrar {
-      max-width: var(--measure);
+      max-width: 28rem;
       margin-inline: auto;
       padding-block: calc(var(--space) * 2);
+    }
+    @media (min-width: 48rem) and (min-height: 40rem) {
+      .entrar {
+        min-height: 70dvh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
     }
     h1 {
       font-family: var(--font-marca);
@@ -169,6 +199,28 @@ const siteKey =
       cursor: pointer;
     }
     button:hover { background: var(--color-accent-hover); }
+
+    /*
+      ─── La passkey es la ALTERNATIVA, no un segundo botón principal ────────
+
+      Los dos salían en naranja sólido y del mismo tamaño, así que la pantalla
+      hacía dos preguntas con el mismo énfasis y no había forma de saber cuál
+      era el camino. D-038 dice «passkey primero» y eso NO significa gritar más
+      fuerte: significa que se ofrece sola en el campo del correo (Conditional
+      UI), que es donde de verdad va primero. Este botón es para quien la busca.
+
+      Contorno sobre fondo, no naranja sobre naranja: el borde da 2.44:1 —solo
+      vale para bordes— y el texto va en `--color-text`, que da 9.63:1.
+    */
+    button#passkey {
+      background: transparent;
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+    button#passkey:hover {
+      background: transparent;
+      border-color: var(--color-accent);
+    }
     button:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
     .muted {
       font-size: var(--text-xs);
@@ -191,13 +243,115 @@ const siteKey =
     // `lib/rutas-app.ts` y no en cuatro archivos. Ver el encabezado de ese
     // archivo — lo encontró `turnstile-solo-adulto`.
     const DESTINO = destino;
-    const boton = document.getElementById("passkey") as HTMLButtonElement | null;
-    const b64urlABytes = (s: string) =>
+    const boton = document.getElementById("passkey");
+    const b64urlABytes = (s) =>
       Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
-    const bytesAB64url = (b: ArrayBuffer) =>
+    const bytesAB64url = (b) =>
       btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
     if (boton && "PublicKeyCredential" in window) boton.hidden = false;
+
+    /**
+     * ─── La passkey se OFRECE SOLA, sin tocar ningún botón ─────────────────
+     *
+     * Esto es Conditional UI. En cuanto la persona toca el campo del correo, el
+     * navegador enseña sus passkeys de este sitio junto a los correos
+     * guardados; al elegir una, se entra sin escribir nada.
+     *
+     * Es lo que D-038 quiere decir con «passkey primero»: el botón de abajo es
+     * el camino explícito para quien lo busca, y esto es el camino para quien
+     * no sabe que existe — que son casi todos.
+     *
+     * ─── Tres cosas que hay que hacer bien o no funciona ───────────────────
+     *
+     *  1. **`autocomplete="username webauthn"`** en el campo. Sin el segundo
+     *     valor el navegador no ofrece nada, y no hay otra forma de pedirlo.
+     *  2. **`mediation: "conditional"`**. Sin esto sale el diálogo modal en
+     *     cuanto carga la página, que es exactamente lo que no se quiere:
+     *     asaltar a quien solo venía a escribir su contraseña.
+     *  3. **`AbortController`**. La promesa queda pendiente indefinidamente
+     *     mientras la persona no elija; si envía el formulario con contraseña,
+     *     hay que abortarla o el navegador se queda esperando.
+     *
+     * En navegadores sin soporte la promesa **no se resuelve nunca** —no
+     * rechaza, se queda colgada— así que la comprobación de capacidad va antes
+     * y no se envuelve en un `catch` esperando un error que no llega.
+     */
+    /**
+     * Manda la firma al servidor y entra. La usan los DOS caminos —el botón y
+     * el autocompletado— porque son la misma ceremonia con distinto disparador.
+     * Duplicarla es cómo uno de los dos se queda sin el arreglo del otro.
+     */
+    async function entrarCon(cred, retoId) {
+      const r = cred.response;
+      const res = await (await fetch("/api/passkey-entrar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          retoId,
+          credentialId: cred.id,
+          clientDataJSON: bytesAB64url(r.clientDataJSON),
+          authenticatorData: bytesAB64url(r.authenticatorData),
+          signature: bytesAB64url(r.signature),
+        }),
+      })).json();
+      if (!res.ok) throw new Error(res.motivo);
+      location.href = DESTINO;
+    }
+
+    const abortar = new AbortController();
+
+    async function ofrecerPasskeyEnElCampo() {
+      if (!("PublicKeyCredential" in window)) return;
+      // `getClientCapabilities` es lo nuevo; `isConditionalMediationAvailable`
+      // es lo que entienden los navegadores de hace un año. Se prueban los dos
+      // porque el parque de teléfonos de gama baja no se actualiza (mc-47 §5).
+      let disponible = false;
+      try {
+        if (PublicKeyCredential.getClientCapabilities) {
+          const caps = await PublicKeyCredential.getClientCapabilities();
+          disponible = caps?.conditionalGet === true;
+        } else if (PublicKeyCredential.isConditionalMediationAvailable) {
+          disponible = await PublicKeyCredential.isConditionalMediationAvailable();
+        }
+      } catch {
+        disponible = false;
+      }
+      if (!disponible) return;
+
+      try {
+        const reto = await (await fetch("/api/passkey-reto", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ proposito: "entrar" }),
+        })).json();
+        if (!reto.ok) return;
+
+        const cred = await navigator.credentials.get({
+          publicKey: {
+            challenge: b64urlABytes(reto.reto),
+            rpId: reto.rpId,
+            userVerification: "preferred",
+          },
+          mediation: "conditional",
+          signal: abortar.signal,
+        });
+        if (!cred) return;
+        await entrarCon(cred, reto.id);
+      } catch {
+        /*
+          Cancelada, abortada, o el navegador no la soportaba de verdad. NO se
+          enseña ningún error: el formulario de contraseña sigue ahí y
+          funcionando. Un mensaje aquí culparía a la persona por un camino que
+          el producto ofreció sin que ella lo pidiera.
+        */
+      }
+    }
+
+    // Si envía el formulario con contraseña, se aborta la ceremonia pendiente.
+    document.getElementById("form-entrar")?.addEventListener("submit", () => abortar.abort());
+
+    ofrecerPasskeyEnElCampo();
 
     boton?.addEventListener("click", async () => {
       boton.disabled = true;
@@ -216,27 +370,10 @@ const siteKey =
             userVerification: "preferred",
             timeout: 60000,
           },
-        })) as PublicKeyCredential | null;
+        }));
         if (!cred) throw new Error("cancelado");
 
-        const r = cred.response as AuthenticatorAssertionResponse;
-        const res = await (await fetch("/api/passkey-entrar", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            retoId: reto.id,
-            credentialId: cred.id,
-            clientDataJSON: bytesAB64url(r.clientDataJSON),
-            authenticatorData: bytesAB64url(r.authenticatorData),
-            signature: bytesAB64url(r.signature),
-          }),
-        })).json();
-
-        if (res.ok) {
-          location.href = DESTINO;
-          return;
-        }
-        throw new Error(res.motivo);
+        await entrarCon(cred, reto.id);
       } catch {
         /*
          * Si la passkey falla —cancelada, sin llave registrada, cualquier cosa—

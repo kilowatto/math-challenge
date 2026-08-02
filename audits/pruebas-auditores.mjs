@@ -257,6 +257,26 @@ const CASOS = [
     contenido: '---\nimport Framework7 from "framework7";\n---\n<div></div>\n',
     espera: "framework7",
   },
+  {
+    auditor: "area-privada",
+    que: "una pantalla de /app/ que importa el layout público en vez del privado",
+    archivo: "apps/web/src/pages/[locale]/app/prueba-layout.astro",
+    contenido: '---\nimport Base from "../../../layouts/Base.astro";\n---\n<Base locale="en" seccion={null} title="x" description="x"></Base>\n',
+    espera: "Base.astro",
+  },
+  {
+    // El auditor se llama `script-cliente-sin-ts`, no `scripts-inline-validos`.
+    // Dos sesiones encontraron el mismo bug el mismo día —TypeScript dentro de
+    // un `<script define:vars>`, que viaja crudo al navegador y mata el script
+    // entero— y una registró un auditor que nunca escribió. Ese renglón muerto
+    // reventaba `run.mjs` con MODULE_NOT_FOUND y bloqueaba el commit de todos.
+    // El caso se conserva tal cual y apunta al auditor que sí existe.
+    auditor: "script-cliente-sin-ts",
+    que: "un <script define:vars> con sintaxis de TypeScript que el navegador no puede parsear",
+    archivo: "apps/web/src/components/PruebaScriptTS.astro",
+    contenido: '---\n---\n<script define:vars={{ x: 1 }}>\n  const el = (document.body as HTMLElement);\n</script>\n',
+    espera: "lleva TypeScript",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

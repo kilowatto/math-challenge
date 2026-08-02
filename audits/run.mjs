@@ -95,6 +95,10 @@ const ACTIVE = [
   // poner y el motor adaptativo entero era inalcanzable desde una cuenta real.
   // Ninguna prueba podía verlo — la prueba ERA el único llamador.
   ["funcion-sin-llamar",      "una puerta escrita se llama desde algún sitio", "#311, D-012, D-038"],
+  // El TypeScript dentro de un script inline viaja crudo al navegador y mata el
+  // script entero sin fallar en ningún sitio. Así estuvo la entrada con passkey
+  // en producción: la página se pintaba perfecta y no tenía JavaScript.
+  ["script-cliente-sin-ts",   "ningún script inline lleva TypeScript",        "Astro is:inline, D-032"],
 
   // S0 ya tiene sitio: estos dos se escribieron y corrían por su cuenta, pero
   // nadie los movió aquí — quedaron en PENDING diciendo "cuando haya sitio"
@@ -110,6 +114,21 @@ const ACTIVE = [
   // vez (un default "display: none" que faltaba), así que este auditor
   // existe para que la tercera vez no haga falta un iPhone real.
   ["navegacion-unica",       "una sola navegación primaria a la vez",          "D-064, mc-49"],
+
+  // El área privada nunca hereda el layout público — encontrado en una
+  // segunda captura real, esta vez del panel del padre ya con sesión abierta.
+  ["area-privada",           "el área privada nunca hereda el layout público", "D-065"],
+  // Todo <script is:inline>/define:vars es JavaScript de verdad — pasó dos
+  // veces por caminos distintos (reto-demo.js en producción, y de nuevo
+  // durante la construcción de D-065).
+  // `scripts-inline-validos` estaba registrado aquí y su archivo NO existe, así
+  // que `run.mjs` reventaba con MODULE_NOT_FOUND y bloqueaba el commit de todo
+  // el mundo. Otra sesión lo registró tras encontrar —por su cuenta y el mismo
+  // día— el bug de TypeScript en scripts inline que rompió la entrada con
+  // passkey. Su intención está cubierta por `script-cliente-sin-ts`, que sí
+  // existe, tiene control negativo y está tres líneas más abajo. Se quita el
+  // renglón muerto en vez de dejar dos auditores para la misma regla, que es
+  // como acaba apagándose uno de los dos.
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

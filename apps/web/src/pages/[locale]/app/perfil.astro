@@ -1,0 +1,293 @@
+---
+/**
+ * `/{locale}/app/perfil` — **la cuenta del adulto.** Issues #311 y #313.
+ *
+ * ─── Existía la redirección y no existía el destino ────────────────────────
+ *
+ * D-06x punto 3 manda aquí a toda cuenta que no tenga hijos ni sea aprendiz —
+ * que es exactamente el estado de una cuenta recién creada. El dueño inició
+ * sesión y aterrizó en un **404 de Astro**, negro, con el logo de Astro y la
+ * ruta cruda. Peor que una pantalla fea: parece que el producto se rompió.
+ *
+ * La causa fue de coordinación, no de código: dos sesiones repartiéndose
+ * `/app/**` (issue #316), una escribió la redirección y la otra —yo— no había
+ * escrito el destino todavía.
+ *
+ * ─── Y aquí vive el ALTA DE PASSKEY, que se había perdido ──────────────────
+ *
+ * `navigator.credentials.create()` estaba en `app/index.astro` y desapareció al
+ * rehacer esa pantalla. Sin él **no había ni un sitio en todo el producto donde
+ * crear una passkey**, así que la Conditional UI de `/entrar/` —que funciona—
+ * no tenía nada que ofrecer. Vive aquí ahora, que es su sitio: es una pantalla
+ * de cuenta, no de familia.
+ *
+ * `residentKey: "preferred"` no es opcional y es lo que faltaba. Sin él la
+ * credencial nace **no descubrible**: el gestor de contraseñas la guarda, la
+ * enseña en su lista, y el navegador contesta «no se han encontrado claves»
+ * porque solo puede usarla si el servidor le dice su id de antemano — cosa que
+ * exige saber ya quién eres, o sea justo lo que la passkey venía a evitar.
+ */
+export const prerender = false;
+
+import Privada from "../../../layouts/Privada.astro";
+import { t, isLocale, type Locale } from "../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../lib/sesiones";
+import { ruta } from "../../../i18n/rutas";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const m = t(locale);
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(ruta(locale, "entrar"));
+
+/**
+ * Los datos de la cuenta. **Solo lo que se pinta.**
+ *
+ * El correo sí: es lo que identifica la cuenta y su dueño tiene derecho a
+ * verlo. El país y la zona horaria NO se piden aunque existan en la fila — se
+ * derivaron de la petición sin preguntar (migración 0003) y enseñarlos aquí
+ * sería revelar que se dedujeron.
+ */
+let cuenta: { email: string; created_at: number } | null = null;
+let passkeys: Array<{ id: string; created_at: number }> = [];
+if (env?.DB) {
+  try {
+    cuenta = await env.DB.prepare("SELECT email, created_at FROM users WHERE id = ?")
+      .bind(sesion.userId)
+      .first<{ email: string; created_at: number }>();
+    const r = await env.DB.prepare(
+      "SELECT credential_id AS id, created_at FROM user_passkeys WHERE user_id = ? ORDER BY created_at",
+    )
+      .bind(sesion.userId)
+      .all<{ id: string; created_at: number }>();
+    passkeys = r.results ?? [];
+  } catch {
+    // Sin base se enseña la pantalla igual: el alta de passkey y el cambio de
+    // contraseña no dependen de poder LEER la cuenta.
+  }
+}
+
+const fecha = (s: number) =>
+  new Date(s * 1000).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
+---
+
+<Privada locale={locale} title={m.perfilTitulo} description={m.perfilLead}>
+  <article class="perfil">
+    <h1>{m.perfilTitulo}</h1>
+    <p class="lead">{m.perfilLead}</p>
+
+    {/* ── Los datos ─────────────────────────────────────────────────────── */}
+    <section class="bloque">
+      <h2>{m.perfilDatos}</h2>
+      {cuenta ? (
+        <dl class="datos">
+          <dt>{m.signupEmail}</dt>
+          <dd>{cuenta.email}</dd>
+          <dt>{m.perfilDesde}</dt>
+          <dd>{fecha(cuenta.created_at)}</dd>
+        </dl>
+      ) : (
+        <p class="muted">{m.formErrGenerico}</p>
+      )}
+    </section>
+
+    {/* ── Las passkeys (D-038) ──────────────────────────────────────────── */}
+    <section class="bloque" id="bloque-passkey">
+      <h2>{m.casaPasskeyTitulo}</h2>
+      <p class="muted">{m.casaPasskeyTexto}</p>
+
+      {passkeys.length > 0 ? (
+        <ul class="llaves">
+          {passkeys.map((k) => (
+            <li>{m.perfilLlaveDesde} {fecha(k.created_at)}</li>
+          ))}
+        </ul>
+      ) : (
+        <p class="muted">{m.perfilSinLlaves}</p>
+      )}
+
+      {/*
+        Nace `hidden` y solo aparece si el navegador tiene la API. Al revés
+        —pintarlo y esconderlo— enseñaría un botón muerto a quien no puede
+        usarlo.
+      */}
+      <button type="button" class="boton" id="passkey" hidden>{m.casaPasskeyCta}</button>
+      <p class="ok" id="passkey-ok" hidden>{m.casaPasskeyListo}</p>
+    </section>
+
+    {/* ── La contraseña (#313) ──────────────────────────────────────────── */}
+    <section class="bloque">
+      <h2>{m.casaClaveTitulo}</h2>
+      {/*
+        Se pide la ACTUAL aunque haya sesión: dura 30 días y vive en el teléfono,
+        así que quien toma un aparato desbloqueado la tiene y no tiene la
+        contraseña. El porqué completo está en `/api/clave`.
+      */}
+      <div class="campo">
+        <label for="clave-actual">{m.casaClaveActual}</label>
+        <input type="password" id="clave-actual" autocomplete="current-password" />
+      </div>
+      <div class="campo">
+        <label for="clave-nueva">{m.casaClaveNueva}</label>
+        <input type="password" id="clave-nueva" autocomplete="new-password" minlength="8" maxlength="64" />
+      </div>
+      <button type="button" class="boton" id="cambiar-clave">{m.casaClaveCta}</button>
+      <p class="ok" id="clave-ok" hidden>{m.casaClaveListo}</p>
+      <p class="mal" id="clave-mal" hidden></p>
+    </section>
+  </article>
+
+  <style>
+    .perfil { max-width: 34rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    h2 { font-family: var(--font-sistema); font-size: var(--text-base);
+         font-weight: var(--weight-subtitle); margin: 0 0 calc(var(--space) * 0.5); }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm);
+             line-height: var(--leading-body); margin-block-end: var(--space); }
+    .datos { display: grid; grid-template-columns: auto 1fr; gap: 0.4rem var(--space); margin: 0; }
+    dt { color: var(--color-text-muted); font-size: var(--text-sm); }
+    dd { margin: 0; font-family: var(--font-sistema); overflow-wrap: anywhere; }
+    .llaves { list-style: none; padding: 0; margin: 0 0 var(--space); }
+    .llaves li { padding: 0.5rem 0.75rem; border: 1px solid var(--color-border);
+                 border-radius: var(--radius); margin-block-end: 0.4rem; font-size: var(--text-sm); }
+    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space); }
+    label { font-family: var(--font-sistema); font-size: var(--text-sm); }
+    input { font-family: var(--font-sistema); font-size: var(--text-base); min-height: 44px;
+            padding-inline: 0.75rem; color: var(--color-text); background: var(--color-surface);
+            border: 1px solid var(--color-border); border-radius: var(--radius); }
+    input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    /* 44px, la vara del ADULTO. Los 88 de kinder son para superficies de niño. */
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             background: transparent; color: var(--color-text); font-family: var(--font-sistema);
+             font-size: var(--text-base); cursor: pointer; }
+    .boton:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+    .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-start: 0.5rem; }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-start: 0.5rem; }
+  </style>
+
+  <script is:inline define:vars={{ MSG: {
+    credenciales: m.formErrCredenciales,
+    rango: m.formErrClave,
+    generico: m.formErrGenerico,
+  } }}>
+    // JavaScript puro: este script es INLINE y los inline no se compilan.
+    // Ver `audits/script-cliente-sin-ts.mjs`.
+    const b64urlABytes = (s) =>
+      Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+    const bytesAB64url = (b) =>
+      btoa(String.fromCharCode(...new Uint8Array(b)))
+        .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+    const bPasskey = document.getElementById("passkey");
+    if (bPasskey && "PublicKeyCredential" in window) bPasskey.hidden = false;
+
+    bPasskey?.addEventListener("click", async () => {
+      bPasskey.disabled = true;
+      try {
+        const reto = await (await fetch("/api/passkey-reto", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ proposito: "registrar" }),
+        })).json();
+        if (!reto.ok) throw new Error(reto.motivo);
+
+        const cred = await navigator.credentials.create({
+          publicKey: {
+            challenge: b64urlABytes(reto.reto),
+            rp: { id: reto.rpId, name: "Math Challenge" },
+            user: {
+              id: b64urlABytes(reto.usuarioId),
+              name: reto.usuarioNombre ?? "",
+              displayName: reto.usuarioNombre ?? "",
+            },
+            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+            /*
+              `residentKey: "preferred"` es lo que hace la credencial
+              DESCUBRIBLE, y sin él nada de esto sirve: el gestor la guarda, la
+              enseña en su lista, y el navegador contesta «no se han encontrado
+              claves» porque solo puede usarla si el servidor le dice su id de
+              antemano — que es justo lo que la passkey venía a evitar.
+
+              Le pasó al dueño: 1Password mostraba su llave del 1 de agosto y
+              `/entrar/` no la encontraba.
+            */
+            authenticatorSelection: {
+              residentKey: "preferred",
+              requireResidentKey: false,
+              userVerification: "preferred",
+            },
+            timeout: 60000,
+          },
+        });
+        if (!cred) throw new Error("cancelado");
+
+        const r = cred.response;
+        const res = await (await fetch("/api/passkey-registrar", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            retoId: reto.id,
+            credentialId: cred.id,
+            clientDataJSON: bytesAB64url(r.clientDataJSON),
+            attestationObject: bytesAB64url(r.attestationObject),
+          }),
+        })).json();
+
+        if (res.ok) {
+          document.getElementById("passkey-ok").hidden = false;
+          bPasskey.hidden = true;
+          // Se recarga para que la llave nueva salga en la lista: quien la
+          // acaba de crear quiere verla ahí, no confiar en un mensaje.
+          setTimeout(() => location.reload(), 1200);
+          return;
+        }
+        throw new Error(res.motivo);
+      } catch {
+        // Cancelada, sin autenticador, lo que sea: NO se enseña un error. La
+        // contraseña sigue funcionando y esto es opcional.
+        bPasskey.disabled = false;
+      }
+    });
+
+    const bClave = document.getElementById("cambiar-clave");
+    bClave?.addEventListener("click", async () => {
+      const ok = document.getElementById("clave-ok");
+      const mal = document.getElementById("clave-mal");
+      ok.hidden = true; mal.hidden = true;
+      bClave.disabled = true;
+      const r = await fetch("/api/clave", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          actual: document.getElementById("clave-actual").value,
+          nueva: document.getElementById("clave-nueva").value,
+        }),
+      }).then((x) => x.json()).catch(() => ({}));
+      bClave.disabled = false;
+      if (r.ok) {
+        ok.hidden = false;
+        document.getElementById("clave-actual").value = "";
+        document.getElementById("clave-nueva").value = "";
+        return;
+      }
+      // Tabla cerrada: el servidor devuelve una CLAVE, y pintarla cruda dejaría
+      // `credenciales` en pantalla.
+      const TEXTOS = { credenciales: MSG.credenciales, clave_fuera_de_rango: MSG.rango };
+      mal.textContent = TEXTOS[r.error] ?? MSG.generico;
+      mal.hidden = false;
+    });
+  </script>
+</Privada>

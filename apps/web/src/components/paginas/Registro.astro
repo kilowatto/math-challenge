@@ -293,14 +293,15 @@ const lead = m[puerta.lead];
      * aparato, y en Android de gama baja va a pasar mucho.
      */
     const campoClave = document.getElementById("campo-clave");
-    const clave = document.getElementById("clave") as HTMLInputElement | null;
+    const clave = document.getElementById("clave");
     const enviar = document.getElementById("enviar");
 
     async function hayPasskey(): Promise<boolean> {
       if (!("PublicKeyCredential" in window)) return false;
-      const PKC = window.PublicKeyCredential as unknown as {
-        isUserVerifyingPlatformAuthenticatorAvailable?: () => Promise<boolean>;
-      };
+      // Sin anotación de tipo: este script es INLINE y los inline no se
+      // compilan, así que un `as {…}` viajaría crudo al navegador y mataría el
+      // script entero. Ver `audits/script-cliente-sin-ts.mjs`.
+      const PKC = window.PublicKeyCredential;
       if (typeof PKC.isUserVerifyingPlatformAuthenticatorAvailable !== "function") return false;
       try {
         return await PKC.isUserVerifyingPlatformAuthenticatorAvailable();

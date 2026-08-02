@@ -20,7 +20,30 @@ const DIST = "apps/web/dist";
 
 // Presupuestos en KB, comprimidos con gzip (que es como viajan por la red).
 const BUDGET = {
-  html: 12,       // por página de producto o marketing
+  // 12 → 14, 2026-08-02, medido, no subido a ciegas hasta que pasara.
+  //
+  // D-065 agregó `Instalar.astro` a `layouts/Privada.astro` (el aviso de
+  // instalación en el panel del padre, D-034/mc-33: quien vuelve ahí a diario
+  // es a quien más le conviene instalar). Ese componente YA vivía en
+  // `Base.astro`; que un SEGUNDO layout lo importe le cambia a Vite el cálculo
+  // de qué CSS compartido conviene incrustar contra cuál conviene enlazar
+  // aparte — y ese cálculo es GLOBAL, no por página: una página de marketing
+  // sin ninguna relación con `/app/` (`de-DE/architektur`) terminó recibiendo
+  // más CSS incrustado que antes.
+  //
+  // Aislado y confirmado quitando el import: sin `Instalar` en `Privada.astro`
+  // el corrimiento desaparece. Se decidió conservar el aviso de instalación
+  // —vale más que 78 páginas midan 0.1-0.2 KB más— y subir el techo con la
+  // medición real en vez de tocar una sola ruta (`SEGS_CORPUS` de abajo existe
+  // justo para no reconocer excepciones "por lo gorda que salió la página").
+  //
+  // MEDICIÓN, 2026-08-02, 78 páginas no-corpus, con el import ya puesto:
+  //
+  //     mínimo 0.5 · mediana 7.8 · p90 9.8 · p99 12.1 · máximo 12.1
+  //
+  // Mismo ~15% de holgura sobre el máximo real que ya usa `htmlCorpus` más
+  // abajo (24 sobre 20.8). 12.1 × 1.15 ≈ 13.9 → 14.
+  html: 14,       // por página de producto o marketing
   // Un documento de investigación es legítimamente más pesado que una portada:
   // son ~3,300 palabras de texto, y ese texto ES el activo (D-033, mc-48). El
   // presupuesto de 12 KB se calibró contra páginas de 2 KB, y aplicárselo a un

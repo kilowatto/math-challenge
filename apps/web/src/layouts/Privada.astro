@@ -1,23 +1,4 @@
 ---
-/*
- * ─── Las hojas de estilo, que faltaban ──────────────────────────────────────
- *
- * `Base.astro` las importa y este layout no lo hacía, así que **toda pantalla
- * privada se renderizaba sin un solo token**: sin colores, sin tipografía, sin
- * espaciado. Las páginas se veían como HTML crudo de 1995.
- *
- * No falla en ningún sitio y no lo atrapa ningún auditor: los estilos de cada
- * componente compilan bien, referencian `var(--color-text)` como deben, y esa
- * variable sencillamente no existe en el documento. El dueño lo encontró
- * mirando su propia pantalla de cuenta.
- *
- * `fonts.css` y `tokens.css` son obligatorias. `plataformas.css` también:
- * D-031 y D-064 dependen de `data-platform` y de las consultas de
- * `display-mode`, y sin ella la navegación privada no sabe si está instalada.
- */
-import "../styles/fonts.css";
-import "../styles/tokens.css";
-import "../styles/plataformas.css";
 import Rum from "../components/Rum.astro";
 import Instalar from "../components/Instalar.astro";
 import { t, type Locale } from "../i18n";

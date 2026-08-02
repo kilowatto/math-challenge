@@ -134,6 +134,25 @@ const ACTIVE = [
   // existe, tiene control negativo y está tres líneas más abajo. Se quita el
   // renglón muerto en vez de dejar dos auditores para la misma regla, que es
   // como acaba apagándose uno de los dos.
+
+  // ─── Los tres de #341 ────────────────────────────────────────────────────
+  //
+  // El dueño encontró SIETE fallos jugando quince minutos en su teléfono, y
+  // ninguno de los 67 auditores los vio. Dos de los siete ya se habían
+  // arreglado antes y volvieron — uno porque un `git checkout --theirs`
+  // deshizo el arreglo al resolver un conflicto. Lo que falló las dos veces no
+  // fue el arreglo: fue que nada volvía a comprobarlo.
+  //
+  // Los tres nacen con DEUDA DECLARADA, y eso es deliberado. Cada uno encontró
+  // fallos reales que `audits/` no arregla porque no toca `apps/` ni
+  // `packages/`. La deuda va escrita renglón por renglón dentro del auditor,
+  // se imprime en cada corrida, y **un renglón que deje de reproducirse
+  // bloquea** hasta que alguien lo borre (`separarDeuda`, en `lib/repo.mjs`).
+  // Es lo contrario de apagar la regla: la clase entera bloquea desde hoy, y
+  // la violación conocida se lee en cada commit en vez de dormir en un issue.
+  ["hojas-de-estilo",         "quien sirve <html> propio llega vestido",       "#341, D-065, D-070"],
+  ["componente-sin-importar", "ningún <Componente> sin su import",             "#341, #342"],
+  ["opciones-contestables",   "ninguna opción es un identificador interno",    "#349, #358, D-048"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

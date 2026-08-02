@@ -25,6 +25,24 @@ Va aparte a propósito: `run.mjs` juzga el cambio que estás por hacer, `live.mj
 juzga lo que ya está desplegado. Mezclarlos haría que un commit fallara porque el
 sitio se cayó, que no es culpa del commit.
 
+**`live.mjs` siembra una sesión de verdad** (#341). Hasta el 2026-08-02 el área
+privada no se verificaba nunca: `curl` sin cookie recibe un 302 a `/entrar/` y no
+ve nada de `/app/**`, así que los dos bugs que dejaron a toda cuenta nueva sin
+salida los encontró el dueño en su teléfono. Ahora la comprobación crea dos
+cuentas vacías —una de familia y una de adulto que aprende solo—, escribe su fila
+en D1 y su token en KV, pide las páginas con esa cookie, y **las borra al
+terminar pase lo que pase**. Si el proceso muere a medias, queda una fila con
+correo `auditor-sesion-…@math-challenge.invalid` y la corrida siguiente la barre.
+
+```
+node audits/live.mjs --sin-sesion        no siembra nada (y lo dice en voz alta)
+node audits/live.mjs http://localhost:8788 --sembrar --local
+```
+
+La segunda forma es el **control negativo**: se levanta `wrangler dev`, se
+restaura a mano el bug de #341 y se comprueba que la verificación bloquea. Contra
+producción no hay manera de ver fallar esto sin rompérsela a alguien.
+
 **Antes de abrir un PR**, a mano:
 
 ```
@@ -66,7 +84,7 @@ documentación no despierta al de PWA en iOS.
 
 | | qué juzga | cuándo | bloquea |
 |---|---|---|---|
-| `run.mjs` (7 deterministas) | el cambio | cada commit, gancho | siempre |
+| `run.mjs` (42 deterministas) | el cambio | cada commit, gancho | siempre |
 | `adversarial.mjs` (28 con LLM) | el cambio | antes del PR, a mano | solo citando línea roja o decisión |
 | `live.mjs` | producción desplegada | tras desplegar, a mano | no commitea nada |
 
@@ -99,6 +117,20 @@ Ambas se prueban sin gastar una llamada:
 node audits/adversarial/prueba.mjs   las dos reglas, con veredictos escritos a mano
 node audits/adversarial.mjs --cartas las 28 cartas contra el repo
 ```
+
+## La deuda declarada, y por qué no es una anulación
+
+Un auditor nuevo casi siempre nace ROJO: se escribe porque algo se rompió, y lo
+roto sigue roto el día que se escribe. Las dos salidas fáciles son malas —
+dejarlo fuera de `run.mjs` «hasta que el producto esté limpio» (así fallaron
+abiertos seis auditores sin que nadie lo supiera) o ablandar la regla hasta que
+pase (y entonces deja de cazar la clase entera).
+
+La salida es `separarDeuda`, en `lib/repo.mjs`: cada violación conocida se
+escribe **dentro del auditor**, con su issue y su porqué, se imprime en cada
+corrida, y todo lo demás bloquea. **Un renglón que deje de reproducirse
+bloquea**, así que la lista no puede crecer y quedarse. Lo usan hoy
+`hojas-de-estilo` (1 renglón) y `opciones-contestables` (4).
 
 ## Estado
 

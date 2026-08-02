@@ -230,6 +230,245 @@ try {
   problems.push(`no se pudo comprobar la 404: ${err.message}`);
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// 5-quater. Una cuenta RECIÉN CREADA llega a la acción principal de su tipo
+//
+// Hace cumplir: #341 bug 2, D-026, D-034, D-065.
+//
+// ─── Por qué esto no se puede comprobar leyendo código ─────────────────────
+//
+// `esFamilia` valía `hijos.length > 0`. Un padre con cero hijos —**el estado de
+// TODA cuenta recién creada**— no era ni familia ni aprendiz: se quedaba con
+// una sola pestaña, `Privada.astro` esconde la franja cuando solo hay una (un
+// menú de un elemento no es un menú), aterrizaba en sus propios ajustes de
+// contraseña, y **no había ninguna forma de crear el primer perfil de hijo**
+// porque ese botón vive en la pestaña que no existía. La pantalla vacía
+// correcta ya estaba escrita y era inalcanzable.
+//
+// Lo que falló no fue el arreglo: fue la verificación. Se comprobó con `curl`
+// sin sesión, y sin sesión `/app/**` responde 302 a `/entrar/` y no se ve nada.
+// Por eso esto SIEMBRA una sesión de verdad contra producción.
+//
+// ─── Por qué no puede ser cierto por construcción (D-070) ──────────────────
+//
+// Las dos fuentes son de sistemas distintos: el TIPO de cuenta se escribe en
+// D1 (`users.is_learner`) desde aquí, y la ACCIÓN PRINCIPAL se lee del HTML que
+// el Worker sirve. Nada del producto participa en la primera. Se comprueba
+// además cruzado: la cuenta de familia tiene que poder crear un perfil y la de
+// aprendiz tiene que poder practicar, así que un panel que enseñara siempre lo
+// mismo fallaría uno de los dos casos por definición.
+//
+// ─── LO QUE ESTA COMPROBACIÓN NO HACE ──────────────────────────────────────
+//
+//  · NO pasa por el registro real. Siembra la fila y el token directamente, así
+//    que un `/api/registro` roto —Turnstile, contraseña, correo duplicado— no
+//    lo ve. Eso es la comprobación 5-bis, que sí manda el formulario.
+//  · NO comprueba que la acción principal FUNCIONE al pulsarla: comprueba que
+//    existe y que su página responde. Crear un perfil de verdad dejaría un
+//    niño en la base de producción.
+//  · NO mide los siete locales: siembra en `en`. Las rutas de `/app/**` no se
+//    traducen (`rutas-app.ts`), así que el locale no cambia la estructura.
+//  · Escribe en producción — D1 y KV — y borra al terminar, pase lo que pase.
+//    Si el proceso muere entre la siembra y el borrado, queda una fila con
+//    correo `auditor-sesion-…@math-challenge.invalid`; la corrida siguiente la
+//    barre antes de empezar.
+// ───────────────────────────────────────────────────────────────────────────
+
+// Por defecto solo se siembra contra producción: es lo único que este archivo
+// juzga. `--sembrar` lo fuerza contra cualquier origen, y existe para el CONTROL
+// NEGATIVO: se levanta `wrangler dev --remote` con el bug de #341 restaurado a
+// mano y se comprueba que esto lo caza. Sin esa vía no habría forma de ver
+// fallar la comprobación sin desplegar el bug a producción.
+const SEMBRAR =
+  !process.argv.includes("--sin-sesion") &&
+  (ORIGIN.includes("math.kilowatto.com") || process.argv.includes("--sembrar"));
+
+if (!SEMBRAR) {
+  // Un salto silencioso es exactamente cómo estos dos bugs llegaron al teléfono
+  // del dueño. Si no se siembra, se dice.
+  console.log(
+    "○ sesión sembrada: OMITIDA " +
+      (ORIGIN.includes("math.kilowatto.com") ? "(--sin-sesion)" : "(origen que no es producción)") +
+      " — el área privada NO se verificó.",
+  );
+} else {
+  const { execFileSync } = await import("node:child_process");
+  const { writeFileSync } = await import("node:fs");
+  const crypto = await import("node:crypto");
+
+  // wrangler carga `.env` por su cuenta, y el `CLOUDFLARE_API_TOKEN` de Workers
+  // AI que vive ahí ECLIPSA la sesión OAuth: sin esto, todo falla con
+  // `Authentication error [code: 10000]`. Es la misma trampa de CLAUDE.md.
+  const VACIO = `/tmp/mc-live-vacio-${process.pid}.env`;
+  writeFileSync(VACIO, "");
+
+  const RAIZ = new URL("..", import.meta.url).pathname;
+  const wrangler = (args) =>
+    execFileSync("npx", ["wrangler", ...args, `--env-file=${VACIO}`], {
+      cwd: RAIZ,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 120000,
+    });
+
+  // El id del namespace y el nombre de la base salen de `wrangler.jsonc`, no de
+  // una constante aquí: dos copias del mismo id es cómo una se queda vieja.
+  const conf = (await import("node:fs")).readFileSync(`${RAIZ}wrangler.jsonc`, "utf8");
+  const sinComentarios = conf.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/[^\n]*$/gm, "");
+  const KV_SESIONES = JSON.parse(sinComentarios).kv_namespaces.find((n) => n.binding === "SESSION_KV")?.id;
+  const BASE = JSON.parse(sinComentarios).d1_databases.find((d) => d.binding === "DB")?.database_name;
+
+  // `--local` siembra en el estado de `wrangler dev` en vez de en producción.
+  // Existe para el CONTROL NEGATIVO: levantar el sitio con el bug de #341
+  // restaurado a mano y ver esta comprobación BLOQUEAR, sin desplegarle el bug
+  // a nadie. Contra producción no hay forma de ver fallar esto sin romperla.
+  const ALMACEN = process.argv.includes("--local") ? "--local" : "--remote";
+  const d1 = (sql) => wrangler(["d1", "execute", BASE, ALMACEN, "--command", sql]);
+  const CORREO = "auditor-sesion-";
+
+  /** Una cuenta y su token de sesión. `intent` es solo intención observada. */
+  const cuentas = [
+    {
+      nombre: "familia recién creada (0 hijos)",
+      learner: 0,
+      intent: "PADRE",
+      // La acción principal de una cuenta a cargo de alguien: crear el primer
+      // perfil. Vive en la pestaña «Hijos», que es justo la que desapareció.
+      vista: "hijos",
+      espera: "/en/app/perfil-nuevo/",
+      queEs: "crear el primer perfil de hijo",
+    },
+    {
+      nombre: "adulto que aprende solo (is_learner=1)",
+      learner: 1,
+      intent: "ADULTO_APRENDE",
+      vista: "practicar",
+      espera: "/en/app/practicar/",
+      queEs: "ponerse a practicar",
+    },
+  ];
+
+  const sembradas = [];
+  try {
+    // Barrido de restos de una corrida que muriera a medias.
+    try {
+      d1(`DELETE FROM users WHERE email LIKE '${CORREO}%'`);
+    } catch {
+      /* si la base no responde lo dirá la siembra, con mejor mensaje */
+    }
+
+    for (const c of cuentas) {
+      c.userId = crypto.randomUUID();
+      c.token = crypto.randomBytes(32).toString("base64url");
+      const ahora = Date.now();
+      d1(
+        `INSERT INTO users (id, email, email_verified, locale, is_learner, created_at, updated_at) ` +
+          `VALUES ('${c.userId}', '${CORREO}${c.token.slice(0, 12)}@math-challenge.invalid', 0, 'en', ${c.learner}, ${ahora}, ${ahora})`,
+      );
+      wrangler([
+        "kv", "key", "put",
+        `s:${c.token}`,
+        JSON.stringify({ userId: c.userId, creadaEn: ahora, intent: c.intent }),
+        "--namespace-id", KV_SESIONES, ALMACEN, "--ttl", "300",
+      ]);
+      sembradas.push(c);
+    }
+
+    for (const c of sembradas) {
+      const cabeceras = { Cookie: `mc_s=${c.token}; mc_p=1` };
+
+      const casa = await fetch(`${ORIGIN}/en/app/`, { headers: cabeceras, redirect: "manual" });
+      if (casa.status !== 200) {
+        problems.push(
+          `una cuenta ${c.nombre} pide /en/app/ con sesión válida y recibe ${casa.status}` +
+            `${casa.headers.get("location") ? ` → ${casa.headers.get("location")}` : ""}. ` +
+            "Con sesión sembrada en KV eso es la casa echando a quien acaba de entrar.",
+        );
+        continue;
+      }
+      const html = await casa.text();
+
+      // 1. Hay MENÚ. `Privada.astro` esconde la franja con una sola pestaña, y
+      //    «sin menú» fue literalmente cómo el dueño reportó el bug.
+      const pestanas = new Set([...html.matchAll(/\/en\/app\/\?vista=([a-z]+)/g)].map((m) => m[1]));
+      if (pestanas.size < 2) {
+        problems.push(
+          `una cuenta ${c.nombre} ve ${pestanas.size} pestaña(s) en /en/app/. Con una sola, Privada.astro ` +
+            "no pinta la franja: es el «sin menú» de #341, y con él no hay forma de llegar a nada.",
+        );
+      } else {
+        ok.push(`${c.nombre}: ${pestanas.size} pestañas (${[...pestanas].join(", ")})`);
+      }
+
+      // 2. No aterriza en sus propios ajustes. Entrar y caer en contraseñas y
+      //    llaves de acceso es el aterrizaje equivocado que ya se corrigió una
+      //    vez y volvió.
+      const activa = html.match(/\/en\/app\/\?vista=([a-z]+)"[^>]*aria-current="page"/);
+      if (activa && activa[1] === "cuenta") {
+        problems.push(
+          `una cuenta ${c.nombre} aterriza en la vista «cuenta» — contraseñas y llaves de acceso. ` +
+            "Nadie se registra para administrar su contraseña.",
+        );
+      } else if (activa) {
+        ok.push(`${c.nombre}: aterriza en «${activa[1]}», no en ajustes`);
+      }
+
+      // 3. La acción principal EXISTE y su página responde.
+      const conVista = await fetch(`${ORIGIN}/en/app/?vista=${c.vista}`, { headers: cabeceras });
+      const htmlVista = conVista.ok ? await conVista.text() : "";
+      if (!htmlVista.includes(`href="${c.espera}"`)) {
+        problems.push(
+          `una cuenta ${c.nombre} no encuentra su acción principal (${c.queEs}): ningún enlace a ` +
+            `${c.espera} en /en/app/?vista=${c.vista}. La pantalla existe y es inalcanzable — que es ` +
+            "exactamente el bug 2 de #341, y el mismo tipo que `funcion-sin-llamar` caza en el código.",
+        );
+        continue;
+      }
+
+      const destino = await fetch(`${ORIGIN}${c.espera}`, { headers: cabeceras, redirect: "manual" });
+      if (destino.status !== 200) {
+        problems.push(
+          `la acción principal de una cuenta ${c.nombre} (${c.espera}) devuelve ${destino.status} con ` +
+            "sesión válida. El enlace existe y no lleva a ningún sitio.",
+        );
+      } else {
+        const cuerpo = await destino.text();
+        if (cuerpo.trim().length === 0) {
+          problems.push(
+            `${c.espera} devuelve 200 con CERO BYTES. Es el síntoma de un componente usado sin importar ` +
+              "(`audits/componente-sin-importar.mjs`), y no lo ve ni el build ni el despliegue.",
+          );
+        } else {
+          ok.push(`${c.nombre}: ${c.queEs} → ${c.espera} 200 (${cuerpo.length} bytes)`);
+        }
+      }
+    }
+  } catch (err) {
+    problems.push(
+      `no se pudo sembrar la sesión de prueba: ${String(err.message ?? err).split("\n")[0]}. ` +
+        "Sin esto el área privada NO se verificó — que es cómo los dos bugs de #341 llegaron al " +
+        "teléfono del dueño. Hace falta `wrangler` autenticado. Para saltarlo a propósito: --sin-sesion.",
+    );
+  } finally {
+    // Se borra pase lo que pase. Una fila de prueba olvidada en producción es
+    // peor que no haber probado.
+    for (const c of sembradas) {
+      try {
+        wrangler(["kv", "key", "delete", `s:${c.token}`, "--namespace-id", KV_SESIONES, ALMACEN]);
+      } catch { /* el TTL de 300s lo remata igual */ }
+    }
+    try {
+      d1(`DELETE FROM users WHERE email LIKE '${CORREO}%'`);
+      ok.push("las cuentas sembradas se borraron de D1 y KV");
+    } catch (err) {
+      problems.push(
+        `NO se pudieron borrar las cuentas sembradas de D1: ${String(err.message ?? err).split("\n")[0]}. ` +
+          `Bórralas a mano: DELETE FROM users WHERE email LIKE '${CORREO}%'`,
+      );
+    }
+  }
+}
+
 // 6. Instalabilidad
 const { default: _ } = { default: null };
 const manifest = await (await get("/manifest.webmanifest")).json();

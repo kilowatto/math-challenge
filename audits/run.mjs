@@ -149,6 +149,12 @@ for (const prueba of [
   "packages/motor/src/banco.prueba.mjs",
   "packages/motor/src/historia.prueba.mjs",
   "packages/motor/src/cola.prueba.mjs",
+  // La simulación del motor adaptativo (F4). Corre aquí y no a mano porque es
+  // la que sostiene D-002: mide el sesgo de la edad sobre 800 alumnos
+  // simulados por nivel verdadero y falla si vuelve a subir. Las constantes de
+  // `kPara()` están elegidas por esa medición y por nada más — sin esta línea,
+  // bajarlas no rompería nada visible.
+  "packages/motor/src/adaptativo.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

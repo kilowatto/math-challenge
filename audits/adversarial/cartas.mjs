@@ -88,7 +88,11 @@ export const CARTAS = [
     // Es el mismo hueco que F6 encontró con `anti-humillacion` y `mc-11`: la
     // carta veía la violación y no tenía con qué citarla, así que su veredicto
     // no bloqueaba.
-    cita: ["LR-2", "LR-3", "D-003", "D-012", "D-013", "D-027", "D-040", "D-043", "mc-25", "mc-27", "mc-30"],
+    // `D-016` y `D-051` se añaden en F8 (#274), por el mismo hueco: sin ellas
+    // la carta no puede señalar con autoridad que `screen_time_daily_usage`
+    // retiene más de lo necesario, ni si la fila de `child_consents` para
+    // `SCREEN_TIME` se escribe por el gobierno único de consentimientos.
+    cita: ["LR-2", "LR-3", "D-003", "D-012", "D-013", "D-016", "D-027", "D-040", "D-043", "D-051", "mc-25", "mc-27", "mc-30"],
     // `league_|liga|duel|tablero|cohort` porque el subsistema social vive en
     // `packages/motor/` y en `migrations/`, y el alcance heredado llegaba a los
     // dos por casualidad, no por diseño: `MOTOR` filtra por `puntua|scoring` y
@@ -279,7 +283,11 @@ export const CARTAS = [
       "reloj visible o presión de tiempo; puntuación que dependa del tiempo (D-024 la prohíbe: es " +
       "`valor_del_ítem · acc`, sin tiempo); instrucciones de más de un paso; tipografía de trazo delgado.",
     ciega_a: "Bandas mayores. Si el cambio no toca KINDER, no es tuyo.",
-    cita: ["LR-3", "D-017", "D-020", "D-024", "mc-06", "mc-20", "mc-38"],
+    // `D-016` se añade en F8 (#274): sin ella la carta no puede explicar por
+    // qué el aviso y la despedida del límite de pantalla en KINDER no llevan
+    // cifra ni cuenta regresiva — su `caza` la lleva exactamente ahí y no
+    // tenía con qué citarlo.
+    cita: ["LR-3", "D-016", "D-017", "D-020", "D-024", "mc-06", "mc-20", "mc-38"],
     alcance: [...INTERFAZ, ...CONTENIDO, ...MOTOR, /kinder/i],
   },
   {

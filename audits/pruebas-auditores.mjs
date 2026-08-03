@@ -1604,9 +1604,12 @@ const CASOS = [
     // cada migración que aterriza, y eso es a propósito: el caso apunta al
     // PRIMER hueco libre por delante de la última migración. Reapuntado, no
     // borrado (un control cuyo objetivo se movió es un auditor apagado).
+    // Reapuntado otra vez a 0017 cuando la 0015 (cosméticos kinder) aterrizó:
+    // con ella presente, una sonda en 0016 queda contigua y el caso corría en
+    // verde sin degradar nada — el auditor apagado en silencio de siempre.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0016_prueba_hueco.sql",
+    archivo: "migrations/0017_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -1792,6 +1795,20 @@ const CASOS = [
     archivo: "apps/web/src/components/racha/SenderoRacha.astro",
     parche: (t) => t.replace("</ol>", "<span>{diasJugadosTotal}</span>\n</ol>"),
     espera: "cifra de racha",
+  },
+
+  // ─── F7 · El catálogo de cosméticos de KINDER (#255) ─────────────────────
+  {
+    // La degradación es la que el cruce nuevo de `locales-complete` existe
+    // para cazar: alguien edita los textos de cosméticos en seis locales y se
+    // le pasa el séptimo. La clave sigue en la migración, la pantalla muestra
+    // la clave cruda, y solo en ese idioma. Se degrada el archivo REAL (D-070).
+    auditor: "locales-complete",
+    que: "una clave del catálogo de cosméticos sin texto en es-MX",
+    archivo: "apps/web/src/i18n/cosmeticos/es-MX.json",
+    parche: (t) =>
+      t.replace('  "cosmetico.av_gorra_pato.nombre": "Gorra de patito",\n', ""),
+    espera: "cosmetico.av_gorra_pato.nombre",
   },
 ];
 

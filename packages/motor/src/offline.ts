@@ -16,10 +16,28 @@
  * **y el siguiente**. El caso que importa es precisamente el que un solo nivel
  * no cubre — el niño avanza durante el vuelo y se queda sin contenido a diez mil
  * metros, donde nadie puede arreglarlo.
+ *
+ * ─── Las dos extensiones de F7, y por qué NO contradicen D-047 ─────────────
+ *
+ *  · **#198 — el XP se acredita completo.** D-047 reserva el PUNTAJE porque sin
+ *    servidor no hay reloj confiable para `d − RT`. Esa preocupación no aplica
+ *    al XP por dos razones escritas en `xp.ts`: el XP **nunca usa `rtMs`** (no
+ *    hay reloj que verificar, en ninguna banda) y el XP **no es competitivo**
+ *    (no hay «puntaje no verificable compitiendo contra uno verificado», porque
+ *    el XP no ordena a nadie). Divergencia deliberada de D-047, no un descuido.
+ *  · **#209 — los días de vuelo cuentan para la racha.** Son dos preguntas
+ *    distintas: «¿puntaje confiable para competir?» (no — D-047 intacta:
+ *    `soloPrecision` y `fueraDelTablero` no cambian) contra «¿el niño practicó
+ *    ese día?» (sí, y eso es lo único que la racha mide). La racha no es un
+ *    ranking, así que D-025 no aplica, y confiar en el reloj del dispositivo
+ *    para el DÍA —que D-047 rechaza para puntuar— es seguro aquí.
  */
 
 import type { Banda } from "./puntuacion.ts";
 import { calificar, type Veredicto } from "./puntuacion.ts";
+import { xpDeItem } from "./xp.ts";
+import { registrarDia, type EstadoRacha } from "./racha.ts";
+import { diaEfectivo, type DiaLocal } from "./tiempo-local.ts";
 
 /**
  * Lo que la cola guarda de un intento hecho sin conexión.
@@ -40,7 +58,10 @@ export interface IntentoEnCola {
    * servidor **no lo usa para puntuar**: `sincronizar` lo ignora a propósito.
    */
   rtLocalMs: number;
-  /** Reloj del dispositivo al contestar. Sirve para ordenar, no para puntuar. */
+  /**
+   * Reloj del dispositivo al contestar. Sirve para ordenar y para el día de la
+   * racha (#209), no para puntuar.
+   */
   contestadoEn: number;
 }
 
@@ -52,6 +73,15 @@ export interface ResultadoSincronizado {
   fueraDelTablero: boolean;
   /** `true` si la banda cronometra y aquí se puntuó solo por precisión. */
   soloPrecision: boolean;
+  /**
+   * El XP del intento, COMPLETO: `xpDeItem(nivel, acc)` sin descuento ni marca
+   * de «no verificado» (#198). Divergencia deliberada de D-047 — ver la
+   * cabecera del archivo: el XP no usa `rtMs` (no hay reloj que verificar) y
+   * no es competitivo (no hay «puntaje no verificable compitiendo contra uno
+   * verificado»). Reusa `nivel` y `acc`, que ya viajan en la cola: ningún
+   * campo nuevo, ningún byte nuevo en el paquete de vuelo.
+   */
+  xp: number;
 }
 
 /**
@@ -87,6 +117,79 @@ export function sincronizar(
     veredicto,
     fueraDelTablero: true,
     soloPrecision: intento.banda !== "KINDER",
+    // #198: XP completo. D-047 reserva el puntaje porque no hay reloj confiable
+    // para `d − RT`; el XP no usa `rtMs` en ninguna banda (D-055) y no ordena a
+    // nadie contra nadie, así que no hay nada que reservar. `xpDeItem` nunca
+    // devuelve un negativo: fallar acredita 0, no −N.
+    xp: xpDeItem(intento.nivel, acc),
+  };
+}
+
+/**
+ * Un reto entero de la cola, sincronizado: puntaje recalculado, XP completo y
+ * —si el reto se cerró— el día contado para la racha (#198, #209).
+ *
+ * Un «reto» es un grupo de intentos de la cola con la misma `sesionId`; **quién
+ * decide que se cerró es quien llama** (`completo`), porque la cola guarda
+ * intentos, no cierres. Los ítems sueltos sin reto cerrado acreditan su XP por
+ * ítem (#198) pero NO cuentan un día (#209: la racha mide «¿practicó ese día?»
+ * y la unidad de práctica es el reto).
+ *
+ * El día se deriva del `contestadoEn` MÁS TARDE del grupo — el instante en que
+ * el reto se completó según el reloj del dispositivo — convertido con la zona
+ * del HOGAR (`users.timezone` del padre), que llega como parámetro: jamás se lee
+ * del aparato. D-047 rechaza ese reloj para PUNTUAR y aquí no puntúa: decide
+ * qué día de calendario practicó el niño, y la racha no es un ranking (D-025 no
+ * aplica). El `motivo` no entra en la aritmética de `registrarDia` — línea roja
+ * #6: ninguna rama de este archivo trata distinto un día offline.
+ *
+ * Si la cola entrega días fuera de orden (el martes después del miércoles),
+ * `registrarDia` ya lo resuelve: el día viejo es un no-op (`docs/dudas.md`
+ * §22.3). La comparación por referencia de siempre decide si hay algo que
+ * escribir: sin reto cerrado, o con el día ya contado, `racha` sale siendo el
+ * MISMO objeto que entró.
+ *
+ * @throws RangeError si `completo` es `true` y el grupo está vacío — un reto
+ *   cerrado sin ítems es un error de quien llama, no un día gratis.
+ */
+export function sincronizarReto(
+  intentos: readonly IntentoEnCola[],
+  esCorrecta: (intento: IntentoEnCola) => boolean,
+  completo: boolean,
+  zonaIana: string,
+  racha: EstadoRacha,
+): {
+  /** Un resultado por intento, en el orden en que llegaron. */
+  resultados: ResultadoSincronizado[];
+  /** La suma del XP de los intentos. Nunca negativo (D-055). */
+  xp: number;
+  /** La racha tras contar el día del reto, o el MISMO objeto si nada cambió. */
+  racha: EstadoRacha;
+  /** El día que contó, o `null` si el reto no estaba cerrado. */
+  diaContado: DiaLocal | null;
+} {
+  if (completo && intentos.length === 0) {
+    throw new RangeError(
+      "reto completo sin intentos: la cola entregó un cierre sin trabajo debajo. " +
+        "Eso es un error de quien llama, no un día practicado.",
+    );
+  }
+
+  const resultados = intentos.map((i) => sincronizar(i, () => esCorrecta(i)));
+  let xp = 0;
+  for (const r of resultados) xp += r.xp;
+
+  if (!completo) return { resultados, xp, racha, diaContado: null };
+
+  let cerradoEn = intentos[0].contestadoEn;
+  for (const i of intentos) if (i.contestadoEn > cerradoEn) cerradoEn = i.contestadoEn;
+
+  const dia = diaEfectivo(cerradoEn, zonaIana);
+  return {
+    resultados,
+    xp,
+    racha: registrarDia(racha, dia, { tipo: "RETO_COMPLETADO" }),
+    diaContado: dia,
   };
 }
 

@@ -506,6 +506,14 @@ for (const prueba of [
   // 20:00, el tope que no se reinicia a medianoche UTC, el silencio que se
   // mira primero, y un hermano completado silenciando el día entero.
   "packages/motor/src/recordatorio.prueba.mjs",
+  // F7 #204. El CAMINO de la pausa familiar, contra SQLite de verdad
+  // (`node:sqlite`) — el motor ya tiene sus pruebas puras en racha.prueba.mjs.
+  // Lo que defiende tampoco rompe nada visible: una autorización mal escrita
+  // no da error, da un desconocido tocando la racha de un niño ajeno; y una
+  // idempotencia rota no da error, da un padre que pierde una de sus cuatro
+  // pausas del año por pulsar dos veces el mismo botón. Incluye el rechazo al
+  // sexto día retroactivo llegando intacto hasta la base.
+  "apps/web/src/lib/pausa.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

@@ -2353,3 +2353,56 @@ niño **explique**. La línea roja #3 prohíbe el texto libre de un niño. Ese
 formato **no encaja en este producto tal como está concebido**, y eso explica
 por qué `cual_sobra` salió deformado: no es solo mala implementación, es un
 molde que no cabe. Queda como pregunta abierta para el dueño.
+
+---
+
+## D-074 — En bandas avanzadas Larry explica el PROCEDIMIENTO, no solo el resultado · 2026-08-02
+
+**Matiz del dueño al confirmar D-004**, al abrir F6:
+
+> «Solo un matiz para ejercicios más complejos donde se pueda: también debe ver
+> el procedimiento y explicar por qué está bien o mal. No solo el resultado.
+> Estoy pensando en cosas avanzadas.»
+
+Es correcto y hay respaldo: `mc-30` es exactamente sobre **datos de proceso** —
+lo que alguien hizo para llegar a la respuesta, no solo a qué llegó— y de ahí
+sale el dato que ya sostiene la línea roja #8 (cambiar una respuesta mejora la
+calificación el 79% de las veces). Un producto que solo mira el resultado tira
+esa información.
+
+### La tensión con la línea roja #7, y cómo se resuelve
+
+La línea roja #7 dice que **Larry nunca calcula**: recibe el veredicto ya
+calculado y solo lo explica. Si Larry mira una derivación y dictamina si el paso
+3 está bien, **está calculando**, y una alucinación se convierte en «tu
+procedimiento está mal» dicho a alguien que lo tenía bien.
+
+**La salida no es renunciar al matiz. Es que el veredicto deje de ser un
+booleano.**
+
+Hoy el motor devuelve *correcto / incorrecto*. Para esto tiene que devolver **un
+juicio por paso**, calculado por el motor de forma determinista y del lado del
+servidor. Larry recibe esa lista y la explica — exactamente el mismo contrato de
+siempre, solo que con cinco juicios en vez de uno.
+
+La regla operativa, para que no se erosione: **si un dictamen puede cambiar la
+calificación, lo emite el motor. Si solo cambia las palabras, lo emite Larry.**
+
+### Lo que esto abre y todavía no está decidido
+
+1. **Cómo entra un procedimiento.** Tocar opciones no basta. `mc-23` cubre los
+   métodos de entrada matemática por dispositivo (el tema de `mc-24` se fusionó
+   ahí). Es trabajo de interfaz, no de Larry, y no existe.
+2. **Qué es «un paso» en cada tema.** En una suma con reagrupación se puede
+   verificar por columna. En una integral doble, «paso» no tiene una definición
+   mecánica, y ahí el motor **no puede** emitir un juicio determinista.
+3. **Dónde deja de aplicar.** Donde el motor no pueda juzgar el paso, Larry
+   tampoco debe pronunciarse sobre él: describe, no dictamina. Es la misma
+   frontera que D-035 pone para Pro — *«una explicación de cálculo tensorial
+   incorrecta enseña error»*.
+
+### Lo que NO cambia
+
+- **Los niños siguen sin escribir texto libre** (línea roja #3). Esto es de
+  bandas avanzadas: SECUNDARIA hacia arriba, donde quien juega ya escribe.
+- **Larry sigue sin calcular.** Recibe más juicios, no la facultad de emitirlos.

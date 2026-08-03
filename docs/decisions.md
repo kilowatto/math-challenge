@@ -1269,6 +1269,12 @@ cualquier sitio **sin citar D-037** — porque si no se declara, no se distingue
 
 ---
 
+
+> **Enmendada por D-076 (2026-08-02).** «Cero terceros» pasa a «cero terceros
+> en el CÓDIGO del producto». Zaraz está encendido en la zona de Cloudflare y el
+> dueño no puede apagarlo; queda declarado como excepción conocida, no como algo
+> que se cumple. Ver D-076 para la exposición de consentimiento que deja abierta.
+
 ## D-038 — Passkey primero, contraseña como respaldo · 2026-07-31
 
 **Decisión del dueño, tomada en F0 y escrita hoy.** El dueño la contestó al
@@ -2470,3 +2476,73 @@ y está escrita para que no se generalice sola:
 El **pizarrón en línea propio** —entrada nuestra, sin cámara— resuelve el mismo
 problema sin tocar ninguna línea. El dueño quiere los dos; se construye primero
 el pizarrón, y la foto después, con su candado.
+
+---
+
+## D-076 — Zaraz se queda: D-037 pasa de «cero terceros» a «cero terceros en el CÓDIGO» · 2026-08-02
+
+**Decisión del dueño.** Zaraz está encendido en la zona de Cloudflare y él no
+puede apagarlo. Medido, dos veces, el mismo día:
+
+    curl -s -o /dev/null -w '%{http_code}' https://math.kilowatto.com/cdn-cgi/zaraz/s.js
+    → 400   «Invalid Zaraz parameters»
+
+**400, no 404: el endpoint existe.**
+
+### Qué cambia D-037
+
+Decía **cero terceros**. Pasa a decir **cero terceros en el código del
+producto** — que es lo que este repositorio puede garantizar y lo que sus
+auditores comprueban de verdad. La inyección de la zona queda **declarada como
+excepción conocida**, no como algo que se cumple.
+
+La razón de escribirlo y no dejarlo en un issue: **una decisión que el producto
+contradice envenena a las demás.** Quien abra `decisions.md` dentro de un año no
+tendría forma de saber cuáles se cumplen y cuáles son aspiración.
+
+### La exposición que esto deja abierta, dicha una vez
+
+Zaraz pone un identificador en **las mismas páginas donde un padre teclea su
+correo** — las tres puertas de registro y `/entrar/`. En la UE eso normalmente
+exige consentimiento previo, y hoy no hay banner. No es una objeción a la
+decisión: es exposición real, y queda escrita para que se decida a sabiendas
+cuando el tráfico lo justifique.
+
+### Lo que sí se arregló, porque era peor que el propio Zaraz
+
+`audits/live.mjs` afirmaba **«sin beacon inyectado por la zona (D-037)»** y
+pasaba en verde. Buscaba cadenas en el HTML servido, y **Zaraz se inyecta en el
+borde y no deja ninguna**. Un auditor que no puede ver lo que vigila y aun así
+pasa da confianza falsa — es lo que D-070 llama una aserción cierta por
+construcción, con otra cara. Ahora pregunta al endpoint e informa el estado real.
+
+---
+
+## D-077 — La voz de Larry sale con 3 locales de 7, y la pantalla lo dice · 2026-08-02
+
+**Decisión del dueño**, tomada sobre cuatro alternativas y **en contra de mi
+recomendación**, que era sacar la voz de F6 y cerrar la fase con 5 de 6.
+
+Workers AI **no tiene voz verificada para `fr-FR`, `pt-BR`, `pt-PT` ni
+`de-DE`** — cuatro de los siete. D-035 acota el proyecto a Cloudflare, así que
+generar la voz fuera exigiría enmendarla. El dueño eligió **salir con los tres
+que sí cubre** en vez de esperar.
+
+### La condición que añado, y no es opcional
+
+Si la voz sale en 3 de 7, **la pantalla tiene que decirlo en los otros cuatro.**
+Un niño alemán que se encuentra silencio sin explicación no vive un producto
+incompleto: vive uno roto. `mc-20` es explícito en que un pre-lector no puede
+usar una interfaz sin equivalente hablado — así que en esos cuatro locales,
+kinder no debe presentarse como disponible y callarse, sino decir que todavía no
+habla ese idioma.
+
+Sin esa parte, esta decisión sirve a tres niños y deja a cuatro sin salida.
+
+### Lo que esto NO resuelve
+
+- **Kinder sigue bloqueado en 4 de 7 locales.** D-073 ya lo había aplazado, así
+  que hoy no cambia nada que se vea; cambiará el día que kinder se retome.
+- **Nadie ha escuchado todavía ninguna voz.** Hace falta un revisor pedagógico
+  por locale que **oiga** los clips antes de que un niño los oiga. Que existan
+  tres voces técnicamente disponibles no es que tres voces estén aprobadas.

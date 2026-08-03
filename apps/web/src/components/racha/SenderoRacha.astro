@@ -1,0 +1,110 @@
+---
+/**
+ * KINDER — el sendero de la RACHA: Larry camina un paso por día jugado. #205.
+ *
+ * @banda KINDER
+ *
+ * ─── La racha de kinder NO es un número ─────────────────────────────────────
+ *
+ * D-019 y `mc-43` recomendación 8: «KINDER — a physical journey path with the
+ * mascot walking forward, no numbers». Es la misma metáfora visual que D-019 ya
+ * define para el mapa de progreso, reusada aquí en vez de inventar una segunda:
+ * mismos círculos de `--tap-kinder`, mismo Larry (`Companero.astro`, D-080),
+ * misma hoja (`styles/mapa.css`). Cero arte nuevo: el hueco marcado
+ * `data-hueco-de-arte="larry"` es el de siempre, y la Sabana no habla — este
+ * componente no pinta ni una palabra ni una cifra, en ninguno de los siete
+ * locales. El nombre accesible (`aria-label`) es para el lector de pantalla y
+ * para el adulto que mira por encima del hombro, y reusa las claves i18n que el
+ * mapa YA tiene en los siete idiomas: no se añade ni una cadena.
+ *
+ * ─── De dónde sale la posición, y por qué no puede retroceder ───────────────
+ *
+ * `diasJugadosTotal` es `child_streak.days_played_total` (migración 0013): un
+ * acumulado de días JUGADOS que solo sube, y solo dentro de `conDia()` en
+ * `packages/motor/src/racha.ts`. Por eso aquí no hay nada que proteger con
+ * cuidado: cuando un escudo cubre un día el sendero no se detiene (el acumulado
+ * no se mueve), y cuando la racha se reinicia a 1 el sendero recorrido NO
+ * retrocede ni se borra (`mc-43` §6) — el niño no pierde lo que ya caminó.
+ *
+ * No hay animación de retroceso posible porque no hay animación ninguna: ni una
+ * línea de script, igual que `Racha.astro` y por la misma razón (#206: un
+ * cambio de racha no produce ningún evento que lo señale; se ve la próxima vez
+ * que se abre la pantalla).
+ *
+ * ─── El número que este componente conoce y NUNCA pinta ─────────────────────
+ *
+ * Recibe un número porque alguien tiene que contar los pasos, pero el modelo de
+ * la plantilla es una lista de pasos sin un solo campo numérico — la misma
+ * garantía que `construirSendero()` da al mapa (#232), así que no hay cifra que
+ * pintar por descuido. `audits/kinder-sin-examen.mjs` lo hace cumplir: ninguna
+ * superficie de kinder interpola una cifra de racha.
+ *
+ * ─── La ventana de pasos visibles ───────────────────────────────────────────
+ *
+ * Se pintan los últimos `PASOS_VISIBLES` días jugados, no todos. Un sendero de
+ * doscientos círculos no cabe en la pantalla donde se juega, y lo que el niño
+ * reconoce es el tramo reciente con Larry al final. Los días anteriores no se
+ * borran — el acumulado está en D1 y nunca baja —; sencillamente no se pintan,
+ * igual que un camino real no muestra atrás más que un tramo. El tamaño es
+ * `[criterio propio, no hay fuente que fije este número]`: una semana, el mismo
+ * compás semanal que el escudo de #203.
+ */
+import { t, type Locale } from "../../i18n";
+import Companero from "../mapa/Companero.astro";
+import "../../styles/mapa.css";
+
+interface Props {
+  locale: Locale;
+  /**
+   * `child_streak.days_played_total`, ya leído de D1 por la página. Monótono
+   * por construcción (ver el encabezado): este componente no necesita defender
+   * nada, solo caminar.
+   */
+  diasJugadosTotal: number;
+}
+
+const { locale, diasJugadosTotal } = Astro.props;
+const m = t(locale);
+
+/** Cuántos pasos se pintan. Ver «La ventana de pasos visibles» arriba. */
+const PASOS_VISIBLES = 7;
+
+const recorridos = Math.min(Math.max(0, Math.floor(diasJugadosTotal)), PASOS_VISIBLES);
+
+interface Paso {
+  readonly estado: "terminado" | "por_visitar";
+  /** Dónde está Larry. Exactamente uno del sendero lo tiene en `true`. */
+  readonly aqui: boolean;
+}
+
+/**
+ * El modelo: un paso por día jugado, y Larry en el último. Sin un solo campo
+ * numérico, como el sendero del mapa (#232).
+ *
+ * Con cero días jugados hay UN círculo vacío y Larry parado en él: el principio
+ * del camino. Un círculo vacío no es un fracaso — es un lugar por visitar, la
+ * misma lectura que el mapa (`mc-43` implicación 7).
+ */
+const pasos: Paso[] =
+  recorridos === 0
+    ? [{ estado: "por_visitar", aqui: true }]
+    : Array.from({ length: recorridos }, (_, i) => ({
+        estado: "terminado" as const,
+        aqui: i === recorridos - 1,
+      }));
+---
+
+<ol class="sendero" aria-label={m.mapaSenderoNombre}>
+  {
+    pasos.map((p) => (
+      <li
+        class="sendero__lugar"
+        data-estado={p.estado}
+        data-aqui={p.aqui ? "si" : "no"}
+        aria-hidden={p.aqui ? undefined : "true"}
+      >
+        {p.aqui && <Companero locale={locale} visible={true} />}
+      </li>
+    ))
+  }
+</ol>

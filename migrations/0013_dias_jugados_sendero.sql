@@ -1,0 +1,46 @@
+-- 0013 — El sendero de racha de KINDER: un paso por día JUGADO (#205)
+--
+-- ─── Qué hace falta, y por qué ninguna columna existente lo da ─────────────
+--
+-- En KINDER la racha no es un número: es Larry avanzando por un sendero de la
+-- Sabana, un paso por día jugado (#205, D-019, mc-43 recomendación 8). Y el
+-- issue pone dos reglas que entre las dos deciden el esquema:
+--
+--   · Cuando un escudo cubre un día, el sendero NO se detiene.
+--   · Cuando la racha se REINICIA, el sendero recorrido NO retrocede ni se
+--     borra (mc-43 §6: «streak loss never erases or visually regresses the
+--     progress map»).
+--
+-- `current_streak` no sirve: baja a 1 al reiniciarse. `max_streak` tampoco: es
+-- la mejor racha, no la suma de días jugados. La posición del sendero es un
+-- ACUMULADO de días jugados, monótono por construcción, y ese dato no existía
+-- en `child_streak`. Esta columna es ese acumulado.
+--
+-- Lo incrementa `conDia()` en `packages/motor/src/racha.ts` — el único embudo
+-- por el que un día cuenta, así que no hay una segunda rama donde escribirlo
+-- mal. Y el `motivo` NO entra: un día cumplido por corte de límite de pantalla
+-- suma paso igual que un día de reto completado, porque es un día cumplido
+-- (línea roja #6, D-014). Un día cubierto por escudo NO suma paso — el niño no
+-- jugó ese día — pero el sendero no se detiene: el acumulado no baja nunca y
+-- ningún hueco se dibuja.
+--
+-- ─── Qué hace, y qué NO ────────────────────────────────────────────────────
+--
+-- Solo AGREGA una columna con DEFAULT. No borra, no renombra, no reescribe.
+-- Sobre una base con rachas en curso, el acumulado arranca en 0 aunque el niño
+-- lleve semanas jugando: los pasos anteriores a esta migración no se pueden
+-- reconstruir (los intentos crudos no están en D1, mc-32 riesgo #1), y pintar
+-- `current_streak` como si fuera el acumulado sería inventar un dato. El
+-- sendero empieza a llenarse desde el primer día jugado tras aplicarla.
+--
+-- El CHECK va aquí y no solo en el código por la misma razón que
+-- `shields_earned_this_streak` lleva el suyo en la 0008: «el sendero jamás
+-- retrocede» es una promesa al niño, y una promesa que solo vive en la
+-- aritmética del motor se rompe el día que alguien escriba la fila por otra
+-- vía. No es `> 0` porque el estado inicial es 0 y es legítimo.
+--
+-- Cloudflare: cero recursos nuevos. Todo vive en `math-challenge-db` y su
+-- réplica `math-challenge-db-eu`, ya inventariadas en `docs/infrastructure.md`.
+ALTER TABLE child_streak
+  ADD COLUMN days_played_total INTEGER NOT NULL DEFAULT 0
+  CHECK (days_played_total >= 0);

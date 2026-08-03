@@ -462,5 +462,79 @@ caso("ninguna función del motor acepta un precio: las firmas se leen y se cuent
   igual(declararPausa.length, 4, "declararPausa: estado, desde, hasta, hoy");
 });
 
+// --- El acumulado de días jugados: el sendero de KINDER (#205, mc-43 §6) -----
+
+caso("un día jugado suma un paso al acumulado, con cualquiera de los dos motivos", () => {
+  // La línea roja #6 sobre la columna nueva: el día cumplido por corte de
+  // límite de pantalla ES un día jugado, y suma su paso igual que el reto
+  // completado. Si aquí hubiera una rama por motivo, éste es el caso que la
+  // caza.
+  const porReto = registrarDia(ESTADO_INICIAL, "2026-08-01", RETO);
+  const porLimite = registrarDia(ESTADO_INICIAL, "2026-08-01", LIMITE);
+  igual(porReto.days_played_total, 1, "reto completado");
+  igual(porLimite.days_played_total, 1, "corte de límite de pantalla");
+  igual(JSON.stringify(porReto), JSON.stringify(porLimite), "el motivo no entra en la aritmética");
+});
+
+caso("el acumulado NO baja cuando la racha se reinicia: el sendero no retrocede", () => {
+  // Diez días seguidos, un hueco sin escudos que rompe la racha, y se vuelve.
+  // `current_streak` cae a 1; el acumulado sigue subiendo. Es `mc-43` §6
+  // escrito como caso: la racha perdida jamás borra ni hace retroceder el
+  // mapa.
+  let e = correrDias(ESTADO_INICIAL, "2026-08-01", 10);
+  igual(e.days_played_total, 10, "diez días, diez pasos");
+  e = registrarDia(e, "2026-08-15", RETO); // hueco del 11 al 14, sin escudos
+  igual(e.current_streak, 1, "la racha volvió a 1");
+  igual(e.days_played_total, 11, "el sendero NO retrocedió: once pasos");
+  e = registrarDia(e, "2026-08-16", RETO);
+  igual(e.days_played_total, 12, "y sigue caminando desde donde estaba");
+});
+
+caso("un día repetido no suma dos pasos, y uno viejo entregado tarde tampoco", () => {
+  // Idempotencia sobre la columna nueva: la comparación por referencia que ya
+  // decide la escritura en D1 decide también el paso. Diez ítems en una tarde
+  // son UN paso, no diez.
+  let e = registrarDia(ESTADO_INICIAL, "2026-08-01", RETO);
+  const repetido = registrarDia(e, "2026-08-01", RETO);
+  igual(repetido, e, "el mismo día devuelve el mismo objeto");
+  igual(repetido.days_played_total, 1, "un paso, no dos");
+
+  // La cola offline entrega el martes después del miércoles (#209): no suma.
+  e = registrarDia(e, "2026-08-03", RETO);
+  const tardio = registrarDia(e, "2026-08-02", RETO);
+  igual(tardio.days_played_total, 2, "el día viejo no suma paso");
+});
+
+caso("un día cubierto por escudo NO suma paso, y el sendero no se detiene", () => {
+  // «Un paso por día JUGADO»: el día que el escudo cubre, el niño no jugó, así
+  // que no hay paso nuevo. Pero el sendero no se detiene ni retrocede: el
+  // acumulado se queda donde estaba y el siguiente día jugado suma desde ahí.
+  //
+  // El estado se arma a mano porque ganar un escudo exige racha de 7 (D-079):
+  // dos días jugados y un escudo ya en el banco.
+  let e = con({
+    current_streak: 2,
+    max_streak: 2,
+    last_completed_local_date: "2026-08-02",
+    shields_available: 1,
+    shields_earned_total: 1,
+    shields_earned_this_streak: 1,
+    days_played_total: 2,
+  });
+  e = registrarDia(e, "2026-08-04", RETO); // el 3 lo cubre el escudo
+  igual(e.current_streak, 3, "la racha siguió gracias al escudo");
+  igual(e.shields_available, 0, "el escudo se gastó");
+  igual(e.days_played_total, 3, "tres días JUGADOS: el del escudo no cuenta");
+});
+
+caso("una pausa familiar tampoco fabrica pasos", () => {
+  let e = declararPausa(ESTADO_INICIAL, "2026-08-02", "2026-08-05", "2026-08-01");
+  igual(e.days_played_total, 0, "declarar la pausa no juega ningún día");
+  e = registrarDia(e, "2026-08-01", RETO);
+  e = registrarDia(e, "2026-08-06", RETO); // la pausa cubrió el hueco entero
+  igual(e.current_streak, 2, "la racha ni avanzó ni se rompió por la pausa");
+  igual(e.days_played_total, 2, "dos días jugados, dos pasos");
+});
+
 console.log(`\n${corridos - fallos}/${corridos} casos pasaron\n`);
 if (fallos > 0) process.exit(1);

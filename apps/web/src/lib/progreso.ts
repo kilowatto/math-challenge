@@ -93,6 +93,15 @@ export interface Progreso {
     readonly actual: number;
     /** `max_streak`. Viaja SIEMPRE con el actual (#206, mc-17 §83). */
     readonly mejor: number;
+    /**
+     * `days_played_total`: los días jugados de por vida (#205).
+     *
+     * Es el único número de racha que una superficie de KINDER puede conocer,
+     * y aun así no se pinta como cifra: es la posición del sendero de Larry,
+     * un paso por día jugado. A diferencia de `actual`, NUNCA baja — ni con un
+     * escudo de por medio, ni con la racha reiniciada (`mc-43` §6).
+     */
+    readonly diasJugadosTotal: number;
   };
   readonly xp: {
     readonly total: number;
@@ -117,19 +126,22 @@ interface FilaRacha {
   pause_until_local_date: string | null;
   pause_uses_this_year: number;
   pause_year: number | null;
+  days_played_total: number;
 }
 
 const SQL_LEER_RACHA_NINO = `
 SELECT current_streak, max_streak, last_completed_local_date,
        shields_available, shields_earned_total, shields_earned_this_streak,
-       pause_until_local_date, pause_uses_this_year, pause_year
+       pause_until_local_date, pause_uses_this_year, pause_year,
+       days_played_total
 FROM child_streak WHERE child_profile_id = ?
 `.trim();
 
 const SQL_LEER_RACHA_ADULTO = `
 SELECT current_streak, max_streak, last_completed_local_date,
        shields_available, shields_earned_total, shields_earned_this_streak,
-       pause_until_local_date, pause_uses_this_year, pause_year
+       pause_until_local_date, pause_uses_this_year, pause_year,
+       days_played_total
 FROM child_streak WHERE user_id = ?
 `.trim();
 
@@ -150,8 +162,8 @@ FROM child_streak WHERE user_id = ?
  * ─── Por qué esto no era obvio, y cómo se descubrió ────────────────────────
  *
  * `SQL_UPSERT_RACHA` **no tiene columna `user_id` en absoluto** — se escribió
- * para el caso del niño y su lista es de 12 columnas. La primera versión de este
- * archivo reemplazaba solo el `ON CONFLICT` y ataba 13 valores contra 12 huecos.
+ * para el caso del niño. La primera versión de este archivo reemplazaba solo el
+ * `ON CONFLICT` y ataba un valor de más contra los huecos de entonces.
  * No lo vio ningún auditor, ningún tipo y ninguna prueba: `registrarItem` atrapa
  * su propia excepción a propósito, así que el síntoma era `progreso: null` en la
  * respuesta y una tabla vacía. Se encontró jugando de verdad contra un D1 local
@@ -207,6 +219,7 @@ function estadoDeFila(fila: FilaRacha | null): EstadoRacha {
     pause_until_local_date: fila.pause_until_local_date,
     pause_uses_this_year: fila.pause_uses_this_year,
     pause_year: fila.pause_year,
+    days_played_total: fila.days_played_total,
   };
 }
 
@@ -225,7 +238,11 @@ export async function leerProgreso(env: Env, quien: Jugador): Promise<Progreso |
     const estado = estadoDeFila(racha ?? null);
     const total = xp?.total_xp ?? 0;
     return {
-      racha: { actual: estado.current_streak, mejor: estado.max_streak },
+      racha: {
+        actual: estado.current_streak,
+        mejor: estado.max_streak,
+        diasJugadosTotal: estado.days_played_total,
+      },
       xp: { total, rango: rangoDeXp(total), ganado: 0 },
     };
   } catch {
@@ -311,7 +328,7 @@ export async function registrarItem(
     if (despues !== antes) {
       escrituras.push(
         env.DB.prepare(quien.esAdulto ? SQL_UPSERT_RACHA_ADULTO : SQL_UPSERT_RACHA).bind(
-          // Doce valores para doce columnas. La segunda es la llave del dueño —
+          // Trece valores para trece columnas. La segunda es la llave del dueño —
           // `child_profile_id` o `user_id` según el SQL elegido arriba—, y la
           // otra ni siquiera aparece en la sentencia: se queda NULL sola, que es
           // lo que el `CHECK` de exactamente-un-dueño exige.
@@ -326,6 +343,7 @@ export async function registrarItem(
           despues.pause_until_local_date,
           despues.pause_uses_this_year,
           despues.pause_year,
+          despues.days_played_total,
           entrada.ahora,
         ),
       );
@@ -343,7 +361,11 @@ export async function registrarItem(
 
     const total = (filaXp?.total_xp ?? 0) + ganado;
     return {
-      racha: { actual: despues.current_streak, mejor: despues.max_streak },
+      racha: {
+        actual: despues.current_streak,
+        mejor: despues.max_streak,
+        diasJugadosTotal: despues.days_played_total,
+      },
       xp: { total, rango: rangoDeXp(total), ganado },
     };
   } catch {

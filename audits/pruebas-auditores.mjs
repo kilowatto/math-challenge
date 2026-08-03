@@ -1597,9 +1597,15 @@ const CASOS = [
   {
     // El fallo que el hueco existe para cazar, y que ninguna reserva declara:
     // una migración que ya corrió en algún ambiente y se borró del repo.
+    //
+    // El número se mueve con cada migración que aterriza, y eso es a propósito:
+    // el caso apunta al PRIMER hueco libre por delante de la última migración.
+    // Era `0014` hasta que la 0013 del sendero de racha (#205) aterrizó y el
+    // arnés lo cazó corriendo en verde sin degradar nada — reapuntado, no
+    // borrado (un control cuyo objetivo se movió es un auditor apagado).
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0014_prueba_hueco.sql",
+    archivo: "migrations/0015_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -1738,6 +1744,19 @@ const CASOS = [
         'import type { Banda } from "../../../../packages/motor/src/puntuacion.ts";\nconst _SQL_PROHIBIDO = "UPDATE child_streak SET current_streak = 0";',
       ),
     espera: "child_streak",
+  },
+
+  // ─── F7 · El sendero de racha de KINDER (#205) ───────────────────────────
+  {
+    // La degradación es exactamente la que el issue prohíbe: el componente cuyo
+    // único trabajo es NO mostrar un número, mostrándolo. Se degrada el archivo
+    // REAL por lo mismo que los casos de misiones de arriba — uno inventado
+    // solo probaría que el auditor sabe leer un archivo inventado (D-070).
+    auditor: "kinder-sin-examen",
+    que: "el sendero de kinder pinta el acumulado de días como cifra",
+    archivo: "apps/web/src/components/racha/SenderoRacha.astro",
+    parche: (t) => t.replace("</ol>", "<span>{diasJugadosTotal}</span>\n</ol>"),
+    espera: "cifra de racha",
   },
 ];
 

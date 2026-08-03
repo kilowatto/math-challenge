@@ -147,6 +147,66 @@ for (const archivo of superficies) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 5. Ninguna superficie de kinder pinta una CIFRA DE RACHA (#205, D-019)
+// ---------------------------------------------------------------------------
+//
+// #205: en KINDER la racha NUNCA es un número — es Larry avanzando por un
+// sendero, un paso por día jugado. `mc-43` recomendación 8: «a physical journey
+// path with the mascot walking forward, no numbers». Y `mc-43` §6 prohíbe la
+// otra mitad: el sendero jamás retrocede, así que tampoco vale pintar el
+// acumulado «para que se vea que no baja» — la garantía vive en
+// `days_played_total` y en `racha.prueba.mjs`, no en una cifra delante de un
+// niño que no lee.
+//
+// ─── La tabla de precondiciones, escrita A MANO (D-070) ─────────────────────
+//
+// QUÉ ES una superficie de kinder, aquí y no en la sección 4: la ruta
+// (`app/kids/`, `components/kids/`) o el marcador `@banda KINDER` que ya fija
+// `audits/touch-targets.mjs`. NO el regex `KINDER` sobre el texto: una
+// superficie que menciona kinder en un comentario para EXPLICAR la regla no es
+// una superficie de kinder — `Racha.astro` dice «No se muestra en KINDER» y
+// pinta el número con toda legitimidad, porque es la pieza de PRIMARIA en
+// adelante. Juzgar con el mismo regex que describe la regla es cómo un auditor
+// aprueba —o prohíbe— su propia violación.
+//
+// QUÉ ES pintar la cifra: una interpolación `{…}` con un nombre de contador de
+// racha en POSICIÓN DE TEXTO del markup — tras un `>` o al inicio de una línea
+// de la plantilla. No lo es un atributo (`prop={…}`), ni una desestructuración,
+// ni un objeto literal: ahí el número viaja, no se lee.
+
+const MARCA_KINDER = /@banda\s+KINDER/;
+const NOMBRE_DE_CIFRA_DE_RACHA =
+  /(?:current_streak|max_streak|days_played_total|diasJugadosTotal|rachaActual|rachaMaxima|rachaDias|racha\.(?:actual|mejor))/;
+const INTERPOLACION = /\{[^{}]*\}/g;
+
+let superficiesRachaKinder = 0;
+
+for (const archivo of superficies) {
+  const texto = leer(archivo) ?? "";
+  const esDeKinder =
+    /(^|\/)(app\/kids|components\/kids)\//.test(archivo) || MARCA_KINDER.test(texto);
+  if (!esDeKinder) continue;
+  superficiesRachaKinder++;
+
+  const limpio = texto.replace(/\/\/.*$/gm, "").replace(/^\s*\*.*$/gm, "");
+  for (const m of limpio.matchAll(INTERPOLACION)) {
+    if (!NOMBRE_DE_CIFRA_DE_RACHA.test(m[0])) continue;
+    const antes = limpio.slice(0, m.index);
+    const enTexto =
+      antes.replace(/\s+$/, "").endsWith(">") || /^\s*$/.test(antes.split("\n").pop() ?? "");
+    if (!enTexto) continue;
+    problemas.push(
+      `${archivo}: una superficie de kinder pinta una cifra de racha (\`${m[0].trim().slice(0, 60)}\`). ` +
+        "#205 y D-019: en KINDER la racha es Larry caminando por el sendero, un paso por día " +
+        "jugado, y NUNCA un número — ni `current_streak`, ni la mejor marca, ni el acumulado de " +
+        "días. `mc-43` recomendación 8: «no numbers». El sendero sin cifras ya existe: " +
+        "`components/racha/SenderoRacha.astro`.",
+    );
+    break; // Un hallazgo por archivo basta: el commit queda bloqueado igual.
+  }
+}
+
 notas.push(
   archivosDeKinder > 0
     ? `${archivosDeKinder} archivo(s) hablan de kinder, ninguno con examen ni cronómetro`
@@ -157,13 +217,18 @@ notas.push(
     ? `${superficiesDeKinder} superficie(s) de kinder sin un número de posición (D-081)`
     : "todavía no hay pantalla de liga de kinder; el auditor bloquea la primera que pinte un rango",
 );
+notas.push(
+  superficiesRachaKinder > 0
+    ? `${superficiesRachaKinder} superficie(s) de kinder sin una cifra de racha (#205)`
+    : "todavía no hay superficie de kinder marcada; el auditor bloquea la primera que pinte una cifra de racha",
+);
 notas.push("D-045 SÍ permite medir el tiempo en kinder — lo que no puede es verse ni puntuar");
 
 informar({
   nombre: "kinder-sin-examen",
   problemas,
   notas,
-  cita: "D-024, D-045, D-046, D-020, mc-06, mc-10",
+  cita: "D-024, D-045, D-046, D-020, mc-06, mc-10, #205, mc-43",
   revisados: fuentes.length,
   resumen: `${fuentes.length} archivo(s) de producto`,
   porQueBloquea:

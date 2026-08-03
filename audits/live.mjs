@@ -104,7 +104,34 @@ if (html.includes("cloudflareinsights.com") || html.includes("beacon.min.js")) {
       "la inyección automática de la zona está ENCENDIDA y hay que apagarla (D-037)",
   );
 } else {
-  ok.push("sin beacon inyectado por la zona (D-037)");
+  ok.push("sin beacon RUM de Cloudflare en el HTML servido");
+}
+
+// 4-bis. Zaraz — la inyección que el HTML NO delata
+//
+// La comprobación de arriba busca cadenas en el HTML, y durante meses pasó en
+// verde diciendo «sin beacon inyectado por la zona (D-037)». Era mentira:
+// **Zaraz se inyecta en el borde y no deja ninguna cadena que buscar.** Un
+// auditor que no puede ver lo que vigila y aun así pasa en verde es peor que no
+// tenerlo — da confianza falsa. Es lo que D-070 llama una aserción cierta por
+// construcción, con otra cara.
+//
+// La única forma de saberlo desde fuera es preguntarle al endpoint: si Zaraz
+// está apagado en la zona, `/cdn-cgi/zaraz/s.js` da 404. Si está encendido, da
+// 400 «Invalid Zaraz parameters» — el endpoint existe.
+//
+// D-076: el dueño decidió que Zaraz SE QUEDA porque no puede apagarlo. Así que
+// esto ya no bloquea; informa. Lo que NO se acepta es volver a no saberlo: el
+// día que se pueda apagar, esta línea lo dirá.
+try {
+  const z = await fetch(`${ORIGIN}/cdn-cgi/zaraz/s.js`);
+  if (z.status === 404) {
+    ok.push("Zaraz apagado en la zona (404) — se puede cerrar #369 y revisar D-076");
+  } else {
+    ok.push(`Zaraz ENCENDIDO en la zona (${z.status}) — aceptado por D-076, no es un hallazgo nuevo`);
+  }
+} catch (err) {
+  problems.push(`no se pudo comprobar el estado de Zaraz: ${err.message}`);
 }
 
 // 5. El camino de RPC nativo está vivo (D-030): web → ingest → D1
@@ -326,15 +353,58 @@ if (!SEMBRAR) {
   const d1 = (sql) => wrangler(["d1", "execute", BASE, ALMACEN, "--command", sql]);
   const CORREO = "auditor-sesion-";
 
+  /*
+   * ─── La franja de pestañas se LEE, no se adivina por la forma de la URL ───
+   *
+   * Esto contaba pestañas con `/\/en\/app\/\?vista=([a-z]+)/g`, o sea dando por
+   * hecho que toda pestaña es una vista con parámetro de consulta dentro de
+   * `app/index.astro`. Dejó de ser cierto en #362: «Cuenta» se mudó a su ruta
+   * propia, `/en/app/perfil/`, que es lo que D-065 punto 7 mandaba desde el
+   * principio. La cuenta sin hijos tiene DOS pestañas —Practicar y Cuenta— y
+   * este patrón solo veía una, así que el auditor gritaba «sin menú» contra una
+   * franja de dos elementos que estaba pintada y funcionando en producción.
+   *
+   * Un auditor que codifica la FORMA de la URL en vez de leer lo que la página
+   * pinta se rompe cada vez que algo se mueve de sitio, y encima miente en la
+   * dirección peligrosa: acusa al producto de un bug que no tiene, y el bug de
+   * verdad —el «sin menú» de #341— habría pasado igual de desapercibido si un
+   * día las dos pestañas restantes fueran ambas rutas propias.
+   *
+   * Ahora se extrae `<nav class="pestanas">` —el elemento que `Privada.astro`
+   * pinta solo cuando hay más de una pestaña— y se cuentan sus enlaces. Es la
+   * misma cosa que el dueño ve con los ojos, y no le importa a dónde apunte
+   * cada una.
+   */
+  const franja = (html) => {
+    const nav = html.match(/<nav[^>]*class="[^"]*\bpestanas\b[^"]*"[\s\S]*?<\/nav>/);
+    if (!nav) return { enlaces: [], activa: null };
+    return {
+      enlaces: [...nav[0].matchAll(/href="([^"]+)"/g)].map((m) => m[1]),
+      activa: nav[0].match(/href="([^"]+)"[^>]*aria-current="page"/)?.[1] ?? null,
+    };
+  };
+
+  /** La ruta propia de «Cuenta» — contraseñas y llaves. No es un aterrizaje. */
+  const AJUSTES = "/en/app/perfil/";
+
   /** Una cuenta y su token de sesión. `intent` es solo intención observada. */
   const cuentas = [
     {
       nombre: "familia recién creada (0 hijos)",
       learner: 0,
       intent: "PADRE",
-      // La acción principal de una cuenta a cargo de alguien: crear el primer
-      // perfil. Vive en la pestaña «Hijos», que es justo la que desapareció.
-      vista: "hijos",
+      /*
+       * La acción principal de una cuenta a cargo de alguien: crear el primer
+       * perfil. Esto la buscaba en `/en/app/?vista=hijos`, y desde #362 ahí no
+       * está — ni puede estar: sin un solo hijo la pestaña «Hijos» no existe,
+       * que es justo lo que D-065 punto 3 pide («nada de familia para quien no
+       * tiene familia»). La puerta se mudó a «Cuenta», que toda cuenta ve
+       * siempre; `lib/pestanas-privadas.ts` lo explica entero.
+       *
+       * O sea que el auditor exigía el botón en la única pantalla donde el
+       * producto ya había decidido que no debía estar. Se le pide en la que sí.
+       */
+      donde: "/en/app/perfil/",
       espera: "/en/app/perfil-nuevo/",
       queEs: "crear el primer perfil de hijo",
     },
@@ -342,7 +412,7 @@ if (!SEMBRAR) {
       nombre: "adulto que aprende solo (is_learner=1)",
       learner: 1,
       intent: "ADULTO_APRENDE",
-      vista: "practicar",
+      donde: "/en/app/?vista=practicar",
       espera: "/en/app/practicar/",
       queEs: "ponerse a practicar",
     },
@@ -390,36 +460,44 @@ if (!SEMBRAR) {
 
       // 1. Hay MENÚ. `Privada.astro` esconde la franja con una sola pestaña, y
       //    «sin menú» fue literalmente cómo el dueño reportó el bug.
-      const pestanas = new Set([...html.matchAll(/\/en\/app\/\?vista=([a-z]+)/g)].map((m) => m[1]));
-      if (pestanas.size < 2) {
+      const { enlaces, activa } = franja(html);
+      if (enlaces.length < 2) {
         problems.push(
-          `una cuenta ${c.nombre} ve ${pestanas.size} pestaña(s) en /en/app/. Con una sola, Privada.astro ` +
+          `una cuenta ${c.nombre} ve ${enlaces.length} pestaña(s) en /en/app/. Con una sola, Privada.astro ` +
             "no pinta la franja: es el «sin menú» de #341, y con él no hay forma de llegar a nada.",
         );
       } else {
-        ok.push(`${c.nombre}: ${pestanas.size} pestañas (${[...pestanas].join(", ")})`);
+        ok.push(`${c.nombre}: ${enlaces.length} pestañas (${enlaces.join(", ")})`);
       }
 
       // 2. No aterriza en sus propios ajustes. Entrar y caer en contraseñas y
       //    llaves de acceso es el aterrizaje equivocado que ya se corrigió una
       //    vez y volvió.
-      const activa = html.match(/\/en\/app\/\?vista=([a-z]+)"[^>]*aria-current="page"/);
-      if (activa && activa[1] === "cuenta") {
+      if (activa === AJUSTES) {
         problems.push(
-          `una cuenta ${c.nombre} aterriza en la vista «cuenta» — contraseñas y llaves de acceso. ` +
+          `una cuenta ${c.nombre} aterriza en «Cuenta» (${AJUSTES}) — contraseñas y llaves de acceso. ` +
             "Nadie se registra para administrar su contraseña.",
         );
       } else if (activa) {
-        ok.push(`${c.nombre}: aterriza en «${activa[1]}», no en ajustes`);
+        ok.push(`${c.nombre}: aterriza en «${activa}», no en ajustes`);
+      } else {
+        // Sin franja no hay pestaña activa, y eso ya lo dijo la comprobación 1.
+        // Con franja y sin `aria-current`, nadie sabe dónde está parado.
+        if (enlaces.length >= 2) {
+          problems.push(
+            `una cuenta ${c.nombre} ve la franja de pestañas sin ninguna marcada con aria-current="page": ` +
+              "la navegación no dice en qué pantalla estás.",
+          );
+        }
       }
 
       // 3. La acción principal EXISTE y su página responde.
-      const conVista = await fetch(`${ORIGIN}/en/app/?vista=${c.vista}`, { headers: cabeceras });
+      const conVista = await fetch(`${ORIGIN}${c.donde}`, { headers: cabeceras });
       const htmlVista = conVista.ok ? await conVista.text() : "";
       if (!htmlVista.includes(`href="${c.espera}"`)) {
         problems.push(
           `una cuenta ${c.nombre} no encuentra su acción principal (${c.queEs}): ningún enlace a ` +
-            `${c.espera} en /en/app/?vista=${c.vista}. La pantalla existe y es inalcanzable — que es ` +
+            `${c.espera} en ${c.donde}. La pantalla existe y es inalcanzable — que es ` +
             "exactamente el bug 2 de #341, y el mismo tipo que `funcion-sin-llamar` caza en el código.",
         );
         continue;

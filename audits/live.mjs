@@ -104,7 +104,34 @@ if (html.includes("cloudflareinsights.com") || html.includes("beacon.min.js")) {
       "la inyección automática de la zona está ENCENDIDA y hay que apagarla (D-037)",
   );
 } else {
-  ok.push("sin beacon inyectado por la zona (D-037)");
+  ok.push("sin beacon RUM de Cloudflare en el HTML servido");
+}
+
+// 4-bis. Zaraz — la inyección que el HTML NO delata
+//
+// La comprobación de arriba busca cadenas en el HTML, y durante meses pasó en
+// verde diciendo «sin beacon inyectado por la zona (D-037)». Era mentira:
+// **Zaraz se inyecta en el borde y no deja ninguna cadena que buscar.** Un
+// auditor que no puede ver lo que vigila y aun así pasa en verde es peor que no
+// tenerlo — da confianza falsa. Es lo que D-070 llama una aserción cierta por
+// construcción, con otra cara.
+//
+// La única forma de saberlo desde fuera es preguntarle al endpoint: si Zaraz
+// está apagado en la zona, `/cdn-cgi/zaraz/s.js` da 404. Si está encendido, da
+// 400 «Invalid Zaraz parameters» — el endpoint existe.
+//
+// D-076: el dueño decidió que Zaraz SE QUEDA porque no puede apagarlo. Así que
+// esto ya no bloquea; informa. Lo que NO se acepta es volver a no saberlo: el
+// día que se pueda apagar, esta línea lo dirá.
+try {
+  const z = await fetch(`${ORIGIN}/cdn-cgi/zaraz/s.js`);
+  if (z.status === 404) {
+    ok.push("Zaraz apagado en la zona (404) — se puede cerrar #369 y revisar D-076");
+  } else {
+    ok.push(`Zaraz ENCENDIDO en la zona (${z.status}) — aceptado por D-076, no es un hallazgo nuevo`);
+  }
+} catch (err) {
+  problems.push(`no se pudo comprobar el estado de Zaraz: ${err.message}`);
 }
 
 // 5. El camino de RPC nativo está vivo (D-030): web → ingest → D1

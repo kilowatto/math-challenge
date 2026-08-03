@@ -43,7 +43,7 @@ const hallazgo = (extra) => ({
   ...extra,
 });
 
-const carta = POR_ID.get("kinder"); // cita LR-3, D-017, D-020, D-024, mc-06, mc-20, mc-38
+const carta = POR_ID.get("kinder"); // cita LR-3, D-016, D-017, D-020, D-024, mc-06, mc-20, mc-38
 
 console.log("Reglas de D-032 — clasificación de hallazgos\n");
 
@@ -52,6 +52,26 @@ console.log("Reglas de D-032 — clasificación de hallazgos\n");
   const c = clasificar([hallazgo({ cita_tipo: "decision", cita_id: "D-999" })], carta, universo);
   comprobar("una cita inventada no bloquea", c.bloqueantes.length, 0);
   comprobar("una cita inventada se descarta", c.invalidos.length, 1);
+}
+
+// --- F8 #274: `kinder` ya puede invocar D-016 -----------------------------
+{
+  // El caso plantado del issue: una cifra de cuenta regresiva («5:00») en el
+  // aviso de KINDER. Sin D-016 en la carta, la carta VE la violación y no
+  // tiene con qué citarla: el hallazgo se descartaba como inválido y el
+  // subsistema del límite quedaba sin guardián adversarial en esa banda.
+  const c = clasificar(
+    [
+      hallazgo({
+        resumen: "el aviso del límite en KINDER muestra una cifra de cuenta regresiva («5:00»)",
+        cita_tipo: "decision",
+        cita_id: "D-016",
+      }),
+    ],
+    carta,
+    universo,
+  );
+  comprobar("kinder bloquea una cifra en el aviso citando D-016", c.bloqueantes.length, 1);
 }
 
 // --- Regla 1, segunda mitad: la carta delimita qué puede invocar ---------

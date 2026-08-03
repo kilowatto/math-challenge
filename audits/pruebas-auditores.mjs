@@ -1794,6 +1794,7 @@ const CASOS = [
     espera: "cifra de racha",
   },
 
+
   // ─── F7 · La pausa familiar (#204) ───────────────────────────────────────
   {
     // La degradación es el copy exacto que mc-19 rec. #8 prohíbe junto a esta
@@ -1811,6 +1812,116 @@ const CASOS = [
         '"pausa.cta": "Declarar la pausa: no dejes que se pierda la racha"',
       ),
     espera: "perdida",
+  },
+  // ─── F7 · El guardarraíl de naming Rango vs Nivel (#195) ─────────────────
+  //
+  // Los cuatro degradan archivos REALES (D-070): la erosión de verdad sería
+  // una cadena editada en un locale, un ORDER BY de más en una consulta que ya
+  // existe, o una interpolación de más en una plantilla que ya se pinta.
+  {
+    // La trampa clásica: llamar «Level» al eje de XP, como hace Duolingo. Aquí
+    // «Level» ya tiene dueño — la dificultad de D-017 — y la clave no está en
+    // la lista blanca escrita a mano.
+    auditor: "rango-vs-nivel",
+    que: "el XP se etiqueta «Level», la palabra del eje de dificultad",
+    archivo: "apps/web/src/i18n/en.json",
+    parche: (t) => t.replace('"mapaXp": "Experience"', '"mapaXp": "Level"'),
+    espera: "mapaXp",
+  },
+  {
+    // Una clave PERMITIDA que gana el número: «Niveles» → «Nivel 3». La lista
+    // blanca autoriza la palabra en superficies del padre, nunca la cifra.
+    auditor: "rango-vs-nivel",
+    que: "una clave de la lista blanca escribe el número de nivel",
+    archivo: "apps/web/src/i18n/es-MX.json",
+    parche: (t) => t.replace('"navLevels": "Niveles"', '"navLevels": "Nivel 3"'),
+    espera: "#100",
+  },
+  {
+    // El Rango convertido en ranking con once caracteres. Compila, no da
+    // error, y ordena a un niño de KINDER contra un adulto SERIO por un número
+    // que no mide lo mismo (D-003).
+    auditor: "rango-vs-nivel",
+    que: "la consulta de XP ordena por total_xp",
+    archivo: "apps/web/src/lib/progreso.ts",
+    parche: (t) =>
+      t.replace(
+        "SELECT total_xp FROM xp_totals WHERE child_profile_id = ?",
+        "SELECT total_xp FROM xp_totals WHERE child_profile_id = ? ORDER BY total_xp DESC",
+      ),
+    espera: "D-003",
+  },
+  {
+    // El descuido de una línea en una plantilla: interpola `nivel` y lo pinta
+    // delante de quien no debe verlo nunca (D-017, #100).
+    auditor: "rango-vs-nivel",
+    que: "el tablero de SERIO interpola el nivel de dificultad",
+    archivo: "apps/web/src/components/mapa/Tablero.astro",
+    parche: (t) =>
+      t.replace(
+        '<span class="tablero__pericia">{textoPericia(f.pericia)}</span>',
+        '<span class="tablero__pericia">{textoPericia(f.pericia)}{(f as any).nivel}</span>',
+      ),
+    espera: "interpola",
+  },
+  // ─── F7 #257 · Larry nunca comenta avatar, alias ni cosméticos ───────────
+  //
+  // Los cuatro casos degradan archivos REALES (D-070), uno por cada mitad que
+  // el auditor vigila: el import que le daría el catálogo al tutor, la función
+  // del alias, el campo que abriría el sobre, y el texto autorado que cruzaría
+  // la frontera con la voz de Larry.
+  {
+    // La violación exacta del criterio 1 del issue: el camino en vivo del
+    // tutor importando el evaluador de cosméticos «para felicitar al niño por
+    // el marco que acaba de ganar».
+    auditor: "larry-sin-cosmeticos",
+    que: "un import de cosmeticos.ts plantado en el camino en vivo del tutor",
+    archivo: "packages/tutor/src/en-vivo.ts",
+    parche: (t) =>
+      t.replace(
+        'import { sellarSobre, type SobreParaLarry } from "../../motor/src/explicacion.ts";',
+        'import { sellarSobre, type SobreParaLarry } from "../../motor/src/explicacion.ts";\n' +
+          'import { cosmeticosQueDesbloquea } from "../../motor/src/cosmeticos.ts";',
+      ),
+    espera: "cosmeticos.ts",
+  },
+  {
+    // La otra puerta: el catálogo de alias. Quien puede nombrar `generarAlias`
+    // puede hablar del nombre público del niño.
+    auditor: "larry-sin-cosmeticos",
+    que: "un import de alias.ts plantado en el catálogo de prompts del tutor",
+    archivo: "packages/tutor/src/catalogo.ts",
+    parche: (t) =>
+      t.replace(
+        'import { LOCALES, type Locale } from "../../motor/src/convenciones.ts";',
+        'import { LOCALES, type Locale } from "../../motor/src/convenciones.ts";\n' +
+          'import { generarAlias } from "../../motor/src/alias.ts";',
+      ),
+    espera: "alias.ts",
+  },
+  {
+    // El campo que abriría el sobre. Mismo mecanismo que el caso `vars` de
+    // `larry-nunca-calcula`: un campo nuevo en la lista blanca viaja solo.
+    auditor: "larry-sin-cosmeticos",
+    que: "un campo `avatar` añadido a la lista blanca del sobre",
+    archivo: "packages/motor/src/explicacion.ts",
+    parche: (t) => t.replace('  "materia",\n', '  "materia",\n  "avatar",\n'),
+    espera: "avatar",
+  },
+  {
+    // El texto autorado cruzando la frontera. Se degrada una cadena real del
+    // i18n de Larry: si «qué bonito avatar» llega a la voz pregenerada, el
+    // auditor tiene que decirlo con la palabra.
+    auditor: "larry-sin-cosmeticos",
+    que: "un «qué bonito avatar» en el i18n de Larry, en es-MX",
+    archivo: "apps/web/src/i18n/larry/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"idiomaNombre": "español de México"',
+        '"idiomaNombre": "español de México, qué bonito avatar"',
+      ),
+    espera: "avatar",
+
   },
 ];
 

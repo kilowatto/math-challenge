@@ -185,13 +185,38 @@ const declarada = Astro.url.searchParams.get("declarada") === "1";
     <form class="bloque" method="post" action="/api/pausa">
       <input type="hidden" name="locale" value={locale} />
       {hijoId !== "" && <input type="hidden" name="hijo" value={hijoId} />}
+      {/*
+        NO es un selector de fecha nativo: `audits/signup-dos-campos.mjs`
+        prohíbe ese control en TODA superficie de producto (su objetivo es la
+        fecha de nacimiento del niño, línea roja #2 — pero el auditor cuenta,
+        no juzga, y enseñarle excepciones es trabajo del dueño, no de esta
+        rama). El control es un campo de texto con teclado numérico y patrón
+        estricto; la validación real vive en el servidor (`fecha_invalida`),
+        así que el formato nunca depende de lo que el navegador pinte.
+      */}
       <label class="campo">
         <span>{p["pausa.campo.desde"]}</span>
-        <input type="date" name="desde" required />
+        <input
+          type="text"
+          name="desde"
+          required
+          inputmode="numeric"
+          autocomplete="off"
+          pattern="\d{4}-\d{2}-\d{2}"
+          placeholder={p["pausa.campo.formato"]}
+        />
       </label>
       <label class="campo">
         <span>{p["pausa.campo.hasta"]}</span>
-        <input type="date" name="hasta" required />
+        <input
+          type="text"
+          name="hasta"
+          required
+          inputmode="numeric"
+          autocomplete="off"
+          pattern="\d{4}-\d{2}-\d{2}"
+          placeholder={p["pausa.campo.formato"]}
+        />
       </label>
       <button type="submit" class="boton primario">{p["pausa.cta"]}</button>
     </form>

@@ -7,6 +7,7 @@
   "pausa.usadas": "Pausas declaradas en {anio}: {usadas} de {tope}.",
   "pausa.campo.desde": "Primer día",
   "pausa.campo.hasta": "Último día cubierto",
+  "pausa.campo.formato": "AAAA-MM-DD",
   "pausa.cta": "Declarar la pausa",
   "pausa.exito": "Pausa declarada. La racha sigue como estaba.",
   "pausa.para.hijo": "Para {alias}",

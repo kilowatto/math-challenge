@@ -36,6 +36,27 @@
     ]
   },
 
+  // ─── El cierre semanal de ligas (F7 #241) ─────────────────────────────────
+  //
+  // Lunes 00:10 UTC: la semana de liga es UTC y cierra al empezar el lunes
+  // (`semanaDe` en packages/motor/src/liga.ts); diez minutos después este cron
+  // crea la instancia del Workflow. El margen no es superstición: un cron a las
+  // 00:00 en punto puede adelantarse unos segundos y cerrar la semana que aún
+  // no termina.
+  "triggers": { "crons": ["10 0 * * MON"] },
+
+  // El Workflow hace el cierre cohorte por cohorte, con reintentos por paso —
+  // un cron desnudo que muere a medias deja cohortes en estado inconsistente
+  // (#241, criterio literal). La clase vive en src/ciclo-liga.ts y sale por el
+  // módulo de entrada. Nombre con prefijo, como todo objeto de la cuenta.
+  "workflows": [
+    {
+      "name": "math-challenge-league-cycle-workflow",
+      "binding": "LEAGUE_CYCLE_WORKFLOW",
+      "class_name": "CicloLigaSemanal"
+    }
+  ],
+
   // SQLite y no el almacenamiento clásico de clave-valor: es el que Cloudflare
   // recomienda para objetos nuevos y el único con `new_sqlite_classes`.
   "migrations": [

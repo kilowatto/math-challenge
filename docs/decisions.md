@@ -2401,8 +2401,72 @@ calificación, lo emite el motor. Si solo cambia las palabras, lo emite Larry.**
    frontera que D-035 pone para Pro — *«una explicación de cálculo tensorial
    incorrecta enseña error»*.
 
+> **Enmendado el mismo día por el dueño: el disparador es la MATERIA, no la
+> banda.** Le pregunté «¿desde qué banda?» y contestó que no es una pregunta de
+> banda: aplica donde las matemáticas tienen procedimiento que explicar —
+> topología, cálculo avanzado, la hipótesis de Riemann. Es mejor que lo que yo
+> había escrito, y encaja con D-066, que ya separa lo que es del ÍTEM de lo que
+> es del PERFIL. Un adulto haciendo aritmética no necesita esto; un adolescente
+> haciendo una demostración sí.
+
 ### Lo que NO cambia
 
-- **Los niños siguen sin escribir texto libre** (línea roja #3). Esto es de
-  bandas avanzadas: SECUNDARIA hacia arriba, donde quien juega ya escribe.
+- **Los niños siguen sin escribir texto libre** (línea roja #3). Nada de esto
+  toca una superficie de niño.
 - **Larry sigue sin calcular.** Recibe más juicios, no la facultad de emitirlos.
+
+
+---
+
+## D-075 — La línea roja #1 se enmienda: cámara para un ADULTO, jamás para un menor · 2026-08-02
+
+**Decisión del dueño, tomada explícitamente tras plantearle el conflicto.** Es
+**la primera enmienda a una de las ocho líneas** desde que se escribieron.
+
+### Qué cambia
+
+La línea decía: *«Nunca cámara, nunca micrófono, nunca biometría, nunca
+navegador bloqueado. A nadie, en ninguna banda, en ningún nivel de anti-trampa.»*
+«A nadie, en ninguna banda» no dejaba hueco.
+
+Ahora un **adulto verificado, en una banda avanzada**, puede subir la foto de su
+propio trabajo —un pizarrón, una hoja— para que Larry lo lea y explique el
+procedimiento (D-074). **La prohibición para menores no se toca.**
+
+### Por qué se aceptó
+
+El riesgo que la línea protege es de **menores**: `mc-25` es derecho de
+privacidad infantil, y COPPA/GDPR-K son sobre ellos. Un adulto fotografiando su
+propia derivación no está en ese supuesto. Y sin alguna entrada, D-074 —que
+Larry explique el procedimiento— no se puede cumplir en las materias donde más
+falta hace.
+
+### El candado, que es la parte que importa
+
+Una línea con excepción es una línea más débil. Por eso la excepción es estrecha
+y está escrita para que no se generalice sola:
+
+- **Solo cámara.** El micrófono, la biometría y el bloqueo del navegador siguen
+  prohibidos para todos, sin excepción.
+- **Solo bajo acción explícita de la persona.** Jamás una captura automática y
+  jamás anti-trampa — ese uso es lo que la línea existe para impedir.
+- **Jamás en una superficie donde pueda haber un menor.**
+- **La respuesta por defecto a ampliarla es no.**
+
+### Lo que esto abre y todavía no está decidido
+
+1. **Almacenamiento de imágenes de usuario**, que hoy no existe: dónde viven,
+   cuánto, y qué borra el borrado de cuenta (D-013 exige que borrar borre en los
+   cuatro sistemas).
+2. **Qué pasa si en la foto sale un menor.** Un adulto puede fotografiar la
+   libreta de su hijo. La línea dice «jamás en una superficie donde pueda haber
+   un menor», y eso hay que hacerlo cumplir, no solo escribirlo.
+3. **Los auditores que hoy bloquean `getUserMedia`** tienen que aprender a
+   distinguir el camino permitido del prohibido — sin que la excepción se
+   convierta en un agujero.
+
+### La alternativa que NO necesita esta enmienda
+
+El **pizarrón en línea propio** —entrada nuestra, sin cámara— resuelve el mismo
+problema sin tocar ninguna línea. El dueño quiere los dos; se construye primero
+el pizarrón, y la foto después, con su candado.

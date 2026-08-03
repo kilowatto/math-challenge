@@ -25,8 +25,20 @@ contradice**.
 No son preferencias. Cada una viene de evidencia documentada en
 `docs/research/`, y varias tienen exposición regulatoria real.
 
-1. **Nunca cámara, nunca micrófono, nunca biometría, nunca navegador bloqueado.**
-   A nadie, en ninguna banda, en ningún nivel de anti-trampa.
+1. **Nunca cámara, nunca micrófono, nunca biometría, nunca navegador bloqueado
+   — para un menor. Jamás, en ninguna banda, en ningún nivel de anti-trampa.**
+
+   **Enmendada el 2026-08-02 (D-075), y es la única de las ocho que tiene
+   excepción.** Un ADULTO verificado, en una banda avanzada, puede subir la
+   foto de su propio trabajo para que Larry lo lea. La prohibición para
+   menores no se toca y no admite matiz.
+
+   Una línea con excepción es una línea más débil, así que la excepción lleva
+   candado: es **solo cámara** (nunca micrófono, nunca biometría, nunca
+   bloqueo del navegador), **solo bajo una acción explícita** de la persona
+   —jamás una captura automática, jamás anti-trampa—, y **jamás en una
+   superficie donde pueda haber un menor**. El día que alguien necesite
+   ampliarla, la respuesta por defecto es no.
 2. **El niño nunca es un usuario.** Es un perfil dentro de la cuenta del padre.
    No se pide nombre real, correo, foto ni fecha exacta de nacimiento.
 3. **Ningún niño escribe texto libre**, en ninguna superficie del producto.

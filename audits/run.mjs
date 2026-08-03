@@ -493,7 +493,7 @@ for (const prueba of [
   // seguida sin jugar archive en silencio. Lo que defiende tampoco rompe nada
   // visible: un doble cierre no da error, asciende a alguien dos veces.
   "apps/ingest/src/ciclo-liga.prueba.mjs",
-  // F7 #207, D-128. La meta por banda en la capa de datos del recordatorio:
+  // F7 #207, D-160. La meta por banda en la capa de datos del recordatorio:
   // KINDER completa habiendo JUGADO hoy (la racha), las demás bandas por fila
   // de misión. Lo que defiende tampoco rompe nada visible: un SQL mal escrito
   // no da error — da un push diario aunque la niña haya jugado, o un niño de

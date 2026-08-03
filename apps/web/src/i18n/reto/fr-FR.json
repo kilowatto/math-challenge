@@ -139,5 +139,8 @@
   "habilidad.K11": "additionner en comptant",
   "habilidad.K12": "soustraire en enlevant",
   "habilidad.K13": "reconnaître les formes",
-  "habilidad.K14": "les motifs qui se répètent"
+  "habilidad.K14": "les motifs qui se répètent",
+  "paso.bien": "{paso}\u00a0: cette étape tient.",
+  "paso.mal": "{paso}\u00a0: cette étape ne tient pas.",
+  "paso.sin_juicio": "{paso}\u00a0: cette étape n’est pas vérifiée ici."
 }

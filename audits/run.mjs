@@ -153,6 +153,21 @@ const ACTIVE = [
   ["hojas-de-estilo",         "quien sirve <html> propio llega vestido",       "#341, D-065, D-070"],
   ["componente-sin-importar", "ningún <Componente> sin su import",             "#341, #342"],
   ["opciones-contestables",   "ninguna opción es un identificador interno",    "#349, #358, D-048"],
+
+  // ─── Los dos de F6, y por qué nacen VERDES ───────────────────────────────
+  //
+  // Casi todos los auditores de este archivo nacieron rojos: se escriben porque
+  // algo se rompió. Estos dos no, y la razón importa — la explicación
+  // pregenerada se construyó CON ellos delante, así que lo que vigilan es que
+  // no se erosione, no que se arregle.
+  //
+  // `larry-nunca-calcula` es estructural: mira que la lista blanca del sobre no
+  // crezca, que el módulo no pueda nombrar el ítem, y que no aparezca una sola
+  // operación aritmética en el camino de explicación. `larry-nunca-averguenza`
+  // es de salida: EJECUTA el módulo con las 20 causas que el banco produce de
+  // verdad, en los siete locales, y juzga la cadena que un niño leería.
+  ["larry-nunca-calcula",     "Larry recibe el veredicto, nunca los operandos", "línea roja #7, D-004, D-074, mc-37"],
+  ["larry-nunca-averguenza",  "ninguna cadena de explicación humilla",          "línea roja #7, mc-11, D-022, #133"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -206,6 +221,11 @@ for (const prueba of [
   "packages/motor/src/sesion.prueba.mjs",
   "packages/motor/src/numeros.prueba.mjs",
   "packages/motor/src/item.prueba.mjs",
+  // La explicación pregenerada (F6 #132, #137, D-074). Corre aquí porque lo que
+  // prueba no se ve leyendo el código: que la causa nombrada llegue hasta la
+  // frase, en los siete locales, y que en una materia sin juicio determinista
+  // Larry describa sin dictaminar.
+  "packages/motor/src/explicacion.prueba.mjs",
   "packages/motor/src/offline.prueba.mjs",
   "packages/motor/src/rollup.prueba.mjs",
   "packages/motor/src/banco.prueba.mjs",

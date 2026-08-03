@@ -91,10 +91,25 @@ export const CARTAS = [
       "error. Incluye: tableros que muestren últimos lugares; comparaciones no pedidas; un texto que insinúe " +
       "vergüenza; una prenda de club con perdedor; un campo de esquema donde quepa un castigo dirigido a " +
       "alguien; notificaciones que le digan a un tercero que alguien falló. Recuerda que en D-028 no existe " +
-      "una casilla para el último lugar: si un cambio la crea, eso es el hallazgo.",
-    ciega_a: "Dificultad del contenido. Un problema difícil no es humillación.",
-    cita: ["LR-7", "D-003", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-18", "mc-46"],
-    alcance: [...INTERFAZ, ...TEXTOS, ...ESQUEMA, /club|prenda|tablero|leaderboard/i],
+      "una casilla para el último lugar: si un cambio la crea, eso es el hallazgo. Y la retroalimentación " +
+      "misma: una explicación que elogia la CAPACIDAD («qué listo eres») en vez del proceso, que compara " +
+      "con otros, que cuenta las veces que alguien falló, que minimiza el ítem («era fácil») o que menciona " +
+      "la velocidad. Ninguna de esas contiene una palabra prohibida por sí sola — es la construcción lo que " +
+      "humilla, y por eso el auditor determinista `larry-nunca-averguenza` no puede cazarlas todas.",
+    ciega_a:
+      "Dificultad del contenido. Un problema difícil no es humillación. Y el léxico literal por locale, que " +
+      "ya cubre `audits/larry-nunca-averguenza.mjs` con su lista de construcciones — aquí lo que se busca es " +
+      "lo que ninguna lista caza: «no todos nacemos para los números» no tiene ni una palabra prohibida.",
+    // `mc-11` se añade en F6 (#133). Sin ella esta carta no podía invocar el
+    // hallazgo de Mueller & Dweck sobre el elogio a la capacidad —92% contra
+    // 33%— ni el de Kluger & DeNisi sobre las 607 mediciones, que son
+    // exactamente las dos fuentes que sostienen lo que Larry no dice.
+    cita: ["LR-7", "D-003", "D-004", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-18", "mc-46"],
+    // `explicacion|larry` porque el módulo de explicación vive en
+    // `packages/motor/`, que ninguno de los alcances heredados alcanza: sin esta
+    // línea, la carta dormía justo sobre el archivo que compone lo que un niño
+    // lee al equivocarse.
+    alcance: [...INTERFAZ, ...TEXTOS, ...ESQUEMA, /club|prenda|tablero|leaderboard/i, /explicacion|larry/i],
   },
   {
     id: "anti-trampa",

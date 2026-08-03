@@ -58,6 +58,48 @@ import {
   ordenDeSesion,
   type HabilidadEnRotacion,
 } from "../../../../../packages/motor/src/programador.ts";
+import {
+  sellarSobre,
+  explicarEnLocale,
+} from "../../../../../packages/motor/src/explicacion.ts";
+import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
+
+/*
+ * ─── Los siete diccionarios del reto, en el SERVIDOR ──────────────────────
+ *
+ * La explicación se compone aquí y viaja ya escrita. Las tres razones, en
+ * orden de importancia:
+ *
+ *  1. **El sobre se sella del lado del servidor.** El navegador no compone la
+ *     explicación, igual que no califica: ni siquiera recibe los quince textos
+ *     de error, solo el que le tocó.
+ *  2. **Un catálogo en el cliente son los siete locales en un teléfono de gama
+ *     baja**, que es el dispositivo de referencia (`mc-47` §5). Es el mismo
+ *     argumento por el que `Pantalla.astro` recibe `rotulos` ya resueltos.
+ *  3. Una sola implementación. Componer en las dos puntas es cómo una se queda
+ *     sin el arreglo de la otra.
+ *
+ * Son ~12 kB crudos de JSON dentro del Worker y **cero** bytes de red por
+ * respuesta: el criterio #137 —«funciona offline y sin modelo»— es literal aquí,
+ * porque no hay nada que llamar.
+ */
+import retoEN from "../../i18n/reto/en.json";
+import retoESMX from "../../i18n/reto/es-MX.json";
+import retoESES from "../../i18n/reto/es-ES.json";
+import retoFRFR from "../../i18n/reto/fr-FR.json";
+import retoPTBR from "../../i18n/reto/pt-BR.json";
+import retoPTPT from "../../i18n/reto/pt-PT.json";
+import retoDEDE from "../../i18n/reto/de-DE.json";
+
+const RETO: Record<string, Record<string, unknown>> = {
+  "en": retoEN,
+  "es-MX": retoESMX,
+  "es-ES": retoESES,
+  "fr-FR": retoFRFR,
+  "pt-BR": retoPTBR,
+  "pt-PT": retoPTPT,
+  "de-DE": retoDEDE,
+};
 
 export const prerender = false;
 
@@ -434,6 +476,35 @@ async function recibirRespuesta(
     // Silencio a propósito: la telemetría nunca interrumpe a un niño.
   }
 
+  /**
+   * ─── La explicación pregenerada (D-004 punto 1, F6 #132/#137) ────────────
+   *
+   * Hasta hoy `veredicto.causa` llegaba aquí, viajaba al cliente, y la pantalla
+   * **la tiraba**: quien fallaba leía «Esta vez no. Vamos a intentarlo otra
+   * vez.» sin importar qué hubiera hecho. El dato que hace útil a Larry existe
+   * en el banco desde el primer día —es regla de CLAUDE.md § Contenido— y no
+   * llegaba a nadie.
+   *
+   * Ahora se compone aquí, y el orden de estas tres líneas es el contrato de la
+   * línea roja #7 hecho código:
+   *
+   *  1. `calificarContraBanco` **ya calculó** el veredicto, en el Worker de
+   *     ingesta, que es donde vive la respuesta correcta.
+   *  2. `sellarSobre` copia solo la lista blanca. Los operandos, la respuesta,
+   *     la elección del niño, el tiempo y el id del perfil **no tienen campo**.
+   *  3. `explicarEnLocale` elige palabras. No calcula: no recibe con qué.
+   *
+   * Nada de esto toca la red ni un modelo, así que **no puede fallar y no puede
+   * tardar**: el veredicto jamás espera a Larry (`mc-20` §7 — para un niño
+   * pequeño el silencio tras un toque se lee como «roto», no como «pensando»).
+   */
+  const locSeguro: Locale = isLocale(locale) ? locale : DEFAULT_LOCALE;
+  const explicacion = explicarEnLocale(
+    sellarSobre(veredicto as unknown as Record<string, unknown>),
+    locSeguro,
+    RETO,
+  );
+
   return json({
     ok: true,
     correcto,
@@ -442,6 +513,10 @@ async function recibirRespuesta(
     // calcula (línea roja #7).
     causa: veredicto.causa,
     razonAlterna: veredicto.razonAlterna,
+    // Las frases ya escritas, en el locale de quien juega. La pantalla las
+    // pinta y no compone nada: si aquí no hay texto, no hay texto, y eso se ve
+    // en un auditor en vez de descubrirse en alemán tres semanas después.
+    explicacion,
     nivel: modelo?.nivel ?? nivelDeHabilidad(despues.habilidad),
     // `etapa` y `ubicando` viajan para que la pantalla del PADRE pueda usarlos.
     // La del niño no los pinta: enterarse de que hay una ubicación en curso la

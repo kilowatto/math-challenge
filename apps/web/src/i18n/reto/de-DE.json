@@ -139,5 +139,8 @@
   "habilidad.K11": "durch Weiterzählen addieren",
   "habilidad.K12": "durch Wegnehmen subtrahieren",
   "habilidad.K13": "Formen erkennen",
-  "habilidad.K14": "Muster, die sich wiederholen"
+  "habilidad.K14": "Muster, die sich wiederholen",
+  "paso.bien": "{paso}: dieser Schritt trägt.",
+  "paso.mal": "{paso}: dieser Schritt trägt nicht.",
+  "paso.sin_juicio": "{paso}: dieser Schritt wird hier nicht geprüft."
 }

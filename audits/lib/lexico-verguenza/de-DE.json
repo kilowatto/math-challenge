@@ -1,0 +1,73 @@
+{
+  "locale": "de-DE",
+  "nota": "Deutsch (de-DE) — «noch einmal» es aliento, no conteo de fallas.",
+  "porQue": "Lo que se prohíbe es una CONSTRUCCIÓN, no una palabra: las construcciones no se traducen. Una lista global traducida produce falsos positivos contra texto ya aprobado — es-ES sirve «Inténtalo otra vez, sin prisa» y de-DE «Versuch es noch einmal, in Ruhe», y prohibir «otra vez» marcaría eso, mientras que «otra vez te equivocaste», que sí humilla, es la misma palabra en otra construcción.",
+  "limite": "Es un cable trampa, no un juez. «No todos nacemos para los números» es atribución de rasgo fijo pura y no contiene ni una palabra de esta lista. Ninguna lista la caza, en ningún idioma. Ese hueco lo cubren la revisión humana por locale y la carta adversarial `anti-humillacion`, que corre a mano y cuesta dinero.",
+  "construcciones": [
+    {
+      "categoria": "elogio_inflado",
+      "patron": "[!¡]{2,}",
+      "porque": "exclamaciones apiladas. Brummelman et al. (2014/2017): el elogio inflado predice MENOR autoestima con el tiempo"
+    },
+    {
+      "categoria": "capacidad",
+      "patron": "\\bdu bist (?:so |echt |wirklich )?(?:schlau|klug|intelligent|ein genie|schlecht in)\\b",
+      "porque": "Mueller & Dweck: elogiar el rasgo fijo hace que el siguiente fallo se lea como que el rasgo falló"
+    },
+    {
+      "categoria": "capacidad",
+      "patron": "\\bkein (?:mathe|zahlen)[- ]?(?:typ|mensch)\\b",
+      "porque": "el mismo rasgo, en negativo"
+    },
+    {
+      "categoria": "elogio_inflado",
+      "patron": "\\b(?:perfekt|unglaublich|fantastisch|wunderbar|spitze)\\b",
+      "porque": "superlativo sobre un acierto rutinario (Brummelman)"
+    },
+    {
+      "categoria": "comparacion",
+      "patron": "\\b(?:die anderen kinder|andere kinder|in deinem alter|als die anderen kinder|die meisten kinder)\\b",
+      "porque": "retroalimentación normativa (Kluger & DeNisi)"
+    },
+    {
+      "categoria": "conteo_de_fallas",
+      "patron": "\\bdu machst (?:immer|st[aä]ndig)\\b",
+      "porque": "contar fallas en voz alta"
+    },
+    {
+      "categoria": "conteo_de_fallas",
+      "patron": "\\bschon wieder (?:falsch|daneben)\\b",
+      "porque": "«otra vez» pegado al fallo. «noch einmal» sola no es esto"
+    },
+    {
+      "categoria": "conteo_de_fallas",
+      "patron": "\\b(?:zweites|drittes|viertes) mal\\b",
+      "porque": "lo mismo, con número"
+    },
+    {
+      "categoria": "minimizadores",
+      "patron": "\\bdas war (?:doch )?(?:einfach|leicht|offensichtlich)\\b",
+      "porque": "si era fácil y fallé, el problema soy yo"
+    },
+    {
+      "categoria": "minimizadores",
+      "patron": "\\bdu musstest nur\\b",
+      "porque": "igual"
+    },
+    {
+      "categoria": "tiempo_velocidad",
+      "patron": "\\b(?:du warst (?:zu )?(?:langsam|schnell)|beeil dich|schneller machen)\\b",
+      "porque": "D-024/D-045: el tiempo no se ve, no se oye y no cuesta puntos"
+    },
+    {
+      "categoria": "culpa",
+      "patron": "\\bdu hast versagt\\b",
+      "porque": "el nivel «yo» (Hattie & Timperley)"
+    },
+    {
+      "categoria": "culpa",
+      "patron": "\\bdas ist falsch\\b",
+      "porque": "marcador de fracaso sin siguiente paso (Shute)"
+    }
+  ]
+}

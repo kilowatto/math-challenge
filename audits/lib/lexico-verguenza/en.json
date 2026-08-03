@@ -1,0 +1,78 @@
+{
+  "locale": "en",
+  "nota": "English (en) — la lengua de origen del corpus.",
+  "porQue": "Lo que se prohíbe es una CONSTRUCCIÓN, no una palabra: las construcciones no se traducen. Una lista global traducida produce falsos positivos contra texto ya aprobado — es-ES sirve «Inténtalo otra vez, sin prisa» y de-DE «Versuch es noch einmal, in Ruhe», y prohibir «otra vez» marcaría eso, mientras que «otra vez te equivocaste», que sí humilla, es la misma palabra en otra construcción.",
+  "limite": "Es un cable trampa, no un juez. «No todos nacemos para los números» es atribución de rasgo fijo pura y no contiene ni una palabra de esta lista. Ninguna lista la caza, en ningún idioma. Ese hueco lo cubren la revisión humana por locale y la carta adversarial `anti-humillacion`, que corre a mano y cuesta dinero.",
+  "construcciones": [
+    {
+      "categoria": "elogio_inflado",
+      "patron": "[!¡]{2,}",
+      "porque": "exclamaciones apiladas. Brummelman et al. (2014/2017): el elogio inflado predice MENOR autoestima con el tiempo"
+    },
+    {
+      "categoria": "capacidad",
+      "patron": "\\byou(?:'| a)?re\\s+(?:so\\s+|such\\s+a\\s+|really\\s+)?(?:smart|clever|brilliant|a genius|good at (?:maths|math))\\b",
+      "porque": "Mueller & Dweck (1998): tras un fracaso posterior, el 92% de los elogiados por su esfuerzo eligió el problema más difícil, contra el 33% de los elogiados por su inteligencia"
+    },
+    {
+      "categoria": "capacidad",
+      "patron": "\\bnot (?:a )?(?:maths|math) person\\b",
+      "porque": "el mismo rasgo fijo, en negativo"
+    },
+    {
+      "categoria": "elogio_inflado",
+      "patron": "\\b(?:perfect|amazing|incredible|fantastic|awesome|brilliant)\\b",
+      "porque": "superlativo sobre un acierto rutinario (Brummelman)"
+    },
+    {
+      "categoria": "comparacion",
+      "patron": "\\b(?:other (?:kids|children)|most (?:kids|children)|your age|than the other (?:kids|children)|everyone else (?:got|did))\\b",
+      "porque": "retroalimentación normativa. Kluger & DeNisi, 607 tamaños de efecto: más de un tercio de las intervenciones EMPEORÓ el desempeño, desviando la atención al «yo»"
+    },
+    {
+      "categoria": "conteo_de_fallas",
+      "patron": "\\b(?:you keep|you always|you never)\\b",
+      "porque": "contar fallas en voz alta"
+    },
+    {
+      "categoria": "conteo_de_fallas",
+      "patron": "\\b(?:second|third|fourth|fifth) time\\b",
+      "porque": "lo mismo, con número"
+    },
+    {
+      "categoria": "conteo_de_fallas",
+      "patron": "\\bagain\\b[^.!?]{0,40}\\b(?:wrong|missed|failed)\\b",
+      "porque": "«otra vez» pegado al fallo. «Try again» sola no es esto"
+    },
+    {
+      "categoria": "minimizadores",
+      "patron": "\\b(?:that|it|this) (?:was|is) (?:so )?(?:easy|simple|obvious)\\b",
+      "porque": "si era fácil y fallé, el problema soy yo"
+    },
+    {
+      "categoria": "minimizadores",
+      "patron": "\\ball you had to do\\b",
+      "porque": "igual"
+    },
+    {
+      "categoria": "tiempo_velocidad",
+      "patron": "\\byou (?:were|are) (?:too )?(?:slow|fast|quick)\\b",
+      "porque": "D-024/D-045: en kinder el tiempo se mide pero no se ve, no se oye y no cuesta puntos. mc-10 §2 (Ashcraft): los mismos problemas no producen ansiedad en papel sin reloj y sí bajo reloj"
+    },
+    {
+      "categoria": "tiempo_velocidad",
+      "patron": "\\b(?:that took (?:you )?(?:too )?long|be quicker|be faster|hurry up)\\b",
+      "porque": "igual"
+    },
+    {
+      "categoria": "culpa",
+      "patron": "\\byou (?:failed|messed (?:it )?up|blew it)\\b",
+      "porque": "el nivel «yo», que Hattie & Timperley miden como el más débil de los cuatro"
+    },
+    {
+      "categoria": "culpa",
+      "patron": "\\b(?:wrong|bad|silly) (?:answer|again)\\b",
+      "porque": "marcador de fracaso sin siguiente paso (Shute, mc-11 §5)"
+    }
+  ]
+}

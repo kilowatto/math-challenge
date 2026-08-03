@@ -1,0 +1,19 @@
+{
+  "_locale": "fr-FR",
+  "_nota": "Autorado, no traducido (D-022). La nota de honestidad es D-016 hecha copy: los rangos son criterio propio, no recomendación médica. Nada aquí insinúa que el tiempo de pantalla dañó algo (mc-26 §7). Los números llegan como marcadores y los resuelve formatear().",
+  "padre.limite.titulo": "Temps d’écran",
+  "padre.limite.lead": "La limite quotidienne et la coupure du soir pour {alias}.",
+  "padre.limite.hoy": "Aujourd’hui, {alias} a joué {jugados} minutes sur {limite}.",
+  "padre.limite.diarios": "Minutes par jour",
+  "padre.limite.rango": "Vous pouvez choisir entre {min} et {max} minutes.",
+  "padre.limite.honestidad": "Ces plages sont nos propres critères de conception, pas une recommandation médicale : aucune autorité ne publie de chiffre quotidien pour cet âge.",
+  "padre.limite.nocturno": "Coupure du soir",
+  "padre.limite.nocturnoAyuda": "Activée, le jeu s’arrête {antes} minutes avant l’heure du coucher et se repose jusqu’au matin.",
+  "padre.limite.horaDormir": "Heure du coucher",
+  "padre.limite.guardar": "Enregistrer",
+  "padre.limite.guardado": "Enregistré.",
+  "padre.limite.errRango": "Choisissez un nombre entier entre {min} et {max} minutes.",
+  "padre.limite.errHora": "Cette heure ne semble pas valide.",
+  "padre.limite.errGenerico": "Une erreur est survenue. Veuillez réessayer.",
+  "padre.limite.abrir": "Configurer"
+}

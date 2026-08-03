@@ -1106,18 +1106,28 @@ const CASOS = [
   // archivo inventado solo probaría que el auditor sabe leer un archivo
   // inventado (D-070).
   {
-    // El bug de #311 otra vez, en F7. Si `registrarDia` deja de llamarse, no
-    // hay error, no hay pantalla rota y no hay auditor rojo: hay una tabla
-    // `child_streak` vacía, y se descubre semanas después por un padre.
+    // El bug de #311 otra vez, en F7. Si el motor deja de llamarse, no hay
+    // error, no hay pantalla rota y no hay auditor rojo: hay una tabla vacía,
+    // y se descubre semanas después por un padre.
+    //
+    // REAPUNTADO el 2026-08-03, no borrado: el parche degradaba la llamada a
+    // `registrarDia`, y #209 le dio a `registrarDia` un SEGUNDO llamador de
+    // producto —`offline.ts::sincronizarReto`, que alimenta la racha con los
+    // días de vuelo—. Quitar la llamada de `progreso.ts` ya no deja cero
+    // llamadores, y el caso corría en verde sin degradar nada: un auditor
+    // apagado en silencio, que el arnés cazó al integrar. Se reapunta a
+    // `ganarEscudos`, que sigue teniendo UN solo llamador y es el mismo
+    // archivo: la clase de bug vigilada (motor de F7 perfecto y sin llamador,
+    // #311) no cambia.
     auditor: "funcion-sin-llamar",
     que: "el motor de racha vuelve a quedarse sin ningún llamador",
     archivo: "apps/web/src/lib/progreso.ts",
     parche: (t) =>
       t.replace(
-        "    const conDia = registrarDia(antes, hoy, entrada.motivo);",
-        "    const conDia = antes;",
+        "    const despues = conDia === antes ? antes : ganarEscudos(conDia);",
+        "    const despues = conDia;",
       ),
-    espera: "registrarDia",
+    espera: "ganarEscudos",
   },
   {
     // La línea roja #6 escrita como una columna. Nadie escribe `venderEscudo()`;
@@ -1700,6 +1710,34 @@ const CASOS = [
         '"misiones.titulo": "Te quedan unas horas para tus misiones"',
       ),
     espera: "urgencia",
+  },
+  {
+    // La excepción de D-106 es POR MARCADOR: sin el renglón escrito, nombrar
+    // `current_streak` en el DO de liga vuelve a ser exactamente lo que la
+    // condición 1 de D-081 prohíbe. El parche borra el marcador y deja el campo.
+    auditor: "liga-no-quita",
+    que: "la difusión de la racha pierde su marcador de D-106",
+    archivo: "apps/web/src/lib/liga-do.ts",
+    parche: (t) =>
+      t.replace(
+        "liga-no-quita-difusion: current_streak — D-106 (2026-08-03)",
+        "difusion sin decision escrita",
+      ),
+    espera: "current_streak",
+  },
+  {
+    // Y con el marcador intacto, la excepción es ESTRECHA: autoriza NOMBRAR la
+    // racha para difundirla, nunca escribirla. Un UPDATE a la tabla de la racha
+    // desde el subsistema social bloquea igual, marcador o no.
+    auditor: "liga-no-quita",
+    que: "un UPDATE a child_streak dentro del DO de liga, con el marcador puesto",
+    archivo: "apps/web/src/lib/liga-do.ts",
+    parche: (t) =>
+      t.replace(
+        'import type { Banda } from "../../../../packages/motor/src/puntuacion.ts";',
+        'import type { Banda } from "../../../../packages/motor/src/puntuacion.ts";\nconst _SQL_PROHIBIDO = "UPDATE child_streak SET current_streak = 0";',
+      ),
+    espera: "child_streak",
   },
 ];
 

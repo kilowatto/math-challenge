@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Casos de la cola offline y el modo avión — criterio #41 de F3, D-047.
 
+import * as offline from "./offline.ts";
 import { sincronizar, podar, llave, armarPaqueteDeVuelo, TOPE_AUDIO_BYTES } from "./offline.ts";
+import { ESTADO_INICIAL } from "./racha.ts";
 
 let fallos = 0, corridos = 0;
 function caso(n, fn) { corridos++; try { fn(); console.log(`  ✓ ${n}`); } catch (e) { fallos++; console.error(`  ✗ ${n}`); console.error(`      ${e.message}`); } }
@@ -91,6 +93,77 @@ caso("el paquete dice cuántos bytes son, para poder avisar ANTES de descargar",
 
 caso("el tope de audio de mc-42 son 5 MB", () => {
   es(TOPE_AUDIO_BYTES, 5 * 1024 * 1024);
+});
+
+// --- #198: XP completo al sincronizar, sin la reserva de D-047 ---------------
+//
+// Segunda fuente A MANO (D-070): los valores esperados se calcularon fuera del
+// motor — valorDelItem(n) = 10 · 1.6^(n−1), así que nivel 1 → 10, nivel 2 → 16,
+// nivel 5 → round(65.536) = 66. Nada de esto llama a xpDeItem ni a valorDelItem.
+
+caso("un intento offline acredita XP COMPLETO, sin descuento ni marca (#198)", () => {
+  es(sincronizar(enCola({ nivel: 5 }), () => true).xp, 66, "nivel 5 acertado");
+  es(sincronizar(enCola({ nivel: 1 }), () => true).xp, 10, "nivel 1 acertado");
+  es(sincronizar(enCola({ nivel: 2, banda: "PRO" }), () => true).xp, 16,
+     "ni siquiera PRO descuenta: el XP no ve el reloj en ninguna banda (D-055)");
+});
+
+caso("fallar offline acredita 0 XP, nunca un negativo (D-055)", () => {
+  es(sincronizar(enCola({ nivel: 5 }), () => false).xp, 0);
+});
+
+// --- #209: los días de vuelo cuentan para la racha ---------------------------
+
+// Instantes fijos, con su día local derivado A MANO (D-070, segunda fuente):
+// agosto no tiene horario de verano en America/Mexico_City (UTC−6 todo el año)
+// ni en Asia/Tokyo (UTC+9 todo el año).
+const DIA_1 = Date.UTC(2026, 7, 10, 15, 0, 0); // CDMX: 2026-08-10 09:00 → día 10
+const DIA_2 = Date.UTC(2026, 7, 11, 15, 0, 0); // CDMX: 2026-08-11 09:00 → día 11
+const ZONA = "America/Mexico_City";
+
+const retoDeVuelo = (sesionId, contestadoEn) => [
+  enCola({ sesionId, orden: 1, contestadoEn }),
+  enCola({ sesionId, orden: 2, itemId: "i2", contestadoEn: contestadoEn + 60_000 }),
+];
+
+caso("dos días de vuelo, sincronizados juntos al aterrizar: la racha avanza 2 (#209)", () => {
+  let racha = ESTADO_INICIAL;
+  racha = offline.sincronizarReto(retoDeVuelo("vuelo-1", DIA_1), () => true, true, ZONA, racha).racha;
+  racha = offline.sincronizarReto(retoDeVuelo("vuelo-2", DIA_2), () => true, true, ZONA, racha).racha;
+  es(racha.current_streak, 2, "ni 0 (los días de vuelo sí cuentan) ni 1 (son DOS días)");
+  es(racha.last_completed_local_date, "2026-08-11");
+});
+
+caso("ítems sueltos SIN reto cerrado no cuentan para la racha (#209)", () => {
+  const r = offline.sincronizarReto(retoDeVuelo("suelto", DIA_1), () => true, false, ZONA, ESTADO_INICIAL);
+  if (r.racha !== ESTADO_INICIAL) throw new Error("un reto no cerrado movió la racha");
+  // Pero el XP de los ítems sí se acredita: son preguntas distintas (#198).
+  es(r.xp, 66 + 66, "dos ítems de nivel 5 acertados");
+});
+
+caso("el día lo decide la zona del HOGAR, nunca el reloj del dispositivo (#209)", () => {
+  // El mismo instante: 2026-08-11 04:00 UTC. En CDMX aún es el día 10 (22:00);
+  // en Tokio ya es el día 11 (13:00). Derivado a mano, no con diaEfectivo.
+  const LIMITE = Date.UTC(2026, 7, 11, 4, 0, 0);
+  const cdmx = offline.sincronizarReto(retoDeVuelo("z1", LIMITE), () => true, true, ZONA, ESTADO_INICIAL);
+  es(cdmx.racha.last_completed_local_date, "2026-08-10");
+  const tokio = offline.sincronizarReto(retoDeVuelo("z2", LIMITE), () => true, true, "Asia/Tokyo", ESTADO_INICIAL);
+  es(tokio.racha.last_completed_local_date, "2026-08-11");
+});
+
+caso("un reto offline sigue FUERA del tablero: soloPrecision y fueraDelTablero no cambian (D-047 intacta)", () => {
+  const r = offline.sincronizarReto(retoDeVuelo("tablero", DIA_1), () => true, true, ZONA, ESTADO_INICIAL);
+  es(r.resultados.length, 2);
+  for (const res of r.resultados) {
+    es(res.fueraDelTablero, true, "D-047: un intento offline nunca cuenta para el tablero");
+    es(res.soloPrecision, true, "banda PRIMARIA: solo precisión, como antes");
+  }
+});
+
+caso("un reto completo VACÍO es un error de quien llama, no un día gratis", () => {
+  let lanzo = false;
+  try { offline.sincronizarReto([], () => true, true, ZONA, ESTADO_INICIAL); } catch { lanzo = true; }
+  if (!lanzo) throw new Error("un reto completo sin ítems habría contado un día de la nada");
 });
 
 console.log("");

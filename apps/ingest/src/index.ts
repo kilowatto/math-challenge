@@ -48,6 +48,7 @@ interface Env {
   DB: D1Database;
   SESION_RETO_DO: DurableObjectNamespace;
   ATTEMPTS_AE: AnalyticsEngineDataset;
+  LEAGUE_CYCLE_WORKFLOW: Workflow;
 }
 
 /** Lo que el motor de reto mandará en F3. Aquí solo se define la forma. */
@@ -480,10 +481,35 @@ export class Ingest extends WorkerEntrypoint<Env> {
       status: 404,
     });
   }
+
+  /**
+   * El cron del cierre semanal de ligas (F7 #241).
+   *
+   * NO cierra nada aquí: crea UNA instancia del Workflow y termina. Un cron
+   * desnudo que cierra cohortes puede morir a la mitad sin forma de retomar;
+   * el Workflow reintenta cada cohorte como paso propio.
+   *
+   * El id deriva del instante programado y `createBatch` SALTA los ids que ya
+   * existen: si el evento del cron se entrega dos veces, no hay doble corrida.
+   */
+  override async scheduled(controller: ScheduledController): Promise<void> {
+    await this.env.LEAGUE_CYCLE_WORKFLOW.createBatch([
+      {
+        id: `ciclo-liga:${controller.scheduledTime}`,
+        params: { programadoPara: controller.scheduledTime },
+      },
+    ]);
+  }
 }
 
 // El Durable Object de la sesión de reto. Se exporta desde aquí porque Workers
 // exige que la clase viva en el mismo módulo de entrada que la declara.
 export { SesionReto } from "./sesion-do.ts";
+
+// El Workflow del cierre semanal de ligas (F7 #241). Misma regla: la clase
+// tiene que salir del módulo de entrada para que wrangler la encuentre. La
+// lógica del cierre vive en `ciclo-liga.ts`, sin importar `cloudflare:workers`,
+// para que la prueba la ejecute en Node.
+export { CicloLigaSemanal } from "./ciclo-liga-workflow.ts";
 
 export default Ingest;

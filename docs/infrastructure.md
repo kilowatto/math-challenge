@@ -4,7 +4,7 @@
 > cuenta de Cloudflare lleva el prefijo `math-challenge-` para distinguirlo de
 > los de IOS y de IMP, que viven en la misma cuenta.
 >
-> **Estado: 5 de 27 objetos creados.** El resto de esta lista es lo que se va a
+> **Estado: 5 de 28 objetos creados.** El resto de esta lista es lo que se va a
 > crear, no lo que está creado. Conforme se creen, se anota el ID real y la fecha
 > en la bitácora de abajo, según la regla de `CLAUDE.md` § Cloudflare.
 >
@@ -107,6 +107,7 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 | `kilowatto` ⚠️ sin prefijo, ver D-054 | Turnstile widget | Bot defense on signup forms. REUSED: a Turnstile widget belongs to a hostname list, not to a project, and math.kilowatto.com lives inside kilowatto.com | Defensa contra bots en el formulario de registro. REUSADO: un widget de Turnstile pertenece a una lista de hostnames, no a un proyecto, y math.kilowatto.com vive dentro de kilowatto.com | `TURNSTILE_SITE_KEY` (público, var) · `TURNSTILE_SECRET_KEY` (secreto) |
 | `math-challenge-web-analytics` | Web Analytics site | Privacy-first RUM for the PWA | RUM respetuoso de la privacidad para la PWA | (JS snippet, no binding) |
 | `math-challenge-secrets` | Secrets Store | Third-party credentials. **No longer `ANTHROPIC_API_KEY`**: D-035 removed that path and the `@anthropic-ai/sdk` package was uninstalled. Current tenant of this row: `TUTOR_PD_SECRET`, the HMAC salt for the tutor's daily per-profile pseudonym. Without it the live path does not run at all — no `pd` means no per-profile counter, and a live path without a cap is not switched on | Credenciales de terceros. **Ya no `ANTHROPIC_API_KEY`**: D-035 quitó ese camino y el paquete `@anthropic-ai/sdk` se desinstaló. Inquilino actual: `TUTOR_PD_SECRET`, la sal del HMAC del seudónimo diario del perfil. Sin él el camino en vivo no corre: sin `pd` no hay contador por perfil, y un camino en vivo sin tope no se enciende | vía `wrangler secret put` |
+| `math-challenge-league-cycle-workflow` | Workflow | Weekly close of every expired league cohort (F7 #241): promotion/demotion computed over ACTIVE members only (D-056 figures), next-week placement with points reset, and silent archiving after 8 consecutive inactive weeks. Retries are idempotent: one atomic D1 batch per cohort, a guard that skips already-closed cohorts, and deterministic ids with INSERT OR IGNORE. Lives in `math-challenge-ingest`, triggered by cron `10 0 * * MON` | Cierre semanal de cada cohorte de liga vencida (F7 #241): ascenso/descenso calculado SOLO sobre activos (las cifras de D-056), colocación en la semana siguiente con los puntos a cero, y archivado en silencio a las 8 semanas seguidas sin actividad. Reintentos idempotentes: un batch atómico de D1 por cohorte, guardia que salta cohortes ya cerradas, e ids deterministas con INSERT OR IGNORE. Vive en `math-challenge-ingest`, disparado por el cron `10 0 * * MON` | `LEAGUE_CYCLE_WORKFLOW` |
 
 
 ## Bitácora de creación / Creation log
@@ -125,6 +126,7 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 
 | 2026-08-03 | `math-challenge-league-do` (Durable Object, clase `Liga`) + migración D1 `0012_ligas_tablero_duelo.sql` | *(la clase es el id)* | Claude | F7 #242. Binding `LEAGUE_DO`, migración de DO `v3` con `new_sqlite_classes` — etiqueta nueva, nunca una edición de la `v2`: una migración de DO ya desplegada es inmutable y editarla deja el despliegue rechazado con «migration tag mismatch». **Un objeto por cohorte** (`idFromName(cohort_id)`), no uno global: un DO global topa en 500-1.000 req/s (`mc-32` riesgo #2) y, sobre todo, hace imposible que cerrar una liga sea `deleteAll()`. Guarda **estado derivado** —puntos de la semana, días activos, alias y avatar para poder difundir sin ir a D1—; jamás el intento crudo, que va a `math-challenge-attempts-ae`. **Ninguna señal de presencia**: no hay contador de sockets, no hay `last_seen`, y la difusión manda la tabla entera y nunca «fulano acaba de jugar» (condición 2 de D-081). Los tres sitios de siempre: `worker.ts` (export con nombre), `astro.config.mjs` (`namedExports`) y `wrangler.jsonc` (binding + `migrations`) |
 | 2026-08-02 | Migración `0011_screen_time_daily_usage.sql` sobre `math-challenge-db` (D1) | *(tabla `screen_time_daily_usage`, no un objeto de la cuenta)* | Claude | F8 #267. **Cero recursos nuevos de Cloudflare**: el renglón existe porque la migración se commiteó, no porque se haya creado nada. Una tabla, solo AGREGA, `PRIMARY KEY (child_profile_id, local_date)` y `ON DELETE CASCADE` sobre `child_profiles`. Es el CONSUMO del día —cuántos minutos lleva jugados el niño hoy— que `screen_time_settings` (la configuración) nunca guardó, y sin el cual el aviso de los 5 minutos y el corte diario de D-016 no se pueden calcular. Es un rollup por niño y por día, el mismo patrón que `score_totals`: **no** es lo que `mc-32` riesgo #1 prohíbe, que son intentos crudos y siguen yendo solo a `math-challenge-attempts-ae`. Se descartó un `math-challenge-screentime-do` por niño: sumar minutos no tiene la exigencia de consistencia serializada que justifica un DO en F4, y un objeto más que inventariar sin problema de latencia que resolver es costo sin beneficio. **Lo que este renglón NO significa:** la migración todavía no se ha aplicado a `math-challenge-db` ni a `math-challenge-db-eu` — sin `wrangler d1 migrations apply` la tabla no existe en ningún ambiente, y el motor que la lee (`packages/motor/src/limite-pantalla.ts`) es puro y no la toca todavía. Y **la numeración salta de 0008 a 0011 a propósito**: 0009 y 0010 están reservadas a F7 misiones y a F7 ligas, que se construyen en paralelo; `audits/migration-safety.mjs` avisa del hueco hasta que esas dos ramas mergeen, y tiene razón en avisar |
+| 2026-08-03 | `math-challenge-league-cycle-workflow` (Workflow, clase `CicloLigaSemanal`) — **DECLARADO EN CÓDIGO, TODAVÍA NO CREADO NI DESPLEGADO** | *(sin instancias hasta el primer despliegue)* | Claude | F7 #241. Vive en `math-challenge-ingest` (`apps/ingest/src/ciclo-liga.ts` + `ciclo-liga-workflow.ts`), con el cron `10 0 * * MON` —lunes 00:10 UTC: la semana de liga es UTC y cierra al empezar el lunes, y el margen de diez minutos es para que un cron adelantado no cierre la semana en curso—. Se eligió `ingest` y no `web`: el cierre es trabajo por lotes sin ruta pública (como todo lo de ese Worker), solo necesita el binding `DB`, y no tiene por qué pagar el despliegue pesado del Astro de web. **Lo que este renglón NO significa:** el cron no corre hasta que alguien despliegue `math-challenge-ingest` — no hay CI y el despliegue es manual, así que la primera semana que cerrará de verdad es la primera que siga a ese despliegue. Tampoco borra el estado del Durable Object de la cohorte cerrada: `LEAGUE_DO` vive en `web` y cruzar el binding se dejó fuera a propósito (ver el PR) |
 
 > **Regla:** quien crea un recurso de Cloudflare escribe su renglón aquí en el
 > mismo PR (`CLAUDE.md` § Cloudflare).
@@ -168,6 +170,23 @@ escrito antes de que alguien la busque y no la encuentre.
 **no se pudo confirmar**; hay que verificarla directamente con Cloudflare antes de
 guardar datos personales de menores de la UE o el Reino Unido en `SESSION_KV` o
 `CONFIG_KV`.
+
+### `math-challenge-db-eu`: existe, y este proyecto NO la usa
+
+En la cuenta de Cloudflare hay una segunda base D1 llamada `math-challenge-db-eu`.
+Comprobado el 2026-08-03, no supuesto: **no aparece en ninguna configuración de
+wrangler del repositorio** — ningún `wrangler.jsonc` la referencia, ningún
+binding apunta a ella, y ninguna migración se le ha aplicado jamás por la vía
+normal. No es la «base europea» que la sección de jurisdicción de arriba
+contempla: esa segunda base, cuando haga falta, se creará con jurisdicción `eu`
+explícita y con la decisión de enrutado en el registro.
+
+**Decisión del dueño (2026-08-03): se documenta y se deja quieta; no se borra.**
+Borrarla es irreversible y exigiría primero confirmar que está vacía; documentarla
+cuesta este renglón y cierra la pregunta «¿esto se puede borrar?» durante un año.
+Si alguien la necesita para la jurisdicción europea, la decisión es crear una base
+NUEVA con ajuste de jurisdicción — esta no lo tiene fijado por escrito en ningún
+lado del proyecto.
 
 ## Riesgo conocido
 

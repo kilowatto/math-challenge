@@ -459,6 +459,12 @@ for (const prueba of [
   // defiende tampoco rompe nada visible: un día contado en UTC en vez de en la
   // zona del hogar adelanta o atrasa la racha de medio país sin dar error.
   "packages/motor/src/tiempo-local.prueba.mjs",
+  // F7 #241. El CIERRE de la liga, contra SQLite de verdad (`node:sqlite`), no
+  // contra un simulacro: que el reparto aterrice en la base, que cerrar dos
+  // veces la misma semana no mueva a nadie dos veces, y que la octava semana
+  // seguida sin jugar archive en silencio. Lo que defiende tampoco rompe nada
+  // visible: un doble cierre no da error, asciende a alguien dos veces.
+  "apps/ingest/src/ciclo-liga.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

@@ -669,26 +669,14 @@ Contexto: **D-081** mandó salir con la escalera de visibilidad social completa
 y el Durable Object. Lo que sigue es lo que tuve que decidir sin que estuviera
 escrito, o donde dos documentos decían cosas distintas.
 
-### 23.1 #242 y #243 se contradicen sobre la racha entre pares de liga
+### 23.1 RESUELTA · 2026-08-03 — la racha SÍ se muestra entre pares (D-106)
 
-**#242** (el Durable Object) autoriza difundir, textual: *«avatar, alias,
-puntos, racha, posición — nunca un campo adicional porque ya estaba en la
-fila»*. **#243** (visibilidad por banda) prohíbe, también textual: *«nunca se
-muestra racha, puntaje histórico total, ni pertenencia a otros grupos entre
-pares de liga»*.
-
-Las dos no pueden ser ciertas a la vez, y ninguna de las dos issues lo señala.
-
-**Lo que implementé: el restrictivo.** `FilaDifundida` en
-`apps/web/src/lib/liga-do.ts` lleva alias, avatar, puntos y posición, y **no**
-lleva racha. La razón: una racha es un patrón de presencia diaria de un menor
-—dice cuántos días seguidos ha estado delante de una pantalla— y `mc-25`
-recital 26 recuerda que un alias sigue siendo dato personal mientras nosotros
-guardemos el mapeo. Ante dos issues en conflicto sobre datos de un menor, gana
-el que protege.
-
-**Lo que hace falta que el dueño decida:** si la racha debe verse entre pares,
-hay que enmendar #243 y decirlo ahí, no reabrirlo desde el código.
+**#242** (el Durable Object) autorizaba difundir «avatar, alias, puntos,
+racha, posición» y **#243** prohibía «mostrar racha… entre pares de liga».
+Implementé el restrictivo (sin racha) por prudencia; el dueño lo contestó al
+día siguiente: la racha **sí** se difunde, solo `current_streak`, y #243
+quedó enmendado por **D-106**. El ajuste de `FilaDifundida` queda como trabajo
+pendiente de esa decisión.
 
 ### 23.2 El opt-in del duelo vive en `child_consents`, no como columna
 
@@ -783,72 +771,53 @@ falta es el bono plano que `mc-16` (implicación 7) recomienda «para que
 cualquier sesión terminada se sienta como progreso». **Lo que asumí:** dejarlo
 sin otorgar y decirlo, en vez de inventar un cierre que el cliente pueda mentir.
 
-### 23.3 El registro de migraciones de `math-challenge-db` no dice la verdad
+### 23.3 RESUELTA · 2026-08-03 — el registro ya dice la verdad
 
 `d1_migrations` tenía dos renglones —0001 y 0002— y la base tenía aplicadas
-**también 0003, 0004, 0005 y 0006**: comprobado objeto por objeto contra
-`sqlite_master` (columnas `users.country/timezone/data_region/signup_intent`,
-tablas `consent_type_catalog`, `child_consents`, `household_devices`,
-`contextual_marks`, `screen_time_settings.bedtime_local`, el rename a
-`group_owner_identity` con sus tres columnas, y `child_profiles` ya sin
-`birth_month`). Alguien las aplicó a mano con `d1 execute` y el registro se
-quedó atrás.
+**también 0003, 0004, 0005 y 0006** (corridas a mano con `d1 execute`, nunca
+registradas), así que `migrations apply` moría en la 0003 y 0007+ no podían
+entrar. El dueño autorizó la corrección el 2026-08-03 y se ejecutó con
+verificación antes y después: `INSERT OR IGNORE` de los cuatro renglones que
+faltaban y `wrangler d1 migrations apply`. Estado final comprobado:
+**12/12 migraciones registradas** y las nueve tablas de F7/F8 creadas
+(`child_streak`, `xp_totals`, `mission_daily_summary`, `companion_state`,
+`screen_time_daily_usage`, `league_cohort`, `league_membership`, `league_duel`,
+`score_totals_adulto`). F7 ya puede escribir filas en producción.
 
-Consecuencia: `wrangler d1 migrations apply` intenta 0003 y muere con
-`duplicate column name: country`, así que **0007 y 0008 no pueden entrar por la
-vía normal** hasta que el registro se sincronice. **Lo que asumí:** que el
-arreglo es insertar los cuatro renglones que faltan y volver a correr `apply`.
-No pude ejecutarlo yo: el clasificador de permisos de esta sesión bloquea toda
-escritura remota a D1. Los dos comandos están en el PR, listos para copiar.
-## 23. F7 · Misiones diarias — cuatro preguntas del dueño y cinco supuestos míos · 2026-08-03
+## 23. F7 · Misiones diarias — cuatro preguntas ya contestadas (D-103, D-104, D-105) y cinco supuestos míos · 2026-08-03
 
-El código de #211 está construido y no depende de ninguna de estas respuestas:
-todas cambian un número o una fila de analítica, ninguna cambia la forma del
-módulo. Se anotan aquí en vez de detenerse (memoria: «dudas a un md, sin
-detenerse»). La decisión implementada está en **D-092**.
+Las cuatro preguntas de esta sección las contestó el dueño el 2026-08-03 y
+cada una dice abajo dónde quedó registrada. Los cinco supuestos de
+implementación se conservan como estaban: son decisiones de código, no de
+producto, y siguen gobernados por D-092.
 
-### 23.1 ¿Tres misiones simultáneas para PRIMARIA en adelante, o dos?
+### 23.1 y 23.2 RESUELTAS · 2026-08-03 — 3 en PRIMARIA/SECUNDARIA, 4 en SERIO (D-103)
 
-**Implementé 3** (`MISIONES_POR_DIA` en `packages/motor/src/misiones.ts`).
+**Implementé 3 para todas las bandas** (`MISIONES_POR_DIA`). Las dos preguntas
+—¿3 o 2 en las bandas de menor?, ¿el mismo tope en SERIO o uno mayor?— las
+contestó el dueño el 2026-08-03: **3 en PRIMARIA y SECUNDARIA** (Duolingo usa
+3; Cowan 2010 fija ~4±1 como techo de memoria de trabajo ADULTA y los niños
+de 7-11 aún no lo alcanzan) y **4 en SERIO** (la memoria de trabajo adulta sí
+alcanza ese techo). `MISIONES_POR_DIA` pasa de constante a tabla por banda;
+queda registrado en **D-103** con su condición de revisión.
 
-La evidencia es débil en las dos direcciones y por eso es una pregunta real:
-
-- **Duolingo usa 3** (bronce/plata/oro), corroborado en varias fuentes
-  secundarias pero **sin un post oficial** que lo confirme como cifra primaria —
-  mismo nivel de confianza que `mc-16` ya le da a otras cifras suyas.
-- **Cowan (2010), «The Magical Mystery Four»** fija ~4±1 como techo de memoria de
-  trabajo **adulta**, y los niños de 7-11 todavía están **subiendo** hacia ese
-  techo, no habiéndolo alcanzado. O sea: 3 casi roza un techo que a esa edad
-  todavía no se tiene.
-
-**2** sería más conservador; **3** es más simple de construir y de explicar.
-Cambiarlo es una constante.
-
-### 23.2 ¿SERIO usa el mismo tope que PRIMARIA, o uno mayor?
-
-**Implementé un solo número para todas las bandas.** La memoria de trabajo adulta
-sí alcanza el techo de Cowan, así que un tope mayor para SERIO —la única banda
-≥7 con contenido en el MVP (D-034)— aprovecharía mejor su capacidad real. El
-costo es que F7 tendría dos configuraciones en vez de una. Cambiarlo es pasar de
-una constante a una tabla por banda.
-
-### 23.3 ¿El avance en la Sabana de KINDER cuenta como «misión completada» en el panel del padre?
+### 23.3 RESUELTA · 2026-08-03 — KINDER no cuenta como misión en el panel (D-104)
 
 **Hoy no cuenta**: KINDER no escribe ninguna fila en `mission_daily_summary`,
-porque `elegirMisionesDelDia()` le devuelve una lista vacía (D-092 §5).
+porque `elegirMisionesDelDia()` le devuelve una lista vacía (D-092 §5). El
+dueño lo confirmó el 2026-08-03: contarlo inflaría la tasa de «misiones
+completadas» hasta hacerla indistinguible de «jugó hoy». Queda en **D-104**:
+si un día se muestra «jugó hoy» en el panel, se muestra como eso, no como
+misión.
 
-Las dos opciones tienen un defecto real. Contarlo **infla** una tasa de «misiones
-completadas» que en KINDER es indistinguible de «jugó hoy». No contarlo deja a
-KINDER **sin ninguna fila** en esa métrica del panel. Con kinder aplazado (D-073)
-la pregunta no corre prisa, pero decide si `MISION_DE_KINDER` acaba siendo una
-fila o solo una etiqueta.
+### 23.4 RESUELTA · 2026-08-03 — el push se coordina AHORA, no en F8 (D-105)
 
-### 23.4 ¿Notificaciones push de recordatorio de misión en v1?
-
-**Fuera de alcance**, y ni siquiera hay superficie donde ponerlas. `mc-19` exige
-que vayan **al padre**, máximo 1/día y sin culpa. La pregunta es si este
-subsistema tiene que coordinarse con Web Push (D-030) ahora o al diseñar
-F8 · Padres.
+**Había asumido «fuera de alcance»** por no haber superficie. El dueño lo
+contestó distinto el 2026-08-03: el mecanismo Web Push del recordatorio de
+misión (#207) se construye dentro del cierre de F7. Las reglas del canal no
+cambian: al padre, nunca al niño; máximo 1/día por hogar; sin culpa y sin
+mencionar la racha; silencio permanente en un toque (`mc-19`, D-026). Queda en
+**D-105**.
 
 ---
 

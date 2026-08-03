@@ -56,3 +56,9 @@ audits/adversarial/informes/
 # clonar. Se colaron en `main` con un `git add -A` durante la integración de
 # F7 (cec2662) y se sacaron en el commit siguiente.
 .claude/
+
+# Worktrees de trabajo DENTRO del repo (regla del dueño 2026-08-03: nunca
+# trabajar fuera de esta carpeta — los worktrees hermanos bajo ~/Documents/dev/
+# desaparecieron con el evento de iCloud de ese día). Mismo problema de
+# gitlinks anidados que .claude/, misma solución: ignorado siempre.
+.wt/

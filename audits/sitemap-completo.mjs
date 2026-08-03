@@ -36,18 +36,13 @@ const problemas = [];
 const notas = [];
 
 if (!existsSync(DIST)) {
-  // Igual que el resto de auditores que leen `dist/`: sin build no hay nada que
-  // decir, y bloquear aquí obligaría a construir antes de cada commit.
-  informar({
-    nombre: "sitemap-completo",
-    problemas: [],
-    notas: ["sin `apps/web/dist` — corre `npx astro build` primero"],
-    cita: "mc-48 §3, D-033, #324",
-    revisados: 0,
-    resumen: "no se ejecutó",
-    porQueBloquea: "un sitemap desincronizado promete URLs que no existen o calla páginas reales.",
-    noComprueba: [],
-  });
+  // Igual que el resto de auditores que leen `dist/` (axe-a11y, bundle-budget):
+  // sin build no hay nada que decir, y bloquear aquí obligaría a construir
+  // antes de cada commit. NO pasar por `informar` con revisados: 0 — desde
+  // #363 la guardia «un escáner que no ve nada aprueba siempre» falla con
+  // revisados === 0 aunque el caso sea legítimo (encontrado el 2026-08-03:
+  // este propio auditor bloqueaba en todo checkout sin build).
+  console.log("○ sitemap-completo — no hay build todavía (corre pnpm build)");
   process.exit(0);
 }
 

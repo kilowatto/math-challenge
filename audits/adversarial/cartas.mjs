@@ -80,8 +80,27 @@ export const CARTAS = [
     ciega_a:
       "Privacidad del adulto salvo cuando toca a un menor. Seguridad de infraestructura (secretos, permisos " +
       "de Cloudflare) — eso lo cubre un auditor determinista.",
-    cita: ["LR-2", "LR-3", "D-012", "D-013", "D-027", "mc-25", "mc-27", "mc-30"],
-    alcance: [...ESQUEMA, ...MOTOR, /^apps\//, /^docs\//],
+    // `D-003`, `D-040` y `D-043` se añaden en F7 (#245), y sin ellas esta carta
+    // no podía invocar lo que gobierna Ligas: que el tablero es de alias
+    // generados y no de nombres (D-003), que aparecer en él es opt-in por hijo
+    // con la activación registrada como un consentimiento (D-040), y que los
+    // contenedores sociales están SEPARADOS en el esquema a propósito (D-043).
+    // Es el mismo hueco que F6 encontró con `anti-humillacion` y `mc-11`: la
+    // carta veía la violación y no tenía con qué citarla, así que su veredicto
+    // no bloqueaba.
+    cita: ["LR-2", "LR-3", "D-003", "D-012", "D-013", "D-027", "D-040", "D-043", "mc-25", "mc-27", "mc-30"],
+    // `league_|liga|duel|tablero|cohort` porque el subsistema social vive en
+    // `packages/motor/` y en `migrations/`, y el alcance heredado llegaba a los
+    // dos por casualidad, no por diseño: `MOTOR` filtra por `puntua|scoring` y
+    // `ESQUEMA` por `.sql`, así que `packages/motor/src/liga.ts` —donde se
+    // decide qué ve un niño de otro— quedaba fuera.
+    alcance: [
+      ...ESQUEMA,
+      ...MOTOR,
+      /^apps\//,
+      /^docs\//,
+      /league_|liga|duel|tablero|cohort|rollup-adulto/i,
+    ],
   },
   {
     id: "anti-humillacion",
@@ -153,8 +172,25 @@ export const CARTAS = [
       "notificación que fabrica urgencia sobre el progreso de un niño. Compara contra la lista negra " +
       "explícita de D-014, que ya nombra lo prohibido.",
     ciega_a: "Monetización legítima hacia adultos que no toque práctica infantil (D-021).",
-    cita: ["LR-4", "LR-5", "LR-6", "D-014", "D-016", "D-021", "D-026", "mc-16", "mc-17", "mc-19", "mc-41"],
-    alcance: [...INTERFAZ, ...TEXTOS, /pago|precio|suscrip|notific|push/i],
+    // `D-003`, `D-025`, `D-040` y `mc-18` entran en F7 (#245). Sin ellas, esta
+    // carta no podía citar nada de Ligas — y Ligas es donde viven los patrones
+    // que le tocan: una posición que se pudiera comprar (D-014 fila «moneda
+    // comprable»), un tablero que ordene por algo que no sean los puntos
+    // acordados (D-025), un opt-in preseleccionado (D-040), o el fondo de la
+    // tabla enseñado a un niño chico (`mc-18` implicación 7 y `mc-10`).
+    cita: [
+      "LR-4", "LR-5", "LR-6", "D-003", "D-014", "D-016", "D-021", "D-025", "D-026", "D-040",
+      "mc-16", "mc-17", "mc-18", "mc-19", "mc-41",
+    ],
+    // El alcance filtraba por `pago|precio|suscrip|notific|push` y por interfaz,
+    // así que el código nuevo de liga —que no menciona ninguna de esas palabras
+    // justamente porque nada se compra— no despertaba a esta carta.
+    alcance: [
+      ...INTERFAZ,
+      ...TEXTOS,
+      /pago|precio|suscrip|notific|push/i,
+      /league_|liga|duel|tablero|leaderboard|cohort|rollup-adulto/i,
+    ],
   },
   {
     id: "pedagogia",

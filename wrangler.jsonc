@@ -109,6 +109,16 @@
         // `apps/web/src/lib/aprendiz.ts` y docs/infrastructure.md.
         "name": "LEARNER_DO",
         "class_name": "Aprendiz"
+      },
+      {
+        // math-challenge-league-do — el estado vivo de UNA liga de ~30,
+        // UN OBJETO POR COHORTE (`idFromName(cohort_id)`). Ver
+        // `apps/web/src/lib/liga-do.ts` y docs/infrastructure.md.
+        //
+        // Guarda estado DERIVADO —puntos de la semana, días activos— y jamás el
+        // intento crudo, que va a `math-challenge-attempts-ae` (mc-32 riesgo #1).
+        "name": "LEAGUE_DO",
+        "class_name": "Liga"
       }
     ]
   },
@@ -126,6 +136,13 @@
       // el despliegue rechazado con «migration tag mismatch».
       "tag": "v2",
       "new_sqlite_classes": ["Aprendiz"]
+    },
+    {
+      // F7 #242. Etiqueta nueva, no una edición de la v2: una migración de DO
+      // ya desplegada es inmutable y editarla deja el despliegue rechazado con
+      // «migration tag mismatch».
+      "tag": "v3",
+      "new_sqlite_classes": ["Liga"]
     }
   ],
 
@@ -215,7 +232,6 @@
   // Pendientes de fases posteriores, deliberadamente ausentes para que wrangler
   // no falle contra objetos que no existen todavía:
   //   F4  math-challenge-learner-do      (modelo adaptativo por niño)
-  //   F7  math-challenge-league-do       (liga de ~30, WebSocket)
   //   F9  math-challenge-classroom-do    (salón y club de papás)
   //   F6  math-challenge-tutor-gateway   (AI Gateway — red de seguridad en
   //                                       dólares del tutor. NO es «delante de

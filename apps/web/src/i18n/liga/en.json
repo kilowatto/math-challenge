@@ -1,0 +1,18 @@
+{
+  "liga.titulo": "Your league",
+  "liga.esta_semana": "This week",
+  "liga.puntos": "{n} points",
+  "liga.tu_posicion": "Where you are: {posicion}",
+  "liga.tercio.top": "Top third",
+  "liga.tercio.mid": "Middle third",
+  "liga.tercio.bottom": "Lower third",
+  "liga.grupo_sube": "Moving up next week",
+  "liga.se_queda": "Staying in this league",
+  "liga.sin_liga": "You are not in a league yet",
+  "duelo.titulo": "Duel",
+  "duelo.invitacion": "{alias} invited you to a duel",
+  "duelo.mismo_set": "You both get the same questions",
+  "duelo.empate": "A tie",
+  "duelo.resultado": "You {mios} — {alias} {suyos}",
+  "duelo.terminado": "Both of you have finished"
+}

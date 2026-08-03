@@ -48,7 +48,26 @@ import { informar, RAIZ, archivos, leer, sinComentarios, conFronteraUnicode } fr
 
 const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
 const DIR_LEXICO = "audits/lib/racha-lexico";
-const DIR_TEXTOS = "apps/web/src/i18n/racha";
+
+/**
+ * Los directorios de texto que este auditor vigila.
+ *
+ * `liga` entra por **D-081 condición 3**: «sin lenguaje de pérdida en ninguna
+ * banda — es la misma regla que la racha (D-014) y le toca a `racha-lexico`
+ * extendido, no a la buena voluntad de quien escriba el texto».
+ *
+ * El mismo léxico sirve para los dos, y no por ahorro: las tres categorías que
+ * ya están —pérdida, urgencia, comparación— son exactamente las tres formas en
+ * que una liga se estropea. La comparación, además, es el riesgo PROPIO de la
+ * liga: «vas atrás», «te van ganando» son retroalimentación normativa, y
+ * Kluger & DeNisi midieron que más de un tercio de esas intervenciones empeoró
+ * el desempeño.
+ */
+const DIRS_TEXTOS = [
+  ["apps/web/src/i18n/racha", "racha"],
+  ["apps/web/src/i18n/liga", "liga y duelo"],
+];
+
 const CATEGORIAS = ["perdida", "urgencia", "comparacion"];
 
 const problemas = [];
@@ -84,6 +103,15 @@ for (const loc of LOCALES) {
       );
     }
   }
+  // `patronUnicode` y NO `new RegExp(c.patron, "iu")`. La diferencia no es de
+  // estilo: `\b` de JavaScript solo conoce ASCII, así que
+  //
+  //     /\bse acab[oó]\b/iu.test("Se acabó la racha")   →  false
+  //
+  // y las dos formas naturales de decirlo en español pasaban de largo mientras
+  // el auditor informaba verde. Lo encontró otro agente el 2026-08-03. Se
+  // arregla al COMPILAR, en un solo sitio, en vez de reescribir los `\b` a mano
+  // en siete archivos de léxico — siete oportunidades de equivocarse.
   lexico[loc] = (datos.construcciones ?? []).map((c) => ({
     ...c,
     // `conFronteraUnicode` y no `new RegExp(c.patron, "iu")` a secas: `\\b` de
@@ -96,41 +124,76 @@ for (const loc of LOCALES) {
   }));
 }
 
+// ─── 1b. La autocomprobación: ¿el léxico caza lo que dice cazar? ────────────
+//
+// D-070: ninguna comprobación de un auditor puede ser cierta por construcción.
+// Un léxico compilado con el `\b` equivocado pasa TODOS los textos y se ve
+// idéntico a un léxico que funciona — la única diferencia visible es que nunca
+// bloquea, y eso no se nota hasta que alguien planta una violación a propósito.
+//
+// Cada control lleva acento a propósito, que es justo donde estaba el fallo.
+const CONTROLES = {
+  "es-MX": ["Se acabó tu racha", "perdida"],
+  "es-ES": ["Se acabó tu racha", "perdida"],
+  "fr-FR": ["Ta série est terminée", "perdida"],
+  "pt-BR": ["Sua sequência acabou", "perdida"],
+  "pt-PT": ["A tua sequência acabou", "perdida"],
+  "de-DE": ["Deine Serie ist vorbei", "perdida"],
+  en: ["You lost your streak", "perdida"],
+};
+
+for (const [loc, [frase, categoria]] of Object.entries(CONTROLES)) {
+  const lista = lexico[loc];
+  if (!lista) continue;
+  const caza = lista.some((c) => c.categoria === categoria && c.re.test(frase));
+  if (!caza) {
+    problemas.push(
+      `${DIR_LEXICO}/${loc}.json NO caza su propio control negativo: «${frase}». Un léxico que ` +
+        "no bloquea la construcción más obvia de su categoría está fallando ABIERTO, y se ve " +
+        "idéntico a uno que funciona. Casi siempre es la frontera de palabra: `\\b` de " +
+        "JavaScript solo conoce ASCII, así que `\\bse acab[oó]\\b` no encuentra «Se acabó».",
+    );
+  }
+}
+
 // ─── 2. Los textos de racha, locale por locale ──────────────────────────────
 
 let cadenas = 0;
-for (const loc of LOCALES) {
-  const ruta = `${RAIZ}${DIR_TEXTOS}/${loc}.json`;
-  if (!existsSync(ruta)) {
-    problemas.push(
-      `falta ${DIR_TEXTOS}/${loc}.json — el locale ${loc} no tiene textos de racha (D-022). ` +
-        "Los siete locales se autoran, no se traducen.",
-    );
-    continue;
-  }
-  let textos;
-  try {
-    textos = JSON.parse(readFileSync(ruta, "utf8"));
-  } catch (e) {
-    problemas.push(`${DIR_TEXTOS}/${loc}.json no es JSON válido: ${String(e).slice(0, 80)}`);
-    continue;
-  }
-  revisados++;
+for (const [DIR_TEXTOS, que] of DIRS_TEXTOS) {
+  for (const loc of LOCALES) {
+    const ruta = `${RAIZ}${DIR_TEXTOS}/${loc}.json`;
+    if (!existsSync(ruta)) {
+      problemas.push(
+        `falta ${DIR_TEXTOS}/${loc}.json — el locale ${loc} no tiene textos de ${que} (D-022). ` +
+          "Los siete locales se autoran, no se traducen.",
+      );
+      continue;
+    }
+    let textos;
+    try {
+      textos = JSON.parse(readFileSync(ruta, "utf8"));
+    } catch (e) {
+      problemas.push(`${DIR_TEXTOS}/${loc}.json no es JSON válido: ${String(e).slice(0, 80)}`);
+      continue;
+    }
+    revisados++;
 
-  const lista = lexico[loc];
-  if (!lista) continue;
+    const lista = lexico[loc];
+    if (!lista) continue;
 
-  for (const [clave, valor] of Object.entries(textos)) {
-    for (const cadena of Array.isArray(valor) ? valor : [valor]) {
-      if (typeof cadena !== "string") continue;
-      cadenas++;
-      for (const c of lista) {
-        if (!c.re.test(cadena)) continue;
-        problemas.push(
-          `${DIR_TEXTOS}/${loc}.json · ${clave}: léxico de ${c.categoria} — "${cadena}". ` +
-            `${c.porque}. mc-17 §83: la racha se enmarca como contador de mejor marca personal, ` +
-            "sin lenguaje de penalización; un día saltado sencillamente no avanza el contador.",
-        );
+    for (const [clave, valor] of Object.entries(textos)) {
+      for (const cadena of Array.isArray(valor) ? valor : [valor]) {
+        if (typeof cadena !== "string") continue;
+        cadenas++;
+        for (const c of lista) {
+          if (!c.re.test(cadena)) continue;
+          problemas.push(
+            `${DIR_TEXTOS}/${loc}.json · ${clave}: léxico de ${c.categoria} — "${cadena}". ` +
+              `${c.porque}. mc-17 §83: se enmarca como contador de mejor marca personal, sin ` +
+              "lenguaje de penalización; un día saltado sencillamente no avanza el contador. " +
+              "Y D-081 condición 3 lo extiende a la liga: sin lenguaje de pérdida en ninguna banda.",
+          );
+        }
       }
     }
   }
@@ -146,7 +209,7 @@ const FUEGO = /(🔥|\bfuego\b|\bflame\b|\bfire\b|\bstreak-?flame\b|\bllama-?apa
 const REGRESIVA = /\b(?:setInterval|countdown|cuentaRegresiva|tiempoRestante|msRestantes)\b/;
 
 for (const archivo of archivos(/\.(astro|ts|tsx|css)$/).filter((f) =>
-  /^apps\/web\/src\/(components|layouts|pages|styles)\/.*rach/i.test(f),
+  /^apps\/web\/src\/(components|layouts|pages|styles)\/.*(rach|liga|duelo)/i.test(f),
 )) {
   const texto = sinComentarios(leer(archivo) ?? "");
   revisados++;
@@ -199,7 +262,14 @@ for (const archivo of componentes) {
   }
 }
 
-notas.push(`${cadenas} cadena(s) de racha revisadas en ${LOCALES.length} locales`);
+notas.push(
+  `${cadenas} cadena(s) revisadas en ${LOCALES.length} locales · ` +
+    `directorios: ${DIRS_TEXTOS.map(([, q]) => q).join(", ")} (D-081 condición 3)`,
+);
+notas.push(
+  `${Object.keys(CONTROLES).length} control(es) negativo(s) con acento: cada léxico caza su ` +
+    "propia construcción — con `\\b` ASCII, es-MX y es-ES se les escapaba «Se acabó tu racha»",
+);
 notas.push(`categorías: ${CATEGORIAS.join(", ")} — autoradas por locale, nunca traducidas`);
 notas.push(`${componentes.length} componente(s) de racha: mejor marca presente y formatear() en uso`);
 notas.push("mc-17 §83: contador de mejor marca personal, sin lenguaje de penalización");
@@ -208,9 +278,9 @@ informar({
   nombre: "racha-lexico",
   problemas,
   notas,
-  cita: "D-014, línea roja #6, D-022, #206, #210, mc-17 §83, mc-16",
+  cita: "D-014, línea roja #6, D-022, D-081 condición 3, #206, #210, mc-17 §83, mc-16",
   revisados,
-  resumen: `${revisados} archivo(s) de léxico, textos y pantalla de racha`,
+  resumen: `${revisados} archivo(s) de léxico, textos y pantalla de racha, liga y duelo`,
   porQueBloquea:
     "«no pierdas tu racha» es confirm-shaming y «te quedan 3 horas» es urgencia fabricada — " +
     "las dos son categorías que la FTC nombra en su informe de 2022, y aquí el destinatario " +

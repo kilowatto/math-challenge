@@ -237,6 +237,29 @@ const ACTIVE = [
   ["motor-xp",                 "XP y puntos son dos monedas que no se cambian",   "D-055, D-025, #192, #194, #219, #225"],
   ["racha-lexico",             "la racha no habla de pérdida, prisa ni de nadie más", "#206, D-014, mc-17 §83"],
 
+  // ─── Los seis de F7 social (#237-#250), y por qué CUATRO ejecutan ────────
+  //
+  // D-081 salió en contra de mi recomendación y con tres condiciones que el
+  // dueño puso por escrito. Dos de los seis son esas condiciones hechas código
+  // —`liga-no-quita` es la primera, `duelo-elegibilidad` incluye la segunda— y
+  // el resto vigila lo que un tablero rompe sin hacer ruido.
+  //
+  // Cuatro de los seis **ejecutan** el motor en vez de leerlo, con control
+  // positivo incluido. La razón es D-070 y una trampa que se midió el
+  // 2026-08-02: una regla escrita «por tipo de evento» nunca puede fallar. Un
+  // auditor que buscara la cadena «7/30» en `liga.ts` pasaría en verde con un
+  // reparto al azar, siempre que la constante siguiera escrita.
+  //
+  // Y todos nacen VERDES, igual que los de F6 y los tres de racha: el
+  // subsistema social se construyó con ellos delante, así que lo que vigilan es
+  // que no se erosione. Sus controles negativos son de DEGRADACIÓN sobre los
+  // archivos reales, no archivos inventados.
+  ["liga-no-quita",             "ningún resultado social toca un contador de aprendizaje", "D-081 cond. 1, #225, D-055"],
+  ["alias-nunca-nombre",        "en una superficie social, siempre alias, jamás nombre",   "línea roja #2, D-003, D-081, mc-25"],
+  ["liga-ascenso-determinista", "el ascenso y el descenso son reproducibles",              "D-056, D-014, #241"],
+  ["liga-sin-fusion-cohorte",   "una cohorte es de una banda y de un tipo de participante","#237, #238, D-003, D-027"],
+  ["duelo-elegibilidad",        "los tres portones del duelo, y cero presencia",           "#244, D-018, D-053, D-081 cond. 2"],
+  ["tablero-orden-puntos",      "el tablero ordena por puntos, y cada banda ve lo suyo",   "D-025, D-040, D-081, #247"],
   // ─── Los cuatro de F7 · Misiones diarias (#211) ──────────────────────────
   //
   // Nacen VERDES, como los de racha y cosméticos, y por el mismo motivo: el
@@ -394,6 +417,17 @@ for (const prueba of [
   // describe se descubre roto por la factura.
   "packages/tutor/src/en-vivo.prueba.mjs",
   "packages/tutor/src/gasto.prueba.mjs",
+  // F7 social (#237-#250, D-081). Lo que defienden tampoco rompe nada visible:
+  // una liga que reparte mal el ascenso sigue devolviendo una lista, y un
+  // tercio calculado al revés sigue siendo un tercio. Se descubre semanas
+  // después, por un padre — o por un niño que aprende que es el último.
+  //
+  // El caso que más importa de los tres archivos no es una fórmula: es que un
+  // ciclo cerrado no devuelva NI UN campo de aprendizaje, y que la posición
+  // exacta no viaje en KINDER. Los dos se comprueban sobre la salida real.
+  "packages/motor/src/liga.prueba.mjs",
+  "packages/motor/src/duelo.prueba.mjs",
+  "packages/motor/src/tablero.prueba.mjs",
   // #211, #216, #217, #219, #228. Lo que defiende tampoco rompe nada visible:
   // un menú de dos misiones en vez de tres no da error, y una misión de DUELO
   // para quien nunca dio opt-in tampoco. Aquí se recorren 3 600 combinaciones de

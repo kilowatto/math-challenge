@@ -118,6 +118,26 @@ export function conFronteraUnicode(patron) {
   return String(patron).replace(/(\\\\)|\\b/g, (todo, escapada) => (escapada ? todo : FRONTERA));
 }
 
+/**
+ * El patrón del léxico, ya compilado, con las fronteras reparadas.
+ *
+ * Azúcar sobre `conFronteraUnicode()` para los léxicos que viven en JSON
+ * —`audits/lib/racha-lexico/`—, donde las construcciones ya están autoradas con
+ * `\\b` y reescribirlas a mano en los siete locales serían siete oportunidades
+ * de equivocarse. Se arregla al compilar, en un solo sitio.
+ *
+ * Dos ramas paralelas escribieron este arreglo la misma noche, sin verse: F8
+ * construyendo el auditor del límite de pantalla y F7 el de ligas. Al integrar
+ * se conservó la de F8 —respeta el literal `\\\\b`, que la otra habría roto— y
+ * de la de F7 se quedó este envoltorio, que era lo que de verdad añadía.
+ *
+ * @param {string} patron patrón crudo, tal cual viene del JSON del léxico
+ * @returns {RegExp} compilado con la bandera `u`, que `\\p{L}` exige
+ */
+export function patronUnicode(patron) {
+  return new RegExp(conFronteraUnicode(patron), "iu");
+}
+
 /** Lee un archivo del repo, o `null` si no se puede. */
 export function leer(archivo) {
   try {

@@ -3,9 +3,29 @@
  *
  * `packages/motor/src/misiones.ts` estaba escrito, probado y auditado por cuatro
  * guardianes — y no lo llamaba nadie, igual que le pasó a la racha hasta que
- * existió `progreso.ts`. Este módulo es la otra mitad: leer el estado del día,
- * pasarlo por el motor, escribir el estado nuevo. **No contiene ni una fórmula**:
- * elegir, avanzar y cerrar son del motor; aquí solo se lee y se escribe D1.
+ * existió `progreso.ts`. Este módulo es la otra mitad. **No contiene ni una
+ * fórmula**: elegir, avanzar y cerrar son del motor; aquí solo se lee y se
+ * escribe.
+ *
+ * ─── El Durable Object es el dueño del día (#224, 2026-08-03) ──────────────
+ *
+ * Desde #224 el estado del día lo posee `math-challenge-missions-do`
+ * (`missions-do.ts`): UN objeto por niño —`idFromName(child_profile_id)`—
+ * separado del de F4 por el argumento estructural de D-027. El objeto calcula
+ * las transiciones con el motor puro y devuelve qué cambió; ESTE módulo vuelca
+ * ese resultado a D1 en la misma petición. La forma, de las dos que el issue
+ * admitía: **el DO es el dueño del estado del día y D1
+ * (`mission_daily_summary`) es el rollup de lectura** — lo que pinta la
+ * pantalla y lo que consulta el recordatorio al padre. No hay dos escritores
+ * del mismo hecho: hay UN camino (este) que escribe un primario y su espejo,
+ * y el espejo se escribe con el estado completo, así que un rollup fallido se
+ * sana solo en el siguiente avance.
+ *
+ * Lo que la forma cierra: la carrera de las dos peticiones concurrentes que
+ * podían pagar el bono del día dos veces — el objeto serializa las peticiones
+ * de un niño y la transición a completada ocurre exactamente una vez. Y lo que
+ * NO cambia: si el objeto no responde, se pierde un contador y no el juego —
+ * este módulo sigue sin lanzar nunca.
  *
  * ─── Quién ve menú y quién no ──────────────────────────────────────────────
  *
@@ -45,8 +65,9 @@
  *     mismo residuo que `progreso.ts` declara para `reto_completado`. Hasta que
  *     la sesión de reto de F3 emita ese evento, `volumen` cuenta ítems.
  *   · `variedad` — +1 cuando la habilidad del ítem es NUEVA hoy. El conjunto de
- *     habilidades del día vive en SESSION_KV (agregado efímero, 36 h de TTL):
- *     no es un intento crudo y no pisa D1 (mc-32 riesgo #1).
+ *     habilidades del día vive dentro del Durable Object, como parte del estado
+ *     del día que posee: no es un intento crudo (son identificadores del banco,
+ *     `K01`…`K14`) y no pisa D1 (mc-32 riesgo #1).
  *
  * Los demás tipos no tienen fuente de eventos todavía: `repaso`, `dominio` y
  * `fluidez` necesitan F4 (y con `resumenF4 = null` ni siquiera son elegibles);
@@ -60,24 +81,24 @@
  *
  * ─── El XP: en la transición, una sola vez ─────────────────────────────────
  *
- * `avanzarMision()` devuelve **el mismo objeto** cuando no hay nada nuevo; se
- * compara por referencia y solo se escribe lo que cambió. El XP se suma a
+ * `avanzarMision()` devuelve **el mismo objeto** cuando no hay nada nuevo; el
+ * objeto compara por referencia y solo reporta lo que cambió. El XP se suma a
  * `xp_totals` cuando `xp_awarded` sube (la transición a completada), y el bono
- * del día (`BONO_DIA_COMPLETO`) cuando este avance deja las TRES misiones
- * completas y antes no lo estaban. Dos peticiones concurrentes podrían pagar el
- * bono dos veces: es la misma clase de residuo que `progreso.ts` ya declara
- * para el XP de ítem, y su arreglo es la misma sesión de reto de F3.
+ * del día (`BONO_DIA_COMPLETO`) cuando el avance deja las misiones del día
+ * completas y antes no lo estaban. La doble petición concurrente que podía
+ * pagar el bono dos veces quedó cerrada por la serialización del Durable
+ * Object (#224): leer-avanzar-escribir es atómico por niño.
  *
  * ─── La línea roja #6, heredada ────────────────────────────────────────────
  *
- * El progreso parcial (2 de 3) vive en D1 desde el ítem que lo produjo: un
- * corte por límite de pantalla no lo borra ni lo muestra como fracaso, porque
- * no hay ningún camino por el que el corte toque estas filas.
+ * El progreso parcial (2 de 3) vive en el objeto del niño —y en su rollup de
+ * D1— desde el ítem que lo produjo: un corte por límite de pantalla no lo
+ * borra ni lo muestra como fracaso, porque no hay ningún camino por el que el
+ * corte toque ese estado.
  */
 import {
   BONO_DIA_COMPLETO,
   SQL_UPSERT_MISION,
-  avanzarMision,
   cierreDelDia,
   elegirMisionesDelDia,
   estadoInicialDeMision,
@@ -91,6 +112,7 @@ import { diaEfectivo, type DiaLocal } from "../../../../packages/motor/src/tiemp
 import { SQL_UPSERT_XP } from "../../../../packages/motor/src/xp.ts";
 import type { Banda } from "../../../../packages/motor/src/puntuacion.ts";
 import { zonaDelHogar, type Jugador } from "./progreso.ts";
+import { avanzarEnMisiones } from "./missions-do.ts";
 
 // Para la pantalla: el bono se muestra como una suma con ESTE número, que es el
 // mismo que se escribe en `xp_totals`. Dos copias del número es cómo la
@@ -99,7 +121,7 @@ export { BONO_DIA_COMPLETO };
 
 interface Env {
   DB?: D1Database;
-  SESSION_KV?: KVNamespace;
+  MISSIONS_DO?: DurableObjectNamespace;
 }
 
 /** Una misión del día con su estado persistido (o el inicial, si no hay fila). */
@@ -287,50 +309,6 @@ export function cierreDeHoy(datos: MisionesDeHoy): CierreDelDia {
   );
 }
 
-// ─── Las habilidades distintas de hoy, para `variedad` ───────────────────────
-
-/*
- * `variedad` mide amplitud de TEMA: dos habilidades distintas en el día. Eso no
- * se puede derivar del contador de la fila (un entero que sube no recuerda de
- * qué habilidad fue cada punto), y guardarlo en D1 sería una tabla por evento —
- * justo el riesgo #1 de mc-32 que la 0009 existe para evitar. Va en KV: un
- * agregado efímero de 36 horas, por perfil y por día, sin ningún dato personal
- * (identificadores de habilidad del banco: K01…K14).
- *
- * Si KV no está enlazado, `variedad` sencillamente no avanza — la misma regla
- * de siempre: lo que se pierde es un contador, no el juego.
- */
-const TTL_HABILIDADES_S = 36 * 60 * 60;
-
-const claveHabilidades = (quien: Jugador, dia: DiaLocal) =>
-  `mision-variedad:${quien.esAdulto ? "u" : "n"}:${quien.id}:${dia}`;
-
-async function habilidadesDeHoy(env: Env, quien: Jugador, dia: DiaLocal): Promise<Set<string>> {
-  if (!env.SESSION_KV) return new Set();
-  try {
-    const guardadas = await env.SESSION_KV.get<string[]>(claveHabilidades(quien, dia), "json");
-    return new Set(Array.isArray(guardadas) ? guardadas : []);
-  } catch {
-    return new Set();
-  }
-}
-
-async function guardarHabilidades(
-  env: Env,
-  quien: Jugador,
-  dia: DiaLocal,
-  habilidades: Set<string>,
-): Promise<void> {
-  if (!env.SESSION_KV) return;
-  try {
-    await env.SESSION_KV.put(claveHabilidades(quien, dia), JSON.stringify([...habilidades]), {
-      expirationTtl: TTL_HABILIDADES_S,
-    });
-  } catch {
-    // Silencio deliberado, como en toda la telemetría de juego.
-  }
-}
-
 /**
  * Un ítem confirmado: alimenta las misiones del día que ese evento puede mover.
  *
@@ -338,13 +316,15 @@ async function guardarHabilidades(
  * en un reintento del mismo ítem — línea roja #8: volver a intentarlo no puede
  * subir ni bajar nada).
  *
- * Qué mueve cada evento está dicho en el encabezado: `volumen` y `variedad`
- * hoy; los demás tipos esperan a F4, a los modos de reto y a las ligas, y no se
- * les inventa progreso.
+ * El Durable Object del niño es quien avanza el estado del día (#224) y
+ * devuelve qué cambió y cuánto XP se ganó; este camino vuelca ese resultado a
+ * D1 — `mission_daily_summary` como rollup de lectura y `xp_totals`— en la
+ * misma petición. Nadie más escribe esas dos tablas para misiones: un
+ * primario y su espejo, no dos escritores.
  *
- * Nunca lanza: si algo falla, el reto continúa sin contador, y el progreso que
- * ya estaba en D1 sigue ahí — un corte por límite de pantalla no lo toca
- * (línea roja #6).
+ * Nunca lanza: si el objeto no responde o algo falla, el reto continúa sin
+ * contador, y el progreso que ya estaba guardado sigue ahí — un corte por
+ * límite de pantalla no lo toca (línea roja #6).
  */
 export async function registrarAvanceDeHoy(
   env: Env,
@@ -356,31 +336,25 @@ export async function registrarAvanceDeHoy(
     const banda = await bandaDeJugador(env, quien);
     if (!tieneMenuDeMisiones(banda)) return;
 
-    const datos = await leerMisionesDeHoy(env, quien, banda, entrada.ahora);
-    if (!datos || datos.entradas.length === 0) return;
+    const dia = diaEfectivo(entrada.ahora, await zonaDelHogar(env, quien));
+    const resumenLiga = await resumenLigaDeHoy(env, quien);
 
-    const habilidadesHoy = await habilidadesDeHoy(env, quien, datos.dia);
-    const habilidadNueva = !habilidadesHoy.has(entrada.habilidad);
+    // El objeto decide. Si no responde, fallo ABIERTO: se pierde el avance de
+    // un contador del día, nunca el juego — y no se escribe un rollup que el
+    // dueño del estado no calculó.
+    const resultado = await avanzarEnMisiones(env.MISSIONS_DO, quien.id, {
+      dia,
+      banda,
+      resumenLiga,
+      habilidad: entrada.habilidad,
+    });
+    if (!resultado) return;
 
-    const incrementoDe = (tipo: Mision["tipo"]): number => {
-      if (tipo === "volumen") return 1;
-      if (tipo === "variedad") return habilidadNueva ? 1 : 0;
-      return 0;
-    };
-
-    const completasAntes = datos.entradas.every((e) => e.estado.completed === 1);
+    // El rollup: el estado COMPLETO de cada misión que cambió, tal como lo
+    // calculó el objeto. El upsert escribe el estado entero y no un delta, así
+    // que un rollup que falló se reescribe y sana en el siguiente avance.
     const escrituras: D1PreparedStatement[] = [];
-    let xpGanado = 0;
-    let completasDespues = true;
-
-    for (const { estado } of datos.entradas) {
-      const nuevo = avanzarMision(estado, incrementoDe(estado.mission_type));
-      if (nuevo.completed !== 1) completasDespues = false;
-      // El motor devuelve el MISMO objeto cuando no hay nada que escribir: la
-      // comparación por referencia es la idempotencia — un reenvío no paga dos
-      // veces y diez ítems sin avance nuevo son cero escrituras.
-      if (nuevo === estado) continue;
-      xpGanado += nuevo.xp_awarded - estado.xp_awarded;
+    for (const nuevo of resultado.cambios) {
       escrituras.push(
         env.DB.prepare(quien.esAdulto ? SQL_UPSERT_MISION_ADULTO : SQL_UPSERT_MISION).bind(
           crypto.randomUUID(),
@@ -399,25 +373,19 @@ export async function registrarAvanceDeHoy(
       );
     }
 
-    // El bono del día: una suma directa, UNA vez — cuando este avance cierra el
-    // día y el día no estaba cerrado antes. Jamás un cofre que se abre (#220).
-    if (!completasAntes && completasDespues) xpGanado += BONO_DIA_COMPLETO;
-
-    if (xpGanado > 0) {
+    // El XP ya viene sumado del objeto — misión completada más bono del día— y
+    // se escribe una sola vez porque la transición ocurrió una sola vez (línea
+    // roja #5, y la serialización del objeto es lo que la garantiza).
+    if (resultado.xpGanado > 0) {
       escrituras.push(
         env.DB.prepare(quien.esAdulto ? SQL_UPSERT_XP_ADULTO : SQL_UPSERT_XP).bind(
           quien.id,
-          xpGanado,
+          resultado.xpGanado,
           entrada.ahora,
         ),
       );
     }
     if (escrituras.length > 0) await env.DB.batch(escrituras);
-
-    if (habilidadNueva) {
-      habilidadesHoy.add(entrada.habilidad);
-      await guardarHabilidades(env, quien, datos.dia, habilidadesHoy);
-    }
   } catch {
     // Silencio deliberado, misma regla que `registrarItem`: lo que se pierde si
     // esto falla es un contador, no el juego — y nunca una pantalla rota.

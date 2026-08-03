@@ -119,6 +119,19 @@
         // intento crudo, que va a `math-challenge-attempts-ae` (mc-32 riesgo #1).
         "name": "LEAGUE_DO",
         "class_name": "Liga"
+      },
+      {
+        // math-challenge-missions-do — las misiones del día de UN niño,
+        // UN OBJETO POR NIÑO (`idFromName(child_profile_id)`), separado del de
+        // F4 por el argumento estructural de D-027 (#224). Ver
+        // `apps/web/src/lib/missions-do.ts` y docs/infrastructure.md.
+        //
+        // Guarda el estado DERIVADO del día —misiones, progreso, XP otorgado—
+        // y jamás el intento crudo, que va a `math-challenge-attempts-ae`
+        // (mc-32 riesgo #1). D1 (`mission_daily_summary`) es su rollup de
+        // lectura, no un segundo escritor.
+        "name": "MISSIONS_DO",
+        "class_name": "Misiones"
       }
     ]
   },
@@ -143,6 +156,12 @@
       // «migration tag mismatch».
       "tag": "v3",
       "new_sqlite_classes": ["Liga"]
+    },
+    {
+      // F7 #224. Etiqueta nueva por la misma razón que la v3: jamás se edita
+      // una migración de DO ya desplegada.
+      "tag": "v4",
+      "new_sqlite_classes": ["Misiones"]
     }
   ],
 

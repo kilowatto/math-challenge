@@ -514,6 +514,15 @@ for (const prueba of [
   // pausas del año por pulsar dos veces el mismo botón. Incluye el rechazo al
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
+  // F7 #224. El Durable Object de misiones diarias —uno por niño— y su cable,
+  // contra SQLite de verdad (`node:sqlite`) y con la clase del DO de verdad.
+  // Lo que defiende tampoco rompe nada visible: un reintento de red que paga
+  // el XP dos veces no da error, da una recompensa que ya no es la fija y
+  // publicada (línea roja #5); y un rollup escrito al margen del dueño no da
+  // error, da dos progresos para la misma misión y el que se lee depende del
+  // orden. 17 casos: el XP una sola vez, el bono una sola vez, el borrado en
+  // cero, y la pantalla leyendo el rollup.
+  "apps/web/src/lib/missions-do.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

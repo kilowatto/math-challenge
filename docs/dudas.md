@@ -661,3 +661,87 @@ revisión escrita: se recalibran con datos reales, no antes.
 otorga siempre que el reto se cierre, incluso sin un solo acierto — es lo que
 recomienda `mc-16`. La lectura más estricta de «ganado» en D-014 diría cero XP
 sin aciertos. Implementé la de `mc-16`.
+
+## 23. F7 social · Dos issues que se contradicen, y tres decisiones que tomé · 2026-08-03
+
+Contexto: **D-081** mandó salir con la escalera de visibilidad social completa
+—ligas de ~30, tablero global y duelo— y este PR construye el esquema, el motor
+y el Durable Object. Lo que sigue es lo que tuve que decidir sin que estuviera
+escrito, o donde dos documentos decían cosas distintas.
+
+### 23.1 #242 y #243 se contradicen sobre la racha entre pares de liga
+
+**#242** (el Durable Object) autoriza difundir, textual: *«avatar, alias,
+puntos, racha, posición — nunca un campo adicional porque ya estaba en la
+fila»*. **#243** (visibilidad por banda) prohíbe, también textual: *«nunca se
+muestra racha, puntaje histórico total, ni pertenencia a otros grupos entre
+pares de liga»*.
+
+Las dos no pueden ser ciertas a la vez, y ninguna de las dos issues lo señala.
+
+**Lo que implementé: el restrictivo.** `FilaDifundida` en
+`apps/web/src/lib/liga-do.ts` lleva alias, avatar, puntos y posición, y **no**
+lleva racha. La razón: una racha es un patrón de presencia diaria de un menor
+—dice cuántos días seguidos ha estado delante de una pantalla— y `mc-25`
+recital 26 recuerda que un alias sigue siendo dato personal mientras nosotros
+guardemos el mapeo. Ante dos issues en conflicto sobre datos de un menor, gana
+el que protege.
+
+**Lo que hace falta que el dueño decida:** si la racha debe verse entre pares,
+hay que enmendar #243 y decirlo ahí, no reabrirlo desde el código.
+
+### 23.2 El opt-in del duelo vive en `child_consents`, no como columna
+
+#244 lo describe como *«default apagado en `child_profile`»*, que se lee como
+una columna booleana. Lo puse en `child_consents` con dos códigos nuevos
+—`LEAGUE` y `DUEL`— y tres razones:
+
+1. **La ausencia de fila ES el default apagado**, que es literalmente el
+   mecanismo que D-040 exige para el tablero («no se inserta fila al crear el
+   perfil»).
+2. `child_consents` ya tiene `granted_by`, `granted_at` y `revoked_at`: es
+   exactamente lo que #243 pide registrar («quién, cuándo»). Una columna
+   booleana no puede responder eso sin una segunda tabla.
+3. Apagar tiene que ser **revocar**, no borrar — el mismo criterio que #247
+   exige para el tablero.
+
+**Lo que asumí:** que la letra de #244 describía la intención (default
+apagado), no el mecanismo. Si el dueño quiere la columna, es un `ALTER TABLE`
+de una línea, pero entonces hay dos sitios que responden la misma pregunta.
+
+### 23.3 La edad del duelo se calcula sin mes, y el sesgo ADELANTA el acceso
+
+#244 pide edad ≥ 8 desde `birth_year`, y D-053 quitó el mes del producto. Eso
+significa que la edad de este producto es `añoActual − birth_year` y **puede
+equivocarse hasta en once meses**, siempre en la misma dirección: un niño que
+cumple 8 en diciembre cuenta como de 8 desde el 1 de enero.
+
+**Lo que asumí:** se acepta, y se dice. Corregirlo exige pedir el mes, que es
+doce veces más precisión sobre la identidad de un menor de la que hace falta
+para nada que hagamos — D-053 ya respondió esa pregunta y no se reabre por un
+portón de elegibilidad. Está probado como caso explícito en
+`packages/motor/src/duelo.prueba.mjs`.
+
+### 23.4 `tier` se llama `escalon`, y no fue una preferencia de estilo
+
+#238 y #241 llaman `tier` al peldaño de la escalera de ligas. Escrito así,
+`audits/motor-puntuacion.mjs` bloqueó el commit con ocho hallazgos: su léxico de
+línea roja #4 tiene `tier` junto a `premium`, `plan`, `vidas` y `corazones`,
+porque en un producto con planes de pago **un «tier» es lo que compras**.
+
+Había dos salidas y elegí renombrar en vez de ablandar el léxico del guardián:
+quitar `tier` de esa lista dejaría pasar un `if (tier === "premium")` de verdad.
+La columna y las constantes son `escalon` / `ESCALON_TOPE` / `ESCALON_MINIMO`.
+
+### 23.5 El descenso ignora a los inactivos: es una EXTENSIÓN de D-014, no una cita
+
+#241 lo pide y lo marca como extensión razonada. Lo escribo aquí también porque
+es la regla de este subsistema que más fácil se «optimiza» sin darse cuenta: la
+semana en que una familia respeta su límite de pantalla, declara una pausa, o
+sencillamente no juega, **la liga no puede cobrárselo**. D-014 lo dice para la
+racha con estas palabras —«si el límite de pantalla corta la sesión, la racha
+del día se da por cumplida»— y aquí se aplica la misma idea: no jugar no es
+perder.
+
+**El precio, dicho:** una cohorte donde casi nadie juega apenas mueve a nadie, y
+sus dos o tres activos se quedan compitiendo entre ellos.

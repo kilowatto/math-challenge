@@ -328,6 +328,28 @@ const ACTIVE = [
   // reconstruya el denominador que `cierreDelDia()` se niega a devolver, y que
   // ningún texto de locale sugiera un cofre ni escriba un número a mano.
   ["mision-resumen-sin-ceros", "el resumen lista solo lo logrado; el bono es una suma", "#220, #222, #227, línea roja #7"],
+  // ─── F7 · El guardarraíl de naming Rango vs Nivel (#195) ──────────────────
+  //
+  // Nace VERDE como los del mapa: las cadenas de hoy ya respetan la separación
+  // (la única etiqueta ambigua, `practicarNivel`, era una clave muerta y se
+  // borró en el mismo PR). Lo que vigila es lo que no se ve al romperse: un
+  // «Nivel» para el XP compila y se despliega perfecto, y un ORDER BY sobre
+  // total_xp no da ningún error — hasta que un niño de KINDER y un adulto
+  // SERIO aparecen ordenados por un número que no mide lo mismo (D-003).
+  ["rango-vs-nivel", "Rango y Nivel son dos ejes con dos nombres; el Rango nunca ordena", "#195, D-003, D-017, D-055"],
+  // ─── El doble guardián de #257 (F7) ──────────────────────────────────────
+  //
+  // La mitad ESTRUCTURAL de «Larry nunca comenta el avatar ni los cosméticos
+  // de un niño»; la mitad semántica es la carta adversarial `anti-humillacion`
+  // extendida por el mismo issue. Con D-080 el tutor y el compañero del mapa
+  // son LA MISMA criatura, así que la frontera entre «te explico tu error» y
+  // «qué bonito tu sombrero» tiene que existir en el código: el tutor no
+  // importa el catálogo, el sobre no tiene campo para él, y ningún texto
+  // autorado de Larry lo menciona. Nace VERDE: la frontera ya existe por
+  // construcción (lista blanca cerrada del sobre), y el auditor es la prueba
+  // de que se mantiene — sus controles negativos son DEGRADACIONES de
+  // `packages/tutor/src/en-vivo.ts`, del sobre y del i18n REALES (D-070).
+  ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

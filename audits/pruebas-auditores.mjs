@@ -559,6 +559,58 @@ const CASOS = [
     espera: "imprime la CLAVE",
   },
 
+  // ─── La voz (#135, D-078) ────────────────────────────────────────────────
+  //
+  // Cinco casos, y los cinco son degradaciones del archivo REAL. La razón está
+  // en D-070: un archivo inventado prueba que el auditor sabe leer un archivo
+  // inventado. Lo que hay que probar aquí es otra cosa — que entre
+  // `speechSynthesis` (permitido, es salida) y `SpeechRecognition` (prohibido,
+  // es el micrófono) el auditor sabe cuál es cuál, cuando se escriben casi
+  // igual y viven en el mismo objeto `window`.
+  {
+    auditor: "voz-solo-salida",
+    que: "el micrófono entra en la pantalla del reto disfrazado de voz",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) =>
+      t.replace(
+        "const sintesis = typeof window.speechSynthesis !== \"undefined\" ? window.speechSynthesis : null;",
+        "const sintesis = typeof window.SpeechRecognition !== \"undefined\" ? window.SpeechRecognition : null;",
+      ),
+    espera: "MICRÓFONO",
+  },
+  {
+    auditor: "voz-solo-salida",
+    que: "Larry dice en voz alta algo que no está escrito en la pantalla",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) => t.replace("      decir(actual.enunciado);", '      decir("A ver si esta vez sí.");'),
+    espera: "línea roja #7",
+  },
+  {
+    auditor: "voz-solo-salida",
+    que: "los botones de voz se ofrecen en un aparato que no tiene voz",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) => t.replace('<div id="voz" class="voz" hidden>', '<div id="voz" class="voz">'),
+    espera: "nacen con `hidden`",
+  },
+  {
+    auditor: "voz-solo-salida",
+    que: "el cliente acepta una voz de otra región — `pt-BR` leyendo a un niño de `pt-PT`",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) =>
+      t.replace(
+        "      return voces.find((v) => normalizar(v.lang) === objetivo) || null;",
+        "      return voces.find((v) => normalizar(v.lang).startsWith(objetivo.slice(0, 2))) || null;",
+      ),
+    espera: "coincidencias PARCIALES",
+  },
+  {
+    auditor: "voz-solo-salida",
+    que: "un locale se queda sin rótulo de voz y le habla en inglés a quien no lo lee",
+    archivo: "apps/web/src/i18n/reto/de-DE.json",
+    parche: (t) => t.replace(/^\s*"juego\.sinVoz":.*\n/m, ""),
+    espera: "falta `juego.sinVoz`",
+  },
+
   // ─────────────────────────────────────────────────────────────────────────
   // F6 #136 — el camino EN VIVO y el tope de gasto.
   //

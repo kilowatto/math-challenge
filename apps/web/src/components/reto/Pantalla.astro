@@ -91,6 +91,20 @@ interface Props {
    * y no se puede leer como una nota.
    */
   mostrarContexto?: boolean;
+  /**
+   * La etiqueta BCP-47 que se le pide al sistema para la voz (#135, D-078).
+   *
+   * Viaja resuelta desde `ETIQUETA_DE_VOZ` de `packages/tutor/src/voz.ts` y
+   * **no se calcula aquí**. La razón es que `en` no es una etiqueta válida de
+   * voz en este producto: el corpus inglés está autorado en ortografía
+   * británica —«practising», «recognising»— y el contrato pide `en-GB` a
+   * propósito, porque una voz que lee ortografía británica con fonología
+   * estadounidense es justo el detalle que un adulto oye y un niño imita.
+   *
+   * Un `locale.slice(0, 2)` en el cliente se habría comido esa decisión sin que
+   * nadie la revirtiera.
+   */
+  etiquetaVoz?: string;
 }
 const {
   locale,
@@ -98,6 +112,7 @@ const {
   salirA,
   habilidades = {},
   mostrarContexto = false,
+  etiquetaVoz = "",
 } = Astro.props as Props;
 ---
 
@@ -113,6 +128,22 @@ const {
       enunciado entero.
     */}
     <p id="enunciado" class="enunciado" aria-live="polite">{rotulos.cargando}</p>
+
+    {/*
+      La voz (#135, D-078). Nace ESCONDIDA y solo aparece si el script confirma
+      que este aparato tiene una voz instalada para este idioma. Un botón de
+      escuchar que no suena es peor que ningún botón — y es el defecto que la
+      condición de D-077 mandaba evitar, movido del build al aparato.
+
+      Dos controles y no uno: «Escuchar» repite AHORA, y sirve además como el
+      gesto que iOS exige antes de dejar hablar a la página por primera vez.
+      El conmutador apaga la lectura automática y se recuerda.
+    */}
+    <div id="voz" class="voz" hidden>
+      <button type="button" id="voz-escuchar" class="voz-boton">{rotulos.escuchar}</button>
+      <button type="button" id="voz-conmutar" class="voz-conmutar" aria-pressed="true">{rotulos.vozActivada}</button>
+    </div>
+    <p id="voz-sin" class="voz-sin" hidden>{rotulos.sinVoz}</p>
 
     <div id="escena" class="escena"></div>
 
@@ -193,7 +224,7 @@ const {
   */}
 
 
-  <script define:vars={{ locale, rotulos, salirA, habilidades, mostrarContexto }}>
+  <script define:vars={{ locale, rotulos, salirA, habilidades, mostrarContexto, etiquetaVoz }}>
     /**
      * El bucle. Pide, pinta, ELIGE, confirma, repite.
      *
@@ -263,6 +294,190 @@ const {
       ninguna otra cosa: el modelo es del servidor.
     */
     let ultimoItemId = null;
+
+    // ---------------------------------------------------------------------
+    // La voz de Larry (#135, D-078)
+    // ---------------------------------------------------------------------
+    /**
+     * `speechSynthesis` — la voz del sistema operativo, no una del servidor.
+     *
+     * ─── Por qué esta API y no audio generado ──────────────────────────────
+     *
+     * D-078 enmienda D-077. Workers AI solo tiene voz verificada para tres de
+     * los siete locales; `speechSynthesis` está soportado desde Safari 7 y
+     * Chrome 33 (`mc-42` §7), lee texto GENERADO —que es todo lo que este
+     * producto dice, porque los enunciados se arman de una estructura— y no
+     * cuesta ni una petición de red. Los siete idiomas hablan.
+     *
+     * ─── Lo que esta API NO es ─────────────────────────────────────────────
+     *
+     * **Es salida.** `SpeechRecognition` —dictado, o sea micrófono— no entra en
+     * este producto: es la línea roja #1, y la enmienda de D-075 abrió la
+     * cámara para un ADULTO verificado y nada más. `audits/voz-solo-salida.mjs`
+     * lo vigila por nombre junto con `getUserMedia`.
+     *
+     * **No redacta.** Lee en voz alta, palabra por palabra, el mismo texto que
+     * el servidor ya sirvió y que ya está en pantalla. No hay una versión
+     * hablada que pueda decir algo que la escrita no dice, y por eso la línea
+     * roja #7 —Larry nunca avergüenza— no gana aquí una superficie nueva que
+     * auditar por tono: es literalmente la misma cadena.
+     *
+     * ─── El costo, que es real y está medido ───────────────────────────────
+     *
+     * La calidad y el inventario de voces son propiedad del SISTEMA OPERATIVO
+     * (`mc-42` §4). Un aparato sin paquete de voz para este idioma cae a una
+     * voz peor **en silencio**, y no hay API web para instalar una. Por eso
+     * `revisarVoz()` comprueba en el aparato, y **si no hay voz de este idioma
+     * los botones no se ofrecen** y la pantalla lo dice. La condición que
+     * D-077 puso —«la pantalla tiene que decirlo»— sigue viva; lo único que
+     * cambió es que ahora se evalúa donde ocurre, no en el build.
+     */
+    const VOZ_CLAVE = "mc:voz";
+    const $voz = document.getElementById("voz");
+    const $vozEscuchar = document.getElementById("voz-escuchar");
+    const $vozConmutar = document.getElementById("voz-conmutar");
+    const $vozSin = document.getElementById("voz-sin");
+    const sintesis = typeof window.speechSynthesis !== "undefined" ? window.speechSynthesis : null;
+
+    /** La voz concreta que se va a usar. `null` = este aparato no tiene. */
+    let vozElegida = null;
+    /** ¿Se lee sola cada pantalla nueva? Se recuerda entre sesiones. */
+    let leerSolo = true;
+    /**
+     * ¿Ya hubo un gesto de la persona en esta pantalla?
+     *
+     * `elegirFuente()` del contrato devuelve `"muda"` mientras esto sea falso, y
+     * no es una precaución: la política de autoplay bloquea todo audio con
+     * sonido antes de un gesto (`mc-42` §9), e intentarlo igual **no da error
+     * visible, da silencio** — que luego se diagnostica como «el audio no
+     * funciona» en vez de «faltó el toque». Se respeta en vez de pelearlo.
+     *
+     * El botón «Escuchar» es ese gesto. El contrato prevé además un mosaico sin
+     * palabras de 88px en la primera pantalla del reto (`DESBLOQUEO`); eso no
+     * está construido y queda dicho en el PR, no escondido aquí.
+     */
+    let desbloqueado = false;
+    try {
+      leerSolo = localStorage.getItem(VOZ_CLAVE) !== "0";
+    } catch (e) {
+      // Safari en privado lanza al escribir. Sin memoria, pero con voz.
+    }
+
+    const normalizar = (s) => String(s || "").replace("_", "-").toLowerCase();
+
+    /**
+     * Elegir voz. **Coincidencia EXACTA de región, o ninguna.**
+     *
+     * Esta función es `coberturaDeVoz()` de `packages/tutor/src/voz.ts` puesta
+     * en el navegador, y no puede importarse: `define:vars` implica
+     * `is:inline`, y un script inline no admite módulos (D-032). Por eso la
+     * etiqueta que se pide viaja como propiedad ya resuelta desde el contrato,
+     * y `audits/voz-solo-salida.mjs` comprueba que las dos siguen diciendo lo
+     * mismo — que es lo que D-070 pide: dos fuentes independientes, no una
+     * copia que se aprueba a sí misma.
+     *
+     * ─── Por qué no vale «misma lengua, otra región» ───────────────────────
+     *
+     * El contrato lo devuelve como categoría PROPIA para que nadie la convierta
+     * en un sí con un `||`, y aquí la decisión es no. Una voz de `pt-BR`
+     * leyendo texto de `pt-PT` no es un acento simpático: cambia la fonología
+     * de las vocales átonas, y el niño **aprende a decir los números de otra
+     * manera**. `mc-34` es toda ella sobre esto — «einundzwanzig» y
+     * «quatre-vingt-dix» son problemas de autoría, no de traducción, y el
+     * producto trata los siete locales por separado en todo lo demás.
+     *
+     * Sin voz exacta, no hay voz, y la pantalla lo dice. Es lo mismo que
+     * devuelve `elegirFuente()` del contrato: `"muda"`.
+     */
+    function buscarVoz() {
+      if (!sintesis || !etiquetaVoz) return null;
+      const voces = sintesis.getVoices() || [];
+      const objetivo = normalizar(etiquetaVoz);
+      return voces.find((v) => normalizar(v.lang) === objetivo) || null;
+    }
+
+    function revisarVoz() {
+      vozElegida = buscarVoz();
+      const hay = Boolean(vozElegida);
+      if ($voz) $voz.hidden = !hay;
+      if ($vozSin) $vozSin.hidden = hay;
+    }
+
+    /**
+     * Decir algo.
+     *
+     * `forzado` es el botón «Escuchar»: repetir a petición funciona aunque la
+     * lectura automática esté apagada. Apagar la voz es «no me hables sin que
+     * te lo pida», no «no me hables nunca».
+     *
+     * `cancel()` antes de cada frase, siempre: dos enunciados encolados es
+     * peor que ninguno, y el que importa es el de la pantalla que se está
+     * viendo. Nunca se espera a que termine de hablar para dejar contestar —
+     * la voz no bloquea nada, en ninguna parte de este archivo.
+     */
+    function decir(texto, forzado) {
+      if (!sintesis || !vozElegida) return;
+      if (!forzado && !leerSolo) return;
+      // El gate de `elegirFuente()`: sin gesto todavía, muda. `forzado` ES el
+      // gesto, así que se salta la comprobación y la levanta.
+      if (forzado) desbloqueado = true;
+      else if (!desbloqueado) return;
+      const limpio = String(texto || "").trim();
+      if (!limpio) return;
+      sintesis.cancel();
+      const frase = new SpeechSynthesisUtterance(limpio);
+      frase.voice = vozElegida;
+      frase.lang = vozElegida.lang;
+      // Un poco más lento que el habla normal. `mc-20`: para un pre-lector el
+      // audio ES la interfaz, y una interfaz que va deprisa no se puede releer.
+      frase.rate = 0.9;
+      try {
+        sintesis.speak(frase);
+      } catch (e) {
+        // iOS no deja hablar antes del primer gesto de la persona. No es un
+        // error que haya que enseñar: el botón «Escuchar» ES ese gesto, y
+        // desde el primer toque todo lo demás ya suena.
+      }
+    }
+
+    if (sintesis) {
+      revisarVoz();
+      // Chrome llena `getVoices()` de forma asíncrona: la primera llamada
+      // devuelve una lista vacía y hay que volver a mirar cuando avisa.
+      if (typeof sintesis.addEventListener === "function") {
+        sintesis.addEventListener("voiceschanged", revisarVoz);
+      }
+    } else if ($vozSin) {
+      $vozSin.hidden = false;
+    }
+
+    if ($vozEscuchar) {
+      $vozEscuchar.addEventListener("click", () => {
+        decir($enunciado.textContent, true);
+      });
+    }
+    if ($vozConmutar) {
+      $vozConmutar.textContent = leerSolo ? rotulos.vozActivada : rotulos.vozDesactivada;
+      $vozConmutar.setAttribute("aria-pressed", leerSolo ? "true" : "false");
+      $vozConmutar.addEventListener("click", () => {
+        leerSolo = !leerSolo;
+        try {
+          localStorage.setItem(VOZ_CLAVE, leerSolo ? "1" : "0");
+        } catch (e) {
+          // Ver arriba: sin memoria, el ajuste dura lo que la pantalla.
+        }
+        $vozConmutar.textContent = leerSolo ? rotulos.vozActivada : rotulos.vozDesactivada;
+        $vozConmutar.setAttribute("aria-pressed", leerSolo ? "true" : "false");
+        // Encenderla es también un gesto: `true` para que la primera frase
+        // suene ya y no en el ítem siguiente.
+        if (!leerSolo) sintesis?.cancel();
+        else decir($enunciado.textContent, true);
+      });
+    }
+    // Salir de la pantalla calla a Larry. Sin esto la voz sigue hablando
+    // encima de la página siguiente, que es de las cosas más desconcertantes
+    // que puede hacer una web.
+    window.addEventListener("pagehide", () => sintesis?.cancel());
 
     const pedir = async (accion, cuerpo) => {
       const r = await fetch(`/api/jugar?accion=${accion}`, {
@@ -606,6 +821,10 @@ const {
       }
       actual = r.item;
       $enunciado.textContent = actual.enunciado;
+      // Se lee el enunciado, no la escena: los patos y los puntos no tienen
+      // texto que decir, y describirlos sería redactar algo que el servidor no
+      // mandó. La voz lee lo que está escrito y nada más.
+      decir(actual.enunciado);
       pintarEscena(actual);
       if (actual.formato === "flash") prepararDestello(actual);
       pintarOpciones(actual);
@@ -667,6 +886,22 @@ const {
       $veredictoSiguiente.textContent = exp.siguiente || "";
       $veredicto.dataset.acierto = r.correcto ? "1" : "0";
       $veredicto.hidden = false;
+
+      /*
+       * Y aquí es donde la voz vale lo que cuesta.
+       *
+       * `mc-11` §5 (Shute) y Kluger & DeNisi sobre 607 tamaños de efecto: lo
+       * que salva a la retroalimentación de empeorar el desempeño es la
+       * segunda mitad —qué hacer ahora—, no la primera. Un pre-lector no puede
+       * leer NINGUNA de las dos (`mc-20`: texto sin equivalente hablado es
+       * antipatrón para esta edad), así que sin voz la explicación de Larry se
+       * servía y se perdía entera.
+       *
+       * Se dicen las dos partes seguidas, en el mismo orden en que están
+       * escritas y con el mismo texto. Los pasos del procedimiento (D-074) NO
+       * se leen: son para bandas avanzadas, que leen.
+       */
+      decir([$veredictoQue.textContent, $veredictoSiguiente.textContent].filter(Boolean).join(" "));
 
       /*
        * Los pasos (D-074). Hoy siempre vacío —ninguna materia del banco tiene

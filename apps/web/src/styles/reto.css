@@ -514,3 +514,66 @@
   .escena > * { animation: aparece 220ms ease-out both; }
   @keyframes aparece { from { opacity: 0; transform: scale(0.85); } }
 }
+
+/* ─── La voz (#135, D-078) ───────────────────────────────────────────────────
+   Aquí y no en `Pantalla.astro`: el componente no lleva `<style>` desde que se
+   descubrió que la mitad de sus reglas no alcanzaba a lo que dibuja el script.
+   Ver la nota larga en ese archivo.
+
+   Y solo tokens que EXISTEN en `tokens.css`. Esta regla se escribió primero con
+   `--color-borde`, `--color-superficie` y `--color-superficie-alta`, que suenan
+   bien y no existen: un `var()` sin definir no cae a un valor por defecto, deja
+   la declaración entera inválida en tiempo de cómputo. Es el mismo fallo que
+   dejó la pantalla del reto sin bordes ni fondo, dos veces, y lo atrapó
+   `brand-image` por los colores de respaldo fuera de la paleta Ignia. */
+.voz {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0.5rem;
+  flex-wrap: wrap;
+}
+/* «Escuchar» es un botón de VERDAD para el dedo de un niño de cuatro: el
+   objetivo táctil mínimo de 44px no es negociable en esta banda, y este es
+   además el control que desbloquea la voz de toda la sesión — la política de
+   autoplay no deja sonar nada antes de un gesto (`mc-42` §9). */
+.voz-boton {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding: 0.5rem 1.25rem;
+  border: 2px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sistema);
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+.voz-boton:hover { border-color: var(--color-accent); }
+/* El conmutador es deliberadamente discreto: se toca una vez en la vida del
+   aparato, no en cada reto. Aun así conserva los 44px — que sea secundario no
+   lo hace más pequeño para el dedo. */
+.voz-conmutar {
+  min-block-size: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-sistema);
+  font-size: var(--text-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.voz-conmutar[aria-pressed="false"] { text-decoration-style: dashed; }
+/* El aviso de que este aparato no tiene voz para este idioma. Voz de sistema,
+   discreto, y NUNCA en el sitio del enunciado: informa, no interrumpe. */
+.voz-sin {
+  margin: 0.25rem auto 0.75rem;
+  max-inline-size: var(--measure);
+  font-family: var(--font-sistema);
+  font-size: var(--text-xs);
+  line-height: var(--leading-body);
+  color: var(--color-text-muted);
+  text-align: center;
+}

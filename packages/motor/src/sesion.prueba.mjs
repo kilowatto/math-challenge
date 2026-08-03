@@ -5,7 +5,7 @@
 // punto». Está abajo, con ese nombre.
 
 import {
-  estadoInicial, servir, responder, puntoSeguroDeCorte, progreso,
+  estadoInicial, servir, responder, puntoSeguroDeCorte, cerrarPorLimite, progreso,
 } from "./sesion.ts";
 
 let fallos = 0;
@@ -214,6 +214,65 @@ caso("la señal de borrado no tiene ruta hasta el motor (D-020 la permite guarda
   const d = r.resultado.veredicto.detalle;
   for (const k of Object.keys(d)) {
     if (/borrad|erase|correccion|undo|cambio/i.test(k)) throw new Error(`el detalle lleva "${k}"`);
+  }
+});
+
+// --- El corte del límite de pantalla (F8 #272, D-016, línea roja #6) --------
+
+caso("una sesión nueva NO está cerrada por el límite", () => {
+  if (estadoInicial("PRIMARIA").cerradaPorLimite !== false) {
+    throw new Error("nace cerrada: nadie podría jugar");
+  }
+});
+
+caso("cerrar con un ítem servido sin contestar LANZA y no cierra", () => {
+  // El criterio explícito de #272. Es la garantía que el Worker no puede dar:
+  // entre `puedeCortar()` y esta llamada cabe una respuesta a medio servir.
+  let s = estadoInicial("PRIMARIA");
+  s = servir(s, item(1), 0);
+  lanza(() => cerrarPorLimite(s), "sin contestar");
+  if (s.cerradaPorLimite !== false) throw new Error("quedó cerrada de todas formas");
+});
+
+caso("en punto seguro sí cierra, y marca el hecho", () => {
+  let s = estadoInicial("PRIMARIA");
+  s = servir(s, item(1), 0);
+  s = responder(s, { orden: 1, eleccion: "bien" }, correcta, 1000).estado;
+  const cerrada = cerrarPorLimite(s);
+  if (cerrada.cerradaPorLimite !== true) throw new Error("no marcó el hecho");
+  if (s.cerradaPorLimite !== false) throw new Error("mutó el estado que recibió");
+});
+
+caso("cerrar dos veces devuelve EL MISMO objeto: la reconexión no reescribe nada", () => {
+  const cerrada = cerrarPorLimite(estadoInicial("KINDER"));
+  if (cerrarPorLimite(cerrada) !== cerrada) throw new Error("devolvió una copia");
+});
+
+caso("una sesión cerrada por el límite deja de servir ítems, y nada más", () => {
+  // El corte ES esto: dejar de servir. No hay aquí bloqueo de navegador, ni
+  // pantalla completa forzada, ni nada que impida cerrar la pestaña — línea
+  // roja #1, que no admite excepción para un menor.
+  const cerrada = cerrarPorLimite(estadoInicial("KINDER"));
+  lanza(() => servir(cerrada, item(1), 0), "límite de pantalla");
+});
+
+caso("el progreso sobrevive al corte: la despedida sabe cuántos retos van", () => {
+  let s = estadoInicial("PRIMARIA");
+  for (const n of [1, 2]) {
+    s = servir(s, item(n), n * 1000);
+    s = responder(s, { orden: n, eleccion: "bien" }, correcta, n * 1000 + 500).estado;
+  }
+  const p = progreso(cerrarPorLimite(s));
+  if (p.contestadas !== 2) throw new Error(`contestadas ${p.contestadas} tras el corte`);
+});
+
+caso("el corte no penaliza el puntaje ya ganado", () => {
+  let s = estadoInicial("PRIMARIA");
+  s = servir(s, item(1), 0);
+  s = responder(s, { orden: 1, eleccion: "bien" }, correcta, 500).estado;
+  const antes = progreso(s).puntos;
+  if (progreso(cerrarPorLimite(s)).puntos !== antes) {
+    throw new Error("el corte le quitó puntos al niño por respetar el límite de su padre");
   }
 });
 

@@ -1,0 +1,7 @@
+# Archivos que NO se sirven como assets públicos.
+#
+# _worker.js es el bundle del servidor generado por @astrojs/cloudflare. Subirlo
+# como asset lo expondría a internet — wrangler bloquea el despliegue si está
+# presente, y hace bien. Va en public/ para que Astro lo copie a dist/ en cada
+# build, en vez de tener que recordarlo a mano.
+_worker.js

@@ -1,3 +1,128 @@
+# AGENTS.md — cómo se trabaja con agentes en este repositorio
+
+> Dos cosas viven aquí, y conviene no confundirlas:
+>
+> 1. **Cómo se orquestan varios agentes en paralelo** — la sección de abajo,
+>    escrita el 2026-08-03 mientras cinco corrían a la vez.
+> 2. **La especificación de traducción del corpus de investigación** — desde
+>    «CERRADO Y DESPLEGADO» hacia abajo. Es autosuficiente a propósito: la lee
+>    un agente que no conoce el proyecto.
+
+---
+
+# 1 · Orquestación de agentes en paralelo
+
+*Última actualización: 2026-08-03, durante la construcción de F7 y F8.*
+
+## Por qué en paralelo, y cuándo NO
+
+Un agente por frente sirve cuando los frentes **no comparten archivos**. Cuando
+los comparten, el paralelismo no ahorra tiempo: lo mueve al final, a quien
+integra. La regla práctica que salió de esta sesión:
+
+- **Paralelizar por TERRITORIO, no por issue.** Cada agente recibe una lista
+  explícita de archivos suyos y una lista de archivos ajenos que **no toca**.
+- **Los registros compartidos se tocan igual, y no pasa nada** — siempre que
+  todos añadan **al final** y nadie reordene. Los tres de este repo son
+  `audits/run.mjs`, `audits/pruebas-auditores.mjs` y
+  `audits/adversarial/cartas.mjs`. Cada conflicto se resolvió igual: **los dos
+  lados añaden, se conservan los dos.**
+- **Los números de migración se reparten POR ADELANTADO.** D1 lleva el control
+  por nombre de archivo, así que dos agentes escribiendo `0009` es un conflicto
+  que ninguna prueba encuentra.
+
+## El error de reparto que cometí, para que no se repita
+
+Repartí `0009`, `0010`, `0011` y **`0012`** — saltándome un número, porque uno
+de los frentes no iba a necesitar migración y al final sí. `audits/migration-safety.mjs`
+**bloquea los huecos de numeración**, así que ese agente no podía commitear de
+ninguna manera.
+
+Hizo lo correcto: usó el número contiguo y dejó un **choque visible** en vez de
+un hueco silencioso, con el porqué escrito dentro del SQL. De ahí salió el
+marcador que ahora existe:
+
+```sql
+-- migration-safety-reserva: 0009 — repartida a otra rama en construcción
+```
+
+Declara un número reservado por una rama que aún no aterrizó, **y bloquea en
+cuanto ese archivo existe** — para que la excepción no se vuelva permanente.
+Funcionó de verdad: al mergear el mapa, el auditor exigió estrechar la reserva.
+
+## La plantilla de encargo
+
+Todo agente de este repo recibe, en este orden:
+
+1. **Qué leer, numerado.** `CLAUDE.md`, las decisiones concretas por número
+   (`D-014, D-079, …`), la investigación concreta (`mc-16`, `mc-42` §7), los
+   issues con `gh issue view N`, y **el archivo que le sirve de patrón**.
+2. **Su territorio**, y el de los demás agentes vivos, con nombres de archivo.
+3. **Las líneas rojas que su trabajo puede cruzar**, citadas por número y con
+   la consecuencia dicha. No «respeta la privacidad», sino «línea roja #6: la
+   racha nunca se rompe por respetar el límite de pantalla».
+4. **Qué cuenta como prueba**, explícito: gate verde con la salida pegada,
+   control negativo **visto fallar degradando el archivo real** (D-070), y para
+   lo que toca producto, **jugarlo de verdad**.
+5. **Las trampas ya medidas.** Se repiten en cada encargo porque se repiten en
+   la realidad — ver abajo.
+6. **Cómo cerrar**: rama desde `origin/main`, Conventional Commits en inglés con
+   cuerpo, PR abierto, **sin mergear y sin desplegar**, y **decir lo que el
+   cambio NO hizo**.
+
+## Las trampas que se repiten, y que van en todos los encargos
+
+Ninguna es teórica. Las cinco ocurrieron en este repositorio.
+
+- **Un auditor puede aprobar su propia violación.** Si el auditor juzga con la
+  misma función que el código usa para decidir, no puede fallar nunca. Pasó dos
+  veces el mismo día, en dos frentes distintos. La única defensa es reescribir
+  la tabla de precondiciones **a mano**, como segunda fuente (D-070).
+- **`\b` de JavaScript solo conoce ASCII.** `/\bse acab[oó]\b/` no encuentra
+  «Se acabó»: la forma con acento pasa de largo. Dejó un locale entero sin
+  protección contra elogios a la capacidad, y un léxico de racha ciego a las dos
+  formas naturales de decirlo en español. Usa `conFronteraUnicode()` de
+  `audits/lib/repo.mjs`.
+- **Un control negativo cuyo objetivo se movió es un auditor apagado en
+  silencio.** El arnés lo caza —«el caso corría en verde sin degradar nada»— y
+  hay que reapuntarlo, no borrarlo.
+- **Código correcto que ninguna ruta alcanza.** `marcarDispositivoDelHogar`,
+  `<Marca>` sin importar, `validarItem` sin llamador. `funcion-sin-llamar.mjs`
+  existe para esto — y él mismo falló abierto por contar llamadas **dentro de
+  comentarios**, así que un módulo se contaba a sí mismo como su llamador.
+- **`define:vars` implica `is:inline`,** y un script inline con TypeScript viaja
+  crudo al navegador y **mata el script entero** sin fallar en ningún sitio
+  (D-032).
+
+## Lo que el orquestador hace, y no delega
+
+- **Resolver los merges** de los registros compartidos. Nunca los agentes.
+- **Renumerar migraciones** antes de que ninguna toque una base. Después no
+  sería gratis.
+- **Decidir sobre decisiones**: los números de `docs/decisions.md` los reparte
+  el orquestador, porque dos agentes escribiendo «D-080» es una colisión
+  silenciosa en el documento que gobierna el producto. Pasó, y se atrapó.
+- **No ejecutar acciones irreversibles en producción sin el dueño.** El registro
+  `d1_migrations` de la base real está desincronizado —`0003` a `0006` se
+  aplicaron a mano y no quedaron registradas— y arreglarlo es una escritura a la
+  tabla de control de migraciones. Los comandos están escritos y **sin
+  ejecutar**.
+
+## Estado al 2026-08-03
+
+| Fase | Estado |
+|---|---|
+| **F6 · Larry Profe** | Código completo y **desplegado** (`38052c7f`). Los 7 issues siguen abiertos: nadie ha **escuchado** una voz en un aparato real |
+| **F7 · Juego** | Motores puros en `main`. Mapa en `main`. Cableado y misiones en PR. Social en construcción |
+| **F8 · Padres** | Motor del límite de pantalla en `main` (#388). Panel y reportes sin empezar |
+
+La flota de auditores pasó de 66 a **87** en dos días, y el arnés de controles
+negativos de 32 a **103 casos**. Ese crecimiento no es decorativo: **cuatro de
+los defectos más caros de esta sesión los encontró un control negativo, no una
+lectura del código.**
+
+---
+
 ## CERRADO Y DESPLEGADO — 2026-08-01, tarde
 
 Traducción, cableado y despliegue: **terminados**. PR #174 mergeado a `main`

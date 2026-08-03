@@ -184,6 +184,17 @@ modales — y las siguientes se pagan en F3-F10.
 
 ## 3. Las tres puertas, paso a paso
 
+> **Enmendado por D-082 (2026-08-02): esto deja de ser tres puertas
+> simétricas.** Lo que sigue describe el modelo original (`?as=learner|parent|teacher`
+> como elección en `/app/join`), que es **código real y desplegado hoy**
+> (`Registro.astro`, `registro.ts`, `DoorPicker.astro`). D-082 fija el
+> destino: una sola alta, que siempre nace `is_learner = 1`; "Puerta B"
+> (agregar un hijo) y "Puerta C" (crear un salón) pasan de ser una elección en
+> la puerta a ser **acciones que el adulto toma después, desde `/app/home`**
+> — sin cambiar en nada sus pantallas internas (`setup/child*`, `owner/identity`
+> siguen exactamente iguales). La issue de F2 que ejecuta este cambio es
+> **#390**.
+
 Las tres comparten **exactamente el mismo formulario de dos campos** (D-026). La
 puerta no cambia el formulario: cambia a dónde aterriza el usuario después. Eso
 es lo que permite que el registro tenga 2 campos y no 3.

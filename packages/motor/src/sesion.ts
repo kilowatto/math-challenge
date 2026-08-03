@@ -68,10 +68,31 @@ export interface EstadoSesion {
   /** Las respuestas ya puntuadas, por orden. La llave de idempotencia. */
   puntuadas: Map<number, ResultadoDeRespuesta>;
   puntosTotales: number;
+  /**
+   * La sesión terminó porque el límite de pantalla la cortó (F8 #272, F7 #202).
+   *
+   * Es un HECHO, no una consecuencia: aquí no se decide nada sobre la racha.
+   * Quien cierra la sesión lo lee y llama a `racha.ts::registrarDia` con
+   * `LIMITE_DE_PANTALLA_CORTO_LA_SESION` — que produce exactamente el mismo
+   * estado que un reto terminado, porque el motivo no entra en la aritmética
+   * (línea roja #6, D-014 textual: «si el límite de pantalla corta la sesión,
+   * la racha del día se da por cumplida»).
+   *
+   * Se llama así, largo, y no `cortada`: `audits/racha-limite-no-rompe.mjs`
+   * busca esta cadena exacta en todo el repositorio para mirar qué se hace a su
+   * alrededor, y un nombre corto sería invisible para él.
+   */
+  cerradaPorLimite: boolean;
 }
 
 export function estadoInicial(banda: Banda): EstadoSesion {
-  return { banda, pendiente: null, puntuadas: new Map(), puntosTotales: 0 };
+  return {
+    banda,
+    pendiente: null,
+    puntuadas: new Map(),
+    puntosTotales: 0,
+    cerradaPorLimite: false,
+  };
 }
 
 /**
@@ -87,6 +108,15 @@ export function servir(
   item: { orden: number; itemId: string; nivel: number },
   ahora: number,
 ): EstadoSesion {
+  // El corte del límite de pantalla es esto y solo esto: dejar de servir. No
+  // bloquea el navegador, no fuerza pantalla completa y no impide cerrar la
+  // pestaña — línea roja #1, que no admite excepción para un menor (F8 #272).
+  if (estado.cerradaPorLimite) {
+    throw new Error(
+      "la sesión se cerró por el límite de pantalla y no sirve más ítems. La despedida ya se " +
+        "mostró; el día siguiente empieza una sesión nueva (D-016).",
+    );
+  }
   if (estado.pendiente !== null) {
     throw new Error(
       `ya hay un ítem servido sin contestar (orden ${estado.pendiente.orden}). Servir otro ` +
@@ -164,6 +194,38 @@ export function responder(
  */
 export function puntoSeguroDeCorte(estado: EstadoSesion): boolean {
   return estado.pendiente === null;
+}
+
+/**
+ * El límite de pantalla cerró la sesión (F8 #272, D-016).
+ *
+ * **Exige el punto seguro y no confía en quien llama.** El Worker ya preguntó
+ * con `puedeCortar()` antes de llegar aquí, pero entre esa pregunta y esta
+ * llamada cabe una respuesta a medio servir, y la única garantía que vale es la
+ * que se comprueba en el mismo sitio donde se actúa. D-016, textual: «Nunca
+ * corte seco a media respuesta».
+ *
+ * Idempotente: cerrar dos veces devuelve el mismo estado. Pasa de verdad cuando
+ * el cliente reintenta el último checkpoint por una conexión mala, que es el
+ * escenario de D-047.
+ *
+ * **Lo que NO hace, y es deliberado:** no bloquea el navegador, no fuerza
+ * pantalla completa y no impide cerrar la pestaña (línea roja #1: nunca
+ * navegador bloqueado para un menor). Lo único que cambia es que deja de
+ * servirse el siguiente ítem. Tampoco escribe la racha ni la nombra: deja el
+ * hecho disponible y F7 decide (#202).
+ */
+export function cerrarPorLimite(estado: EstadoSesion): EstadoSesion {
+  if (!puntoSeguroDeCorte(estado)) {
+    throw new Error(
+      `cerrarPorLimite con el ítem ${estado.pendiente?.orden} servido y sin contestar. ` +
+        "El llamador tiene que esperar al siguiente punto seguro: cortar a un niño mientras " +
+        "piensa una respuesta convierte una protección en un castigo por haber tardado en pensar " +
+        "(D-016).",
+    );
+  }
+  if (estado.cerradaPorLimite) return estado;
+  return { ...estado, cerradaPorLimite: true };
 }
 
 /** Cuántas respuestas van puntuadas. Para que el corte sepa dónde se quedó. */

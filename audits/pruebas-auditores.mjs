@@ -1794,6 +1794,25 @@ const CASOS = [
     espera: "cifra de racha",
   },
 
+
+  // ─── F7 · La pausa familiar (#204) ───────────────────────────────────────
+  {
+    // La degradación es el copy exacto que mc-19 rec. #8 prohíbe junto a esta
+    // pantalla: la pausa convertida en confesión, con culpa. Va en UN solo
+    // locale y sobre el archivo REAL por lo mismo que los casos de arriba
+    // (D-070): un archivo inventado probaría solo que el auditor sabe leer un
+    // archivo inventado. El auditor debe escanear `i18n/pausa` — si alguien lo
+    // quita de DIRS_TEXTOS, este caso sale en verde con la violación delante.
+    auditor: "racha-lexico",
+    que: "«no dejes que se pierda» en el copy de la pausa, en un solo locale",
+    archivo: "apps/web/src/i18n/pausa/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"pausa.cta": "Declarar la pausa"',
+        '"pausa.cta": "Declarar la pausa: no dejes que se pierda la racha"',
+      ),
+    espera: "perdida",
+  },
   // ─── F7 · El guardarraíl de naming Rango vs Nivel (#195) ─────────────────
   //
   // Los cuatro degradan archivos REALES (D-070): la erosión de verdad sería
@@ -1902,6 +1921,7 @@ const CASOS = [
         '"idiomaNombre": "español de México, qué bonito avatar"',
       ),
     espera: "avatar",
+
   },
 ];
 

@@ -11,8 +11,8 @@
     },
     {
       "categoria": "capacidad",
-      "patron": "\\b(?:tu )?[eé]s (?:muito )?(?:inteligente|espert[oa]|um g[eé]nio)\\b",
-      "porque": "Mueller & Dweck: elogiar el rasgo fijo hace que el siguiente fallo se lea como que el rasgo falló"
+      "patron": "(?<![\\wà-ÿ])(?:tu )?[eé]s (?:muito )?(?:inteligente|espert[oa]|um g[eé]nio)\\b",
+      "porque": "Mueller & Dweck: elogiar el rasgo fijo hace que el siguiente fallo se lea como que el rasgo falló. NOTA DE F6 #136: el patrón empezaba con \\b y NO cazaba una frase que empieza por «És» — el \\b de JavaScript solo conoce letras ASCII, y en pt-PT el pronombre se cae, así que «És muito inteligente» es la forma normal. Se cambió por una anticipación negativa. Lo encontró la compuerta del camino en vivo, no una revisión"
     },
     {
       "categoria": "capacidad",

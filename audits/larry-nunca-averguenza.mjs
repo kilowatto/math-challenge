@@ -29,6 +29,12 @@
 //     cuatro años vio tres botones que decían `casilla3`, `casilla0`, `casilla1`.
 //     Se prueba con una causa que nadie autoró, que es el único caso donde el
 //     código tendría la tentación de imprimir el identificador.
+//  4. **Y desde F6 #136, la MISMA carta sobre el camino EN VIVO.** La compuerta
+//     léxica del Worker se ejerce aquí con salidas humillantes escritas a
+//     propósito en cada uno de los siete idiomas, y tiene que descartarlas todas.
+//     No es un auditor nuevo a propósito: la carta anti-vergüenza es UNA, y
+//     partirla en dos sería tener dos listas que envejecen distinto. Lo que
+//     cambia entre los dos caminos es de dónde sale el texto, no qué se prohíbe.
 //
 // ─── Por qué el léxico se parte por locale ─────────────────────────────────
 //
@@ -58,7 +64,12 @@ import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { informar, RAIZ } from "./lib/repo.mjs";
 
 const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
-const DIR_LEXICO = "audits/lib/lexico-verguenza";
+// El léxico se mudó a `packages/tutor/src/lexico/` en F6 #136. La razón está
+// escrita en `packages/tutor/src/lexico.ts`: con el camino en vivo hay un
+// segundo lector, y ése corre DENTRO del Worker. Copiarlo habría dejado dos
+// listas, y la que se desincronizara sería la que juzga el texto que nadie
+// revisó antes de publicarlo.
+const DIR_LEXICO = "packages/tutor/src/lexico";
 const DIR_TEXTOS = "apps/web/src/i18n/reto";
 
 const problemas = [];
@@ -178,13 +189,114 @@ if (motor && banco && Object.keys(catalogos).length === LOCALES.length) {
   );
 }
 
+// ══ 4 · LA MISMA CARTA, SOBRE EL CAMINO EN VIVO (F6 #136) ═══════════════════
+//
+// Hasta aquí se juzgó texto que una persona escribió y otra revisó. Lo que sigue
+// juzga la compuerta que corre en el Worker sobre texto que **nadie ha visto**:
+// lo que el modelo acaba de escribir, medio segundo antes de que lo lea alguien.
+//
+// Es el mismo léxico, leído del mismo directorio, y por eso está en este auditor
+// y no en uno nuevo. La carta anti-vergüenza es UNA. Partirla en dos daría dos
+// listas que envejecen distinto, y la que envejeciera peor sería justo la del
+// texto sin revisar.
+//
+// Las frases de abajo están escritas a mano en cada idioma, no traducidas: lo
+// que humilla en una lengua no es la traducción de lo que humilla en otra, que
+// es el argumento entero de que el léxico esté partido por locale. Cada una
+// tiene que caer, y si alguna deja de caer es que el léxico de ese locale
+// perdió una construcción.
+const HUMILLANTES = {
+  "en": [
+    ["capacidad", "You are so smart, that is why this one is easy."],
+    ["comparacion", "The other children already got this one."],
+    ["minimizadores", "That was easy, have another go."],
+  ],
+  "es-MX": [
+    ["capacidad", "Eres muy listo, por eso te toca otra."],
+    ["comparacion", "Los demás niños ya lo lograron."],
+    ["tiempo_velocidad", "Te tardaste, vamos a intentarlo otra vez."],
+  ],
+  "es-ES": [
+    ["capacidad", "Qué inteligente, prueba con la siguiente."],
+    ["comparacion", "El resto del grupo ya lo tiene."],
+    ["minimizadores", "Era muy fácil, vuelve a mirarlo."],
+  ],
+  "fr-FR": [
+    ["capacidad", "Tu es très intelligent, essaie encore."],
+    ["comparacion", "Les autres enfants ont déjà réussi."],
+    ["minimizadores", "C'était facile, regarde encore une fois."],
+  ],
+  "pt-BR": [
+    ["capacidad", "Você é muito inteligente, tente de novo."],
+    ["comparacion", "As outras crianças já conseguiram."],
+    ["tiempo_velocidad", "Você foi muito lento, tente de novo."],
+  ],
+  "pt-PT": [
+    ["capacidad", "És muito inteligente, tenta outra vez."],
+    ["comparacion", "As outras crianças já conseguiram."],
+    ["conteo_de_fallas", "É a terceira vez, tenta outra vez."],
+  ],
+  "de-DE": [
+    ["capacidad", "Du bist so schlau, versuch es noch einmal."],
+    ["comparacion", "Die anderen Kinder haben es schon."],
+    ["minimizadores", "Das war doch einfach, schau noch einmal."],
+  ],
+};
+
+if (motor && Object.keys(lexico).length === LOCALES.length) {
+  const enVivo = await import(`${RAIZ}packages/tutor/src/en-vivo.ts`).catch((e) => {
+    problemas.push(`no pude importar el camino en vivo: ${String(e).slice(0, 120)}`);
+    return null;
+  });
+
+  if (enVivo) {
+    const { juzgarSalida } = enVivo;
+    let cazadas = 0;
+
+    for (const loc of LOCALES) {
+      for (const [categoria, frase] of HUMILLANTES[loc] ?? []) {
+        const descartes = juzgarSalida({ texto: frase, locale: loc, banda: "PRIMARIA", lexico: lexico[loc] });
+        const lexicas = descartes.filter((d) => d.compuerta === "lexica");
+        if (lexicas.length === 0) {
+          problemas.push(
+            `${loc} · EN VIVO: la compuerta léxica DEJA PASAR «${frase}», que es \`${categoria}\`. ` +
+              "Esa frase la escribiría un modelo y la leería un niño sin que nadie la hubiera visto " +
+              "antes. Línea roja #7: Larry nunca avergüenza a un niño por equivocarse.",
+          );
+        } else {
+          cazadas++;
+        }
+      }
+    }
+
+    // Y el otro frente del camino en vivo, que el pregenerado no tiene: el
+    // modelo puede escribir una cifra que nadie le dio. El sobre no lleva ni un
+    // numeral, así que cualquiera que salga es invención.
+    const conNumero = juzgarSalida({
+      texto: "You counted 4 and the answer was 5.",
+      locale: "en",
+      banda: "PRIMARIA",
+      lexico: lexico["en"],
+    });
+    if (!conNumero.some((d) => d.compuerta === "estructural")) {
+      problemas.push(
+        "la compuerta estructural del camino en vivo deja pasar un dígito. El sobre no contiene " +
+          "ninguno, así que una cifra en la salida la inventó el modelo — y una cifra inventada en " +
+          "un producto de matemáticas no es un defecto de estilo, es otra respuesta (línea roja #7).",
+      );
+    }
+
+    notas.push(`${cazadas} frase(s) humillantes escritas a mano en los siete idiomas, todas descartadas por la compuerta EN VIVO`);
+  }
+}
+
 informar({
   nombre: "larry-nunca-averguenza",
   problemas,
   notas,
-  cita: "línea roja #7, D-004, D-022, mc-11 (Shute; Kluger & DeNisi; Mueller & Dweck), criterio #133 de F6",
+  cita: "línea roja #7, D-004, D-022, mc-11 (Shute; Kluger & DeNisi; Mueller & Dweck), criterios #133 y #136 de F6",
   revisados,
-  resumen: `${revisados} locale(s) · la salida del módulo, no solo el JSON`,
+  resumen: `${revisados} locale(s) · la salida de los DOS caminos, no solo el JSON`,
   porQueBloquea:
     "Kluger & DeNisi midieron 607 tamaños de efecto y más de un tercio de las intervenciones de " +
     "retroalimentación EMPEORÓ el desempeño. «Hay feedback» no es el criterio: un texto que " +

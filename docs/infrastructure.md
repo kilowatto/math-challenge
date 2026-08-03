@@ -35,8 +35,31 @@ entornos de prueba — ahí se sufija: `math-challenge-db-dev`.
    del siguiente ítem necesita estado consistente y de baja latencia.
 4. **KV guarda instantáneas del tablero**, nunca escrituras por intento — KV
    admite una escritura por segundo por llave.
-5. **AI Gateway va delante de Claude siempre**, para caché, límite de gasto por
-   perfil y ruteo de modelo por banda de dificultad.
+5. **La inferencia corre sobre Workers AI, dentro del Worker** (D-035, y la
+   ampliación del dueño el mismo día: «solo vamos a trabajar con Cloudflare, es
+   una decisión tomada»). No queda ningún camino a la API de Claude.
+
+   Esta línea decía «AI Gateway va delante de Claude siempre, para caché, límite
+   de gasto por perfil y ruteo de modelo», y era falsa en las tres cosas desde
+   D-035. Lo que vale hoy, corregido en F6 #136:
+
+   - **El ruteo por banda** lo hace el Worker (`packages/tutor/src/en-vivo.ts`),
+     con `gpt-oss-120b` abajo y `kimi-k2.6` arriba. Es el punto 3 de D-004 con
+     otros modelos.
+   - **El tope de gasto por perfil y por día** lo hace el **Durable Object**, no
+     el Gateway. El plan de F6 §5.1 enmienda D-015 y explica por qué: el objeto
+     decide ANTES de gastar y puede degradar con criterio pedagógico —servir la
+     explicación pregenerada revisada por humano—, y eso el Gateway no lo sabe
+     hacer. Puede devolver 429 o cambiar a un modelo más barato, y lo segundo es
+     justo lo que D-035 prohíbe para la banda Pro.
+   - **El Gateway se queda como red de seguridad en DÓLARES**, y con una
+     advertencia medible: si su base de precios no cubre los modelos `@cf/`, el
+     tope en dólares no dispara nunca. Se comprueba llamando, no leyendo.
+   - **La caché del Gateway va apagada**: solo empata peticiones idénticas, sin
+     caché semántico, y con un ítem distinto por petición la tasa de acierto es
+     ~0. Lo que sí se cachea es el **prefijo de sistema**, por
+     `larry|<locale>|<banda>` — catorce llaves en el MVP, treinta y cinco en la
+     escalera completa, y **jamás por perfil del niño**.
 
 ## Inventario de objetos / Resource inventory
 
@@ -46,7 +69,7 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 |---|---|---|---|---|
 | `math-challenge-web` | Worker (Astro, Static Assets) | Public PWA frontend + BFF routes | Frontend PWA público + rutas BFF | n/a (entry Worker) |
 | `math-challenge-ingest` | Worker | Validates and ingests attempt submissions; writes telemetry, enqueues scoring | Valida e ingiere envíos de intentos; escribe telemetría, encola calificación | `INGEST` (service binding desde web) |
-| `math-challenge-tutor` | Worker | Hosts "Larry" AI tutor; calls Claude via AI Gateway with RAG | Aloja al tutor de IA "Larry"; llama a Claude vía AI Gateway con RAG | n/a |
+| `math-challenge-tutor` | Worker | ⚠️ NOT CREATED, and F6 did not need it. Larry's live path lives inside `math-challenge-web` (`/api/larry`) because the sealed envelope, the profile session and the spend meter are already there; a second Worker would move the prompt away from the only place that can seal it. The row stays as a reminder that it is not pending — it is unnecessary | ⚠️ NO CREADO, y F6 no lo necesitó. El camino en vivo de Larry vive dentro de `math-challenge-web` (`/api/larry`): el sobre sellado, la sesión del perfil y el medidor de gasto ya están ahí, y un segundo Worker alejaría el prompt del único sitio que puede sellarlo | n/a |
 | `math-challenge-leaderboard-cron` | Worker (Cron Trigger) | Triggers the periodic leaderboard rollup Workflow | Dispara el Workflow periódico de recálculo de leaderboard | n/a |
 | `math-challenge-db` | D1 database | System of record: users, children, classrooms, leagues, content metadata, consent | Registro maestro: usuarios, niños, salones, ligas, metadatos de contenido, consentimiento | `DB` |
 | `math-challenge-league-do` | Durable Object class (SQLite) | Live state + WebSocket broadcast for one league of ~30 | Estado en vivo + difusión WebSocket de una liga de ~30 | `LEAGUE_DO` |
@@ -71,15 +94,15 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 | `math-challenge-leaderboard-rollup-workflow` | Workflow | Periodic global/grade-band leaderboard computation | Cálculo periódico del leaderboard global/por-grado | `LEADERBOARD_WORKFLOW` |
 | `math-challenge-onboarding-workflow` | Workflow | Multi-step account + child-profile + consent setup | Configuración multi-paso de cuenta + perfil de niño + consentimiento | `ONBOARDING_WORKFLOW` |
 | `math-challenge-explanations-index` | Vectorize index | Multilingual RAG index over curated hints/explanations | Índice RAG multilingüe sobre pistas/explicaciones curadas | `EXPLANATIONS_INDEX` |
-| `math-challenge-tutor-gateway` | AI Gateway | Caching, rate limits, spend limits, model routing for Claude calls | Caché, límites de tasa, límites de gasto y enrutamiento de modelos para Claude | (gateway ID in `ANTHROPIC_BASE_URL`) |
+| `math-challenge-tutor-gateway` | AI Gateway | ⚠️ NOT CREATED YET. Dollar-denominated safety net in front of Workers AI — never in front of Claude, that path was removed by D-035. The per-profile/day cap does NOT depend on it: it lives in the Durable Object (F6 plan §5.1, amends D-015). Zero Data Retention in production: counts and costs, never prompts — the prompt carries what a minor answered. Cache OFF (see structural decision 5) | ⚠️ TODAVÍA NO CREADO. Red de seguridad en dólares delante de Workers AI — nunca delante de Claude, camino que D-035 quitó. El tope por perfil y día NO depende de él: vive en el Durable Object (plan F6 §5.1, enmienda D-015). Zero Data Retention en producción: conteos y costos, jamás prompts — el prompt lleva lo que respondió un menor. Caché apagada | `AI_GATEWAY_ID` (var; sin ella se llama sin gateway) |
 | `math-challenge-attempts-ae` | Analytics Engine dataset | Per-attempt telemetry (high-cardinality, high-volume) | Telemetría por intento (alta cardinalidad, alto volumen) | `ATTEMPTS_AE` |
 | `math-challenge-vitals-ae` | Analytics Engine dataset | Field Core Web Vitals (LCP/CLS/INP/TTFB/FCP); never written from a child surface | Core Web Vitals de campo; jamás se escribe desde una superficie de niño (D-037) | `VITALS_AE` |
 | `math-challenge-funnel-ae` | Analytics Engine dataset | Activation funnel for the ADULT: signup, first child profile, first household device. Never a child — D-037 and red line #2 | Embudo de activación del ADULTO: registro, primer perfil de niño, primer dispositivo de la casa. Nunca un niño — D-037 y línea roja #2 | `FUNNEL_AE` |
-| `math-challenge-ratelimiter-do` | Durable Object | Rate limiter, one instance per (action, IP). A counter needs read-and-write without a race; KV is eventually consistent and allows one write per second per key | Limitador de tasa, una instancia por (acción, IP). Un contador necesita leer y escribir sin carrera; KV es eventualmente consistente y admite una escritura por segundo por llave | `RATE_LIMITER` |
-| `math-challenge-tutor-usage-ae` | Analytics Engine dataset | Tutor usage/cost telemetry (per-child, per-model) | Telemetría de uso/costo del tutor (por niño, por modelo) | `TUTOR_AE` |
+| `math-challenge-ratelimiter-do` | Durable Object | Two things, two keys. (a) Rate limiter, one instance per (action, IP). (b) **Since F6 #136, the tutor spend meter** on route `/tutor`, one instance per daily profile pseudonym `pd = HMAC(secret, day‖profile_id)`, storing three integers — calls, settled µ$, reserved µ$ — for seven days. A counter needs read-and-write without a race; KV is eventually consistent and allows one write per second per key. The two halves fail in OPPOSITE directions on purpose: the rate limiter fails open (its absence makes a form slow, not open), the meter fails closed (its absence would make spend unbounded) | Dos cosas, dos llaves. (a) Limitador de tasa, una instancia por (acción, IP). (b) **Desde F6 #136, el medidor de gasto del tutor** en la ruta `/tutor`, una instancia por seudónimo diario del perfil `pd = HMAC(secreto, día‖profile_id)`, con tres enteros —llamadas, µ$ liquidados, µ$ reservados— durante siete días. Las dos mitades fallan en direcciones OPUESTAS a propósito: el limitador falla abierto, el medidor falla cerrado | `RATE_LIMITER` |
+| `math-challenge-tutor-usage-ae` | Analytics Engine dataset | Tutor usage/cost telemetry indexed `banda\|locale\|modelo`. **NEVER per child, not even hashed** — this row used to say "per-child, per-model", which broke red line #2 and was unfixable after the fact: Analytics Engine keeps three months and has no DELETE (`mc-32` risk #7). The per-profile counter lives in the Durable Object for seven days and IS deleted | Telemetría de uso/costo del tutor indexada `banda\|locale\|modelo`. **JAMÁS por niño, ni siquiera hasheado** — este renglón decía «per-child, per-model», que cruzaba la línea roja #2 y además no tenía arreglo posterior: Analytics Engine retiene tres meses y no tiene DELETE. El contador por perfil vive en el Durable Object siete días y ése sí se borra | `TUTOR_AE` |
 | `kilowatto` ⚠️ sin prefijo, ver D-054 | Turnstile widget | Bot defense on signup forms. REUSED: a Turnstile widget belongs to a hostname list, not to a project, and math.kilowatto.com lives inside kilowatto.com | Defensa contra bots en el formulario de registro. REUSADO: un widget de Turnstile pertenece a una lista de hostnames, no a un proyecto, y math.kilowatto.com vive dentro de kilowatto.com | `TURNSTILE_SITE_KEY` (público, var) · `TURNSTILE_SECRET_KEY` (secreto) |
 | `math-challenge-web-analytics` | Web Analytics site | Privacy-first RUM for the PWA | RUM respetuoso de la privacidad para la PWA | (JS snippet, no binding) |
-| `math-challenge-secrets` | Secrets Store | Holds `ANTHROPIC_API_KEY` and other third-party credentials | Contiene `ANTHROPIC_API_KEY` y otras credenciales de terceros | via `wrangler secret put` |
+| `math-challenge-secrets` | Secrets Store | Third-party credentials. **No longer `ANTHROPIC_API_KEY`**: D-035 removed that path and the `@anthropic-ai/sdk` package was uninstalled. Current tenant of this row: `TUTOR_PD_SECRET`, the HMAC salt for the tutor's daily per-profile pseudonym. Without it the live path does not run at all — no `pd` means no per-profile counter, and a live path without a cap is not switched on | Credenciales de terceros. **Ya no `ANTHROPIC_API_KEY`**: D-035 quitó ese camino y el paquete `@anthropic-ai/sdk` se desinstaló. Inquilino actual: `TUTOR_PD_SECRET`, la sal del HMAC del seudónimo diario del perfil. Sin él el camino en vivo no corre: sin `pd` no hay contador por perfil, y un camino en vivo sin tope no se enciende | vía `wrangler secret put` |
 
 
 ## Bitácora de creación / Creation log
@@ -93,6 +116,8 @@ Every object is prefixed `math-challenge-` as required. Binding names use `UPPER
 | 2026-07-31 | `math-challenge-exports` (R2) | *(el nombre es el id)* | Esteban | Binding `EXPORTS_BUCKET`. Archivo frío y exportaciones COPPA/GDPR |
 | 2026-08-01 | `math-challenge-learner-do` (Durable Object, clase `Aprendiz`) | *(la clase es el id)* | Claude | Binding `LEARNER_DO`, migración de DO `v2` con `new_sqlite_classes`. **Un objeto por niño** (`idFromName(child_profile_id)`) — un DO global topa en 500-1.000 req/s (`mc-32` riesgo #2) y, sobre todo, hace imposible que borrar el perfil sea `deleteAll()`. Guarda **estado derivado**: estimaciones, contadores y fechas; jamás el intento crudo, que va a `math-challenge-attempts-ae`. Tres sitios hay que tocar para añadir una clase de DO y olvidar cualquiera rompe distinto: `worker.ts` (export con nombre), `astro.config.mjs` (`namedExports`) y `wrangler.jsonc` (binding + `migrations`) |
 | 2026-08-02 | `mail.kilowatto.com` ⚠️ sin prefijo — es un DOMINIO, no un objeto de la cuenta | Cloudflare Email Service (Email Sending) | Esteban | Binding `EMAIL`, `"remote": true`. Envía a CUALQUIER destinatario, a diferencia de Email Routing —que sigue en `enabled: false`— que solo recibiría. **Reputación «At Risk» desde el día uno**: 10 envíos de prueba con 1 rebote dan 10% contra un umbral de riesgo del 5%, y Cloudflare pausa el envío de la cuenta si no baja. Por eso el reseteo de contraseña solo puede escribir a direcciones que ya estén en `users` (issue #313). Cuota 1000/día. DNS: MX de rebotes, SPF, DKIM y DMARC en `_dmarc` |
+
+| 2026-08-02 | Binding `AI` (Workers AI) + dataset `math-challenge-tutor-usage-ae` | *(ninguno: Workers AI no crea objeto de cuenta; el dataset aparece la primera vez que un Worker le escribe)* | Claude | F6 #136. **Lo que este renglón NO significa:** no se creó el AI Gateway `math-challenge-tutor-gateway`, así que la red de seguridad en dólares **no está activa**. No hace falta para que el tope funcione — el tope por perfil y día lo hace cumplir el Durable Object (plan F6 §5.1, enmienda D-015)— pero sí para el segundo cinturón. Y falta `TUTOR_PD_SECRET` por `wrangler secret put`: **sin él no se llama al modelo en absoluto**, así que el estado de hoy es «camino en vivo apagado por falta de secreto», que es el estado seguro. Tres cosas hay que hacer para encenderlo: crear el gateway, poner el secreto, y marcar el plan de una cuenta como `familia` en `CONFIG_KV` |
 
 > **Regla:** quien crea un recurso de Cloudflare escribe su renglón aquí en el
 > mismo PR (`CLAUDE.md` § Cloudflare).

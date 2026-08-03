@@ -1269,6 +1269,12 @@ cualquier sitio **sin citar D-037** — porque si no se declara, no se distingue
 
 ---
 
+
+> **Enmendada por D-076 (2026-08-02).** «Cero terceros» pasa a «cero terceros
+> en el CÓDIGO del producto». Zaraz está encendido en la zona de Cloudflare y el
+> dueño no puede apagarlo; queda declarado como excepción conocida, no como algo
+> que se cumple. Ver D-076 para la exposición de consentimiento que deja abierta.
+
 ## D-038 — Passkey primero, contraseña como respaldo · 2026-07-31
 
 **Decisión del dueño, tomada en F0 y escrita hoy.** El dueño la contestó al
@@ -2470,3 +2476,167 @@ y está escrita para que no se generalice sola:
 El **pizarrón en línea propio** —entrada nuestra, sin cámara— resuelve el mismo
 problema sin tocar ninguna línea. El dueño quiere los dos; se construye primero
 el pizarrón, y la foto después, con su candado.
+
+---
+
+## D-076 — Zaraz se queda: D-037 pasa de «cero terceros» a «cero terceros en el CÓDIGO» · 2026-08-02
+
+**Decisión del dueño.** Zaraz está encendido en la zona de Cloudflare y él no
+puede apagarlo. Medido, dos veces, el mismo día:
+
+    curl -s -o /dev/null -w '%{http_code}' https://math.kilowatto.com/cdn-cgi/zaraz/s.js
+    → 400   «Invalid Zaraz parameters»
+
+**400, no 404: el endpoint existe.**
+
+### Qué cambia D-037
+
+Decía **cero terceros**. Pasa a decir **cero terceros en el código del
+producto** — que es lo que este repositorio puede garantizar y lo que sus
+auditores comprueban de verdad. La inyección de la zona queda **declarada como
+excepción conocida**, no como algo que se cumple.
+
+La razón de escribirlo y no dejarlo en un issue: **una decisión que el producto
+contradice envenena a las demás.** Quien abra `decisions.md` dentro de un año no
+tendría forma de saber cuáles se cumplen y cuáles son aspiración.
+
+### La exposición que esto deja abierta, dicha una vez
+
+Zaraz pone un identificador en **las mismas páginas donde un padre teclea su
+correo** — las tres puertas de registro y `/entrar/`. En la UE eso normalmente
+exige consentimiento previo, y hoy no hay banner. No es una objeción a la
+decisión: es exposición real, y queda escrita para que se decida a sabiendas
+cuando el tráfico lo justifique.
+
+### Lo que sí se arregló, porque era peor que el propio Zaraz
+
+`audits/live.mjs` afirmaba **«sin beacon inyectado por la zona (D-037)»** y
+pasaba en verde. Buscaba cadenas en el HTML servido, y **Zaraz se inyecta en el
+borde y no deja ninguna**. Un auditor que no puede ver lo que vigila y aun así
+pasa da confianza falsa — es lo que D-070 llama una aserción cierta por
+construcción, con otra cara. Ahora pregunta al endpoint e informa el estado real.
+
+---
+
+## D-077 — La voz de Larry sale con 3 locales de 7, y la pantalla lo dice · 2026-08-02
+
+**Decisión del dueño**, tomada sobre cuatro alternativas y **en contra de mi
+recomendación**, que era sacar la voz de F6 y cerrar la fase con 5 de 6.
+
+Workers AI **no tiene voz verificada para `fr-FR`, `pt-BR`, `pt-PT` ni
+`de-DE`** — cuatro de los siete. D-035 acota el proyecto a Cloudflare, así que
+generar la voz fuera exigiría enmendarla. El dueño eligió **salir con los tres
+que sí cubre** en vez de esperar.
+
+### La condición que añado, y no es opcional
+
+Si la voz sale en 3 de 7, **la pantalla tiene que decirlo en los otros cuatro.**
+Un niño alemán que se encuentra silencio sin explicación no vive un producto
+incompleto: vive uno roto. `mc-20` es explícito en que un pre-lector no puede
+usar una interfaz sin equivalente hablado — así que en esos cuatro locales,
+kinder no debe presentarse como disponible y callarse, sino decir que todavía no
+habla ese idioma.
+
+Sin esa parte, esta decisión sirve a tres niños y deja a cuatro sin salida.
+
+### Lo que esto NO resuelve
+
+- **Kinder sigue bloqueado en 4 de 7 locales.** D-073 ya lo había aplazado, así
+  que hoy no cambia nada que se vea; cambiará el día que kinder se retome.
+- **Nadie ha escuchado todavía ninguna voz.** Hace falta un revisor pedagógico
+  por locale que **oiga** los clips antes de que un niño los oiga. Que existan
+  tres voces técnicamente disponibles no es que tres voces estén aprobadas.
+
+---
+
+## D-078 — La voz de Larry sale con los 7 locales, con `speechSynthesis` · 2026-08-02
+
+**Enmienda D-077, tomada el mismo día, sobre evidencia que estaba en nuestra
+propia investigación y que yo no había puesto sobre la mesa cuando el dueño
+decidió.** D-077 no se equivocó con lo que sabía: se decidió sobre una
+alternativa incompleta.
+
+### Lo que faltaba en D-077
+
+D-077 planteó el problema como «Workers AI cubre 3 de 7 idiomas», y las cuatro
+alternativas que le ofrecí al dueño eran todas variantes de **generar audio en
+el servidor**. `mc-42` §7 documenta un camino que no estaba en ninguna:
+
+| API | iOS Safari | Chrome / Edge / Firefox |
+|---|---|---|
+| `speechSynthesis` | **Soportado desde Safari 7** | Chrome 33+, Edge 14+, Firefox 49+ |
+
+La voz del sistema operativo lee texto generado, **en los siete idiomas, gratis,
+sin red, sin cuota y sin tope de gasto**. No hay clip que almacenar ni pipeline
+que construir.
+
+Que esa fila estuviera en la investigación desde el 31 de julio y no en las
+alternativas es un defecto mío, no del dueño. Es exactamente el patrón que
+`CLAUDE.md` manda evitar: investigar primero, y **preguntar con las alternativas
+explicadas**. Una alternativa que no se explica es una alternativa que no
+existe.
+
+### Lo que se decide
+
+**La voz sale con los siete locales, con `speechSynthesis`.**
+
+### Lo que esto cuesta, y es real
+
+`mc-42` §4 lo dice sin adornos: **la calidad y el inventario de voces son
+propiedad del sistema operativo, no del navegador.** Un Android de gama baja sin
+paquete de voz en portugués cae a una voz peor **en silencio**, y no existe API
+web para forzar la instalación de una. Y el mercado objetivo de este producto es
+justamente Android de gama baja (`mc-47` §5).
+
+O sea: el problema de cobertura **no desaparece, cambia de eje**. D-077 lo tenía
+por idioma —cuatro idiomas mudos para todo el mundo—; aquí es por aparato —todos
+los idiomas hablan en casi todos los aparatos, y en algunos concretos suenan
+peor o no hay voz.
+
+Ese eje es mejor por tres razones medibles, no por gusto:
+
+1. **Nadie queda mudo por su idioma.** Un niño alemán con voz alemana instalada
+   —el caso normal, porque la instala el propio sistema— oye a Larry hoy.
+2. **Se puede detectar en el aparato**, que es donde ocurre. `getVoices()`
+   filtrado por idioma dice la verdad sobre ESE teléfono, y la pantalla puede
+   decirlo. La cobertura de Workers AI no se podía detectar: se sabía o no se
+   sabía.
+3. **Cero gasto y cero red.** Sin tope por perfil, sin latencia, y funciona en
+   avión. `mc-42` §4 lo llama «offline-capable once the OS voice exists».
+
+### La condición de D-077 no se cae: cambia de sitio
+
+D-077 exigía que **la pantalla dijera** dónde no hay voz, y eso sigue en pie
+palabra por palabra. Lo que cambia es cuándo se evalúa: ya no es una lista fija
+de cuatro locales horneada en el build, es una comprobación **en el aparato, en
+el momento**. Si `getVoices()` no devuelve ninguna voz del idioma de la página,
+el botón de escuchar no se ofrece y la pantalla lo dice. Un botón que no suena
+es peor que ningún botón.
+
+### Las líneas rojas que esto toca, y cómo queda cada una
+
+- **Línea roja #1 — nunca micrófono para un menor.** `speechSynthesis` es
+  **salida**. `SpeechRecognition` —la API de entrada, que sí es micrófono— no
+  entra en este producto y un auditor determinista lo vigila por nombre, junto
+  con `getUserMedia`. La enmienda de hoy (D-075) abrió la cámara para un ADULTO
+  verificado y nada más; el micrófono sigue cerrado para todos.
+- **Línea roja #7 — Larry nunca avergüenza.** La voz **no redacta nada**: lee en
+  voz alta exactamente el texto que el servidor ya sirvió y que ya está en
+  pantalla. No hay una copia hablada distinta de la escrita que pudiera decir
+  algo que la escrita no dice, y por tanto tampoco hay una superficie nueva que
+  auditar por tono.
+
+### Lo que esto NO resuelve
+
+- **Nadie ha escuchado todavía ninguna voz** — esto no cambia con D-077. Sigue
+  haciendo falta que una persona por locale **oiga** cómo suena el enunciado
+  matemático real. `mc-34` es la razón: «einundzwanzig» y «quatre-vingt-dix» son
+  problemas de autoría, y una voz de sistema que lea «21» mal en alemán no la
+  arregla ningún prompt.
+- **Kinder sigue aplazado** (D-073). Esto quita el bloqueo técnico que `mc-20`
+  imponía —texto sin equivalente hablado es antipatrón para un pre-lector—, no
+  reordena la fase.
+- **Workers AI no se descarta**, se aplaza. El día que la voz del sistema no
+  alcance para una superficie concreta, `mc-42` §4 ya tiene escrita la
+  recomendación: **híbrido** — clips grabados para el vocabulario fijo y corto,
+  voz del sistema para el texto generado.

@@ -95,7 +95,14 @@ export const CARTAS = [
       "misma: una explicación que elogia la CAPACIDAD («qué listo eres») en vez del proceso, que compara " +
       "con otros, que cuenta las veces que alguien falló, que minimiza el ítem («era fácil») o que menciona " +
       "la velocidad. Ninguna de esas contiene una palabra prohibida por sí sola — es la construcción lo que " +
-      "humilla, y por eso el auditor determinista `larry-nunca-averguenza` no puede cazarlas todas.",
+      "humilla, y por eso el auditor determinista `larry-nunca-averguenza` no puede cazarlas todas. " +
+      "**Y desde F6 #136 esto incluye el camino EN VIVO** (`packages/tutor/`, `api/larry.ts`): el prompt " +
+      "que se le manda al modelo, los ejemplos autorados de cada locale y la compuerta que juzga lo que " +
+      "vuelve. Ahí el riesgo es de otro orden y conviene decirlo — el texto pregenerado lo escribió una " +
+      "persona y lo revisó otra; el texto en vivo no lo ha visto nadie cuando llega a la pantalla, así que " +
+      "una instrucción del prompt que empuje a hablar DE la persona en vez de del pensamiento produce " +
+      "humillación a escala y sin revisor. Mira también el tope de gasto: un aviso al niño de que se " +
+      "agotó su cuota sería monetización apuntada a un menor, y no existe ninguno.",
     ciega_a:
       "Dificultad del contenido. Un problema difícil no es humillación. Y el léxico literal por locale, que " +
       "ya cubre `audits/larry-nunca-averguenza.mjs` con su lista de construcciones — aquí lo que se busca es " +
@@ -109,7 +116,19 @@ export const CARTAS = [
     // `packages/motor/`, que ninguno de los alcances heredados alcanza: sin esta
     // línea, la carta dormía justo sobre el archivo que compone lo que un niño
     // lee al equivocarse.
-    alcance: [...INTERFAZ, ...TEXTOS, ...ESQUEMA, /club|prenda|tablero|leaderboard/i, /explicacion|larry/i],
+    // `explicacion|larry` porque el módulo de explicación vive en `packages/motor/`;
+    // `tutor|en-vivo|gasto|lexico` porque F6 #136 puso el camino en vivo, su
+    // compuerta y su tope en `packages/tutor/`, que ningún alcance heredado
+    // alcanzaba — y ahí el texto llega al niño SIN que nadie lo haya leído.
+    alcance: [
+      ...INTERFAZ,
+      ...TEXTOS,
+      ...ESQUEMA,
+      /club|prenda|tablero|leaderboard/i,
+      /explicacion|larry/i,
+      /packages\/tutor\//,
+      /en-vivo|gasto\.ts|lexico/i,
+    ],
   },
   {
     id: "anti-trampa",

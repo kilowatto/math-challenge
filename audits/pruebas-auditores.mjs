@@ -532,6 +532,130 @@ const CASOS = [
       ),
     espera: "imprime la CLAVE",
   },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // F6 #136 — el camino EN VIVO y el tope de gasto.
+  //
+  // Los ocho casos DEGRADAN el archivo real, por lo mismo que los de arriba: el
+  // camino en vivo se construyó con sus auditores delante, así que un archivo
+  // inventado probaría que el auditor sabe leer un archivo inventado, no que
+  // habría cazado la erosión (D-070).
+  //
+  // Y cada degradación es una que alguien haría de buena fe. Ninguna es
+  // sabotaje: son «un campo más que hace falta para explicar mejor», «reservar
+  // después de llamar, que queda más limpio», «si no viene `usage` no cobramos
+  // nada, que es lo justo». Ésas son las que llegan a producción.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  {
+    // El sobre en vivo deja de ser el sobre del motor y pasa a copiarle los
+    // campos. Es el momento exacto en que nacen dos listas blancas.
+    auditor: "larry-en-vivo",
+    que: "el sobre en vivo copia los campos del sobre sellado en vez de contenerlo",
+    archivo: "packages/tutor/src/en-vivo.ts",
+    parche: (t) =>
+      t.replace(
+        "export interface SobreEnVivo {\n  /** Sellado por el motor. La MISMA lista blanca, no una copia de ella. */\n  sobre: SobreParaLarry;",
+        "export interface SobreEnVivo {\n  acc: 0 | 1;\n  sobre: SobreParaLarry;",
+      ),
+    espera: "SobreEnVivo",
+  },
+  {
+    // El campo que trae los operandos, otra vez, en el otro camino. Es el modo
+    // de falla más probable de los dos: nadie escribe `calcular()`.
+    auditor: "larry-en-vivo",
+    que: "los operandos entran al camino en vivo por un campo nuevo",
+    archivo: "packages/tutor/src/en-vivo.ts",
+    parche: (t) => t.replace("  /** Por qué se llama. Cerrado a dos valores. */", "  vars: Record<string, string>;\n  /** Por qué se llama. Cerrado a dos valores. */"),
+    espera: "campo `vars`",
+  },
+  {
+    // El endpoint devuelve un error donde tenía que devolver la pregenerada. Es
+    // el fallo que deja un hueco en la pantalla de un niño que pidió ayuda.
+    auditor: "larry-en-vivo",
+    que: "una respuesta del camino en vivo se queda sin la explicación pregenerada",
+    archivo: "apps/web/src/pages/api/larry.ts",
+    parche: (t) =>
+      t.replace(
+        'return json({ ok: true, explicacion: pregenerada, via: "pregenerada", motivo: fallo ?? "vacia" });',
+        'return json({ ok: true, via: "pregenerada", motivo: fallo ?? "vacia" });',
+      ),
+    espera: "sin `explicacion`",
+  },
+  {
+    // El id del niño en la metadata del gateway. Nadie lo pondría a propósito;
+    // se pone porque «así se puede depurar qué perfil falló».
+    auditor: "larry-en-vivo",
+    que: "el id del perfil viaja en la metadata del AI Gateway",
+    archivo: "apps/web/src/pages/api/larry.ts",
+    parche: (t) => t.replace("metadata: { pd, banda: tema, locale }", "metadata: { pd, banda: tema, locale, perfil: quien.id }"),
+    espera: "metadata del AI Gateway",
+  },
+  {
+    // La compuerta de salida se queda escrita y sin llamar. Es el bug de
+    // `funcion-sin-llamar`: la regla parece viva porque tiene prueba.
+    auditor: "larry-en-vivo",
+    que: "la compuerta de salida deja de llamarse desde el endpoint",
+    archivo: "apps/web/src/pages/api/larry.ts",
+    parche: (t) =>
+      t.replace(
+        ": juzgarSalida({ texto, locale, banda: tema, lexico: construcciones });",
+        ": [];",
+      ),
+    espera: "juzgarSalida",
+  },
+  {
+    // Sin `usage` no se cobra nada. Es la degradación que suena JUSTA y que
+    // convierte el medidor en un contador de ceros.
+    auditor: "larry-tope-gasto",
+    que: "una llamada sin `usage` se cobra a cero en vez de al máximo de la banda",
+    archivo: "packages/tutor/src/gasto.ts",
+    parche: (t) =>
+      t.replace(
+        '  if (typeof entrada !== "number" || typeof salida !== "number") return costoMaximo(banda);',
+        '  if (typeof entrada !== "number" || typeof salida !== "number") return 0;',
+      ),
+    espera: "contador de ceros",
+  },
+  {
+    // Reservar después de llamar. Queda más limpio de leer y convierte el tope
+    // en «el tope, más una llamada» — y la de más es siempre la más cara.
+    auditor: "larry-tope-gasto",
+    que: "el endpoint reserva después de llamar al modelo en vez de antes",
+    archivo: "apps/web/src/pages/api/larry.ts",
+    parche: (t) =>
+      t.replace(
+        'const reserva = await medirTutor(env.RATE_LIMITER, { pd, banda: tema, tope, accion: "reservar" });',
+        "const reserva = { permitido: true, motivo: \"sin_reserva\" };",
+      ),
+    espera: "no reserva antes de llamar",
+  },
+  {
+    // El plan gratis con un gusto. D-021 ya lo respondió y un diseño de F6 lo
+    // propuso igual, sin notarlo.
+    auditor: "larry-tope-gasto",
+    que: "el plan gratis recibe llamadas en vivo, contra D-021",
+    archivo: "packages/tutor/src/gasto.ts",
+    parche: (t) =>
+      t.replace(
+        "    PRIMARIA: { llamadas: 0, microdolares: 0 },\n    SECUNDARIA: { llamadas: 0, microdolares: 0 },",
+        "    PRIMARIA: { llamadas: 12, microdolares: 3000 },\n    SECUNDARIA: { llamadas: 0, microdolares: 0 },",
+      ),
+    espera: "D-021",
+  },
+  {
+    // El medidor falla ABIERTO. Es la copia mecánica de `consultarLimite`, que
+    // sí falla abierto y a propósito — y aquí eso es barra libre de inferencia.
+    auditor: "larry-tope-gasto",
+    que: "el medidor de gasto falla ABIERTO cuando su objeto no responde",
+    archivo: "apps/web/src/lib/ratelimiter.ts",
+    parche: (t) =>
+      t.replace(
+        'const cerrado: MedidaTutor = { ...ESTADO_VACIO, permitido: false, motivo: "sin_medidor" };',
+        'const cerrado: MedidaTutor = { ...ESTADO_VACIO, permitido: true, motivo: "sin_medidor" };',
+      ),
+    espera: "fallar CERRADO",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

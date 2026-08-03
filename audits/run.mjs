@@ -168,6 +168,30 @@ const ACTIVE = [
   // verdad, en los siete locales, y juzga la cadena que un niño leería.
   ["larry-nunca-calcula",     "Larry recibe el veredicto, nunca los operandos", "línea roja #7, D-004, D-074, mc-37"],
   ["larry-nunca-averguenza",  "ninguna cadena de explicación humilla",          "línea roja #7, mc-11, D-022, #133"],
+
+  // ─── Los dos de #136, y por qué NO nacen verdes del todo ─────────────────
+  //
+  // El camino en vivo es la primera pieza de este producto en la que un modelo
+  // le escribe a un niño algo que **nadie ha leído antes**. Los dos auditores de
+  // arriba miran texto que una persona escribió y otra revisó; estos dos miran
+  // la maquinaria que decide si se llama, con qué se llama, cuánto se puede
+  // gastar, y qué se hace con lo que vuelve.
+  //
+  // `larry-en-vivo` es estructural y de frontera: que el sobre del camino en
+  // vivo sea EL MISMO sobre sellado del pregenerado —no uno parecido—, que la
+  // compuerta de salida exista y se llame, que ningún camino de vuelta del
+  // endpoint se quede sin explicación, y que nada del niño viaje en la metadata
+  // del gateway. `larry-tope-gasto` mira lo que solo se descubre por la factura:
+  // que se reserve antes de gastar, que un `usage` ausente se cobre al máximo y
+  // nunca a cero, que el medidor falle CERRADO, y que la telemetría de costo no
+  // indexe a nadie.
+  //
+  // Uno de los dos nació ROJO y conviene decirlo: `larry-tope-gasto` bloqueaba
+  // porque `borrado-cuatro-sistemas` no tenía a los Durable Objects en su lista
+  // de sistemas, así que un runbook de borrado podía cubrir «los cuatro» y dejar
+  // intacto el modelo adaptativo de un niño. Se arregló añadiendo el quinto.
+  ["larry-en-vivo",           "el camino en vivo no calcula y siempre cae a la pregenerada", "líneas rojas #2 y #7, D-004, D-035, #136"],
+  ["larry-tope-gasto",        "el tope de gasto por perfil y día se hace cumplir",           "líneas rojas #2 y #4, D-015, D-021, #136"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -248,6 +272,18 @@ for (const prueba of [
   // siete autorías y no una copiada seis veces (D-022).
   "packages/tutor/src/prefijo.prueba.mjs",
   "packages/tutor/src/voz.prueba.mjs",
+  // F6 #136. La de `en-vivo` mide las compuertas contra los 119 mensajes ya
+  // autorados —875 combinaciones de texto × banda— y exige CERO descartes: una
+  // compuerta que marca texto revisado por humano sirve la pregenerada siempre,
+  // y entonces la capa en vivo es decorativa sin que nadie lo note. Fue esa
+  // medición la que corrigió dos reglas del diseño.
+  //
+  // La de `gasto` no describe el tope: lo DEMUESTRA. Diez mil peticiones
+  // seguidas por banda, con el proveedor callando `usage` la mitad de las veces,
+  // y el gastado sin pasar del tope ni una sola vez. Un tope que solo se
+  // describe se descubre roto por la factura.
+  "packages/tutor/src/en-vivo.prueba.mjs",
+  "packages/tutor/src/gasto.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

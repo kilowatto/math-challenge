@@ -10,9 +10,13 @@
 //   2. **KV** — sesiones y cachés.
 //   3. **R2** — exportaciones y objetos generados.
 //   4. **Analytics Engine** — intentos y señales derivadas.
+//   5. **Durable Objects** — estado vivo POR NIÑO: el modelo adaptativo
+//      (`math-challenge-learner-do`) y, desde F6 #136, el medidor de gasto del
+//      tutor. Éste se añadió el 2026-08-02 y hasta entonces no estaba en la
+//      lista, así que un runbook que cubriera los otros cuatro habría salido en
+//      verde dejando el modelo de un niño intacto (plan F6 §5.3).
 //
-// El derecho de supresión de GDPR-K, COPPA y LGPD no distingue entre esos
-// cuatro. Y borrar de D1 es lo natural: es donde está la fila que se ve. Los
+// El derecho de supresión de GDPR-K, COPPA y LGPD no distingue entre ésos. Y borrar de D1 es lo natural: es donde está la fila que se ve. Los
 // otros tres se olvidan porque no se ven — y un dato de menor que sobrevive en
 // R2 después de que el padre pidió borrarlo es un incumplimiento con nombre.
 //
@@ -33,6 +37,32 @@ const SISTEMAS = [
   ["KV", /\b(KV|kv)\b|\.delete\s*\(/],
   ["R2", /\b(R2|r2|BUCKET|bucket)\b/],
   ["Analytics Engine", /\b(AE|analytics_?engine|writeDataPoint|ANALYTICS)\b/i],
+  // ─── El quinto, añadido en F6 #136 ───────────────────────────────────────
+  //
+  // El nombre de este auditor dice CUATRO y ahora mira cinco, y el nombre se
+  // queda: renombrarlo rompería su renglón en `run.mjs`, su caso en
+  // `pruebas-auditores.mjs` y las citas que ya lo mencionan. Lo que importa no
+  // es el número del título, es que no falte ninguno.
+  //
+  // **El quinto son los Durable Objects, y hasta hoy no estaban.** Ya hay dos
+  // que guardan estado POR NIÑO: `math-challenge-learner-do` (el modelo
+  // adaptativo, un objeto por `child_profile_id`) y, desde F6, el medidor de
+  // gasto del tutor dentro de `math-challenge-ratelimiter-do`. Ninguno vive en
+  // D1, en KV, en R2 ni en Analytics Engine, así que un runbook que cubriera los
+  // cuatro de arriba **los dejaría intactos** y este auditor habría salido en
+  // verde diciendo que todo estaba cubierto.
+  //
+  // El plan de F6 §5.3 lo señala y añade un dato que conviene no perder: este
+  // repo tenía DOS listas distintas de «los cuatro sistemas» —la de este archivo
+  // y la de D-035, que dice D1, DO, Analytics Engine y Vectorize— y nadie lo
+  // había notado. Ésta es la que corre en cada commit, así que ésta es la que
+  // tenía que crecer.
+  //
+  // Añadirlo hoy sale gratis y es a propósito: hay **cero** archivos de borrado
+  // en el repo, así que esta línea no bloquea nada ahora y bloqueará el día que
+  // alguien escriba el primer runbook — que es exactamente cuando se comete el
+  // error, pensando en la fila de D1 que se ve y no en el objeto que no se ve.
+  ["Durable Objects", /\b(durable[\s_-]?object|DurableObject|idFromName|LEARNER_DO|RATE_LIMITER)\b/i],
 ];
 
 const ES_BORRADO = /(erasure|borrado|deletion|delete-?account|supresion|right-?to-?be-?forgotten|olvido|purge)/i;
@@ -45,7 +75,7 @@ const notas = [];
 
 if (candidatos.length === 0) {
   notas.push("todavía no hay runbook ni código de borrado; el auditor está listo para el primero");
-  notas.push("los cuatro sistemas: D1, KV, R2 y Analytics Engine (mc-32)");
+  notas.push("los sistemas vigilados: D1, KV, R2, Analytics Engine y Durable Objects (mc-32, plan F6 §5.3)");
   notas.push("Analytics Engine NO tiene DELETE: su retención es por conjunto de datos, no por fila");
 } else {
   for (const archivo of candidatos) {
@@ -54,13 +84,13 @@ if (candidatos.length === 0) {
 
     if (faltan.length > 0) {
       problemas.push(
-        `${archivo}: no menciona ${faltan.join(", ")}. El borrado tiene que cubrir los CUATRO ` +
-          "sistemas donde este producto guarda datos (mc-32). Los que se olvidan son los que no " +
+        `${archivo}: no menciona ${faltan.join(", ")}. El borrado tiene que cubrir TODOS los ` +
+          "sistemas donde este producto guarda datos (mc-32, plan F6 §5.3). Los que se olvidan son los que no " +
           "se ven: borrar de D1 es lo natural porque ahí está la fila. Un dato de menor que " +
           "sobrevive en R2 tras la petición del padre es un incumplimiento con nombre (mc-25).",
       );
     } else {
-      notas.push(`${archivo}: cubre los cuatro sistemas`);
+      notas.push(`${archivo}: cubre los ${SISTEMAS.length} sistemas`);
     }
 
     // Prometer un DELETE en Analytics Engine es prometer lo imposible.

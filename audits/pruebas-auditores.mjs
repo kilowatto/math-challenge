@@ -365,37 +365,87 @@ const CASOS = [
     contenido: "---\nconst x = 1;\n---\n<div>{x}<Marca locale=\"en\" /></div>\n",
     espera: "usa <Marca>",
   },
+  // ─── `opciones-contestables`: siete casos, y ninguno toca un archivo de
+  //     mentira ────────────────────────────────────────────────────────────
+  //
+  // El auditor cruza cuatro fuentes que escriben personas distintas —el banco,
+  // `Pantalla.astro`, `presentarItem` y los catálogos del reto— porque la
+  // comprobación de una sola («toda opción no numérica trae glifo») es la que
+  // `validarItem` ya hace, y sería el banco comparado consigo mismo (D-070).
+  //
+  // Estos casos son la prueba de que cada cruce muerde: cuatro degradan el
+  // banco, dos la pantalla y uno la ingesta. Si alguno pasara en verde, la
+  // fuente que degrada no se estaría leyendo de verdad.
   {
-    // Mitad A de #349: una cadena que no existe en ningún catálogo de i18n
-    // viaja cruda al botón. Se degrada K11 —una habilidad SIN deuda declarada—
-    // para que el caso no lo absorba la lista de conocidos.
+    // Regresión directa de #349: sin `dibujos`, `presentarItem` cae a
+    // `texto: String(v)` y el botón vuelve a decir `casilla3` — que es
+    // literalmente lo que el dueño vio en su teléfono.
     auditor: "opciones-contestables",
-    que: "una habilidad que sirve un identificador interno como opción",
+    que: "una opción de cadena que se serviría como su identificador interno",
     archivo: "packages/motor/src/banco-kinder.ts",
-    parche: (t) => t.replace("respuesta: { valor: a + b, tol: 0 },", 'respuesta: { valor: `opcion_${a + b}`, tol: 0 },'),
-    espera: "K11 · opción con identificador interno",
+    parche: (t) => t.replace("      dibujos,\n", "      dibujos: {},\n"),
+    espera: "K13 · opción servida como su identificador",
   },
   {
-    // Mitad B, y es la que prueba que la SEGUNDA FUENTE se lee de verdad: no se
-    // toca el banco, se toca el renderizador. Si `Pantalla.astro` empieza a
-    // dibujar `toca_para_contar` con figuras, las opciones numéricas de K03
-    // dejan de ser contestables — y el auditor tiene que verlo sin que nadie le
-    // diga que K03 cambió.
+    // #347, tal cual ocurrió: un glifo escrito en la pantalla es una segunda
+    // lista del mismo hecho, y las dos listas se separan sin que nada falle.
+    // No se toca el banco: se degrada el RENDERIZADOR.
     auditor: "opciones-contestables",
-    que: "la pantalla empieza a dibujar otro formato con figuras y sus opciones siguen siendo índices",
+    que: "la pantalla vuelve a escribir un glifo suyo en vez de dibujar el del ítem",
     archivo: "apps/web/src/components/reto/Pantalla.astro",
-    parche: (t) => t.replace('cajita("pato", "🦆")', 'cajita("figura", "🦆")'),
-    espera: "K03 · escena de figuras",
+    parche: (t) => t.replace("b.textContent = glifo;", 'b.textContent = "🦆";'),
+    espera: "la pantalla inventa el glifo",
   },
   {
-    // Y el control de la propia lista de deuda: si el fallo declarado deja de
-    // reproducirse, el renglón sobra y el auditor BLOQUEA hasta que se borre.
-    // Sin esto, una lista de excepciones crece y nunca se vacía.
+    // El lado banco del mismo cruce: la pantalla lee `vars.glifo` y el ítem
+    // deja de traerlo. No falla, no avisa — cae al respaldo y dibuja un punto
+    // negro donde el enunciado dijo «piedrita».
     auditor: "opciones-contestables",
-    que: "una deuda declarada que ya no se reproduce y sigue en la lista",
+    que: "el banco deja de mandar el glifo que la pantalla lee",
     archivo: "packages/motor/src/banco-kinder.ts",
-    parche: (t) => t.replace("K06, K07, K08,", "K06, K08,"),
-    espera: "YA NO SE REPRODUCE",
+    parche: (t) => t.replace("vars: { n, glifo: GLIFOS_CONTAR[cosa] ?? GLIFOS_CONTAR[0] },", "vars: { n },"),
+    espera: "K03 · la pantalla dibuja esta escena con vars.glifo",
+  },
+  {
+    // Y el mismo cruce degradando el otro lado: la pantalla empieza a leer una
+    // variable que nadie manda. El auditor tiene que verlo sin que nadie le
+    // diga que la pantalla cambió.
+    auditor: "opciones-contestables",
+    que: "la pantalla empieza a leer una variable de glifo que el banco no manda",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) => t.replace('glifoDe(v, "glifoB")', 'glifoDe(v, "glifoC")'),
+    espera: "K05 · la pantalla dibuja esta escena con vars.glifoC",
+  },
+  {
+    // El bug silencioso de #347: la fila del patrón se dibuja con una lista y
+    // las opciones con otra. Las dos son correctas por separado, y la respuesta
+    // correcta no está en pantalla.
+    auditor: "opciones-contestables",
+    que: "la opción dibuja una figura que no aparece en la escena",
+    archivo: "packages/motor/src/banco-kinder.ts",
+    parche: (t) => t.replace('glifo: GLIFO_DE_FORMA[figurasDelCiclo[k]] ?? "●",', 'glifo: "★",'),
+    espera: "K14 · la opción dibuja algo que no está en la escena",
+  },
+  {
+    // El cable entre el ítem y el botón. Renombrar un campo en la ingesta no
+    // rompe nada visible: sale `undefined` y el montón se dibuja con una sola
+    // figura, así que «¿de qué lado hay más?» vuelve a ser una moneda al aire.
+    auditor: "opciones-contestables",
+    que: "la ingesta renombra un campo del dibujo y la pantalla sigue leyendo el viejo",
+    archivo: "apps/ingest/src/index.ts",
+    parche: (t) => t.replace("cuantos: dib.cuantos ?? 1,", "repite: dib.cuantos ?? 1,"),
+    espera: "la pantalla lee `o.dibujo.cuantos`",
+  },
+  {
+    // Fallar CERRADO. Si la pantalla cambia de forma, el auditor no puede
+    // comprobar nada — y entonces bloquea, en vez de pasar en verde sobre el
+    // banco entero. Es el caso que abrió esta reescritura: la tabla `FIGURAS`
+    // que el auditor anterior leía desapareció, porque ERA el bug.
+    auditor: "opciones-contestables",
+    que: "el renderizador cambia de forma y el auditor se queda sin segunda fuente",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) => t.replace("function pintarEscena", "function pintarLaEscena"),
+    espera: "no pude leer una de las fuentes",
   },
 ];
 

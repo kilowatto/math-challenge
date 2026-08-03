@@ -32,9 +32,10 @@
 //   · DINÁMICO — **ejecuta** el motor sobre la matriz entera de estados en los
 //     que puede estar un aprendiz: 8 perfiles × 7 días × 5 bandas × 6 formas del
 //     resumen de F4 (incluida su ausencia) × 6 formas del resumen de liga. En
-//     cada una exige tres misiones, distintas entre sí, y **todas cumplibles con
-//     los insumos de ese día**. Es la única forma de saberlo: la regla no se lee
-//     en el código, se mide sobre la salida.
+//     cada una exige las misiones de su banda (D-103: 3 en PRIMARIA y
+//     SECUNDARIA, 4 en SERIO/JR/PRO), distintas entre sí, y **todas cumplibles
+//     con los insumos de ese día**. Es la única forma de saberlo: la regla no se
+//     lee en el código, se mide sobre la salida.
 //
 // ─── LO QUE ESTE AUDITOR NO PUEDE VER ─────────────────────────────────────
 //
@@ -42,8 +43,8 @@
 //    jugar un modo que no jugaste esta semana, y si el banco no tiene retos de
 //    ese modo en esa banda, la misión es formalmente elegible e imposible en la
 //    práctica. Eso es contenido (mc-40) y lo revisa una persona.
-//  · Si tres es el número correcto de misiones. Es `[criterio propio]` con la
-//    evidencia escrita al lado, y es pregunta abierta al dueño en docs/dudas.md.
+//  · Si 3 y 4 son los números correctos. Son `[criterio propio]` con la
+//    evidencia escrita al lado, decididos por el dueño el 2026-08-03 (D-103).
 
 import { archivos, leer, informar, sinComentarios, existe } from "./lib/repo.mjs";
 import {
@@ -163,10 +164,10 @@ if (existe(MODULO)) {
               continue;
             }
 
-            if (misiones.length !== MISIONES_POR_DIA && vacios++ < 3) {
+            if (misiones.length !== MISIONES_POR_DIA[banda] && vacios++ < 3) {
               problemas.push(
                 `${MODULO}: (${perfil}, ${dia}, ${banda}) recibió ${misiones.length} misión(es) y ` +
-                  `deben ser ${MISIONES_POR_DIA}. #217: ningún slot queda vacío, porque una misión ` +
+                  `deben ser ${MISIONES_POR_DIA[banda]} (D-103: 3 en menor, 4 en adulta). #217: ningún slot queda vacío, porque una misión ` +
                   "que no se puede cumplir es peor que no tener misión — y ninguna es peor todavía.",
               );
             }
@@ -175,7 +176,7 @@ if (existe(MODULO)) {
             if (new Set(tipos).size !== tipos.length && repetidos++ < 3) {
               problemas.push(
                 `${MODULO}: (${perfil}, ${dia}, ${banda}) recibió un tipo repetido: ${tipos.join(", ")}. ` +
-                  "Tres tarjetas con la misma misión no son tres misiones.",
+                  "Varias tarjetas con la misma misión no son misiones distintas.",
               );
             }
 
@@ -260,11 +261,12 @@ if (existe(MODULO)) {
       ? PRECONDICION[t](null, { enLiga: false, dueloOptIn: false, metaColectivaHoy: null })
       : false,
   );
-  if (incondicionales.length <= MISIONES_POR_DIA) {
+  const maximoDeSlots = Math.max(...Object.values(MISIONES_POR_DIA));
+  if (incondicionales.length <= maximoDeSlots) {
     problemas.push(
       `${MODULO}: solo ${incondicionales.length} tipo(s) no tienen precondición ` +
-        `(${incondicionales.join(", ")}) y hacen falta más de ${MISIONES_POR_DIA} para garantizar ` +
-        "tres slots distintos a un perfil nuevo. #217 dejaría de poder cumplirse.",
+        `(${incondicionales.join(", ")}) y hacen falta más de ${maximoDeSlots} (el máximo de D-103) para garantizar ` +
+        "slots distintos a un perfil nuevo. #217 dejaría de poder cumplirse.",
     );
   }
   for (const t of ORDEN_DE_RESPALDO) {
@@ -278,7 +280,7 @@ if (existe(MODULO)) {
 
   notas.push(
     `ejecutado: ${combinaciones} estados de aprendiz (perfil × día × banda × F4 × liga), ` +
-      `${MISIONES_POR_DIA} misiones distintas y cumplibles en todos`,
+      `las misiones de su banda (D-103: 3 en PRIMARIA/SECUNDARIA, 4 en SERIO/JR/PRO) distintas y cumplibles en todos`,
   );
   notas.push(`${incondicionales.length} tipos sin precondición: ${incondicionales.join(", ")}`);
   notas.push("KINDER: 0 misiones en toda la matriz, y `tieneMenuDeMisiones` lo dice sin adivinar");
@@ -299,7 +301,7 @@ informar({
     "si la misión es cumplible con el CONTENIDO que existe. `descubre` puede ser formalmente " +
       "elegible e imposible si el banco no tiene retos de ese modo en esa banda — eso es " +
       "contenido (mc-40) y lo revisa una persona.",
-    "si tres es el número correcto de misiones simultáneas. Es `[criterio propio]` con la " +
-      "evidencia escrita al lado, y es pregunta abierta al dueño en docs/dudas.md.",
+    "si 3 y 4 son los números correctos de misiones simultáneas. Son `[criterio propio]` con la " +
+      "evidencia escrita al lado, decididos por el dueño el 2026-08-03 (D-103).",
   ],
 });

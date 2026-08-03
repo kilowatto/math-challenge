@@ -15,10 +15,9 @@
 -- POR NOMBRE DE ARCHIVO: una migración ya marcada como aplicada nunca vuelve
 -- a correr, y el cambio se perdería en silencio (la lección de la 0008).
 --
--- migration-safety-reserva: 0013 — repartida al frente de kinder, que la está
--- reconstruyendo en paralelo; en cuanto su archivo exista, este marcador
--- bloquea y hay que borrarlo (es la mitad que impide que la excepción se
--- vuelva permanente).
+-- (La 0013 era de este frente una reserva `migration-safety-reserva` mientras
+-- kinder la construía en paralelo; aterrizó en `main` y el marcador se borró
+-- aquí mismo, como el mecanismo exige: la excepción nunca se vuelve permanente.)
 --
 -- ─── La restricción estructural: NO EXISTE child_profile_id aquí ───────────
 --

@@ -63,6 +63,9 @@ import {
   type ClavePestana,
 } from "../../../lib/pestanas-privadas";
 import { ruta } from "../../../i18n/rutas";
+import MenuMisiones from "../../../components/misiones/MenuMisiones.astro";
+import ResumenMisiones from "../../../components/misiones/ResumenMisiones.astro";
+import { leerMisionesDeHoy, cierreDeHoy, BONO_DIA_COMPLETO } from "../../../lib/misiones-dia";
 
 const { locale: raw } = Astro.params;
 if (!isLocale(raw)) return Astro.redirect("/en/");
@@ -177,6 +180,41 @@ const vista: ClavePestana =
 const pestanas = pestanasPrivadas(locale, tieneHijos, vista);
 
 /*
+ * ─── Las misiones del día del propio adulto (F7 · #211) ─────────────────────
+ *
+ * Se anuncian al EMPEZAR la sesión y se resumen al TERMINARLA — esta página es
+ * los dos extremos: de aquí se sale hacia `/app/practicar/` y aquí se vuelve al
+ * tocar «terminar» (`salirA` de la pantalla del reto). El reto activo, en
+ * medio, no las conoce por ninguna vía (#221, `audits/mision-silenciosa.mjs`).
+ *
+ * El caso real de hoy es el adulto aprendiz: SERIO es la única banda ≥ PRIMARIA
+ * con contenido (D-034). KINDER no tiene menú (#213) y el punto de montaje del
+ * niño de PRIMARIA en adelante queda diferido — su única pantalla después del
+ * PIN es la del reto activo, donde #221 prohíbe las misiones. Dicho en el PR,
+ * no escondido aquí.
+ *
+ * Solo se lee en la vista «Practicar»: en las demás nadie las ve y sería una
+ * consulta regalada. Si no hay base o la lectura falla, `leerMisionesDeHoy`
+ * devuelve `null` y sencillamente no se pinta el bloque — nunca se le niega el
+ * juego a nadie por un contador.
+ */
+const misionesHoy =
+  vista === "practicar" && env?.DB
+    ? await leerMisionesDeHoy(env, { id: sesion.userId, esAdulto: true }, "SERIO", Date.now())
+    : null;
+const entradasMenu = (misionesHoy?.entradas ?? []).map((e) => ({
+  tipo: e.mision.tipo,
+  xp: e.mision.xp,
+  meta: e.mision.meta,
+  progreso: e.estado.progress,
+  completada: e.estado.completed === 1,
+}));
+const cierreHoy = misionesHoy ? cierreDeHoy(misionesHoy) : null;
+const logrosHoy = (misionesHoy?.entradas ?? [])
+  .filter((e) => e.estado.completed === 1)
+  .map((e) => ({ tipo: e.mision.tipo, xp: e.mision.xp }));
+
+/*
  * El título y la entradilla dependen de si HAY HIJOS, no del tipo de cuenta.
  *
  * El dueño lo leyó en su teléfono: «me sigue diciendo algo de hijos. No tengo
@@ -260,8 +298,7 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
         <h2>{m.practicarTitulo}</h2>
         <p class="muted">{m.practicarLead}</p>
         <p class="muted">{m.practicarAviso}</p>
-        <a class="boton primario" href={`/${locale}/app/practicar/`}>{m.casaPracticarCta}</a>
-        {/*
+        <a class="boton primario" href={`/${locale}/app/practicar/`}>{m.casaPracticarCta}</a>{/*
           El mapa de progreso del propio adulto (F7, #230-#234). No es la
           pestaña «Progreso» —esa es F8 y es lo que un padre ve de sus hijos—:
           es lo que TÚ ves de tu propio aprendizaje, y hasta ahora el adulto que
@@ -271,6 +308,32 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
           porque «Practicar» ya es donde vive todo lo del adulto que juega solo.
         */}
         <a class="boton" href={`/${locale}/app/mapa/`}>{m.casaMapaCta}</a>
+      </section>
+    )}
+
+    {/*
+      Las misiones del día, ANTES de entrar al reto (el anuncio del principio de
+      la sesión) y el resumen de lo logrado hoy (el cierre, al volver). Ninguno
+      de los dos vive dentro del reto activo: #221, §3.6 del diseño.
+    */}
+    {vista === "practicar" && entradasMenu.length > 0 && (
+      <section class="bloque">
+        <MenuMisiones
+          locale={locale}
+          entradas={entradasMenu}
+          metaColectiva={misionesHoy?.resumenLiga.metaColectivaHoy ?? null}
+        />
+      </section>
+    )}
+    {vista === "practicar" && cierreHoy !== null && cierreHoy.logradas.length > 0 && (
+      <section class="bloque">
+        <ResumenMisiones
+          locale={locale}
+          logros={logrosHoy}
+          xpTotal={cierreHoy.xp}
+          diaCompleto={cierreHoy.diaCompleto}
+          xpBono={BONO_DIA_COMPLETO}
+        />
       </section>
     )}
 

@@ -321,6 +321,13 @@ const ACTIVE = [
   // texto y comprueba las fronteras (sin `childProfileId` en el camino de
   // envío, `silenciado_at` de una sola vía, la constante de tope por nombre).
   ["recordatorio-sin-culpa",    "el push es al padre, 1/día, sin culpa, silencio permanente", "issue #207, D-014, D-026, D-105, mc-19"],
+  // ─── La superficie de F7 · Misiones diarias (#220, #222, #227) ───────────
+  //
+  // Nace VERDE como los cuatro del motor: la superficie se construyó con él
+  // delante. Vigila la mitad que el motor no alcanza — que la PANTALLA no
+  // reconstruya el denominador que `cierreDelDia()` se niega a devolver, y que
+  // ningún texto de locale sugiera un cofre ni escriba un número a mano.
+  ["mision-resumen-sin-ceros", "el resumen lista solo lo logrado; el bono es una suma", "#220, #222, #227, línea roja #7"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

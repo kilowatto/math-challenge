@@ -1598,12 +1598,12 @@ const CASOS = [
     // El fallo que el hueco existe para cazar, y que ninguna reserva declara:
     // una migración que ya corrió en algún ambiente y se borró del repo.
     //
-    // Reapuntado de 0014 a 0016 el 2026-08-03: la 0014 dejó de ser un número
-    // libre — es la migración REAL del recordatorio push (F7 #207), que además
-    // declara la reserva de la 0013— y el caso chocó con ella: el auditor
-    // bloqueaba, pero por «número duplicado» y no por el hueco, que es lo que
-    // este caso prueba. Con la 0014 presente y la 0013 reservada, una sonda en
-    // 0016 deja la 0015 sin declarar, y ese es el hueco que tiene que cazar.
+    // Reapuntado a 0016 el 2026-08-03: con la 0013 (sendero kinder) y la 0014
+    // (recordatorio push) ya aterrizadas, una sonda en 0016 deja la 0015 sin
+    // declarar, y ese es el hueco que tiene que cazar. El número se mueve con
+    // cada migración que aterriza, y eso es a propósito: el caso apunta al
+    // PRIMER hueco libre por delante de la última migración. Reapuntado, no
+    // borrado (un control cuyo objetivo se movió es un auditor apagado).
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
     archivo: "migrations/0016_prueba_hueco.sql",
@@ -1630,6 +1630,93 @@ const CASOS = [
     // nada, que es un auditor apagado en silencio. El arnés lo cazó al integrar.
     parche: (t) => "-- migration-safety-reserva: 0008 — reserva rancia plantada a propósito por el arnés\n" + t,
     espera: "La reserva sobra",
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // F7 · Misiones diarias — la superficie (#220, #222, #227, #229).
+  //
+  // Los cuatro casos DEGRADAN archivos REALES —el componente del resumen y los
+  // JSON de locale que este PR introduce— por la misma razón que los del
+  // motor (D-070): el auditor nació verde porque la superficie se construyó
+  // con él delante, y un archivo inventado solo probaría que sabe leer un
+  // archivo inventado.
+  //
+  // Cada degradación es una que alguien haría de buena fe: «pongamos cuántas
+  // van para que se vea el avance», «el bono merece más emoción», «el tres ya
+  // lo sabemos, escríbelo», «al alemán le sobra la meta».
+  // ─────────────────────────────────────────────────────────────────────────
+
+  {
+    // El «para que se vea el avance» del resumen. Es la degradación más
+    // natural de todas: el menú SÍ muestra «2 de 3», así que llevarlo al
+    // resumen parece consistencia — y es exactamente el «0/3» que #222
+    // prohíbe: el veredicto de lo que faltó, con la voz del contador.
+    auditor: "mision-resumen-sin-ceros",
+    que: "el resumen de fin de día recibe el progreso y puede pintar un «0 de 3»",
+    archivo: "apps/web/src/components/misiones/ResumenMisiones.astro",
+    parche: (t) =>
+      t.replace(
+        "  /** XP total del día por misiones, bono incluido. */\n  xpTotal: number;",
+        "  /** XP total del día por misiones, bono incluido. */\n  xpTotal: number;\n  progreso: number;",
+      ),
+    espera: "denominador",
+  },
+  {
+    // La emoción del bono. «Que se sienta como un premio» es como entra la
+    // metáfora siempre — y #220 la prohíbe aunque el contenido sea conocido:
+    // abrir algo SUGIERE azar (mc-43, hallazgo 5).
+    auditor: "mision-resumen-sin-ceros",
+    que: "el bono del día se presenta como un cofre que se abre",
+    archivo: "apps/web/src/i18n/misiones/en.json",
+    parche: (t) =>
+      t.replace(
+        '"misiones.resumen.bono": "All of today\'s missions done — that\'s {xp} XP more"',
+        '"misiones.resumen.bono": "Open your chest — {xp} XP inside"',
+      ),
+    espera: "cofre",
+  },
+  {
+    // El número escrito a mano. «La meta es tres, todos lo sabemos» — y el
+    // día que la meta cambie a cuatro, es-MX sigue diciendo tres mientras los
+    // demás locales preguntan al motor. #227: todo número visible pasa por
+    // `numeros.ts`, nunca se escribe a mano.
+    auditor: "mision-resumen-sin-ceros",
+    que: "una meta escrita a mano en el texto de es-MX en vez de un marcador",
+    archivo: "apps/web/src/i18n/misiones/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"mision.volumen.progreso": "{n} de {meta} ejercicios contestados"',
+        '"mision.volumen.progreso": "{n} de 3 ejercicios contestados"',
+      ),
+    espera: "dígito",
+  },
+  {
+    // El marcador que se pierde entre locales. «Al alemán le queda largo,
+    // quita lo de la meta» — y de-DE deja de mostrar la meta para siempre, en
+    // silencio, con el gate verde.
+    auditor: "mision-resumen-sin-ceros",
+    que: "de-DE pierde el marcador {meta} que los demás locales sí muestran",
+    archivo: "apps/web/src/i18n/misiones/de-DE.json",
+    parche: (t) =>
+      t.replace(
+        '"mision.volumen.progreso": "{n} von {meta} Aufgaben beantwortet"',
+        '"mision.volumen.progreso": "{n} Aufgaben beantwortet"',
+      ),
+    espera: "marcadores",
+  },
+  {
+    // Y el que vigila que el léxico de la racha también cubra los textos de
+    // misión (D-081 condición 3 extendida a misiones): la urgencia fabricada
+    // no deja de serlo porque diga «misión» en vez de «racha».
+    auditor: "racha-lexico",
+    que: "una cuenta regresiva de misión en el texto de es-MX",
+    archivo: "apps/web/src/i18n/misiones/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"misiones.titulo": "Las misiones de hoy"',
+        '"misiones.titulo": "Te quedan unas horas para tus misiones"',
+      ),
+    espera: "urgencia",
   },
   {
     // La excepción de D-106 es POR MARCADOR: sin el renglón escrito, nombrar
@@ -1692,6 +1779,19 @@ const CASOS = [
     archivo: "apps/web/src/pages/api/push.ts",
     parche: (t) => t.replace("silenciado_at = excluded.silenciado_at,", "silenciado_at = NULL,"),
     espera: "silenciado_at",
+  },
+
+  // ─── F7 · El sendero de racha de KINDER (#205) ───────────────────────────
+  {
+    // La degradación es exactamente la que el issue prohíbe: el componente cuyo
+    // único trabajo es NO mostrar un número, mostrándolo. Se degrada el archivo
+    // REAL por lo mismo que los casos de misiones de arriba — uno inventado
+    // solo probaría que el auditor sabe leer un archivo inventado (D-070).
+    auditor: "kinder-sin-examen",
+    que: "el sendero de kinder pinta el acumulado de días como cifra",
+    archivo: "apps/web/src/components/racha/SenderoRacha.astro",
+    parche: (t) => t.replace("</ol>", "<span>{diasJugadosTotal}</span>\n</ol>"),
+    espera: "cifra de racha",
   },
 ];
 

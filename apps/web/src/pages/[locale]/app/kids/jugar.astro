@@ -58,15 +58,40 @@
  * `audits/child-free-text.mjs` lo marcó. Tenía razón y no se tocó la regla: esa
  * comprobación mira el archivo entero a propósito, porque una etiqueta dentro de
  * un comentario es una que alguien va a descomentar.)
+ *
+ * ─── El sendero de la racha (#205) ───────────────────────────────────────────
+ *
+ * En KINDER la racha no es un número: es Larry caminando por el sendero de la
+ * Sabana, un paso por día jugado (D-019, `mc-43` recomendación 8). La franja de
+ * arriba la pinta `components/racha/SenderoRacha.astro` con
+ * `child_streak.days_played_total` — el acumulado que NUNCA baja, así que el
+ * sendero no se detiene con un escudo ni retrocede cuando la racha se reinicia
+ * (`mc-43` §6). Se pinta al cargar y no se repinta en la sesión, la misma regla
+ * que #206 fija para el número en las bandas grandes.
+ *
+ * Es la razón de que esta página ya no sea estática: lee la cookie de sesión
+ * del niño y su fila de `child_streak`, así que la sirve el Worker en cada
+ * petición, con `no-store` — lo que enseña son los pasos de UN niño. Sin sesión
+ * o sin base, la franja no se pinta y el juego sigue igual: nunca se le niega
+ * el juego a un niño por un contador. Es la respuesta definitiva a la duda de
+ * `docs/dudas.md` §23.1, que dejó KINDER sin racha visible de forma provisional.
  */
-import { LOCALES, isLocale, type Locale } from "../../../../i18n";
+import { isLocale, type Locale } from "../../../../i18n";
 import "../../../../styles/reto.css";
 import Pantalla from "../../../../components/reto/Pantalla.astro";
+import SenderoRacha from "../../../../components/racha/SenderoRacha.astro";
 import { ETIQUETA_DE_VOZ } from "../../../../../../../packages/tutor/src/voz.ts";
+import { COOKIE_NINO, leerCookies, leerSesionNino } from "../../../../lib/sesiones";
+import { leerProgreso } from "../../../../lib/progreso";
 
-export function getStaticPaths() {
-  return LOCALES.map((locale) => ({ params: { locale } }));
-}
+// Lee la cookie de sesión del niño: la sirve el Worker en cada petición.
+export const prerender = false;
+
+// La respuesta depende de `mc_n` —los pasos de UN niño—, así que ni caché ni
+// intermediarios. La misma regla que la rejilla de caras, y `sw.js` ya se
+// salta `/app/` entero.
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
 
 const { locale: raw } = Astro.params;
 if (!isLocale(raw)) return Astro.redirect("/en/");
@@ -124,6 +149,26 @@ const rotulos = {
 };
 
 const rutaCaras = `/${locale}/app/kids/`;
+
+/**
+ * Los pasos del sendero, leídos en el SERVIDOR (#205).
+ *
+ * Se lee `days_played_total` y nada más se usa: `actual` y `mejor` existen en
+ * la respuesta pero NO llegan a la plantilla — en KINDER ninguna cifra de racha
+ * se pinta, y `audits/kinder-sin-examen.mjs` bloquea el commit que lo haga.
+ *
+ * Sin sesión de niño (o sin base, o con la lectura fallida) `pasosCaminados`
+ * es `null` y la franja no se pinta: un contador que no se pudo leer no puede
+ * convertirse en una pantalla rota delante de un niño de cuatro años.
+ */
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+const nino = env?.SESSION_KV
+  ? await leerSesionNino(env.SESSION_KV, leerCookies(Astro.request.headers.get("cookie"))[COOKIE_NINO])
+  : null;
+const progreso =
+  nino && env?.DB ? await leerProgreso(env, { id: nino.childProfileId, esAdulto: false }) : null;
+const pasosCaminados = progreso?.racha.diasJugadosTotal ?? null;
 ---
 
 <!doctype html>
@@ -140,8 +185,30 @@ const rutaCaras = `/${locale}/app/kids/`;
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body class="jugar-body">
+    {/*
+      El sendero de la racha (#205), arriba y sin una palabra. Solo cuando hay
+      sesión de niño y lectura: ver el bloque del frontmatter.
+    */}
+    {
+      pasosCaminados !== null && (
+        <div class="sendero-racha">
+          <SenderoRacha locale={locale} diasJugadosTotal={pasosCaminados} />
+        </div>
+      )
+    }
     {/* La pantalla vive en un componente compartido: la MISMA la usa el adulto
        en `/app/practicar/`. Ver `components/reto/Pantalla.astro`. */}
     <Pantalla locale={locale} rotulos={rotulos} salirA={rutaCaras} etiquetaVoz={ETIQUETA_DE_VOZ[locale]} />
+
+    <style>
+      /* La franja del sendero: centrada sobre la pantalla del reto, sin
+         competir con ella. Solo tokens — `--space` existe en `tokens.css`. */
+      .sendero-racha {
+        display: flex;
+        justify-content: center;
+        padding-block-start: calc(var(--space) * 1.5);
+        padding-inline: var(--space);
+      }
+    </style>
   </body>
 </html>

@@ -72,6 +72,11 @@ const DIRS_TEXTOS = [
   // «nunca con culpa», y el léxico de pérdida/urgencia/comparación es la
   // forma escrita de esa regla.
   ["apps/web/src/i18n/push", "recordatorio push al padre"],
+  // F7 · Misiones diarias (#222, línea roja #7): las mismas tres categorías —
+  // pérdida, urgencia, comparación — son exactamente las formas en que una
+  // misión se estropea. Un «te quedan dos horas para tu misión» es urgencia
+  // fabricada aunque no diga la palabra «racha».
+  ["apps/web/src/i18n/misiones", "misiones"],
 ];
 
 const CATEGORIAS = ["perdida", "urgencia", "comparacion"];

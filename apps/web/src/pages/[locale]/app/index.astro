@@ -56,7 +56,8 @@ import Privada from "../../../layouts/Privada.astro";
 import RecordatorioPush from "../../../components/push/RecordatorioPush.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
-import { rutaKids, rutaPerfilNuevo } from "../../../lib/rutas-app";
+import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo } from "../../../lib/rutas-app";
+import { TEXTOS_PADRE } from "../../../components/parent/textos";
 import {
   pestanasPrivadas,
   clavesDePestana,
@@ -304,9 +305,24 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
     )}
 
     {vista === "limite" && (
-      <section class="bloque proximamente">
+      <section class="bloque">
         <h2>{m.casaTabLimite}</h2>
-        <p class="muted">{m.casaLimiteProximamente}</p>
+        {/*
+          La pantalla del límite por hijo (F8 #269). Un enlace por perfil, con
+          el mismo patrón de lista que la vista «Hijos». El texto del enlace
+          vive en `i18n/padre/`, no en las llaves globales: es copy de esta
+          superficie y no de toda la casa.
+        */}
+        <ul class="hijos">
+          {hijos.map((h) => (
+            <li class="hijo">
+              <span class="alias">{h.alias}</span>
+              <a class="boton" href={rutaLimiteHijo(locale, h.id)}>
+                {TEXTOS_PADRE[locale]["padre.limite.abrir"]}
+              </a>
+            </li>
+          ))}
+        </ul>
       </section>
     )}
 

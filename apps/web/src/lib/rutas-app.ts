@@ -48,3 +48,14 @@ export const rutaSignin = (locale: Locale | string) => `/${locale}/app/signin`;
 
 /** Crear el perfil de un hijo. */
 export const rutaPerfilNuevo = (locale: Locale | string) => `/${locale}/app/perfil-nuevo/`;
+
+/**
+ * La pantalla del padre para configurar y ver el límite de un hijo (F8 #269).
+ *
+ * El id viaja en la URL y es aceptable: es un identificador opaco, no un dato
+ * personal — no hay nombre real ni correo de un niño que pueda filtrarse en una
+ * barra de direcciones, porque no existen (línea roja #2). La propiedad se
+ * verifica en el servidor en cada lectura y cada escritura.
+ */
+export const rutaLimiteHijo = (locale: Locale | string, childId: string) =>
+  `/${locale}/app/parent/screen-time/${encodeURIComponent(childId)}`;

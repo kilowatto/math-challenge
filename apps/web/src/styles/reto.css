@@ -611,3 +611,90 @@
   line-height: 1.5;
   color: var(--color-text-muted);
 }
+
+/* --- El límite de pantalla: aviso, descanso y despedida (F8 #270, #271, #273)
+ *
+ * Tres superficies y una regla de estilo que las cubre a las tres: **nada que
+ * parezca un castigo**. Ni rojo, ni candado, ni ícono de error, ni cuenta
+ * regresiva — el corte suave de D-016 se despide como Larry, no como una
+ * pantalla de bloqueo (mc-26, implicación de diseño #5: un personaje amable,
+ * un resumen de la sesión, un «nos vemos mañana» claro).
+ *
+ * Y la misma nota de siempre sobre el sitio donde viven las reglas: aquí y no
+ * en un `<style>` de `Pantalla.astro`, porque Astro alcanza con CSS de alcance
+ * solo lo que está en la PLANTILLA del componente — y la mitad de estas
+ * superficies las abre el script en tiempo de ejecución. El `[hidden]` de
+ * arriba, con su `!important`, es el que las mantiene cerradas hasta entonces.
+ */
+
+/* El aviso de los 5 minutos (#270). Una línea de Larry sobre el flujo, no una
+   alarma: borde quieto, superficie de marca, y se quita solo al llegar el
+   ítem siguiente. En KINDER el texto no lleva cifra (mc-20, D-024) y este
+   bloque no pinta ninguna por su cuenta. */
+.aviso-limite {
+  margin: 0 auto 1rem;
+  max-inline-size: var(--measure);
+  padding: 0.75rem 1rem;
+  border: 3px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-lg);
+  line-height: 1.35;
+  text-align: center;
+}
+
+/* La cortina del descanso y de la despedida. Es un elemento de la PÁGINA: no
+   fuerza pantalla completa, no bloquea el navegador y no impide cerrar la
+   pestaña — la línea roja #1 no admite excepción para un menor, y por eso
+   esto es CSS de maquetación y nada más. */
+.limite-cortina {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: color-mix(in srgb, var(--ignia-negro) 35%, transparent);
+}
+
+.limite-tarjeta {
+  max-inline-size: var(--measure);
+  padding: 2rem 1.75rem;
+  border: 3px solid var(--color-border);
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: center;
+}
+
+.limite-titulo {
+  margin: 0 0 0.75rem;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-subtitle);
+  line-height: 1.2;
+}
+
+.limite-tarjeta p {
+  margin: 0 0 0.75rem;
+  font-size: var(--text-lg);
+  line-height: var(--leading-body);
+}
+
+/* El detalle secundario: «mejor todavía, sal un ratito» (mc-26, implicación
+   #7) y el conteo de retos de la despedida. Apagado a propósito. */
+.limite-tarjeta p.limite-nota {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+
+.limite-despedida {
+  font-weight: var(--weight-subtitle);
+}
+
+/* El botón del descanso —«Seguir jugando»— usa `.opcion.accion`, igual que
+   los del flujo: disponible desde el primer instante, sin temporizador que lo
+   retenga (#271). Aquí solo se le da aire. */
+.limite-tarjeta .opcion {
+  margin-block-start: 0.5rem;
+}

@@ -1,0 +1,19 @@
+{
+  "_locale": "es-ES",
+  "_nota": "Autorado, no traducido (D-022). La nota de honestidad es D-016 hecha copy: los rangos son criterio propio, no recomendación médica. Nada aquí insinúa que el tiempo de pantalla dañó algo (mc-26 §7). Los números llegan como marcadores y los resuelve formatear().",
+  "padre.limite.titulo": "Tiempo de pantalla",
+  "padre.limite.lead": "El límite diario y el corte nocturno de {alias}.",
+  "padre.limite.hoy": "Hoy {alias} ha jugado {jugados} de {limite} minutos.",
+  "padre.limite.diarios": "Minutos al día",
+  "padre.limite.rango": "Puedes elegir entre {min} y {max} minutos.",
+  "padre.limite.honestidad": "Estos rangos son criterio propio de diseño, no una recomendación médica: ninguna autoridad publica una cifra diaria para esta edad.",
+  "padre.limite.nocturno": "Corte nocturno",
+  "padre.limite.nocturnoAyuda": "Encendido, el juego se detiene {antes} minutos antes de la hora de dormir y descansa hasta la mañana.",
+  "padre.limite.horaDormir": "Hora de dormir",
+  "padre.limite.guardar": "Guardar",
+  "padre.limite.guardado": "Guardado.",
+  "padre.limite.errRango": "Elige un número entero entre {min} y {max} minutos.",
+  "padre.limite.errHora": "Esa hora no parece válida.",
+  "padre.limite.errGenerico": "Algo ha ido mal. Inténtalo de nuevo.",
+  "padre.limite.abrir": "Configurar"
+}

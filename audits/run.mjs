@@ -506,6 +506,27 @@ for (const prueba of [
   // 20:00, el tope que no se reinicia a medianoche UTC, el silencio que se
   // mira primero, y un hermano completado silenciando el día entero.
   "packages/motor/src/recordatorio.prueba.mjs",
+
+  // F8 #269. El camino de la pantalla del padre, ejecutado de verdad: el
+  // handler POST/GET de la ruta con sesión falsa y D1 sobre node:sqlite. Lo
+  // que defiende tampoco rompe nada visible: una propiedad sin comprobar no da
+  // error 500 — da un padre mirando el límite del hijo de otro, o 600 minutos
+  // guardados con una petición directa que se saltó la interfaz. La tabla de
+  // rangos de la prueba está copiada a mano de D-016 (D-070), no importada del
+  // motor: si no, aprobaría su propia violación.
+  "apps/web/src/lib/padre-limite.prueba.mjs",
+
+
+  // F8 #270, #271, #273. El CABLE del límite de pantalla contra SQLite de
+  // verdad (`node:sqlite`): que los minutos se cobran con el reloj del
+  // servidor, que `warned_at` no avisa dos veces, que el descanso reinicia su
+  // contador sin tocar el total, y que la ventana nocturna corta con
+  // `BEDTIME` y también de madrugada. Lo que defiende tampoco rompe nada
+  // visible: un cable que no acumula, o que avisa cada vez que se reabre la
+  // app, no da error — lo ve un niño con el límite «puesto» jugando tres
+  // horas, o un padre al que le cuentan la noche de su hijo como un tope.
+  "apps/web/src/lib/limite-dia.prueba.mjs",
+
   // F7 #204. El CAMINO de la pausa familiar, contra SQLite de verdad
   // (`node:sqlite`) — el motor ya tiene sus pruebas puras en racha.prueba.mjs.
   // Lo que defiende tampoco rompe nada visible: una autorización mal escrita
@@ -514,6 +535,7 @@ for (const prueba of [
   // pausas del año por pulsar dos veces el mismo botón. Incluye el rechazo al
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
+
   // F7 #224. El Durable Object de misiones diarias —uno por niño— y su cable,
   // contra SQLite de verdad (`node:sqlite`) y con la clase del DO de verdad.
   // Lo que defiende tampoco rompe nada visible: un reintento de red que paga
@@ -523,6 +545,10 @@ for (const prueba of [
   // orden. 17 casos: el XP una sola vez, el bono una sola vez, el borrado en
   // cero, y la pantalla leyendo el rollup.
   "apps/web/src/lib/missions-do.prueba.mjs",
+
+
+
+
 ]) {
   const r = spawnSync(
     "node",

@@ -246,7 +246,11 @@
     // Los siete locales. No cinco: es-MX y es-ES no comparten separador
     // decimal, pt-BR y pt-PT no comparten escala numérica (mc-34, D-022).
     "SUPPORTED_LOCALES": "en,es-MX,es-ES,fr-FR,pt-BR,pt-PT,de-DE",
-    "DEFAULT_LOCALE": "en"
+    "DEFAULT_LOCALE": "en",
+    // La llave PÚBLICA VAPID del recordatorio push (#207). Es pública por
+    // diseño — viaja al navegador al suscribirse—; la privada vive en
+    // `wrangler secret` (VAPID_PRIVATE_KEY) y jamás en este archivo.
+    "VAPID_PUBLIC_KEY": "BOqS4OJe3jRq20yVRfAMRO6HI-h3EmD_aXLAq60r7dvk-q8V_QLrlD3unX9ITIXmm86d663-RqDDimsXowePaqg"
   }
 
   // Pendientes de fases posteriores, deliberadamente ausentes para que wrangler

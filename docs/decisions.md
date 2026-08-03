@@ -4558,3 +4558,100 @@ dispositivo). Un hermano con efectos y otro sin, en el mismo aparato.
 
 **Investigación relacionada:** D-148, mc-38 (control persistente de
 movimiento/sonido, implicación 6).
+
+---
+
+## D-155 — El segundo padre se vincula al hogar por código de invitación, con los mismos derechos · 2026-08-03
+
+**Decisión del dueño**, abriendo el modelo que `mc-27` nunca tuvo y que
+el esquema nunca soportó (un solo `parent_user_id` por perfil).
+
+- El padre A genera un **código de invitación al hogar** (el patrón de
+  D-113: 6 caracteres, sin ambiguos, revocable); el padre B lo usa y
+  queda vinculado **con los mismos derechos** sobre los mismos hijos.
+- **La regla de conflicto, escrita desde hoy:** cualquiera de los dos
+  puede aprobar, y **cualquiera de los dos puede revocar** — ante una
+  contradicción entre los dos padres sobre un dato o un acceso del
+  niño, **gana el que protege** (el mismo principio que resolvió la
+  contradicción #242/#243 en dudas §23.1). Un consentimiento revocado
+  por uno queda revocado aunque el otro lo aprobó. Todo acto registra
+  quién lo hizo y cuándo — la bitácora no miente sobre cuál de los dos
+  fue.
+- Esquema: tabla `household_link` (user_id del invitado, inviter_user_id,
+  código, created_at, revoked_at) — los `child_profiles` no cambian de
+  dueño; el vínculo es del hogar, no una segunda FK por hijo (la
+  lectura «hijos del hogar» pasa a ser: perfiles cuyo `parent_user_id`
+  es A o es alguien vinculado al hogar de A).
+- Los dispositivos del hogar (`household_devices`) pasan a leerse por
+  hogar, no por cuenta — cualquiera de los dos puede marcar y revocar
+  un aparato, con registro.
+
+**Investigación relacionada:** `mc-27`, D-012, D-013, D-051, D-113.
+
+---
+
+## D-156 — La competencia familiar es una vista sobre el hogar, con las dos listas separadas · 2026-08-03
+
+**Decisión del dueño**, cerrando el contenedor de la competencia
+familiar.
+
+**Sin estructura social nueva.** La pantalla de la familia es una vista
+sobre el hogar (D-155): los hijos (alias, racha, puntos — de
+`score_totals` y `child_streak`) en **su** lista, y los padres y
+adolescentes-usuarios (`is_learner`, de `score_totals_adulto` y la
+racha polimórfica de 0007) en **la suya**, en la misma pantalla. Las
+dos listas nunca se unen ni se rankean juntas — es D-027 aplicado a la
+familia: un niño y un adulto no comparten tabla, ni en casa. La
+comparación sana vive en el reto común (D-157), no en un marcador
+unificado.
+
+**Investigación relacionada:** D-027, D-084, migraciones `0007`, `0012`.
+
+---
+
+## D-157 — La familia se reta con las tres mecánicas, y se echa porras entre todos · 2026-08-03
+
+**Decisión del dueño** (respuesta personalizada: «los 3 puntos aparte
+entre todos se echan porras y se motivan»), cerrando la mecánica de la
+competencia familiar.
+
+- **El reto del día familiar:** el mismo reto para todos, asíncrono —
+  molde `club_challenge` de F10 (set congelado), con el set **generado
+  por participante según su nivel** (papá en N9 e hija en N5 no pueden
+  jugar los mismos ítems; la tabla del día compara su desempeño cada
+  uno contra su propio nivel, no el puntaje crudo — es la lección de
+  `mc-18` aplicada en casa).
+- **El duelo familiar 1:1:** asíncrono, molde `league_duel` — «reto a
+  mi hermano», con el mismo set para ambos cuando los niveles lo
+  permiten y sin ventana de presencia (condición 2 de D-081).
+- **La tabla semanal familiar:** la vista de D-156 con el acumulado de
+  la semana — nunca lenguaje de pérdida, y el último lugar nunca se
+  anuncia como tal (la regla de `racha-lexico` también en casa).
+- **Las porras:** un toque para animar a otro miembro de la familia,
+  con un conjunto cerrado de reacciones (nunca texto libre — la línea
+  roja #3 aun entre adultos del hogar, por consistencia de esquema) y
+  **dirigidas, no agregadas**: dentro del hogar los miembros ya se
+  conocen, así que la objeción de F7 a las reacciones dirigidas entre
+  niños de liga (un canal nuevo entre dos niños específicos) no
+  aplica. Fuera del hogar, la regla de F7 sigue intacta: nada de
+  porras dirigidas.
+
+**Investigación relacionada:** D-156, D-081, `mc-18`, `mc-16` (la
+motivación de pertenencia), F7 ligas §6.3 (la reacción que allá se
+descartó y aquí sí entra).
+
+---
+
+## D-158 — La familia es una fase nueva: F12 · Núcleo familiar · 2026-08-03
+
+**Decisión del dueño**, ordenando el trabajo de D-155 a D-157.
+
+«La familia es el principal núcleo de competencia sana» — el dueño,
+2026-08-03. El trabajo se organiza como **F12 · Núcleo familiar**:
+vínculo del segundo padre (D-155), la vista de competencia familiar
+(D-156), y los retos y porras (D-157). Depende de F2 (cuentas,
+dispositivos), F7 (racha, XP, ligas como molde) y comparte moldes con
+F10 (`club_challenge`) sin tocar el club de adultos. Master-plan §13.2
+gana su fila en el mismo commit.
+
+**Investigación relacionada:** D-155, D-156, D-157, `mc-27`.

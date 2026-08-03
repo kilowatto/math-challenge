@@ -530,6 +530,7 @@ audiencia. Si sale ahora, la app aterriza sobre público ya formado.
 | **F9 · Grupos infantiles** | Salón del maestro y club de papás sobre la misma tabla `grupo_infantil`: código, aprobación del padre, tablero, bitácora. Sin chat, en ninguna dirección (D-027) | F2, F7 |
 | **F10 · Clubs de adultos** | `club_adulto`, retos con ventana de tiempo, las tres formas de prenda, y Larry moderando el texto libre a prueba de fallos (D-028, D-029) | F2, F7, **F5b** |
 | **F11 · Cierre** | Anti-trampa tier 0-1, accesibilidad auditada, revisión legal con abogado, offline completo, interfaz adaptativa terminada en las cuatro plataformas | todas |
+| **F12 · Núcleo familiar** *(añadida 2026-08-03, D-158)* | El segundo padre vinculado por código con los mismos derechos (D-155), la competencia familiar como vista sobre el hogar con las dos listas separadas (D-156), y los tres retos —día compartido, duelo, tabla semanal— con porras dirigidas dentro de casa (D-157). «La familia es el principal núcleo de competencia sana» | F2, F7 |
 
 ### 13.3 Cuatro cosas que la tabla no dice sola
 

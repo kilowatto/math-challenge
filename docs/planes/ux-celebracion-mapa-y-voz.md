@@ -275,3 +275,16 @@ consentimiento (¿los dos padres pueden aprobar/revocar lo mismo? — eso
 es D-013/D-051 y hay que decidirlo con cuidado, no de paso). El reto
 familiar no necesita nada de eso si sale como vista: se construye sobre
 datos que ya existen.
+
+### Resolución del anexo (2026-08-03, noche — D-155 a D-158)
+
+Las cuatro preguntas de la familia quedaron así: **vínculo del segundo
+padre por código con mismos derechos** (D-155, con la regla de
+conflicto «gana el que protege»); **la competencia como vista sobre el
+hogar, dos listas separadas** (D-156, sin estructura nueva); y la
+respuesta personalizada del dueño para la mecánica: **las tres —reto
+del día compartido, duelo 1:1, tabla semanal— más las porras dirigidas
+entre miembros del hogar** (D-157: dentro de casa los miembros ya se
+conocen, así que la objeción de F7 a las reacciones dirigidas no
+aplica; fuera del hogar sigue intacta). Todo se organiza como fase
+nueva: **F12 · Núcleo familiar** (D-158).

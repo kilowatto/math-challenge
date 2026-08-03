@@ -689,6 +689,83 @@ const CASOS = [
       "}\n",
     espera: "reinicia la racha",
   },
+
+  // ─── Los dos de la segunda tanda: XP y el léxico de la racha ────────────
+  //
+  // Seis casos más, cinco de ellos degradando los archivos REALES. `xp.ts` y
+  // los siete JSON de racha se escribieron con sus auditores delante, así que
+  // nacieron verdes: un caso inventado probaría que el auditor sabe leer un
+  // archivo falso, no que habría cazado la erosión del verdadero.
+
+  {
+    // La mezcla que D-055 existe para impedir, y que ya se intentó una vez en
+    // este repo: alguien afirma que «XP es el mismo número que los puntos». En
+    // KINDER coinciden por construcción, así que nada se rompe a la vista.
+    auditor: "motor-xp",
+    que: "una expresión que suma el XP con los puntos del tablero",
+    archivo: "apps/web/src/lib/prueba-xp-mezcla.ts",
+    contenido:
+      "export function totalDelNino(fila: any) {\n" +
+      "  return fila.total_xp + fila.total_score;\n" +
+      "}\n",
+    espera: "dos monedas",
+  },
+  {
+    // El reloj entrando al XP. D-055: el XP no ve el tiempo en NINGUNA banda,
+    // ni siquiera en PRO donde el puntaje sí lo usa.
+    auditor: "motor-xp",
+    que: "el tiempo de respuesta entra en la fórmula de XP",
+    archivo: "packages/motor/src/xp.ts",
+    parche: (t) =>
+      t.replace(
+        "export function xpDeItem(nivel: number, acc: 0 | 1): number {",
+        "export function xpDeItem(nivel: number, acc: 0 | 1, rtMs: number): number {",
+      ),
+    espera: "no depende del reloj",
+  },
+  {
+    // La tabla publicada dejando de coincidir con la fórmula. Una tabla que
+    // miente sobre el umbral es una caja sorpresa con otro nombre.
+    auditor: "motor-xp",
+    que: "la tabla publicada de rangos deja de salir de la fórmula",
+    archivo: "packages/motor/src/xp.ts",
+    parche: (t) =>
+      t.replace(
+        "      xpParaEntrar,\n",
+        "      xpParaEntrar: xpParaEntrar + 1,\n",
+      ),
+    espera: "tabla publicada",
+  },
+  {
+    // Azar en el otorgamiento de XP. mc-17 (implicación 3) y mc-43 (hallazgo
+    // 5): el refuerzo de razón variable no necesita dinero para dañar a un niño.
+    auditor: "motor-xp",
+    que: "la recompensa de XP varía entre llamadas",
+    archivo: "packages/motor/src/xp.ts",
+    parche: (t) =>
+      t.replace(
+        "export function xpDeTipo(tipo: string): number {\n  const v = XP_POR_TIPO[tipo];",
+        "export function xpDeTipo(tipo: string): number {\n  const v = XP_POR_TIPO[tipo] + Math.floor(Math.random() * 5);",
+      ),
+    espera: "azar",
+  },
+  {
+    // El copy exacto que mc-17 §83 manda sustituir, en un solo locale.
+    auditor: "racha-lexico",
+    que: "«no pierdas tu racha» en es-MX y solo ahí",
+    archivo: "apps/web/src/i18n/racha/es-MX.json",
+    parche: (t) => t.replace('"Hoy ya cuenta"', '"No pierdas tu racha: hoy todavía cuenta"'),
+    espera: "perdida",
+  },
+  {
+    // La otra categoría nombrada por la FTC, en otro locale, para que el caso
+    // demuestre que las siete listas están vivas y no solo la española.
+    auditor: "racha-lexico",
+    que: "una cuenta regresiva en el texto de de-DE",
+    archivo: "apps/web/src/i18n/racha/de-DE.json",
+    parche: (t) => t.replace('"Heute zählt"', '"Nur noch 3 Stunden, dann läuft ab"'),
+    espera: "urgencia",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

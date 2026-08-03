@@ -1,0 +1,44 @@
+{
+  "locale": "es-MX",
+  "nota": "Español de México (es-MX) — léxico prohibido para CUALQUIER texto de racha (pantalla o push).",
+  "porQue": "Lo que se prohíbe es una CONSTRUCCIÓN, no una palabra, y por eso la lista se autora por locale en vez de traducirse. Mismo criterio que audits/lib/lexico-verguenza/, que F6 ya estableció por la misma razón: prohibir un verbo suelto marca texto ya aprobado.",
+  "fuente": "mc-17 §83 (tabla de líneas rojas): «Streak framed as a personal-best counter with no penalty language; missing a day simply doesn't advance the counter, no shame copy». La FTC nombra por su nombre las dos categorías: confirm-shaming y urgencia fabricada.",
+  "limite": "Es un cable trampa, no un juez. «Solo te quedan unas horas de tu mejor marca» no contiene ninguna de estas construcciones y es urgencia pura. Ese hueco lo cubren la revisión humana por locale (D-022) y la flota adversarial, no una lista.",
+  "construcciones": [
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:pierde[sn]?|perder|perdiste|perdi[oó]|romper|rompe[sn]?|rompiste|se rompi[oó]|se acab[oó]|se apag[oó]|apagarse|se va|se pierde)\\b[^.!?]{0,24}\\b(?:racha|d[ií]as seguidos)\\b",
+      "porque": "verbo de pérdida pegado a la racha"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:racha|d[ií]as seguidos)\\b[^.!?]{0,24}\\b(?:perdida|rota|se rompi[oó]|se acab[oó]|se apag[oó]|en cero|termin[oó])\\b",
+      "porque": "lo mismo, con la racha primero"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:de vuelta a|otra vez en|regresas a) (?:cero|0)\\b",
+      "porque": "el reinicio contado como una caída"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\bno (?:pierdas|rompas|dejes que se)\\b",
+      "porque": "el imperativo negativo: confirm-shaming"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:[aá]ndale|apres[uú]rate|r[aá]pido|[uú]ltima oportunidad|se acaba|antes de (?:medianoche|las doce)|vence|caduca|te quedan?)\\b",
+      "porque": "urgencia fabricada — categoría nombrada por la FTC"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:quedan?|faltan?) \\w+ (?:horas?|minutos?)\\b",
+      "porque": "una cuenta regresiva en la pantalla de un niño"
+    },
+    {
+      "categoria": "comparacion",
+      "patron": "\\b(?:los dem[aá]s ni[nñ]os|otros ni[nñ]os|todos los dem[aá]s|el promedio|ni[nñ]os de tu edad|que t[uú]|vas atr[aá]s|te van ganando)\\b",
+      "porque": "retroalimentación normativa (mc-17 §84)"
+    }
+  ]
+}

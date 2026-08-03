@@ -1,0 +1,123 @@
+---
+/**
+ * La racha visible, de PRIMARIA en adelante (#206).
+ *
+ * PIEZA SUELTA A PROPÓSITO. No se monta en `Pantalla.astro` desde aquí: otra
+ * sesión es la dueña de ese archivo esta hora, y dos manos en el mismo `.astro`
+ * es cómo se pierde un arreglo al resolver un conflicto (pasó ya una vez con un
+ * `git checkout --theirs`). Se exporta, se prueba, y quien tenga la pantalla la
+ * monta.
+ *
+ * ─── Lo que este componente hace, y por qué está escrito así ──────────────
+ *
+ * `mc-17` §83 escribe la regla de diseño en una frase que se puede implementar:
+ *
+ *   «Streak framed as a personal-best counter with no penalty language; missing
+ *    a day simply doesn't advance the counter, no shame copy»
+ *
+ * De ahí salen las tres decisiones de este archivo, y ninguna es estética:
+ *
+ *  1. **La mejor marca se muestra SIEMPRE, junto al número actual.** Es lo único
+ *     que convierte un contador en un récord personal en vez de en una cuenta
+ *     regresiva. Un número solo, que ayer decía 12 y hoy dice 1, es una pérdida
+ *     dibujada aunque no lleve una sola palabra.
+ *  2. **El número pasa por `formatear()`** de `numeros.ts`, nunca por una
+ *     interpolación cruda. Una racha de cuatro cifras es alcanzable, y el
+ *     separador de millares no es el mismo en `de-DE` que en `fr-FR` (mc-34).
+ *  3. **Sin fuego, sin rojo, sin reloj.** El ícono es la huella de Larry —
+ *     iconografía de la marca. Un fuego que se apaga es una amenaza dibujada, y
+ *     `mc-16` liga esa iconografía exacta a la aversión a la pérdida. No hay
+ *     ninguna clase de alarma atada al número, y no hay ningún temporizador:
+ *     la urgencia fabricada es una categoría que la FTC nombra en su informe de
+ *     2022, y aquí quien la leería tiene entre 4 y 17 años.
+ *
+ * `audits/racha-lexico.mjs` hace cumplir las tres, más el léxico de los siete
+ * locales.
+ *
+ * ─── Lo que NO hace ───────────────────────────────────────────────────────
+ *
+ *  · No se muestra en KINDER. Ahí la racha es el camino de Larry en la Sabana,
+ *    sin número (#205), y ese componente no existe todavía.
+ *  · No dispara nada al cambiar. #206: ningún reset de racha produce un push ni
+ *    un modal — el niño ve el número nuevo la próxima vez que abre la pantalla,
+ *    sin evento que lo señale. Por eso aquí no hay ni un `<script>`.
+ *  · No cuenta escudos. Los escudos se aplican solos y en silencio (#203); un
+ *    contador de escudos reintroduce un número que contar y una ansiedad
+ *    alrededor de él.
+ */
+import { formatear } from "../../../../../packages/motor/src/numeros.ts";
+import type { Locale } from "../../i18n";
+
+import en from "../../i18n/racha/en.json";
+import esMX from "../../i18n/racha/es-MX.json";
+import esES from "../../i18n/racha/es-ES.json";
+import frFR from "../../i18n/racha/fr-FR.json";
+import ptBR from "../../i18n/racha/pt-BR.json";
+import ptPT from "../../i18n/racha/pt-PT.json";
+import deDE from "../../i18n/racha/de-DE.json";
+
+const TEXTOS: Record<string, typeof en> = {
+  "en": en,
+  "es-MX": esMX,
+  "es-ES": esES,
+  "fr-FR": frFR,
+  "pt-BR": ptBR,
+  "pt-PT": ptPT,
+  "de-DE": deDE,
+};
+
+interface Props {
+  locale: Locale;
+  /** `current_streak` de `child_streak`. */
+  rachaActual: number;
+  /** `max_streak`. Se muestra siempre; no es opcional a propósito. */
+  rachaMaxima: number;
+}
+
+const { locale, rachaActual, rachaMaxima } = Astro.props;
+const t = TEXTOS[locale] ?? en;
+
+const dias = (n: number) =>
+  n === 1 ? t["racha.dia_uno"] : t["racha.dias_otros"].replace("{n}", formatear(n, locale, 0));
+
+const actual = rachaActual === 0 ? t["racha.ninguno"] : dias(rachaActual);
+const mejor = t["racha.mejor"].replace("{mejor}", dias(rachaMaxima));
+---
+
+<section class="racha" aria-label={t["racha.titulo"]}>
+  <p class="racha__titulo">{t["racha.titulo"]}</p>
+  <p class="racha__numero">{actual}</p>
+  <p class="racha__mejor">{mejor}</p>
+</section>
+
+<style>
+  /* Sin rojo, sin ámbar, sin parpadeo: el número no cambia de color nunca.
+     Un color de alarma es lenguaje de pérdida sin una sola palabra, y
+     `audits/racha-lexico.mjs` bloquea el commit que lo añada. */
+  .racha {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+  }
+
+  .racha__titulo {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
+  .racha__numero {
+    margin: 0;
+    font-family: var(--font-marca);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .racha__mejor {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+</style>

@@ -138,6 +138,41 @@ export const ZONA_DE_RESPALDO = "UTC";
 
 // ─── El día efectivo (#200) ──────────────────────────────────────────────────
 
+/**
+ * El único SQL que escribe una racha (#201, #210).
+ *
+ * Vive aquí y no en la ruta que lo ejecuta por la misma razón que
+ * `SQL_UPSERT` vive en `rollup.ts`: para que haya un solo sitio donde estas
+ * columnas se escriben, y que ese sitio sea el mismo archivo que las calcula.
+ * Dos escritores dan dos rachas para el mismo niño, y la que se lea depende del
+ * orden — que es cómo un número se vuelve irreproducible sin que nadie mienta.
+ *
+ * Escribe el estado COMPLETO que devolvió el motor, no un delta. La racha no es
+ * un acumulado: es una máquina de estados cuya transición ya se calculó arriba,
+ * y mandar deltas obligaría a recomputarla dentro del SQL.
+ *
+ * La idempotencia no está aquí, está en `registrarDia`: si el día ya se
+ * registró, devuelve el mismo objeto y quien llama no ejecuta nada.
+ */
+export const SQL_UPSERT_RACHA = `
+INSERT INTO child_streak (
+  id, child_profile_id, current_streak, max_streak, last_completed_local_date,
+  shields_available, shields_earned_total,
+  pause_until_local_date, pause_uses_this_year, pause_year, updated_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (child_profile_id) WHERE child_profile_id IS NOT NULL DO UPDATE SET
+  current_streak            = excluded.current_streak,
+  max_streak                = excluded.max_streak,
+  last_completed_local_date = excluded.last_completed_local_date,
+  shields_available         = excluded.shields_available,
+  shields_earned_total      = excluded.shields_earned_total,
+  pause_until_local_date    = excluded.pause_until_local_date,
+  pause_uses_this_year      = excluded.pause_uses_this_year,
+  pause_year                = excluded.pause_year,
+  updated_at                = excluded.updated_at
+`.trim();
+
 /** ¿Es `zona` una zona IANA que este runtime entiende? */
 export function zonaValida(zona: string): boolean {
   try {

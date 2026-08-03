@@ -1,0 +1,44 @@
+{
+  "locale": "en",
+  "nota": "English (en) — léxico prohibido para CUALQUIER texto de racha (pantalla o push).",
+  "porQue": "Lo que se prohíbe es una CONSTRUCCIÓN, no una palabra, y por eso la lista se autora por locale en vez de traducirse. Mismo criterio que audits/lib/lexico-verguenza/, que F6 ya estableció por la misma razón: prohibir un verbo suelto marca texto ya aprobado.",
+  "fuente": "mc-17 §83 (tabla de líneas rojas): «Streak framed as a personal-best counter with no penalty language; missing a day simply doesn't advance the counter, no shame copy». La FTC nombra por su nombre las dos categorías: confirm-shaming y urgencia fabricada.",
+  "limite": "Es un cable trampa, no un juez. «Solo te quedan unas horas de tu mejor marca» no contiene ninguna de estas construcciones y es urgencia pura. Ese hueco lo cubren la revisión humana por locale (D-022) y la flota adversarial, no una lista.",
+  "construcciones": [
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:lose|losing|lost|break|broke|broken|ruin(?:ed)?|gone|vanish(?:es|ed)?|die[sd]?|dying|burn(?:s|ed)? out|extinguish)\\b[^.!?]{0,24}\\b(?:streak|days? in a row|run)\\b",
+      "porque": "loss verb attached to the streak — the exact 'you'll lose your streak!' copy mc-17 replaces"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:streak|days? in a row|run)\\b[^.!?]{0,24}\\b(?:lost|broken|gone|over|ended|reset|wiped|died)\\b",
+      "porque": "the same, with the streak first"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\bback to (?:zero|0|square one)\\b",
+      "porque": "framing the reset as a fall"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\bdon'?t (?:lose|break|waste)\\b",
+      "porque": "the negative imperative: confirm-shaming"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:hurry|quick(?:ly)?|last chance|running out|only \\d+ (?:hours?|minutes?) left|before midnight|expires?|expiring|ends? (?:in|tonight))\\b",
+      "porque": "manufactured urgency — an FTC-named dark pattern"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:\\d+|a few|just) (?:hours?|minutes?) (?:left|remaining|to go)\\b",
+      "porque": "a countdown on a child's screen"
+    },
+    {
+      "categoria": "comparacion",
+      "patron": "\\b(?:other (?:kids|children|players)|everyone else|average|kids your age|than you|behind|ahead of you)\\b",
+      "porque": "normative comparison (mc-17 §84; Kluger & DeNisi)"
+    }
+  ]
+}

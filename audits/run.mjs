@@ -198,6 +198,15 @@ const ACTIVE = [
   ["cosmeticos-deterministas", "un cosmético se gana, no se compra ni se sortea", "línea roja #5, D-014, mc-17 §7"],
   ["racha-nunca-se-vende",     "la protección de racha jamás se vende",           "línea roja #6, #4, D-014, mc-16"],
   ["racha-limite-no-rompe",    "el límite de pantalla nunca rompe la racha",      "línea roja #6, D-014, D-016"],
+
+  // Los dos de la segunda tanda de F7. `motor-xp` es el hermano de
+  // `motor-puntuacion`: aquél impone que haya UNA fórmula de puntos, éste que
+  // haya UNA de XP y que las dos no se toquen nunca (#225). Nace importante
+  // por un motivo incómodo: en KINDER —toda la banda que el MVP construye— los
+  // dos ejes coinciden por construcción, así que mezclarlos NO se vería hasta
+  // que hubiera filas en producción calculadas con la fórmula equivocada.
+  ["motor-xp",                 "XP y puntos son dos monedas que no se cambian",   "D-055, D-025, #192, #194, #219, #225"],
+  ["racha-lexico",             "la racha no habla de pérdida, prisa ni de nadie más", "#206, D-014, mc-17 §83"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -283,6 +292,11 @@ for (const prueba of [
   // orden tampoco. Se descubre semanas después, por un padre.
   "packages/motor/src/racha.prueba.mjs",
   "packages/motor/src/cosmeticos.prueba.mjs",
+  // #192, #194, #219, #225. Una fórmula cerrada mal despejada da un número
+  // plausible y equivocado: el niño sube de rango un poco antes o un poco
+  // después y no hay con qué discutirlo. Aquí se cruza contra la iterativa en
+  // 1 000 puntos, umbrales exactos incluidos.
+  "packages/motor/src/xp.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

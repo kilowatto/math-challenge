@@ -1,0 +1,44 @@
+{
+  "locale": "pt-PT",
+  "nota": "Português de Portugal (pt-PT) — léxico prohibido para CUALQUIER texto de racha (pantalla o push).",
+  "porQue": "Lo que se prohíbe es una CONSTRUCCIÓN, no una palabra, y por eso la lista se autora por locale en vez de traducirse. Mismo criterio que audits/lib/lexico-verguenza/, que F6 ya estableció por la misma razón: prohibir un verbo suelto marca texto ya aprobado.",
+  "fuente": "mc-17 §83 (tabla de líneas rojas): «Streak framed as a personal-best counter with no penalty language; missing a day simply doesn't advance the counter, no shame copy». La FTC nombra por su nombre las dos categorías: confirm-shaming y urgencia fabricada.",
+  "limite": "Es un cable trampa, no un juez. «Solo te quedan unas horas de tu mejor marca» no contiene ninguna de estas construcciones y es urgencia pura. Ese hueco lo cubren la revisión humana por locale (D-022) y la flota adversarial, no una lista.",
+  "construcciones": [
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:perdes|perder|perdeu|partes|partir|partiu|acabou|apagou|desapareceu)\\b[^.!?]{0,24}\\b(?:sequ[eê]ncia|dias seguidos)\\b",
+      "porque": "verbo de perda colado à sequência"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:sequ[eê]ncia|dias seguidos)\\b[^.!?]{0,24}\\b(?:perdida|partida|acabou|a zero|terminou)\\b",
+      "porque": "o mesmo, com a sequência primeiro"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\bde volta a zero\\b",
+      "porque": "o reinício contado como uma queda"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\bn[aã]o (?:percas|partas|deixes)\\b",
+      "porque": "o imperativo negativo: confirm-shaming"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:despacha|r[aá]pido|[uú]ltima oportunidade|est[aá] a acabar|antes da meia-noite|expira|termina (?:hoje|dentro de))\\b",
+      "porque": "urgência fabricada — categoria nomeada pela FTC"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:faltam?|restam?) \\w+ (?:horas?|minutos?)\\b",
+      "porque": "uma contagem decrescente no ecrã de uma criança"
+    },
+    {
+      "categoria": "comparacion",
+      "patron": "\\b(?:as outras crian[cç]as|toda a gente|a m[eé]dia|crian[cç]as da tua idade|do que tu|atr[aá]s de)\\b",
+      "porque": "retorno normativo (mc-17 §84)"
+    }
+  ]
+}

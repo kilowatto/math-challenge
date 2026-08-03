@@ -1,0 +1,8 @@
+{
+  "racha.titulo": "Jours d’affilée",
+  "racha.dia_uno": "1 jour",
+  "racha.dias_otros": "{n} jours",
+  "racha.mejor": "Ton record : {mejor}",
+  "racha.ninguno": "Aucun jour compté pour l’instant",
+  "racha.hoy_cuenta": "Aujourd’hui compte"
+}

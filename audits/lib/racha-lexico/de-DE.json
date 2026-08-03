@@ -1,0 +1,44 @@
+{
+  "locale": "de-DE",
+  "nota": "Deutsch (de-DE) — léxico prohibido para CUALQUIER texto de racha (pantalla o push).",
+  "porQue": "Lo que se prohíbe es una CONSTRUCCIÓN, no una palabra, y por eso la lista se autora por locale en vez de traducirse. Mismo criterio que audits/lib/lexico-verguenza/, que F6 ya estableció por la misma razón: prohibir un verbo suelto marca texto ya aprobado.",
+  "fuente": "mc-17 §83 (tabla de líneas rojas): «Streak framed as a personal-best counter with no penalty language; missing a day simply doesn't advance the counter, no shame copy». La FTC nombra por su nombre las dos categorías: confirm-shaming y urgencia fabricada.",
+  "limite": "Es un cable trampa, no un juez. «Solo te quedan unas horas de tu mejor marca» no contiene ninguna de estas construcciones y es urgencia pura. Ese hueco lo cubren la revisión humana por locale (D-022) y la flota adversarial, no una lista.",
+  "construcciones": [
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:verlier(?:st|en)?|verloren|brich(?:st)?|gebrochen|rei[sßt]t? ab|erlischt|vorbei|wegs?ein)\\b[^.!?]{0,24}\\b(?:Serie|Str[aä]hne|Tage in Folge)\\b",
+      "porque": "Verlustverb direkt an der Serie"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:Serie|Str[aä]hne|Tage in Folge)\\b[^.!?]{0,24}\\b(?:verloren|gebrochen|vorbei|weg|zu Ende|auf null)\\b",
+      "porque": "dasselbe, Serie zuerst"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\bzur[uü]ck auf (?:null|0)\\b",
+      "porque": "der Neustart als Absturz erzählt"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:verlier|brich|lass)(?:e)? (?:sie |deine )?nicht\\b",
+      "porque": "der negative Imperativ: confirm-shaming"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:beeil|schnell|letzte Chance|l[aä]uft ab|vor Mitternacht|verf[aä]llt|endet (?:heute|in))\\b",
+      "porque": "fabrizierte Dringlichkeit — von der FTC benannte Kategorie"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:nur noch|es bleiben) \\w+ (?:Stunden?|Minuten?)\\b",
+      "porque": "ein Countdown auf dem Bildschirm eines Kindes"
+    },
+    {
+      "categoria": "comparacion",
+      "patron": "\\b(?:die anderen Kinder|alle anderen|der Durchschnitt|Kinder in deinem Alter|als du|hinter)\\b",
+      "porque": "normative Rückmeldung (mc-17 §84)"
+    }
+  ]
+}

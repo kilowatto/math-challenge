@@ -1,0 +1,232 @@
+---
+/**
+ * `/{locale}/app/pausa` — **la pausa familiar se declara aquí.** F7, #204.
+ *
+ * ─── De quién es esta pantalla ─────────────────────────────────────────────
+ *
+ * Del ADULTO, siempre. El padre declara la pausa de un hijo (`?hijo=<id>` —
+ * la autorización es `parent_user_id`, misma consulta que el cable) y el
+ * adulto aprendiz (SERIO/JR/PRO, D-034) se declara la suya propia. Un niño
+ * no llega aquí: la página exige la sesión `mc_s` y falla cerrada a la puerta.
+ *
+ * ─── Lo que NO se pide, a propósito ────────────────────────────────────────
+ *
+ *  · **Ninguna razón escrita.** La categoría de #204 («viaje», «enfermedad»,
+ *    «otro») no existe en esta pantalla porque `child_streak` no tiene columna
+ *    para ella — la migración 0007 la dejó fuera deliberadamente, con la nota
+ *    de que si el dueño la quiere entra como enumeración cerrada en un CHECK—
+ *    y este trabajo no toca migraciones. Un `<select>` que se recolecta y no
+ *    se guarda es un dato recolectado de más (D-013) y una promesa falsa.
+ *  · **Ningún texto libre.** Dos fechas y un botón. Línea roja #3 en espíritu,
+ *    aunque quien escribe aquí es un adulto.
+ *
+ * ─── El copy no culpa (mc-19 rec. #8, línea roja #7) ───────────────────────
+ *
+ * La pausa es un derecho de la familia, no una confesión. Ninguna cadena de
+ * `i18n/pausa/` usa léxico de pérdida, urgencia o comparación, y
+ * `audits/racha-lexico.mjs` escanea el directorio entero en los siete locales
+ * — la regla la hace cumplir el auditor, no la buena voluntad.
+ *
+ * ─── Los números NUNCA van escritos a mano ─────────────────────────────────
+ *
+ * Los límites (4 al año, 21 días, 5 hacia atrás) se citan de las constantes
+ * del motor y pasan por `formatear()`, que sabe que `de-DE` y `fr-FR` no
+ * agrupan los millares igual (mc-34). El año es la excepción deliberada: un
+ * año no es una cantidad y «2.026» sería un error, así que viaja como cadena.
+ *
+ * ─── SSR, como toda esta superficie ────────────────────────────────────────
+ *
+ * Lee cookies y la base. El formulario es un `<form method="post">` de verdad,
+ * sin una línea de JavaScript de cliente: en el aparato de referencia el
+ * script falla más de lo que nadie cree (`mc-33`), y declarar una pausa tiene
+ * que funcionar igual con el script muerto.
+ */
+export const prerender = false;
+
+import Privada from "../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../lib/sesiones";
+import { rutaCasa } from "../../../lib/rutas-app";
+import { ruta } from "../../../i18n/rutas";
+import {
+  PAUSAS_POR_ANIO,
+  DIAS_MAXIMOS_DE_PAUSA,
+  VENTANA_DE_REPARACION,
+  anioDe,
+  diaEfectivo,
+  diasEntre,
+  ESTADO_INICIAL,
+} from "../../../../../../packages/motor/src/racha.ts";
+import { formatear } from "../../../../../../packages/motor/src/numeros.ts";
+import {
+  leerEstadoRacha,
+  perfilPropio,
+  zonaDelHogar,
+  type Jugador,
+} from "../../../lib/progreso";
+
+import en from "../../../i18n/pausa/en.json";
+import esMX from "../../../i18n/pausa/es-MX.json";
+import esES from "../../../i18n/pausa/es-ES.json";
+import frFR from "../../../i18n/pausa/fr-FR.json";
+import ptBR from "../../../i18n/pausa/pt-BR.json";
+import ptPT from "../../../i18n/pausa/pt-PT.json";
+import deDE from "../../../i18n/pausa/de-DE.json";
+
+const TEXTOS: Record<string, typeof en> = {
+  "en": en,
+  "es-MX": esMX,
+  "es-ES": esES,
+  "fr-FR": frFR,
+  "pt-BR": ptBR,
+  "pt-PT": ptPT,
+  "de-DE": deDE,
+};
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const p = TEXTOS[locale] ?? en;
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+// `?cambiar=1` por el mismo bucle que documenta `app/index.astro`: sin él,
+// una cookie viva con la sesión ya invalidada gira entre `/entrar/` y `/app/`.
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+// ── ¿La racha de un hijo, o la del propio adulto? ────────────────────────────
+//
+// Con `?hijo=` se exige que el perfil cuelgue de ESTA cuenta antes de pintar
+// nada — la misma consulta que la ruta usará al escribir. Si no cuelga, se
+// falla cerrado a la casa: no hay mensaje de error que enseñar, porque no hay
+// nada legítimo que alguien estuviera buscando aquí.
+const hijoId = Astro.url.searchParams.get("hijo") ?? "";
+let quien: Jugador;
+let contexto: string;
+if (hijoId !== "") {
+  const perfil = env?.DB ? await perfilPropio(env, hijoId, sesion.userId) : null;
+  if (!perfil) return Astro.redirect(rutaCasa(locale));
+  quien = { id: perfil.id, esAdulto: false };
+  contexto = p["pausa.para.hijo"].replace("{alias}", perfil.alias);
+} else {
+  quien = { id: sesion.userId, esAdulto: true };
+  contexto = p["pausa.para.adulto"];
+}
+
+// ── El estado, la zona y el día de hoy ───────────────────────────────────────
+const estado = (await leerEstadoRacha(env ?? {}, quien)) ?? ESTADO_INICIAL;
+const zona = await zonaDelHogar(env ?? {}, quien);
+const hoy = diaEfectivo(Date.now(), zona);
+const anio = anioDe(hoy);
+const usadas = estado.pause_year === anio ? estado.pause_uses_this_year : 0;
+
+/** Una fecha local YYYY-MM-DD, en la convención larga del locale. */
+const fechaLarga = (dia: string) =>
+  new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(
+    new Date(`${dia}T00:00:00Z`),
+  );
+
+// La pausa cubre los días ANTERIORES a `pause_until_local_date` (así la aplica
+// `registrarDia` sobre el hueco): sigue viva si hoy es anterior a ese día.
+const vigente =
+  estado.pause_until_local_date !== null && diasEntre(hoy, estado.pause_until_local_date) > 0
+    ? estado.pause_until_local_date
+    : null;
+
+// ── Los números, compuestos en el servidor ───────────────────────────────────
+const rellenar = (plantilla: string) =>
+  plantilla
+    .replace("{tope}", formatear(PAUSAS_POR_ANIO, locale, 0))
+    .replace("{max}", formatear(DIAS_MAXIMOS_DE_PAUSA, locale, 0))
+    .replace("{ventana}", formatear(VENTANA_DE_REPARACION, locale, 0))
+    .replace("{usadas}", formatear(usadas, locale, 0))
+    // El año NO pasa por `formatear()`: «2.026» sería un error, no un formato.
+    .replace("{anio}", String(anio))
+    .replace("{fecha}", vigente !== null ? fechaLarga(vigente) : "");
+
+// ── El motivo del error, de clave cerrada a texto del locale ─────────────────
+const e = Astro.url.searchParams.get("e") ?? "";
+const claveError = `pausa.error.${e}`;
+const error =
+  e !== "" && claveError in p
+    ? rellenar(p[claveError as keyof typeof p])
+    : e !== ""
+      ? p["pausa.error.generico"]
+      : null;
+
+const declarada = Astro.url.searchParams.get("declarada") === "1";
+---
+
+<Privada locale={locale} title={p["pausa.titulo"]} description={p["pausa.lead"]}>
+  <article class="pausa">
+    <h1>{p["pausa.titulo"]}</h1>
+    <p class="contexto">{contexto}</p>
+    <p class="lead">{p["pausa.lead"]}</p>
+
+    <section class="bloque">
+      <h2>{vigente !== null ? rellenar(p["pausa.estado.vigente"]) : p["pausa.estado.sin"]}</h2>
+      <p class="muted">{rellenar(p["pausa.usadas"])}</p>
+      <p class="muted">{rellenar(p["pausa.reglas"])}</p>
+    </section>
+
+    {declarada && <p class="ok" role="status">{p["pausa.exito"]}</p>}
+    {error !== null && <p class="mal" role="alert">{error}</p>}
+
+    {/*
+      El formulario es HTML puro: sin `<script>` en esta página. Las dos fechas
+      y el botón sobreviven a un navegador con el JavaScript muerto (`mc-33`),
+      que es el caso que hay que aguantar, no el raro.
+    */}
+    <form class="bloque" method="post" action="/api/pausa">
+      <input type="hidden" name="locale" value={locale} />
+      {hijoId !== "" && <input type="hidden" name="hijo" value={hijoId} />}
+      <label class="campo">
+        <span>{p["pausa.campo.desde"]}</span>
+        <input type="date" name="desde" required />
+      </label>
+      <label class="campo">
+        <span>{p["pausa.campo.hasta"]}</span>
+        <input type="date" name="hasta" required />
+      </label>
+      <button type="submit" class="boton primario">{p["pausa.cta"]}</button>
+    </form>
+
+    <p><a class="volver" href={rutaCasa(locale)}>{p["pausa.volver"]}</a></p>
+  </article>
+
+  <style>
+    .pausa { padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: calc(var(--space) * 0.5); }
+    .contexto { font-family: var(--font-sistema); font-size: var(--text-sm);
+                color: var(--color-text-muted); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    h2 { font-family: var(--font-sistema); font-size: var(--text-base); font-weight: var(--weight-subtitle);
+         margin: 0 0 calc(var(--space) * 0.5); }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-body);
+             margin-block-end: var(--space); }
+    .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-end: var(--space); }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-end: var(--space); }
+    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space);
+             font-family: var(--font-sistema); font-size: var(--text-sm); }
+    .campo input { min-height: 44px; padding-inline: 0.6rem; border: 1px solid var(--color-border);
+                   border-radius: var(--radius); background: var(--color-surface);
+                   color: var(--color-text); font-size: var(--text-base); }
+    /* 44px, la vara del ADULTO. Los 88 de kinder son para las superficies de niño. */
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             background: transparent; color: var(--color-text); font-family: var(--font-sistema);
+             font-size: var(--text-base); cursor: pointer; }
+    .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
+    .boton:focus-visible, .campo input:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+    .volver { color: var(--color-text-muted); font-size: var(--text-sm); }
+  </style>
+</Privada>

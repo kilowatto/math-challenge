@@ -1,0 +1,23 @@
+{
+  "pausa.titulo": "Familienpause",
+  "pausa.lead": "Manche Tage zählen einfach nicht: eine Reise, eine Krankheit, das Leben. Während einer Pause bleibt die Serie genau so, wie sie war: Sie wächst nicht und sie ist sicher.",
+  "pausa.reglas": "Du kannst bis zu {tope} Pausen pro Kalenderjahr erklären, jede bis zu {max} Tage lang. Wenn du es nicht rechtzeitig sagen konntest, kannst du bis zu {ventana} Tage rückwirkend ab dem letzten Übungstag abdecken.",
+  "pausa.estado.vigente": "Es ist eine Pause bis zum {fecha} erklärt.",
+  "pausa.estado.sin": "Im Moment ist keine Pause erklärt.",
+  "pausa.usadas": "Erklärte Pausen im Jahr {anio}: {usadas} von {tope}.",
+  "pausa.campo.desde": "Erster Tag",
+  "pausa.campo.hasta": "Letzter abgedeckter Tag",
+  "pausa.cta": "Die Pause erklären",
+  "pausa.exito": "Pause erklärt. Die Serie bleibt, wie sie war.",
+  "pausa.para.hijo": "Für {alias}",
+  "pausa.para.adulto": "Für deine eigene Serie",
+  "pausa.volver": "Zurück zu deinem Zuhause",
+  "pausa.error.rango_invertido": "Die Pause endet, bevor sie beginnt. Prüfe die Daten.",
+  "pausa.error.pausa_demasiado_larga": "Eine Pause kann bis zu {max} Tage dauern. Erkläre einen kürzeren Zeitraum; danach kannst du eine weitere erklären.",
+  "pausa.error.tope_anual": "Die {tope} Pausen des Jahres {anio} sind bereits erklärt. Der Zähler wird am 1. Januar zurückgesetzt; die Serie zählt weiter wie immer.",
+  "pausa.error.fuera_de_la_ventana": "Rückwirkend kannst du bis zu {ventana} Tage ab dem letzten Übungstag abdecken. Die neue Serie zählt ab dem nächsten Übungstag.",
+  "pausa.error.sin_dia_que_reparar": "Es gibt noch keinen Übungstag, also gibt es rückwirkend nichts abzudecken.",
+  "pausa.error.fecha_invalida": "Prüfe die Daten: Es braucht einen ersten und einen letzten Tag.",
+  "pausa.error.sin_permiso": "Dieses Profil gehört nicht zu diesem Konto.",
+  "pausa.error.generico": "Die Pause konnte nicht erklärt werden. Bitte versuche es erneut."
+}

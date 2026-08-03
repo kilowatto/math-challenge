@@ -4412,3 +4412,149 @@ tienen que conocerla»).
 **Investigación relacionada:** `mc-52` (Bebras, Smullyan/MAA, la
 evidencia honesta de Hsu et al. 2018), D-122, D-129, D-132 (es la base
 de la pista de demostración).
+
+---
+
+## D-148 — La celebración vive en CSS propio, en tres intensidades, con un toggle por perfil · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de efectos.
+
+- **Sin librería nueva**: los efectos de celebración se construyen en
+  CSS propio (la técnica que ya usa `reto.css`), cero dependencia que
+  auditar y cero peso — el mercado es Android gama baja (mc-47).
+  `canvas-confetti` queda como opción descartada por escrito.
+- **Tres intensidades**: acierto normal (micro-animación de ~220 ms +
+  frase nueva, D-149), reto completado (efecto mayor + frase de
+  cierre), hito de racha/dominio (el momento «mascota cobra vida»).
+- **El toggle de efectos es POR PERFIL, no por cuenta** (precisión del
+  dueño: «tal vez uno sí con sonido y otro no»): cada perfil de hijo
+  tiene su propio ajuste, persistente, y el adulto el suyo.
+  `prefers-reduced-motion` se respeta siempre encima de todo
+  (tokens.css ya lo aplana).
+- **Al fallar:** como hoy (la causa explicada sin juicio) más **Larry
+  pensativo amable** — el estado `thinking → presenting` que `mc-37`
+  prefiere. **Ningún efecto de reprobación, jamás**: el «booo» cruza la
+  línea roja #7, `mc-11` y `mc-10`, y queda descartado por escrito.
+
+**Investigación relacionada:** `docs/planes/ux-celebracion-mapa-y-voz.md`,
+mc-17 §11, mc-38, línea roja #7.
+
+---
+
+## D-149 — Piso de 150 frases de acierto por locale, autoradas, con rotación determinista · 2026-08-03
+
+**Decisión del dueño**, con la precisión que cambia el alcance:
+**«150 no es un tope, es el piso»** — al menos 150 frases de acierto
+por locale, en los 7 locales, autoradas (nunca traducidas, D-022),
+siguiendo el canon de `mc-11` (elogio al proceso, jamás al rasgo, jamás
+comparación, jamás conteo de fallos — verificado por
+`larry-nunca-averguenza` extendido al nuevo diccionario).
+
+**La selección es rotación determinista** (D-092: nada aleatorio, ni
+gratis): `índice = hash(día_local, contador_aciertos) mod N` — se
+agotan antes de repetir y el orden es reproducible y auditable. Las
+frases viajan como claves en `i18n/reto/` (el patrón de las 86 de hoy),
+y el servidor elige, nunca el cliente.
+
+**Investigación relacionada:** mc-11, D-014, D-022, D-092.
+
+---
+
+## D-150 — El avance al siguiente ítem es semi-automático tras el veredicto · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de navegación del reto.
+
+Tras leerse el veredicto en voz (o tras su pausa equivalente sin voz),
+**el siguiente ítem llega solo** — el niño no tiene que entender la
+navegación para seguir jugando. El botón «Siguiente» sigue visible
+siempre, y **tocar cualquier cosa pausa** el avance. La pausa tras
+acierto es larga (que el momento de celebración de D-148 se viva
+completo); tras fallo, la pausa cubre la explicación entera de la
+causa.
+
+**Investigación relacionada:** Duolingo «Continue»
+(blog.duolingo.com), mc-42 §3, `ux-celebracion-mapa-y-voz.md` §4.2.
+
+---
+
+## D-151 — La salida del reto es un botón de esquina que cierra la sesión en el servidor · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de navegación del reto.
+
+«Ya terminé» deja de ser un `<a href>`: pasa a ser un **botón de
+esquina** (ícono de puerta, 48 px, mismo lugar en todas las pantallas —
+previsibilidad de `mc-38`) que hace **POST al servidor**: cierra la
+sesión del reto y **otorga el bono de finalización** — arregla el hueco
+declarado de #192/`progreso.ts:51` («hoy nadie observa el final de un
+reto»). La acción `terminar` se añade a `/api/jugar` junto a
+`siguiente` y `responder`.
+
+**Investigación relacionada:** #192, dudas §25.3, `ux-...` §1.1.
+
+---
+
+## D-152 — El mapa es el catálogo visual de niveles: enrutado, con arte Recraft, al nivel de diseño de un mapa de niveles tipo Angry Birds · 2026-08-03
+
+**Decisión del dueño**, con la precisión de estándar: «que el mapa y el
+modo historia sea como el de Angry Birds o algo así de gráficos — un
+mapa que va avanzando de reto en reto y puedes regresar».
+
+- El sendero KINDER y el árbol ya construidos **se enrutan**: un toque
+  en el lugar en curso lleva al reto; el mapa es la entrada, no solo la
+  reja de caras.
+- **Avance de reto en reto, revisitable**: los lugares completados se
+  pueden rejugar siempre (nada se bloquea hacia atrás — coherente con
+  «nada se tacha y nada regresa» de `guia-de-estilo.md` § mapa).
+- **Arte por lugar con Recraft** (continuidad con Larry, AVIF/WebP):
+  cada lugar de la Sabana y cada nodo del árbol con su imagen; el hueco
+  `◍` de `Companero.astro` se llena. La Sabana no habla (D-019): el
+  arte se autora una vez y sirve a los 7 locales.
+- La selección de dificultad sigue siendo del motor (D-017): el mapa
+  presenta, no pregunta el nivel.
+
+**Investigación relacionada:** D-019, D-080, `guia-de-estilo.md`,
+`ux-...` §4.3.
+
+---
+
+## D-153 — La voz del navegador gana emoción prosódica, fraseo, mejores voces y números hablados · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de voz — dentro de
+`speechSynthesis` (D-078), sin SSML (la Web Speech API no lo tiene).
+
+- **Perfiles de prosodia por tipo de mensaje:** celebración
+  (`rate ~1.05`, `pitch ~1.2`), explicación (`rate 0.9`, `pitch 1.0`),
+  ánimo tras fallo (`rate 0.85`, `pitch ~0.95`), aviso de límite
+  (`rate 0.85`, pausas). La prosodia ES el canal de emoción de esta
+  API.
+- **Fraseo por frases:** el veredicto se corta en 2-3 utterances con
+  pausas naturales, no una sola corrida.
+- **Mejor selección de voz:** heurística que prefiere voces
+  «natural/neural/premium/enhanced» del SO, manteniendo la regla de
+  D-078 (sin voz del locale, no se ofrece y la pantalla lo dice).
+- **Dicción de números:** `numerosHablados()` (autorado en los 7
+  locales, hoy sin llamador) se cablea: los números se leen en
+  palabras, no dígito a dígito.
+- **Límite declarado:** la emoción alcanzable es prosódica, no actoral.
+  La voz actoral es audio pregenerado (la pista de F6 P-19), no esta
+  API.
+
+**Investigación relacionada:** D-078, `packages/tutor/src/voz.ts`,
+`ux-...` §4.4.
+
+---
+
+## D-154 — El toggle de efectos es por perfil y se persiste por dispositivo · 2026-08-03
+
+**Decisión del dueño** (precisión dicha dentro de la ola de efectos,
+registrada aparte porque cambia el modelo de datos).
+
+El ajuste de efectos vive **por perfil** (`child_profiles` para cada
+hijo, `users` para el adulto) — no en la cuenta del padre — y se
+persiste por dispositivo (mismo patrón que el conmutador de voz,
+`localStorage["mc:voz"]`, con respaldo en el perfil para el siguiente
+dispositivo). Un hermano con efectos y otro sin, en el mismo aparato.
+`prefers-reduced-motion` siempre encima.
+
+**Investigación relacionada:** D-148, mc-38 (control persistente de
+movimiento/sonido, implicación 6).

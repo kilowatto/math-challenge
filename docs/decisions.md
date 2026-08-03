@@ -3549,7 +3549,7 @@ niño de PRIMARIA que juega sin completar ninguna misión sigue contando como
 pendiente — la regla está probada como caso explícito en
 `apps/web/src/lib/push-hogares.prueba.mjs`, ejecutado contra SQLite de verdad.
 
-## D-PENDIENTE — Rango y Nivel son dos ejes con dos nombres: Q2 se llama «Rango», Q3 es una sola escalera, y el mapa es un tercer eje · 2026-08-03
+## D-129 — Rango y Nivel son dos ejes con dos nombres: Q2 se llama «Rango», Q3 es una sola escalera, y el mapa es un tercer eje · 2026-08-03
 
 > **Numeración pendiente.** El orquestador asigna el número (siguiente libre al
 > escribir esto: D-129). Marcador acordado para decisiones escritas desde un

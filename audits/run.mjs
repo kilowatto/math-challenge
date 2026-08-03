@@ -448,6 +448,10 @@ for (const prueba of [
   // 1 después de haber respetado el límite que él mismo puso. Aquí se ejecuta
   // el cable completo: el corte, su motivo, y el motor de racha detrás.
   "packages/motor/src/limite-pantalla.prueba.mjs",
+  // #268. La puerta única instante→día/hora, en su módulo neutral. Lo que
+  // defiende tampoco rompe nada visible: un día contado en UTC en vez de en la
+  // zona del hogar adelanta o atrasa la racha de medio país sin dar error.
+  "packages/motor/src/tiempo-local.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

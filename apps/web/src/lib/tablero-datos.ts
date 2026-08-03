@@ -302,6 +302,25 @@ export interface DatosDeVista {
 }
 
 /**
+ * El número de posición, SOLO si la banda lo publica exacto.
+ *
+ * Existe para que ninguna pantalla nombre `posicion.rank`: D-081 dice que en
+ * KINDER la posición se muestra en tercios, nunca el número, y el guardián
+ * (`kinder-sin-examen.mjs`) bloquea cualquier superficie que referencie el
+ * rango crudo — una pantalla que no puede escribir `.rank` no puede pintarlo.
+ * Aquí, fuera del árbol de superficies, la lectura es legítima: es quien
+ * decide cuándo NO mandarlo.
+ */
+export function rangoExacto(posicion: PosicionVisible | null): number | null {
+  return posicion?.forma === "exacta" ? posicion.rank : null;
+}
+
+/** El tercio, SOLO si la posición vino en tercios (KINDER, widget del padre). */
+export function tercioDe(posicion: PosicionVisible | null): "top" | "mid" | "bottom" | null {
+  return posicion?.forma === "tercio" ? posicion.tercio : null;
+}
+
+/**
  * El tablero para un NIÑO (PRIMARIA o SECUNDARIA — la página desvía KINDER
  * antes de llegar aquí, y `tablero-sin-kinder-publico.mjs` vigila ese desvío).
  *

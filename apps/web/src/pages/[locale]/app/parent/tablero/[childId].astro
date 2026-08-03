@@ -43,7 +43,7 @@ import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../../lib
 import { pestanasPrivadas } from "../../../../../lib/pestanas-privadas";
 import { hijoDelPadre } from "../../../../../lib/padre-limite";
 import { consentimientoTablero } from "../../../../../lib/padre-tablero";
-import { vistaParaNino } from "../../../../../lib/tablero-datos";
+import { tercioDe, vistaParaNino } from "../../../../../lib/tablero-datos";
 import { rutaCasa } from "../../../../../lib/rutas-app";
 import { ruta } from "../../../../../i18n/rutas";
 import { formatear } from "../../../../../../../../packages/motor/src/numeros.ts";
@@ -92,18 +92,21 @@ const textos = TEXTOS_TABLERO[locale];
 const esKinder = hijo.theme_band === "KINDER";
 const widget = esKinder && consentimiento.vigente ? await vistaParaNino(env.DB, hijo) : null;
 
-const filasWidget = (widget?.vista.lista ?? []).map((e) => ({
-  alias: e.alias,
-  puntos: formatear(e.total_score, locale),
-  posicion:
-    e.posicion.forma === "tercio" ? textos[`tablero.padre.tercio.${e.posicion.tercio}`] : "",
-  soyYo: e.soy_yo,
-}));
+const filasWidget = (widget?.vista.lista ?? []).map((e) => {
+  const tercio = tercioDe(e.posicion);
+  return {
+    alias: e.alias,
+    puntos: formatear(e.total_score, locale),
+    posicion: tercio === null ? "" : textos[`tablero.padre.tercio.${tercio}`],
+    soyYo: e.soy_yo,
+  };
+});
+const tercioPropioCrudo = tercioDe(widget?.vista.mi_posicion ?? null);
 const tercioPropio =
-  widget?.vista.mi_posicion?.forma === "tercio"
+  tercioPropioCrudo !== null
     ? rellenarTablero(textos["tablero.padre.tercioDe"], {
         alias: hijo.alias,
-        tercio: textos[`tablero.padre.tercio.${widget.vista.mi_posicion.tercio}`],
+        tercio: textos[`tablero.padre.tercio.${tercioPropioCrudo}`],
       })
     : null;
 const puntosPropios = widget

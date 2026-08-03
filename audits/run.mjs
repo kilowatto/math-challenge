@@ -350,6 +350,21 @@ const ACTIVE = [
   // de que se mantiene — sus controles negativos son DEGRADACIONES de
   // `packages/tutor/src/en-vivo.ts`, del sobre y del i18n REALES (D-070).
   ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
+
+  // ─── El tablero global (F7 #247) ─────────────────────────────────────────
+  //
+  // La mitad de la ESCRITURA del opt-in y de su cumplimiento: nadie borra
+  // (`revoked_at`, nunca DELETE — D-051), el alta registra `granted_by` y
+  // `consent_version`, y el filtro se ejecuta contra `node:sqlite` con una
+  // fixture a mano (D-070) — un niño sin fila y otro revocado no aparecen
+  // aunque les siembres más puntos que a nadie.
+  ["tablero-optin",          "Opt-in del tablero: gobierno de la escritura y cumplimiento ejecutado", "D-040, D-051, #247, mc-25"],
+  // La frontera de KINDER: su tablero NUNCA se renderiza para el niño — el
+  // desvío de `tablero/nino.astro` se exige escrito a mano, los tercios son
+  // solo del widget del padre, y el árbol de `app/kids/**` no puede ni
+  // nombrarlo. La otra mitad (KINDER en tercios, nunca número) la ejecuta
+  // `tablero-orden-puntos.mjs`.
+  ["tablero-sin-kinder-publico", "El tablero de KINDER no existe para el niño", "#247, D-081, D-040, mc-10, mc-18"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -535,6 +550,16 @@ for (const prueba of [
   // pausas del año por pulsar dos veces el mismo botón. Incluye el rechazo al
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
+
+  // F7 #247, #250. El TABLERO GLOBAL de punta a punta contra SQLite de verdad
+  // (`node:sqlite`): un niño sin consentimiento no aparece aunque tenga más
+  // puntos que nadie; uno revocado desaparece; PRIMARIA en el puesto 47 recibe
+  // SOLO su total (la tabla no viaja); SECUNDARIA en el 147 recibe su
+  // posición exacta; KINDER solo en tercios; y el opt-in se escribe con el
+  // gobierno de D-051 (alta = INSERT con granted_by, baja = revoked_at,
+  // NUNCA DELETE). La tabla de la escalera está escrita a mano (D-070), no
+  // importada del motor: si no, aprobaría su propia violación.
+  "apps/web/src/lib/padre-tablero.prueba.mjs",
 
 
 ]) {

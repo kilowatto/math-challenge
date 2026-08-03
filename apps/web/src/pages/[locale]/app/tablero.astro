@@ -50,7 +50,7 @@ import {
 } from "../../../lib/sesiones";
 import { pestanasPrivadas } from "../../../lib/pestanas-privadas";
 import { rutaTableroNino } from "../../../lib/rutas-app";
-import { vistaParaAdulto } from "../../../lib/tablero-datos";
+import { rangoExacto, vistaParaAdulto } from "../../../lib/tablero-datos";
 import { ruta } from "../../../i18n/rutas";
 import { formatear } from "../../../../../../packages/motor/src/numeros.ts";
 import type { Banda } from "../../../../../../packages/motor/src/puntuacion.ts";
@@ -85,20 +85,22 @@ const textos = TEXTOS_TABLERO[locale];
 const banda = vista.banda as Banda;
 
 // La proyección a cadenas, entera en el servidor. Las bandas adultas son
-// exactas, así que `posicion` siempre trae `rank`; la rama de tercio existe
-// por completitud del tipo y no se ejercita aquí.
-const filas = vista.lista.map((e) => ({
-  alias: e.alias,
-  puntos: formatear(e.total_score, locale),
-  posicion: e.posicion.forma === "exacta" ? formatear(e.posicion.rank, locale) : "",
-  soyYo: e.soy_yo,
-}));
+// exactas, así que `rangoExacto` siempre devuelve el número aquí; la forma de
+// tercio (KINDER) no existe en esta pantalla — sale como cadena vacía.
+const filas = vista.lista.map((e) => {
+  const rango = rangoExacto(e.posicion);
+  return {
+    alias: e.alias,
+    puntos: formatear(e.total_score, locale),
+    posicion: rango === null ? "" : formatear(rango, locale),
+    soyYo: e.soy_yo,
+  };
+});
 
+const rangoPropio = rangoExacto(vista.mi_posicion);
 const miPosicion =
-  vista.mi_posicion?.forma === "exacta"
-    ? rellenarTablero(textos["tablero.tuPosicion"], {
-        posicion: formatear(vista.mi_posicion.rank, locale),
-      })
+  rangoPropio !== null
+    ? rellenarTablero(textos["tablero.tuPosicion"], { posicion: formatear(rangoPropio, locale) })
     : null;
 const misPuntos = rellenarTablero(textos["tablero.tusPuntos"], {
   puntos: formatear(vista.mi_total, locale),

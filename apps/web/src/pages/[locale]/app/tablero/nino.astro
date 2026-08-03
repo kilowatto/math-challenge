@@ -53,7 +53,7 @@ import {
   leerSesionNino,
 } from "../../../../lib/sesiones";
 import { hijoDelPadre } from "../../../../lib/padre-limite";
-import { vistaParaNino } from "../../../../lib/tablero-datos";
+import { rangoExacto, vistaParaNino } from "../../../../lib/tablero-datos";
 import { rutaCasa, rutaJugar, rutaKids } from "../../../../lib/rutas-app";
 import { formatear } from "../../../../../../../packages/motor/src/numeros.ts";
 import "../../../../styles/fonts.css";
@@ -98,23 +98,25 @@ const textos = TEXTOS_TABLERO[locale];
 // La proyección a cadenas, entera en el servidor, con el locale de QUIEN MIRA
 // — nunca el `alias_locale` del dueño de la fila (#247, `mc-34`). Las dos
 // bandas que llegan aquí son exactas, así que `posicion` siempre trae `rank`.
-const filas = vista.lista.map((e) => ({
-  alias: e.alias,
-  puntos: formatear(e.total_score, locale),
-  posicion: e.posicion.forma === "exacta" ? formatear(e.posicion.rank, locale) : "",
-  soyYo: e.soy_yo,
-}));
+const filas = vista.lista.map((e) => {
+  const rango = rangoExacto(e.posicion);
+  return {
+    alias: e.alias,
+    puntos: formatear(e.total_score, locale),
+    posicion: rango === null ? "" : formatear(rango, locale),
+    soyYo: e.soy_yo,
+  };
+});
 
 const misPuntos = rellenarTablero(textos["tablero.tusPuntos"], {
   puntos: formatear(vista.mi_total, locale),
 });
 // PRIMARIA fuera del top 20 recibe `mi_posicion = null` del servidor — esta
 // plantilla no podría inventarla aunque quisiera: el número no viajó.
+const rangoPropio = rangoExacto(vista.mi_posicion);
 const miPosicion =
-  vista.mi_posicion?.forma === "exacta"
-    ? rellenarTablero(textos["tablero.tuPosicion"], {
-        posicion: formatear(vista.mi_posicion.rank, locale),
-      })
+  rangoPropio !== null
+    ? rellenarTablero(textos["tablero.tuPosicion"], { posicion: formatear(rangoPropio, locale) })
     : null;
 
 const titulo = `${textos["tablero.titulo"]} · ${textos[`tablero.banda.${vista.banda}`]}`;
@@ -215,7 +217,7 @@ const titulo = `${textos["tablero.titulo"]} · ${textos[`tablero.banda.${vista.b
         margin-block: 0.35rem 0;
       }
       .pista {
-        font-size: var(--text-sm);
+        font-size: var(--text-xs);
         color: var(--color-text-muted);
         line-height: var(--leading-body);
         margin-block: 0.35rem 0;

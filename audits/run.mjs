@@ -506,6 +506,15 @@ for (const prueba of [
   // 20:00, el tope que no se reinicia a medianoche UTC, el silencio que se
   // mira primero, y un hermano completado silenciando el día entero.
   "packages/motor/src/recordatorio.prueba.mjs",
+  // F8 #270, #271, #273. El CABLE del límite de pantalla contra SQLite de
+  // verdad (`node:sqlite`): que los minutos se cobran con el reloj del
+  // servidor, que `warned_at` no avisa dos veces, que el descanso reinicia su
+  // contador sin tocar el total, y que la ventana nocturna corta con
+  // `BEDTIME` y también de madrugada. Lo que defiende tampoco rompe nada
+  // visible: un cable que no acumula, o que avisa cada vez que se reabre la
+  // app, no da error — lo ve un niño con el límite «puesto» jugando tres
+  // horas, o un padre al que le cuentan la noche de su hijo como un tope.
+  "apps/web/src/lib/limite-dia.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

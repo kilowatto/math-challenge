@@ -81,26 +81,21 @@
  * `minutes_used` y `minutosUsados` sería exactamente el punto donde el auditor
  * deja de ver.
  *
- * ─── Una deuda declarada, a propósito: #268 ───────────────────────────────
+ * ─── El calendario compartido: #268, ya hecho ─────────────────────────────
  *
- * `diaEfectivo` y `zonaValida` se **importan** de `racha.ts` en vez de vivir en
- * un módulo neutral. #268 propone extraerlos a `tiempo-local.ts` y tiene razón:
- * importar aritmética de husos desde un archivo llamado «racha» confunde a
- * quien lo lea dentro de un año. No se hace en este PR porque `racha.ts` se
- * está cableando en paralelo y la extracción provocaría un conflicto grande en
- * el archivo más delicado del motor. La deuda queda escrita aquí y en el PR;
- * `horaLocal()` nace ya en este archivo para que la extracción de #268 se
- * lleve las tres funciones de una vez.
+ * `diaEfectivo`, `zonaValida` y `horaLocal` viven en `tiempo-local.ts`, el
+ * módulo neutral que F7 y F8 comparten. Aquí solo se reexportan para que quien
+ * use el límite no tenga que importar de dos sitios el mismo concepto de «día
+ * local del hogar». Es la misma función, no una copia:
+ * `audits/limite-pantalla-motor-unico.mjs` comprueba la identidad por
+ * referencia, porque una copia sería un segundo calendario.
  */
 
-import { diaEfectivo, zonaValida, type DiaLocal, type MotivoDelDia } from "./racha.ts";
+import { diaEfectivo, zonaValida, horaLocal, type DiaLocal, type HoraLocal } from "./tiempo-local.ts";
+import type { MotivoDelDia } from "./racha.ts";
 import type { TemaVisual } from "./bandas.ts";
 
-// `diaEfectivo` se reexporta para que quien use el límite no tenga que importar
-// de dos sitios el mismo concepto de «día local del hogar». Es la misma
-// función, no una copia: `audits/limite-pantalla-motor-unico.mjs` comprueba la
-// identidad por referencia, porque una copia sería un segundo calendario.
-export { diaEfectivo, zonaValida, type DiaLocal };
+export { diaEfectivo, zonaValida, horaLocal, type DiaLocal, type HoraLocal };
 
 // ─── La tabla de D-016, y solo aquí (#266) ───────────────────────────────────
 
@@ -198,52 +193,13 @@ export function minutosDiariosPermitidos(banda: BandaConLimite, minutos: number)
   return Number.isInteger(minutos) && minutos >= limite.minMin && minutos <= limite.maxMin;
 }
 
-// ─── La hora local del hogar (#273, y la mitad de #268 que sí se hace) ───────
-
-/** Una hora local del hogar, `HH:MM`. Nunca un instante, nunca UTC crudo. */
-export type HoraLocal = string;
+// ─── La hora local del hogar (#273) ────────────────────────────────────────
+//
+// `horaLocal` y el tipo `HoraLocal` viven en `tiempo-local.ts` desde #268 y
+// llegan por la reexportación de arriba. `FORMA_HORA` se queda aquí porque su
+// único uso es `minutosDelDia`.
 
 const FORMA_HORA = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
-/**
- * La hora local del hogar para un instante dado.
- *
- * Hermana de `diaEfectivo` y con las mismas reglas: recibe la zona IANA de
- * `users.timezone`, no la adivina y **jamás la lee del dispositivo del niño**.
- *
- * Se arma con `formatToParts` y `hourCycle: "h23"` por la misma razón que
- * `diaEfectivo` no usa `toLocaleDateString("en-CA")`: el formato depende de los
- * datos de locale del runtime, y este código corre en un Worker cuyo ICU no
- * elegimos. `h23` es explícito porque `en-US` da 12 horas con AM/PM por
- * defecto, y `"08:30"` de la noche y `"08:30"` de la mañana serían la misma
- * cadena — que en un corte nocturno es la diferencia entre cortar la tarde y no
- * cortar nunca.
- */
-export function horaLocal(instanteUTC: number, zonaIana: string): HoraLocal {
-  if (!Number.isFinite(instanteUTC)) {
-    throw new RangeError(`instante no finito: ${instanteUTC}`);
-  }
-  if (!zonaValida(zonaIana)) {
-    throw new RangeError(
-      `zona horaria desconocida: "${zonaIana}". Quien llama decide el respaldo ` +
-        "(el último users.timezone conocido); este módulo no lo adivina y NUNCA lee la del dispositivo.",
-    );
-  }
-  const partes = new Intl.DateTimeFormat("en-US", {
-    timeZone: zonaIana,
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(instanteUTC));
-
-  const de = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? "";
-  // `h23` da 00-23, pero algunos ICU devuelven "24" para medianoche en `h24`.
-  // Normalizarlo aquí cuesta una línea y evita una hora imposible corriente
-  // abajo, donde ya nadie sabría de dónde salió.
-  const hora = de("hour") === "24" ? "00" : de("hour").padStart(2, "0");
-  const minuto = de("minute").padStart(2, "0");
-  return `${hora}:${minuto}`;
-}
 
 /** Minutos transcurridos desde la medianoche local. `"19:30"` → 1170. */
 export function minutosDelDia(hora: HoraLocal): number {

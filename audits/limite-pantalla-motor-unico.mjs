@@ -230,7 +230,7 @@ for (const archivo of archivos(/\.sql$/).filter((f) => f.startsWith("migrations/
 }
 
 notas.push(declaradores.length === 0 ? `una sola tabla de límites: ${MOTOR}` : "");
-notas.push("un solo calendario: `diaEfectivo` se importa de racha.ts, no se copia (#268 sigue pendiente)");
+notas.push("un solo calendario: `diaEfectivo` vive en tiempo-local.ts (#268) y racha.ts y limite-pantalla.ts lo reexportan, no se copia");
 notas.push("D-016 sobre sí misma: solo el tope de 60 min a 2-4 años es de fuente primaria; el resto es criterio propio");
 
 informar({

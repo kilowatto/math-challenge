@@ -12,7 +12,9 @@
  *     `America/Mexico_City` que juega a las 19:00 vería su día contado como el
  *     siguiente durante media vida del producto.
  *   · `diaEfectivo()` es la ÚNICA puerta entre un instante y un día. Recibe la
- *     zona IANA; no la adivina, no la lee del dispositivo del niño.
+ *     zona IANA; no la adivina, no la lee del dispositivo del niño. Vive en
+ *     `tiempo-local.ts` desde #268 y se reexporta aquí: este módulo fijó la
+ *     puerta, y medio repo la importa de aquí.
  *
  * ─── Lo que este módulo garantiza, y de dónde sale ────────────────────────
  *
@@ -62,8 +64,14 @@
  * el auditor deja de ver y donde un mapeo mal escrito se esconde.
  */
 
-/** Un día local del hogar, `YYYY-MM-DD`. Nunca un instante, nunca UTC crudo. */
-export type DiaLocal = string;
+import { type DiaLocal } from "./tiempo-local.ts";
+
+// La puerta instante→día/hora vive en `tiempo-local.ts` (#268): un solo
+// calendario para F7 y F8. Se reexporta aquí porque este módulo la fijó y
+// medio repo la importa de aquí — `audits/limite-pantalla-motor-unico.mjs`
+// comprueba la identidad por referencia, así que una copia sería un segundo
+// calendario.
+export { diaEfectivo, zonaValida, type DiaLocal } from "./tiempo-local.ts";
 
 const FORMA_DIA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -190,57 +198,9 @@ ON CONFLICT (child_profile_id) WHERE child_profile_id IS NOT NULL DO UPDATE SET
   updated_at                = excluded.updated_at
 `.trim();
 
-/** ¿Es `zona` una zona IANA que este runtime entiende? */
-export function zonaValida(zona: string): boolean {
-  try {
-    // El locale lleva región (`en-US`) aunque aquí sea irrelevante: lo único
-    // que se prueba es si el runtime conoce la zona. `audits/notacion-locale.mjs`
-    // bloquea todo `Intl` con idioma sin región, y tiene razón en general —
-    // `es-MX` y `es-ES` no comparten separador decimal (mc-34 §1). Escribirlo
-    // completo cuesta tres caracteres y evita la excepción que mañana alguien
-    // copia a un sitio donde sí importa.
-    new Intl.DateTimeFormat("en-US", { timeZone: zona });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * El día local del hogar para un instante dado.
- *
- * @param instanteUTC milisegundos desde la época — lo mide quien llama, no esto
- * @param zonaIana    `users.timezone` del padre dueño del perfil, p.ej. `America/Mexico_City`
- *
- * Se arma con `formatToParts` y no con `toLocaleDateString("en-CA")`. El truco
- * de `en-CA` da `YYYY-MM-DD` en la mayoría de los ICU pero no es una garantía
- * del estándar: depende de los datos de locale del runtime, y este código corre
- * en un Worker cuyo ICU no elegimos nosotros. `formatToParts` pide año, mes y
- * día por nombre, y el orden lo decidimos aquí.
- */
-export function diaEfectivo(instanteUTC: number, zonaIana: string): DiaLocal {
-  if (!Number.isFinite(instanteUTC)) {
-    throw new RangeError(`instante no finito: ${instanteUTC}`);
-  }
-  if (!zonaValida(zonaIana)) {
-    throw new RangeError(
-      `zona horaria desconocida: "${zonaIana}". Quien llama decide el respaldo ` +
-        `(el último users.timezone conocido, o ZONA_DE_RESPALDO); este módulo no lo adivina.`,
-    );
-  }
-  const partes = new Intl.DateTimeFormat("en-US", {
-    timeZone: zonaIana,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date(instanteUTC));
-
-  const de = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? "";
-  const anio = de("year").padStart(4, "0");
-  const mes = de("month").padStart(2, "0");
-  const dia = de("day").padStart(2, "0");
-  return `${anio}-${mes}-${dia}`;
-}
+// `zonaValida` y `diaEfectivo` vivían aquí. Desde #268 viven en
+// `tiempo-local.ts` y llegan por la reexportación de arriba: F7 y F8 comparten
+// UN calendario, y su dueño neutral es ese módulo, no éste.
 
 function comoUTC(dia: DiaLocal): number {
   if (!FORMA_DIA.test(dia)) {

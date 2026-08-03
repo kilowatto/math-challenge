@@ -1939,6 +1939,30 @@ const CASOS = [
     espera: "avatar",
 
   },
+  {
+    // F7 #224. El reparto del Durable Object de misiones, degradado sobre el
+    // archivo REAL: si `idFromName` recibe un literal, todo el producto haría
+    // cola detrás de un solo hilo (mc-32 riesgo #2).
+    auditor: "do-por-entidad",
+    que: "el DO de misiones repartido con un literal global en vez de por niño",
+    archivo: "apps/web/src/lib/missions-do.ts",
+    parche: (t) => t.replace("ns.idFromName(perfilId)", 'ns.idFromName("global")'),
+    espera: "global",
+  },
+  {
+    // F7 #224. El reloj en el camino de misión, sobre el archivo REAL del DO:
+    // el día lo calcula quien llama con `diaEfectivo()`, y un `Date.now()`
+    // aquí haría que dos llamadas el mismo día vieran menús distintos.
+    auditor: "mision-recompensa-deterministica",
+    que: "un Date.now() dentro del Durable Object de misiones",
+    archivo: "apps/web/src/lib/missions-do.ts",
+    parche: (t) =>
+      t.replace(
+        "const habilidadNueva = !dia.habilidades.includes(p.habilidad);",
+        "const habilidadNueva = Date.now() > 0 && !dia.habilidades.includes(p.habilidad);",
+      ),
+    espera: "reloj",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

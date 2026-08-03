@@ -62,6 +62,7 @@
 import { LOCALES, isLocale, type Locale } from "../../../../i18n";
 import "../../../../styles/reto.css";
 import Pantalla from "../../../../components/reto/Pantalla.astro";
+import { ETIQUETA_DE_VOZ } from "../../../../../../../packages/tutor/src/voz.ts";
 
 export function getStaticPaths() {
   return LOCALES.map((locale) => ({ params: { locale } }));
@@ -113,6 +114,13 @@ const rotulos = {
   practicando: texto("juego.practicando", "You're practising: {habilidad}"),
   llevas: texto("juego.llevas", "{n} so far"),
   ubicando: texto("juego.ubicando", "Still working out where to start you."),
+  // La voz (#135, D-078). `sinVoz` solo se pinta si ESTE aparato no tiene
+  // ninguna voz de este idioma instalada — la comprobación es del cliente,
+  // porque la cobertura es del sistema operativo y no del build.
+  escuchar: texto("juego.escuchar", "Listen"),
+  vozActivada: texto("juego.vozActivada", "Voice on"),
+  vozDesactivada: texto("juego.vozDesactivada", "Voice off"),
+  sinVoz: texto("juego.sinVoz", "This device has no voice installed for this language, so Larry can\u2019t read out loud here."),
 };
 
 const rutaCaras = `/${locale}/app/kids/`;
@@ -134,6 +142,6 @@ const rutaCaras = `/${locale}/app/kids/`;
   <body class="jugar-body">
     {/* La pantalla vive en un componente compartido: la MISMA la usa el adulto
        en `/app/practicar/`. Ver `components/reto/Pantalla.astro`. */}
-    <Pantalla locale={locale} rotulos={rotulos} salirA={rutaCaras} />
+    <Pantalla locale={locale} rotulos={rotulos} salirA={rutaCaras} etiquetaVoz={ETIQUETA_DE_VOZ[locale]} />
   </body>
 </html>

@@ -48,6 +48,7 @@ import { ruta } from "../../../i18n/rutas";
 import { rutaCasa } from "../../../lib/rutas-app";
 import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../../lib/sesiones";
 import Pantalla from "../../../components/reto/Pantalla.astro";
+import { ETIQUETA_DE_VOZ } from "../../../../../../packages/tutor/src/voz.ts";
 import "../../../styles/reto.css";
 
 import en from "../../../i18n/reto/en.json";
@@ -108,6 +109,13 @@ const rotulos = {
   practicando: texto("juego.practicando", "You're practising: {habilidad}"),
   llevas: texto("juego.llevas", "{n} so far"),
   ubicando: texto("juego.ubicando", "Still working out where to start you."),
+  // La voz (#135, D-078). `sinVoz` solo se pinta si ESTE aparato no tiene
+  // ninguna voz de este idioma instalada — la comprobación es del cliente,
+  // porque la cobertura es del sistema operativo y no del build.
+  escuchar: texto("juego.escuchar", "Listen"),
+  vozActivada: texto("juego.vozActivada", "Voice on"),
+  vozDesactivada: texto("juego.vozDesactivada", "Voice off"),
+  sinVoz: texto("juego.sinVoz", "This device has no voice installed for this language, so Larry can\u2019t read out loud here."),
 };
 
 /**
@@ -149,6 +157,7 @@ for (const clave of Object.keys(c)) {
       salirA={rutaCasa(locale)}
       habilidades={habilidades}
       mostrarContexto={true}
+      etiquetaVoz={ETIQUETA_DE_VOZ[locale]}
     />
 
     <style>

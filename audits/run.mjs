@@ -100,6 +100,12 @@ const ACTIVE = [
   // en producción: la página se pintaba perfecta y no tenía JavaScript.
   ["script-cliente-sin-ts",   "ningún script inline lleva TypeScript",        "Astro is:inline, D-032"],
 
+  // La voz de Larry es de SALIDA. `speechSynthesis` y `SpeechRecognition` se
+  // escriben casi igual, viven en el mismo `window` y aparecen en el mismo
+  // párrafo de cualquier tutorial — y una es la voz y la otra el micrófono,
+  // que la línea roja #1 no admite para un menor en ninguna banda.
+  ["voz-solo-salida",         "la voz habla, nunca escucha, y solo lee lo escrito", "líneas rojas #1 y #7, D-078"],
+
   // S0 ya tiene sitio: estos dos se escribieron y corrían por su cuenta, pero
   // nadie los movió aquí — quedaron en PENDING diciendo "cuando haya sitio"
   // con el sitio ya desplegado (2026-08-01). Un auditor listo que no vigila

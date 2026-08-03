@@ -2546,3 +2546,97 @@ Sin esa parte, esta decisión sirve a tres niños y deja a cuatro sin salida.
 - **Nadie ha escuchado todavía ninguna voz.** Hace falta un revisor pedagógico
   por locale que **oiga** los clips antes de que un niño los oiga. Que existan
   tres voces técnicamente disponibles no es que tres voces estén aprobadas.
+
+---
+
+## D-078 — La voz de Larry sale con los 7 locales, con `speechSynthesis` · 2026-08-02
+
+**Enmienda D-077, tomada el mismo día, sobre evidencia que estaba en nuestra
+propia investigación y que yo no había puesto sobre la mesa cuando el dueño
+decidió.** D-077 no se equivocó con lo que sabía: se decidió sobre una
+alternativa incompleta.
+
+### Lo que faltaba en D-077
+
+D-077 planteó el problema como «Workers AI cubre 3 de 7 idiomas», y las cuatro
+alternativas que le ofrecí al dueño eran todas variantes de **generar audio en
+el servidor**. `mc-42` §7 documenta un camino que no estaba en ninguna:
+
+| API | iOS Safari | Chrome / Edge / Firefox |
+|---|---|---|
+| `speechSynthesis` | **Soportado desde Safari 7** | Chrome 33+, Edge 14+, Firefox 49+ |
+
+La voz del sistema operativo lee texto generado, **en los siete idiomas, gratis,
+sin red, sin cuota y sin tope de gasto**. No hay clip que almacenar ni pipeline
+que construir.
+
+Que esa fila estuviera en la investigación desde el 31 de julio y no en las
+alternativas es un defecto mío, no del dueño. Es exactamente el patrón que
+`CLAUDE.md` manda evitar: investigar primero, y **preguntar con las alternativas
+explicadas**. Una alternativa que no se explica es una alternativa que no
+existe.
+
+### Lo que se decide
+
+**La voz sale con los siete locales, con `speechSynthesis`.**
+
+### Lo que esto cuesta, y es real
+
+`mc-42` §4 lo dice sin adornos: **la calidad y el inventario de voces son
+propiedad del sistema operativo, no del navegador.** Un Android de gama baja sin
+paquete de voz en portugués cae a una voz peor **en silencio**, y no existe API
+web para forzar la instalación de una. Y el mercado objetivo de este producto es
+justamente Android de gama baja (`mc-47` §5).
+
+O sea: el problema de cobertura **no desaparece, cambia de eje**. D-077 lo tenía
+por idioma —cuatro idiomas mudos para todo el mundo—; aquí es por aparato —todos
+los idiomas hablan en casi todos los aparatos, y en algunos concretos suenan
+peor o no hay voz.
+
+Ese eje es mejor por tres razones medibles, no por gusto:
+
+1. **Nadie queda mudo por su idioma.** Un niño alemán con voz alemana instalada
+   —el caso normal, porque la instala el propio sistema— oye a Larry hoy.
+2. **Se puede detectar en el aparato**, que es donde ocurre. `getVoices()`
+   filtrado por idioma dice la verdad sobre ESE teléfono, y la pantalla puede
+   decirlo. La cobertura de Workers AI no se podía detectar: se sabía o no se
+   sabía.
+3. **Cero gasto y cero red.** Sin tope por perfil, sin latencia, y funciona en
+   avión. `mc-42` §4 lo llama «offline-capable once the OS voice exists».
+
+### La condición de D-077 no se cae: cambia de sitio
+
+D-077 exigía que **la pantalla dijera** dónde no hay voz, y eso sigue en pie
+palabra por palabra. Lo que cambia es cuándo se evalúa: ya no es una lista fija
+de cuatro locales horneada en el build, es una comprobación **en el aparato, en
+el momento**. Si `getVoices()` no devuelve ninguna voz del idioma de la página,
+el botón de escuchar no se ofrece y la pantalla lo dice. Un botón que no suena
+es peor que ningún botón.
+
+### Las líneas rojas que esto toca, y cómo queda cada una
+
+- **Línea roja #1 — nunca micrófono para un menor.** `speechSynthesis` es
+  **salida**. `SpeechRecognition` —la API de entrada, que sí es micrófono— no
+  entra en este producto y un auditor determinista lo vigila por nombre, junto
+  con `getUserMedia`. La enmienda de hoy (D-075) abrió la cámara para un ADULTO
+  verificado y nada más; el micrófono sigue cerrado para todos.
+- **Línea roja #7 — Larry nunca avergüenza.** La voz **no redacta nada**: lee en
+  voz alta exactamente el texto que el servidor ya sirvió y que ya está en
+  pantalla. No hay una copia hablada distinta de la escrita que pudiera decir
+  algo que la escrita no dice, y por tanto tampoco hay una superficie nueva que
+  auditar por tono.
+
+### Lo que esto NO resuelve
+
+- **Nadie ha escuchado todavía ninguna voz** — esto no cambia con D-077. Sigue
+  haciendo falta que una persona por locale **oiga** cómo suena el enunciado
+  matemático real. `mc-34` es la razón: «einundzwanzig» y «quatre-vingt-dix» son
+  problemas de autoría, y una voz de sistema que lea «21» mal en alemán no la
+  arregla ningún prompt.
+- **Kinder sigue aplazado** (D-073). Esto quita el bloqueo técnico que `mc-20`
+  imponía —texto sin equivalente hablado es antipatrón para un pre-lector—, no
+  reordena la fase.
+- **Workers AI no se descarta**, se aplaza. El día que la voz del sistema no
+  alcance para una superficie concreta, `mc-42` §4 ya tiene escrita la
+  recomendación: **híbrido** — clips grabados para el vocabulario fijo y corto,
+  voz del sistema para el texto generado.

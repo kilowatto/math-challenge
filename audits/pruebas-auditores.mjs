@@ -1607,9 +1607,11 @@ const CASOS = [
     // Reapuntado otra vez a 0017 cuando la 0015 (cosméticos kinder) aterrizó:
     // con ella presente, una sonda en 0016 queda contigua y el caso corría en
     // verde sin degradar nada — el auditor apagado en silencio de siempre.
+    // Reapuntado a 0018 cuando la 0016 (banco de ítems de primaria, F5c #351)
+    // aterrizó: con ella presente, una sonda en 0017 queda contigua.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0017_prueba_hueco.sql",
+    archivo: "migrations/0018_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },

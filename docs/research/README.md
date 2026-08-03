@@ -79,6 +79,7 @@
 | 49 | [Patrones de navegación PWA](2026-08-01-mc-49-navigation-patterns-pwa-mobile-desktop.md) | Una sola navegación primaria a la vez; la barra inferior solo instalada |
 | 50 | [Navegación del área privada](2026-08-02-mc-50-private-app-navigation.md) | El área autenticada nunca hereda el layout público; pestañas derivadas de la cuenta real |
 | 51 | [Clasificación de las ramas y sus prerrequisitos](2026-08-03-mc-51-clasificacion-ramas-matematicas.md) | ⭐⭐ MSC 2020 (63 áreas), arXiv e ICM; la espina escolar universal y las cadenas universitarias verificadas en 10 instituciones; el mapa de 26 ramas con puertas |
+| 52 | [Lógica para niños: booleana, tablas de verdad y acertijos](2026-08-03-mc-52-logica-para-ninos.md) | ⭐ Bebras y sus bandas por edad verificadas; Smullyan como puente a la demostración (MAA); la escalera LOGI N4-N12: atributos → acertijos → tablas → predicados |
 
 ## Plataforma, seguridad y negocio
 

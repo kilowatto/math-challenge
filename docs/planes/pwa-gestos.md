@@ -5,7 +5,7 @@
 > «volver atrás» del navegador disparado a media sesión. Este documento
 > es el mapa de gestos del producto: qué gesto hace qué en cada
 > dispositivo, qué está roto, y el diseño de la corrección. El bug está
-> registrado como issue #449.
+> registrado como issue #451.
 
 ## 1. El bug, verificado contra el código
 
@@ -98,7 +98,7 @@ sesión del reto se pierde de vista sin aviso ni confirmación.
   (long-press en iOS no debe abrir menú contextual sobre una opción) —
   verificar antes de aplicar, no asumir.
 
-## 3. La corrección propuesta (issue #449)
+## 3. La corrección propuesta (issue #451)
 
 1. **CSS en las pantallas de reto y de juego** (`reto.css` /
    `Pantalla.astro`, `kids/jugar.astro`, `app/practicar.astro`):

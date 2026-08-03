@@ -4382,3 +4382,33 @@ el activo SEO de D-033 — romperlos es perder autoridad ganada en
 papers, foros y citas que siguen vivas.
 
 **Investigación relacionada:** D-049, D-033, `mc-48`.
+
+---
+
+## D-147 — La rama LOGI («Acertijos») existe en todos los niveles desde N4, adicional al piso de 6 · 2026-08-03
+
+**Decisión del dueño**, cerrando las cuatro preguntas de `mc-52` §6
+(petición original del dueño: «que los niños después del kinder ya vean
+lógica booleana y tablas de verdad… es la base de la programación y
+tienen que conocerla»).
+
+- **La rama LOGI se extiende a todos los niveles N4-N12** con la
+  escalera de `mc-52` §2: atributos compuestos (N4-N5), acertijos
+  narrativos (N6-N7), tablas de verdad pequeñas (N8-N9), De Morgan
+  (N10), predicados y negación de cuantificadores (N11-N12).
+- **Los retos LOGI son ADICIONALES al piso de 6 retos por nivel**
+  (D-122): la lógica es transversal —base de programación y de la
+  demostración—, no una materia del nivel. Cada nivel tiene así su
+  cuarta rama garantizada (D-129).
+- **La tabla de verdad formal entra en N8**, después de atributos y
+  acertijos: la tabla es la foto del razonamiento, nunca el punto de
+  partida (Mathematics Manifesto: 11-14).
+- **El nombre de persona de la rama es «Acertijos»**, autorado por
+  locale (D-128); el código MSC `03` va debajo, nunca en pantalla.
+- **Kinder queda fuera** (lo que el dueño pidió: «después del kinder»):
+  la trayectoria de numeración de `mc-06` tiene prioridad a esa edad,
+  aunque Bebras tenga sets 5-6.
+
+**Investigación relacionada:** `mc-52` (Bebras, Smullyan/MAA, la
+evidencia honesta de Hsu et al. 2018), D-122, D-129, D-132 (es la base
+de la pista de demostración).

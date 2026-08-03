@@ -588,3 +588,203 @@ cerrado siempre es cerrada»; «toda función continua es abierta»).
   de su propia issue (D-124).
 - **No reemplaza la ubicación adaptativa** (§2.4 del plan de F11: el
   piso es un piso).
+
+---
+
+## Anexo (2026-08-03, D-147) — Los retos LOGI («Acertijos»), adicionales al piso
+
+Un reto LOGI por nivel, autorado con la misma regla (estructura, causas
+nombradas, `toca_la_respuesta`). **No cuentan dentro de los 6 del piso**:
+son la rama transversal (D-147). La escalera completa y su evidencia
+están en `docs/research/2026-08-03-mc-52-logica-para-ninos.md`.
+
+**N4 · atributos compuestos (Y/NO encarnados)** · dificultad_experta 34 ·
+proposito `clasificar`
+
+```json
+{
+  "id": "n4-logi-atributos", "habilidad": "LOGI-ATRIBUTOS", "nivel": 4,
+  "formato": "toca_la_respuesta",
+  "enunciado": { "clave": "logi.atributos.doble_regla", "vars": { "regla1": "roja", "regla2": "redonda" } },
+  "respuesta": { "valor": "circulo_rojo", "tol": 0 },
+  "errores": [
+    { "valor": "cuadrado_rojo", "causa": "cumplio_una_sola_regla" },
+    { "valor": "circulo_azul",  "causa": "cumplio_una_sola_regla" }
+  ],
+  "dibujos": {
+    "circulo_rojo":  { "clave": "logi.figura.circulo_rojo",  "glifo": "●", "cuantos": 1 },
+    "cuadrado_rojo": { "clave": "logi.figura.cuadrado_rojo", "glifo": "■", "cuantos": 1 },
+    "circulo_azul":  { "clave": "logi.figura.circulo_azul",  "glifo": "●", "cuantos": 1 }
+  },
+  "proposito": "clasificar", "variacion": null
+}
+```
+
+**N5 · la regla O (con D-048: dos respuestas correctas autoradas)** ·
+dificultad_experta 40 · proposito `clasificar`
+
+```json
+{
+  "id": "n5-logi-regla_o", "habilidad": "LOGI-ATRIBUTOS", "nivel": 5,
+  "formato": "toca_la_respuesta",
+  "enunciado": { "clave": "logi.atributos.regla_o", "vars": { "regla1": "grande", "regla2": "roja" } },
+  "respuesta": { "valor": "circulo_grande_azul", "tol": 0 },
+  "tambienCorrectas": [
+    { "valor": "cuadrado_chico_rojo", "razon": "tambien_cumple_la_regla_o" }
+  ],
+  "errores": [
+    { "valor": "cuadrado_chico_azul", "causa": "no_cumple_ninguna_de_las_dos" },
+    { "valor": "circulo_grande_rojo", "causa": "pidio_las_dos_cuando_bastaba_una" }
+  ],
+  "proposito": "clasificar", "variacion": null
+}
+```
+
+(El distractor `pidio_las_dos_cuando_bastaba_una` es el error real de la
+disyunción: el niño que lee «O» como «Y». Su texto de Larry explica la
+diferencia con la regla, no con el niño.)
+
+**N6 · el primer acertijo (una sola afirmación es verdad)** ·
+dificultad_experta 48 · proposito `analizar`
+
+```json
+{
+  "id": "n6-logi-acertijo_cajas", "habilidad": "LOGI-ACERTIJOS", "nivel": 6,
+  "formato": "toca_la_respuesta",
+  "enunciado": { "clave": "logi.acertijo.tres_cajas", "vars": {} },
+  "respuesta": { "valor": "caja_b", "tol": 0 },
+  "errores": [
+    { "valor": "caja_a", "causa": "siguio_la_afirmacion_sin_verificarla" },
+    { "valor": "caja_c", "causa": "confundio_la_caja_que_habla_con_la_del_premio" }
+  ],
+  "proposito": "analizar", "variacion": null
+}
+```
+
+(Tres cajas; solo una dice la verdad. A dice «el premio está aquí», B
+dice «el premio no está aquí», C dice «el premio no está en A». A y C se
+contradicen, así que una de las dos es la verdadera — y entonces B
+miente: el premio ESTÁ en B. Es el análisis de casos de los Math
+Circles, en tres líneas.)
+
+**N7 · la contrapositiva sin nombrarla** · dificultad_experta 52 ·
+proposito `evaluar`
+
+```json
+{
+  "id": "n7-logi-contrapositiva", "habilidad": "LOGI-ACERTIJOS", "nivel": 7,
+  "formato": "toca_la_respuesta",
+  "enunciado": { "clave": "logi.acertijo.zorbos", "vars": { "criatura": "zorbo", "color": "azul" } },
+  "respuesta": { "valor": "no", "tol": 0 },
+  "errores": [
+    { "valor": "si", "causa": "asumio_la_inversa" },
+    { "valor": "no_se_puede_saber", "causa": "confundio_certeza_con_duda" }
+  ],
+  "proposito": "evaluar", "variacion": null
+}
+```
+
+(«Todos los zorbos son azules. Esto no es azul. ¿Es un zorbo?» El
+distractor `no_se_puede_saber` es el más interesante: muchos niños —y
+adultos— lo eligen por prudencia mal entendida. La explicación de Larry
+distingue «no sé» de «sé que no».)
+
+**N8 · la primera tabla de verdad (2 variables)** · dificultad_experta 55 ·
+proposito `interpretar`
+
+```json
+{
+  "id": "n8-logi-tabla_y", "habilidad": "LOGI-TABLAS", "nivel": 8,
+  "formato": "toca_la_respuesta",
+  "enunciado": { "clave": "logi.tabla.dos_variables_y", "vars": { "regla": "roja Y redonda" } },
+  "respuesta": { "valor": 1, "tol": 0 },
+  "errores": [
+    { "valor": 2, "causa": "confundio_y_con_o" },
+    { "valor": 4, "causa": "conto_todas_las_filas" },
+    { "valor": 0, "causa": "penso_que_ninguna_cumple" }
+  ],
+  "proposito": "interpretar", "variacion": null
+}
+```
+
+(La tabla se dibuja 2×2 con figuras: roja sí/no × redonda sí/no. La
+pregunta es «¿en cuántas filas es verdad?» — la tabla como foto del
+razonamiento de N4-N5, como pide mc-52 §2.)
+
+**N9 · tres variables** · dificultad_experta 60 · proposito `interpretar`
+
+```json
+{
+  "id": "n9-logi-tabla_tres", "habilidad": "LOGI-TABLAS", "nivel": 9,
+  "formato": "toca_la_respuesta",
+  "enunciado": { "clave": "logi.tabla.tres_interruptores", "vars": { "necesarios": "A y B" } },
+  "respuesta": { "valor": 2, "tol": 0 },
+  "errores": [
+    { "valor": 4, "causa": "confundio_y_con_o" },
+    { "valor": 1, "causa": "exigio_tambien_el_tercero" },
+    { "valor": 8, "causa": "conto_todas_las_combinaciones" }
+  ],
+  "proposito": "interpretar", "variacion": null
+}
+```
+
+(Tres interruptores; la luz enciende solo si A y B están prendidos, C da
+igual. 2³ = 8 combinaciones; A∧B se cumple en 2. Es la primera vez que
+«da igual» es parte del razonamiento — la semilla de las variables
+libres.)
+
+**N10 · De Morgan con atributos** · dificultad_experta 64 · proposito `evaluar`
+
+```json
+{
+  "id": "n10-logi-demorgan", "habilidad": "LOGI-TABLAS", "nivel": 10,
+  "formato": "toca_la_respuesta",
+  "enunciado": { "clave": "logi.demorgan.negar_compuesta", "vars": { "regla1": "grande", "regla2": "roja" } },
+  "respuesta": { "valor": "no_es_grande_o_no_es_roja", "tol": 0 },
+  "errores": [
+    { "valor": "no_es_grande_y_no_es_roja", "causa": "nego_sin_cambiar_y_por_o" },
+    { "valor": "es_chica_y_azul", "causa": "niego_los_atributos_en_vez_de_la_regla" }
+  ],
+  "proposito": "evaluar", "variacion": null
+}
+```
+
+(El primer distractor es EL error de De Morgan — el que la literatura
+documenta como el fallo más persistente de la lógica escolar. Su causa
+nombrada alimenta la mejor explicación que Larry puede dar en toda la
+rama: «negar "las dos cosas" no es negar cada cosa».)
+
+**N11 · predicados sobre una pecera** · dificultad_experta 58 ·
+proposito `clasificar`
+
+```json
+{
+  "id": "n11-logi-predicados", "habilidad": "LOGI-PREDICADOS", "nivel": 11,
+  "formato": "toca_la_respuesta",
+  "enunciado": { "clave": "logi.predicados.pecera", "vars": { "rojos": 3, "azules": 2 } },
+  "respuesta": { "valor": "algunos_son_rojos", "tol": 0 },
+  "errores": [
+    { "valor": "todos_son_rojos", "causa": "confundio_alguno_con_todos" },
+    { "valor": "ninguno_es_azul", "causa": "niego_el_subconjunto_que_si_existe" },
+    { "valor": "la_mitad_son_rojos", "causa": "no_conto_el_total" }
+  ],
+  "proposito": "clasificar", "variacion": null
+}
+```
+
+**N12 · negación de cuantificadores + detectar la línea que rompe** · ya
+autorados en la sección N12 de este documento (`n12-p4` y su plantilla
+de lógica de la negación) — son la cima de esta misma escalera, no un
+contenido aparte.
+
+**Causas nuevas que esta rama registra en el vocabulario** (con su
+fuente): `cumplio_una_sola_regla`, `no_cumple_ninguna_de_las_dos`,
+`pidio_las_dos_cuando_bastaba_una`, `siguio_la_afirmacion_sin_verificarla`,
+`confundio_la_caja_que_habla_con_la_del_premio`, `asumio_la_inversa`,
+`confundio_certeza_con_duda`, `confundio_y_con_o`, `conto_todas_las_filas`,
+`penso_que_ninguna_cumple`, `exigio_tambien_el_tercero`,
+`conto_todas_las_combinaciones`, `nego_sin_cambiar_y_por_o`,
+`niego_los_atributos_en_vez_de_la_regla`, `confundio_alguno_con_todos`,
+`niego_el_subconjunto_que_si_existe`, `no_conto_el_total` — fuente:
+mc-52 §3 (errores reales de la literatura de enseñanza de la lógica) y
+mc-12 (cuantificadores).

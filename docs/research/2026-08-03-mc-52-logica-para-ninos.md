@@ -229,16 +229,16 @@ niño ya hizo** con atributos y acertijos — nunca el punto de partida.
    «acertijos lógicos» / «logic puzzles» — nunca «03 Mathematical logic
    and foundations» en pantalla.
 
-## 6. Preguntas abiertas para el dueño
+## 6. Preguntas abiertas para el dueño — RESUELTAS (2026-08-03, D-147)
 
-1. ¿Los retos LOGI son adicionales al piso de 6 por nivel (propuesta §5.3)
-   o sustituyen uno de los 6?
-2. ¿La tabla de verdad formal entra en N8 (propuesta) o se espera a N9?
-3. ¿Nombre de la rama en pantalla: «acertijos lógicos» o solo
-   «acertijos»?
-4. ¿Kinder queda fuera de LOGI (lo que pediste: «después del kinder»),
-   aunque Bebras tenga sets 5-6? (La trayectoria de kinder de mc-06 ya
-   está llena; recomendación: fuera, como pediste.)
+| # | Pregunta | Respuesta |
+|---|---|---|
+| 1 | ¿Dentro del piso de 6 o adicionales? | **Adicionales** — la lógica es transversal, no una materia del nivel |
+| 2 | ¿Cuándo la tabla de verdad formal? | **N8**, tras atributos y acertijos |
+| 3 | ¿Nombre de la rama en pantalla? | **«Acertijos»**, autorado por locale |
+| 4 | ¿Kinder? | **Fuera, desde N4** — la trayectoria de mc-06 tiene prioridad |
+
+Los retos quedaron autorados como anexo de `docs/planes/f11-contenido-retos.md`.
 
 ## Fuentes
 

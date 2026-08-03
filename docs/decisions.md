@@ -2763,3 +2763,57 @@ mida algo distinto se pueda volver aquí y ver qué se sabía.
 3. **Sin lenguaje de pérdida en ninguna banda.** Es la misma regla que la racha
    (D-014) y le toca a `racha-lexico` extendido, no a la buena voluntad de quien
    escriba el texto.
+
+---
+
+## D-082 — El día de racha se cuenta en el PRIMER ítem contestado, no al cerrar el reto · 2026-08-03
+
+**Decisión tomada al cablear F7** (#201, #206, #192), y es la que hace que la
+línea roja #6 no dependa de que nadie escriba mal una rama.
+
+D-014 dice, textual: «si el límite de pantalla corta la sesión, **la racha del
+día se da por cumplida**». La lectura obvia es que quien cierre el reto llame a
+`registrarDia` con el motivo del corte, y que haya dos caminos. Dos caminos es
+justo lo que se puede escribir mal, y `audits/racha-limite-no-rompe.mjs` ya
+avisaba de su propio hueco: *«que la ruta de cierre llame a `registrarDia`
+SIEMPRE… aquí se caza el reinicio explícito, no la omisión silenciosa»*.
+
+**Lo que se decide:** `/api/jugar?accion=responder` registra el día en **cada
+respuesta que cuenta**, no al final. `registrarDia` ya es idempotente —devuelve
+el mismo objeto si el día está registrado— así que diez ítems en una tarde son
+una escritura, no diez.
+
+La consecuencia es la que importa: cuando F8 construya el corte por límite de
+pantalla, **el día llevará minutos cumplido**. No hay camino por el que el
+límite rompa la racha, así que tampoco hay rama que auditar. El `motivo` sigue
+viajando como parámetro para que F8 se enchufe sin tocar el cable, y sigue sin
+entrar en la aritmética.
+
+### Y la racha NO se repinta en vivo; el XP sí
+
+En la pantalla del reto, el número de días se pinta al cargar y no se vuelve a
+tocar, aunque el ítem recién contestado sea el que estrena el día. Es literal de
+#206: *ningún cambio de racha produce un push ni un modal — se ve el número
+nuevo la próxima vez que se abre la pantalla, sin evento que lo señale*. Por eso
+`Racha.astro` no lleva ni una línea de script, y por eso la pantalla del reto no
+le pone una por fuera.
+
+El XP sí se actualiza en cada respuesta, sin animación, sin sonido y sin «+10»
+flotando. La diferencia no es un descuido: el XP es el eje de progreso personal
+que sube con cada ítem (D-055), y un eje que no se mueve es un eje invisible.
+`mc-17` §11 mide que la recompensa **informativa** no daña la motivación
+intrínseca y la **controladora** sí, con efecto más severo en niños que en
+universitarios: un número que sube es lo primero, una celebración que interrumpe
+es lo segundo.
+
+### Lo que esto NO decide
+
+- **Si en KINDER se enseña la racha.** Hoy no se enseña —se registra en D1 y no
+  se pinta—, y la pregunta está abierta en `docs/dudas.md` §23.1 con las tres
+  salidas escritas. #205 pide el camino de Larry en la Sabana, sin número, y ese
+  componente no existe.
+- **El bono de finalización de reto.** `XP_POR_TIPO.reto_completado` sigue sin
+  otorgarse porque **nadie observa el final de un reto**: «Ya terminé» es un
+  enlace que navega. `docs/dudas.md` §23.2.
+
+**Investigación relacionada:** `mc-17` §83 y §11, `mc-16`.

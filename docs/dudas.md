@@ -661,3 +661,59 @@ revisión escrita: se recalibran con datos reales, no antes.
 otorga siempre que el reto se cierre, incluso sin un solo acierto — es lo que
 recomienda `mc-16`. La lectura más estricta de «ganado» en D-014 diría cero XP
 sin aciertos. Implementé la de `mc-16`.
+
+---
+
+## 23 · Cablear la racha y el XP a una pantalla de verdad (F7 frente A, 2026-08-02)
+
+### 23.1 ¿Se le enseña la racha con número a un niño de KINDER?
+
+**Asumí que no, y hace falta que el dueño lo confirme o lo revierta.**
+
+#206 dice que la racha visible es «de PRIMARIA en adelante», y #205 dice que en
+KINDER la racha es el camino de Larry en la Sabana, **sin número**. Ese
+componente no existe todavía. Así que hoy hay tres salidas y elegí la tercera:
+
+1. Enseñar `Racha.astro` también en kinder — contradice #205 y #206, y mete un
+   número que contar en la pantalla donde D-060 y el criterio #100 piden que no
+   haya ninguno.
+2. Construir el camino de la Sabana en este mismo trabajo — es una pieza de
+   producto entera, con su arte, y este trabajo es de cableado.
+3. **No enseñar nada de racha en kinder, y escribirlo.** La racha del niño **sí
+   se registra y se escribe en D1** desde el primer ítem: lo único que falta es
+   la superficie donde se ve. El día que exista el camino de la Sabana, el dato
+   ya lleva semanas acumulándose.
+
+Lo que cuesta la tercera: un niño de kinder practica cinco días seguidos y el
+producto no se lo dice de ninguna forma. Es real, y es menos malo que las otras
+dos.
+
+### 23.2 El bono de finalización de reto no se otorga todavía
+
+`XP_POR_TIPO.reto_completado` existe, vale `valorDelItem(1)` y **nadie lo
+llama**. La razón no es una decisión de diseño: es que **nadie observa el final
+de un reto**. «Ya terminé» es un `<a href>` que navega, y no hay ninguna
+petición que el servidor pueda contar como cierre.
+
+El XP por ítem sí se otorga en cada respuesta, así que el eje se mueve. Lo que
+falta es el bono plano que `mc-16` (implicación 7) recomienda «para que
+cualquier sesión terminada se sienta como progreso». **Lo que asumí:** dejarlo
+sin otorgar y decirlo, en vez de inventar un cierre que el cliente pueda mentir.
+
+### 23.3 El registro de migraciones de `math-challenge-db` no dice la verdad
+
+`d1_migrations` tenía dos renglones —0001 y 0002— y la base tenía aplicadas
+**también 0003, 0004, 0005 y 0006**: comprobado objeto por objeto contra
+`sqlite_master` (columnas `users.country/timezone/data_region/signup_intent`,
+tablas `consent_type_catalog`, `child_consents`, `household_devices`,
+`contextual_marks`, `screen_time_settings.bedtime_local`, el rename a
+`group_owner_identity` con sus tres columnas, y `child_profiles` ya sin
+`birth_month`). Alguien las aplicó a mano con `d1 execute` y el registro se
+quedó atrás.
+
+Consecuencia: `wrangler d1 migrations apply` intenta 0003 y muere con
+`duplicate column name: country`, así que **0007 y 0008 no pueden entrar por la
+vía normal** hasta que el registro se sincronice. **Lo que asumí:** que el
+arreglo es insertar los cuatro renglones que faltan y volver a correr `apply`.
+No pude ejecutarlo yo: el clasificador de permisos de esta sesión bloquea toda
+escritura remota a D1. Los dos comandos están en el PR, listos para copiar.

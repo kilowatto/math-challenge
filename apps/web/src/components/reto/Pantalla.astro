@@ -149,6 +149,21 @@ interface Props {
     /** Ya compuesto por `textoDeXp()` en el servidor. Nunca se arma aquí. */
     xpTexto: string;
   } | null;
+  /**
+   * Rejugar un lugar del mapa (D-152): el id de la habilidad del lugar, ya
+   * validado por la página contra el catálogo.
+   *
+   * ─── Qué cambia y qué NO cuando viaja ────────────────────────────────────
+   *
+   * Cambia UNA cosa: la serie es de ese tema — el servidor sirve ítems de esa
+   * habilidad en vez de la rotación intercalada. NO cambia quién elige la
+   * dificultad: la sigue eligiendo el motor adaptativo dentro de la habilidad
+   * (D-017), y este componente no aprende nada nuevo — solo reenvía el id en
+   * las dos peticiones que ya hacía.
+   *
+   * `null` es el caso de siempre: la sesión adaptativa de todos los días.
+   */
+  habilidadFija?: string | null;
 }
 const {
   locale,
@@ -158,6 +173,7 @@ const {
   mostrarContexto = false,
   etiquetaVoz = "",
   progreso = null,
+  habilidadFija = null,
 } = Astro.props as Props;
 ---
 
@@ -327,7 +343,7 @@ const {
   */}
 
 
-  <script define:vars={{ locale, rotulos, salirA, habilidades, mostrarContexto, etiquetaVoz }}>
+  <script define:vars={{ locale, rotulos, salirA, habilidades, mostrarContexto, etiquetaVoz, habilidadFija }}>
     /**
      * El bucle. Pide, pinta, ELIGE, confirma, repite.
      *
@@ -1035,7 +1051,7 @@ const {
       $mando.replaceChildren();
       $opciones.replaceChildren();
 
-      const r = await pedir("siguiente", { ultimoItemId });
+      const r = await pedir("siguiente", { ultimoItemId, habilidad: habilidadFija ?? undefined });
       // El día terminó — por el tope o por la noche: la respuesta ES la
       // despedida y no trae ítem. Se pinta y se acabó.
       if (r?.corte) {
@@ -1073,6 +1089,9 @@ const {
         itemId: actual.id,
         eleccion: elegido,
         reintento: esReintento,
+        // D-152: en el rejuego de un lugar, el id viaja también aquí — el
+        // servidor lo usa solo para etiquetar la telemetría como «mapa».
+        habilidad: habilidadFija ?? undefined,
       });
       mandando = false;
       if (!r) {

@@ -111,6 +111,48 @@
   outline-offset: 4px;
 }
 
+/* ─── El enlace del lugar (D-152) ──────────────────────────────────────────
+ *
+ * El lugar en curso y los terminados se PISAN: un `<a>` de verdad que llena el
+ * círculo entero, así que el blanco táctil sigue siendo `--tap-kinder` (88 px,
+ * `mc-20` §201) y no la silueta del dibujo. El `min-block-size` explícito es lo
+ * que `audits/touch-targets.mjs` mide — un porcentaje no se puede auditar.
+ *
+ * El lugar por visitar no tiene este elemento en absoluto: no es un candado,
+ * es sencillamente no-enlace (guía de estilo § mapa).
+ */
+.sendero__enlace {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: var(--tap-kinder);
+  border-radius: 50%;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Retroalimentación al tocar, sin depender de `:hover`: en Android táctil —el
+   aparato de referencia— el hover se queda pegado al último elemento tocado y
+   mentiría sobre cuál lugar es el actual. */
+.sendero__enlace:active { transform: scale(0.96); }
+
+.sendero__enlace:focus-visible {
+  outline: 4px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* El arte del lugar, recortado al círculo. Donde no hay arte todavía no hay
+   imagen en absoluto — el círculo de siempre se queda como estaba. */
+.sendero__arte {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
 /* ─── PRIMARIA / SECUNDARIA · el árbol sin aristas (#233) ──────────────────
  *
  * Rejilla de nodos agrupados. **No hay ni una línea, flecha o candado** que
@@ -169,6 +211,23 @@
   display: block;
   color: var(--color-text);
   overflow-wrap: anywhere;
+}
+
+/* El enlace del nodo (D-152): el nodo alcanzado se puede rejugar siempre.
+   Llena la tarjeta entera; el piso del blanco es `--tap-primaria`, como el del
+   nodo que lo contiene. */
+.arbol__enlace {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: var(--tap-primaria);
+  text-decoration: none;
+  color: inherit;
+}
+
+.arbol__enlace:focus-visible {
+  outline: 4px solid var(--color-accent);
+  outline-offset: 3px;
 }
 
 /* La pericia se dice con PALABRA, no con porcentaje: «vas empezando» informa,

@@ -536,6 +536,13 @@ for (const prueba of [
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
 
+  // D-152. El enrutado del mapa de KINDER: qué lugares son enlace (los por
+  // visitar se ven y NO se pisan) y de dónde sale el estado de cada lugar (el
+  // resumen de F4, nunca una tabla propia del mapa). Lo que defiende no rompe
+  // nada visible: un «por visitar» convertido en enlace es un candado que la
+  // guía de estilo prohíbe, y una fila fantasma es un lugar que el niño ve
+  // empezado sin haberlo tocado jamás.
+  "apps/web/src/lib/mapa-kids.prueba.mjs",
 
 ]) {
   const r = spawnSync(

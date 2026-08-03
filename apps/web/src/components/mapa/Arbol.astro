@@ -34,7 +34,7 @@
  */
 import { t, type Locale } from "../../i18n";
 import Companero from "./Companero.astro";
-import { CLAVE_DE_PERICIA, type Arbol } from "../../../../../packages/motor/src/mapa.ts";
+import { CLAVE_DE_PERICIA, type Arbol, type NodoDelArbol } from "../../../../../packages/motor/src/mapa.ts";
 
 interface Props {
   locale: Locale;
@@ -48,9 +48,21 @@ interface Props {
    * va sin título — que es honesto y no inventa un «Nivel 3».
    */
   rotuloDeGrupo?: (orden: number) => string | null;
+  /**
+   * El destino de cada nodo, o `null` si no se pisa (D-152).
+   *
+   * El árbol se enruta igual que el sendero: un nodo alcanzado se puede
+   * rejugar siempre — nada se bloquea hacia atrás — y el que no, se ve y ya.
+   * Sin esta propiedad el árbol se pinta sin enlaces, como siempre. Hoy no la
+   * pasa nadie: no hay contenido de PRIMARIA/SECUNDARIA en el banco (D-009) y
+   * ninguna ruta pinta esta forma. El hueco queda hecho, como el de las
+   * aristas, para que el día que el árbol tenga datos el enrutado sea pasar
+   * la función y no rediseñar el componente.
+   */
+  destinoDe?: (nodo: NodoDelArbol) => string | null;
 }
 
-const { locale, arbol, companeroVisible, accesorios = [], rotuloDeGrupo } = Astro.props;
+const { locale, arbol, companeroVisible, accesorios = [], rotuloDeGrupo, destinoDe } = Astro.props;
 const m = t(locale);
 
 const textoPericia = (p: keyof typeof CLAVE_DE_PERICIA): string =>
@@ -71,24 +83,38 @@ const alcanzado = (pericia: string): boolean => pericia !== "asomando";
             <h3 class="arbol__rotulo">{rotuloDeGrupo(g.orden)}</h3>
           )}
           <ul class="arbol__nodos">
-            {g.nodos.map((n) => (
-              <li class="arbol__nodo">
-                {/*
-                  El identificador (`P07`) solo se pinta cuando NO hay rótulo
-                  autorado. Es feo a propósito: un identificador interno en la
-                  pantalla se ve, y lo que se ve se arregla — es la misma regla
-                  que `audits/opciones-contestables.mjs` hace cumplir en el reto.
-                */}
-                <span class="arbol__nombre">{n.rotulo ?? n.habilidad}</span>
-                <span class="arbol__pericia">{textoPericia(n.pericia)}</span>
-                <span class="barra" style={`--relleno: ${Math.round(n.relleno * 100)}%`}>
-                  <span class="barra__relleno"></span>
-                </span>
-                {alcanzado(n.pericia) && (
-                  <Companero locale={locale} visible={companeroVisible} accesorios={accesorios} />
-                )}
-              </li>
-            ))}
+            {g.nodos.map((n) => {
+              const destino = destinoDe?.(n) ?? null;
+              const contenido = (
+                <Fragment>
+                  {/*
+                    El identificador (`P07`) solo se pinta cuando NO hay rótulo
+                    autorado. Es feo a propósito: un identificador interno en la
+                    pantalla se ve, y lo que se ve se arregla — es la misma regla
+                    que `audits/opciones-contestables.mjs` hace cumplir en el reto.
+                  */}
+                  <span class="arbol__nombre">{n.rotulo ?? n.habilidad}</span>
+                  <span class="arbol__pericia">{textoPericia(n.pericia)}</span>
+                  <span class="barra" style={`--relleno: ${Math.round(n.relleno * 100)}%`}>
+                    <span class="barra__relleno"></span>
+                  </span>
+                  {alcanzado(n.pericia) && (
+                    <Companero locale={locale} visible={companeroVisible} accesorios={accesorios} />
+                  )}
+                </Fragment>
+              );
+              return (
+                <li class="arbol__nodo">
+                  {destino !== null ? (
+                    <a class="arbol__enlace" href={destino}>
+                      {contenido}
+                    </a>
+                  ) : (
+                    contenido
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ))}

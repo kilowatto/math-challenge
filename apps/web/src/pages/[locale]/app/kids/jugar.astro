@@ -83,6 +83,8 @@ import SenderoRacha from "../../../../components/racha/SenderoRacha.astro";
 import { ETIQUETA_DE_VOZ } from "../../../../../../../packages/tutor/src/voz.ts";
 import { COOKIE_NINO, leerCookies, leerSesionNino } from "../../../../lib/sesiones";
 import { leerProgreso } from "../../../../lib/progreso";
+import { rutaMapaKids } from "../../../../lib/mapa-kids";
+import { HABILIDADES_KINDER } from "../../../../../../../packages/motor/src/banco-kinder.ts";
 
 // Lee la cookie de sesión del niño: la sirve el Worker en cada petición.
 export const prerender = false;
@@ -148,7 +150,24 @@ const rotulos = {
   sinVoz: texto("juego.sinVoz", "This device has no voice installed for this language, so Larry can\u2019t read out loud here."),
 };
 
-const rutaCaras = `/${locale}/app/kids/`;
+/**
+ * Al terminar se vuelve al MAPA, no a la reja de caras (D-152): el mapa es la
+ * entrada y el destino — el niño toca el lugar que quiere rejugar, y nada se
+ * bloquea hacia atrás.
+ */
+const rutaDelMapa = rutaMapaKids(locale);
+
+/**
+ * Rejugar un lugar del mapa (D-152): `?habilidad=K07` fija la serie a ese
+ * lugar. Se valida AQUÍ contra el catálogo de lugares de la Sabana — un valor
+ * inventado en la URL no llega a la pantalla ni al servidor como si fuera un
+ * lugar— y el servidor lo vuelve a comprobar contra el banco. La dificultad
+ * dentro del lugar la sigue eligiendo el motor (D-017): esto fija el TEMA,
+ * nunca el escalón.
+ */
+const pedido = Astro.url.searchParams.get("habilidad");
+const habilidadFija =
+  pedido !== null && pedido in HABILIDADES_KINDER ? pedido : null;
 
 /**
  * Los pasos del sendero, leídos en el SERVIDOR (#205).
@@ -197,8 +216,11 @@ const pasosCaminados = progreso?.racha.diasJugadosTotal ?? null;
       )
     }
     {/* La pantalla vive en un componente compartido: la MISMA la usa el adulto
-       en `/app/practicar/`. Ver `components/reto/Pantalla.astro`. */}
-    <Pantalla locale={locale} rotulos={rotulos} salirA={rutaCaras} etiquetaVoz={ETIQUETA_DE_VOZ[locale]} />
+       en `/app/practicar/`. Ver `components/reto/Pantalla.astro`.
+       `salirA` es el mapa (D-152): al terminar, el niño vuelve a la Sabana y
+       puede rejugar cualquier lugar terminado. `habilidadFija` solo viaja
+       cuando se viene de tocar un lugar del mapa. */}
+    <Pantalla locale={locale} rotulos={rotulos} salirA={rutaDelMapa} etiquetaVoz={ETIQUETA_DE_VOZ[locale]} habilidadFija={habilidadFija} />
 
     <style>
       /* La franja del sendero: centrada sobre la pantalla del reto, sin

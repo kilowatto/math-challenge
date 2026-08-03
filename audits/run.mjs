@@ -255,6 +255,22 @@ const ACTIVE = [
   ["mapa-lectura-sin-tabla",   "el mapa lee de F4/F3; no tiene tabla propia",     "#231, D-017, D-019"],
   ["mapa-sin-numero-de-nivel", "el número de nivel no se le enseña a nadie",      "D-017, #100, #232, mc-10"],
   ["companero-sin-decaimiento","el compañero no tiene vida, hambre ni decaimiento","D-080, #235, #234, mc-43 §6"],
+  // ─── Los tres de F8, y el cable que sostienen entre los dos motores ──────
+  //
+  // `racha-limite-no-rompe` (arriba) vigila el extremo de la RACHA: que el
+  // motivo del corte no entre en la aritmética. Su propio texto declara lo que
+  // NO puede ver — «que la ruta de cierre llame a `registrarDia` SIEMPRE» —
+  // porque la forma en que un niño pierde su día no es un `current_streak = 0`
+  // que se pueda buscar: es un camino de cierre que no produce el motivo, y
+  // entonces nadie llama a la racha. `limite-no-rompe-el-dia` es ese otro
+  // extremo, y ejecuta el corte a través del motor de racha para medirlo.
+  //
+  // Los tres nacen VERDES por la misma razón que los de F6 y F7: el motor del
+  // límite se construyó con ellos delante. Por eso sus controles negativos son
+  // de DEGRADACIÓN sobre los archivos reales (D-070), nunca archivos inventados.
+  ["limite-pantalla-motor-unico", "una sola tabla de límite, la de D-016",         "D-016, #266, #267, mc-26"],
+  ["limite-no-rompe-el-dia",      "cuando el límite corta, el día se da por cumplido", "líneas rojas #1 #6 #7, D-014, D-016, #271, #272"],
+  ["limite-nunca-se-levanta-pagando", "el límite de pantalla no se levanta pagando", "línea roja #4, D-021, D-057, #265"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -364,6 +380,13 @@ for (const prueba of [
   // así que cualquier tercera lo rompe, se llame como se llame.
   "packages/motor/src/mapa.prueba.mjs",
   "packages/motor/src/companero.prueba.mjs",
+  // F8 #265-#273. Lo que defiende tampoco rompe nada visible: una ventana de
+  // corte nocturno que no da la vuelta a la medianoche se ve como que nunca
+  // existió, y un corte que no da el día por cumplido se descubre semanas
+  // después, por un padre que pregunta por qué la racha de su hijo amaneció en
+  // 1 después de haber respetado el límite que él mismo puso. Aquí se ejecuta
+  // el cable completo: el corte, su motivo, y el motor de racha detrás.
+  "packages/motor/src/limite-pantalla.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

@@ -1,0 +1,17 @@
+{
+  "_locale": "pt-BR",
+  "_nota": "Autorado en portugués de Brasil, no traducido del de Portugal (D-022): aquí el gerundio y «a gente» son naturales, y en pt-PT no. KINDER nunca lleva cifra (mc-20).",
+  "limite.aviso.kinder": "Mais uma e a gente descansa.",
+  "limite.aviso.lector": "Mais cinco minutinhos e paramos por hoje.",
+  "limite.descanso.titulo": "Hora de se espreguiçar",
+  "limite.descanso.cuerpo": "Levanta, olha alguma coisa longe pela janela e bebe um pouco de água.",
+  "limite.descanso.afuera": "Melhor ainda: dá uma saidinha lá fora.",
+  "limite.descanso.seguir": "Continuar jogando",
+  "limite.despedida.kinder": "Por hoje é só. O Larry te espera amanhã!",
+  "limite.despedida.lector": "Bom trabalho hoje. Até amanhã.",
+  "limite.despedida.retos_uno": "1 desafio hoje",
+  "limite.despedida.retos_otros": "{n} desafios hoje",
+  "limite.despedida.hasta_manana": "Até amanhã",
+  "limite.nocturno.kinder": "A savana está indo dormir. Boa noite!",
+  "limite.nocturno.lector": "Já é quase hora de dormir. Boa noite, até amanhã."
+}

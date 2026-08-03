@@ -3615,3 +3615,27 @@ señal de otro.
 `mc-10` (la presión de rendimiento empeora el desempeño: por qué el número de
 nivel no se enseña), `mc-43` (progreso e identidad). Cierra las preguntas Q2 y
 Q3 de `docs/planes/f7-juego.md` §13 y el cuarto criterio de aceptación de #195.
+
+## D-159 — Los tipos de misión sin fuente de eventos no fabrican progreso · 2026-08-03
+
+**Decisión:** mientras no exista la fuente de eventos de un tipo de misión,
+ese tipo puede salir asignado pero **no muestra progreso inventado**: ocho de
+los diez tipos del catálogo (D-092) dependen de algo que todavía no existe —
+`repaso`, `dominio` y `fluidez` del resumen de F4; `problema`, `precision` y
+`descubre` de los modos de D-018; `duelo` y `meta_de_liga` de la liga en
+producción. Solo `volumen` (ítem contestado) y `variedad` (habilidad distinta
+del día) tienen fuente real hoy.
+
+La alternativa rechazada: avanzar esas misiones con proxies («contestó algo»
+cuenta como repaso). Una misión que progresa sola enseña que las misiones no
+miden nada — y la línea roja #5 exige que el jugador pueda saber de antemano
+cuánto vale cada cosa, lo que incluye que el contador signifique lo que dice.
+
+Cuando cada fuente aterrice (F4, los modos, la liga), el tipo se enciende sin
+cambiar el motor: la elegibilidad ya está en el catálogo y
+`mision-slot-nunca-vacio` garantiza que el menú nunca queda vacío mientras
+tanto — la rotación rellena con los tipos incondicionales.
+
+Queda como regla escrita porque el D-PENDIENTE del frente de misiones (#409)
+y el del DO (#224) apuntaban aquí: el avance sin fuente NO se simula, se
+declara.

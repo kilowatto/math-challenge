@@ -106,6 +106,21 @@ export interface EstadoRacha {
   readonly pause_until_local_date: DiaLocal | null;
   readonly pause_uses_this_year: number;
   readonly pause_year: number | null;
+  /**
+   * Cuántos días ha jugado ESTE perfil, acumulados de por vida (#205).
+   *
+   * Es la posición del sendero de racha de KINDER: un paso por día JUGADO, y
+   * el sendero jamás retrocede — ni cuando un escudo cubre un día, ni cuando
+   * `current_streak` vuelve a 1 (`mc-43` §6: la racha perdida nunca borra ni
+   * hace retroceder el mapa). Ni `current_streak` (baja a 1) ni `max_streak`
+   * (la mejor racha, no la suma) pueden expresarlo, así que tiene columna
+   * propia: `migrations/0013_dias_jugados_sendero.sql`.
+   *
+   * Solo sube, y solo en `conDia()` — el único sitio donde un día cuenta. El
+   * `motivo` no entra: un día cumplido por corte de límite de pantalla suma
+   * paso igual que un día de reto completado (línea roja #6).
+   */
+  readonly days_played_total: number;
 }
 
 /**
@@ -135,6 +150,7 @@ export const ESTADO_INICIAL: EstadoRacha = Object.freeze({
   pause_until_local_date: null,
   pause_uses_this_year: 0,
   pause_year: null,
+  days_played_total: 0,
 });
 
 /** Cuántos escudos caben en el banco. #203: el mismo 2 del nivel gratuito de Duolingo. */
@@ -182,9 +198,10 @@ export const SQL_UPSERT_RACHA = `
 INSERT INTO child_streak (
   id, child_profile_id, current_streak, max_streak, last_completed_local_date,
   shields_available, shields_earned_total, shields_earned_this_streak,
-  pause_until_local_date, pause_uses_this_year, pause_year, updated_at
+  pause_until_local_date, pause_uses_this_year, pause_year, days_played_total,
+  updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (child_profile_id) WHERE child_profile_id IS NOT NULL DO UPDATE SET
   current_streak            = excluded.current_streak,
   max_streak                = excluded.max_streak,
@@ -195,6 +212,7 @@ ON CONFLICT (child_profile_id) WHERE child_profile_id IS NOT NULL DO UPDATE SET
   pause_until_local_date    = excluded.pause_until_local_date,
   pause_uses_this_year      = excluded.pause_uses_this_year,
   pause_year                = excluded.pause_year,
+  days_played_total         = excluded.days_played_total,
   updated_at                = excluded.updated_at
 `.trim();
 
@@ -336,6 +354,13 @@ function conDia(
     // con ella (D-079). Sin esta línea el contador nunca baja y la columna no
     // serviría de nada — es la mitad del arreglo, y la menos visible.
     shields_earned_this_streak: racha === 1 ? 0 : estado.shields_earned_this_streak,
+    // Un paso más en el sendero de KINDER (#205). Sube AQUÍ y solo aquí:
+    // `conDia` es el único camino por el que un día cuenta, así que el
+    // acumulado es monótono por construcción y el sendero no puede retroceder
+    // — ni con un escudo de por medio, ni con la racha reiniciada a 1
+    // (`mc-43` §6). Y el `motivo` no entra: un día cumplido por corte de
+    // límite de pantalla es un día jugado y suma su paso (línea roja #6).
+    days_played_total: estado.days_played_total + 1,
   };
 }
 

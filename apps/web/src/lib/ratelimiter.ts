@@ -29,7 +29,23 @@
  * Una ventana fija de un minuto permite el doble del límite justo en el borde:
  * diez al final de un minuto y diez al principio del siguiente son veinte en dos
  * segundos. Se guardan las marcas de tiempo y se cuenta hacia atrás.
+ *
+ * ─── Y desde F6, el medidor de gasto del tutor ─────────────────────────────
+ *
+ * El mismo objeto atiende una segunda ruta, `/tutor`, con una llave distinta:
+ * el seudónimo diario del perfil en vez de la IP. La aritmética del tope no vive
+ * aquí sino en `packages/tutor/src/gasto.ts`, que es puro y se puede probar sin
+ * gastar un centavo; aquí solo está lo que necesita un objeto: leer, decidir sin
+ * carrera, escribir.
  */
+
+import {
+  ESTADO_VACIO,
+  alcanza,
+  costoMaximo,
+  type EstadoDelDia,
+} from "../../../../packages/tutor/src/gasto.ts";
+import type { TemaVisual } from "../../../../packages/motor/src/bandas.ts";
 
 /** Cuántos intentos y en cuánto tiempo, por acción. */
 export const LIMITES: Record<string, { intentos: number; ventanaMs: number }> = {
@@ -66,6 +82,15 @@ export class RateLimiter {
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
+
+    // El medidor del tutor vive en su propia ruta dentro del MISMO objeto.
+    // El plan de F6 §5.1 lo pide así —`math-challenge-ratelimiter-do` ya está
+    // inventariado «para tutor calls»— y evita una clase de Durable Object nueva
+    // con su migración, su binding y su renglón. Lo que sí cambia respecto del
+    // limitador de arriba es la LLAVE: allí es `(acción, IP)` y aquí es el
+    // seudónimo diario del perfil, así que dos personas nunca comparten objeto.
+    if (url.pathname === "/tutor") return this.tutor(url);
+
     const accion = url.searchParams.get("accion") ?? "";
     const limite = LIMITES[accion];
     if (!limite) {
@@ -101,9 +126,143 @@ export class RateLimiter {
     } satisfies Veredicto);
   }
 
+  /**
+   * El medidor de gasto del tutor (F6 #136, plan §5.1 y §5.3).
+   *
+   * ─── Por qué el Durable Object y no el AI Gateway ────────────────────────
+   *
+   * El Gateway cuenta **dólares** y se entera del costo cuando ya se gastó; el
+   * objeto cuenta **llamadas** y puede decidir ANTES. Y sobre todo, el Gateway
+   * bajo presupuesto sabe devolver 429 o cambiar a un modelo más barato, y este
+   * producto no quiere ninguna de las dos: quiere servir la explicación
+   * pregenerada revisada por humano, que el Gateway no tiene. Se sigue el plan
+   * §5.1, que enmienda D-015 («vía AI Gateway»), y va como enmienda a
+   * `docs/dudas.md` (P-15), no como detalle de implementación.
+   *
+   * ─── Tres verbos, y el orden importa ─────────────────────────────────────
+   *
+   *  · `consultar` — no escribe nada. Sirve para calcular el peldaño ANTES de
+   *    decidir. Si escribiera, una petición que acaba sin llamar al modelo
+   *    consumiría cuota igual, y quien más se equivoca ya paga el precio más
+   *    alto de esta escalera.
+   *  · `reservar` — apunta una llamada y **aparta el costo MÁXIMO** de la banda.
+   *    Es lo que hace del tope una cota superior de verdad: sin reserva previa,
+   *    la última llamada del día podría rebasarlo por su cuenta.
+   *  · `liquidar` — devuelve la reserva y apunta el costo real. Si el proveedor
+   *    no mandó `usage`, quien llama ya convirtió eso en el máximo de la banda
+   *    (`costoReal`), nunca en cero: un tope que falla abierto en silencio es
+   *    peor que no tener tope, porque nadie lo revisa.
+   *
+   * ─── Qué se guarda, y por cuánto tiempo ──────────────────────────────────
+   *
+   * Tres enteros. **Ni el id del perfil, ni la banda, ni el locale, ni una sola
+   * palabra de lo que nadie dijo.** El nombre del objeto es el seudónimo diario
+   * `pd`, que es un HMAC con sal secreta y rota cada día, así que los contadores
+   * de ayer no son vinculables con los de hoy. La alarma borra a los siete días
+   * (plan §5.3), y `audits/borrado-cuatro-sistemas.mjs` tiene que alcanzar este
+   * objeto o el borrado de un perfil no llega hasta aquí.
+   */
+  private async tutor(url: URL): Promise<Response> {
+    const accion = url.searchParams.get("accion") ?? "";
+    const estado = (await this.state.storage.get<EstadoDelDia>("tutor")) ?? { ...ESTADO_VACIO };
+
+    if (accion === "consultar") {
+      return Response.json({ ...estado, permitido: false, motivo: "consulta" } satisfies MedidaTutor);
+    }
+
+    const banda = (url.searchParams.get("banda") ?? "KINDER") as TemaVisual;
+    const tope = {
+      llamadas: Number(url.searchParams.get("topeLlamadas") ?? "0"),
+      microdolares: Number(url.searchParams.get("topeMicrodolares") ?? "0"),
+    };
+
+    if (accion === "reservar") {
+      if (!alcanza(estado, banda, tope)) {
+        return Response.json({ ...estado, permitido: false, motivo: "tope" } satisfies MedidaTutor);
+      }
+      const nuevo: EstadoDelDia = {
+        llamadas: estado.llamadas + 1,
+        gastado: estado.gastado,
+        reservado: estado.reservado + costoMaximo(banda),
+      };
+      await this.state.storage.put("tutor", nuevo);
+      // Siete días, contados desde la última escritura. El objeto se llama por
+      // el `pd` del día, así que a los siete días ya nadie va a volver a él.
+      await this.state.storage.setAlarm(Date.now() + RETENCION_TUTOR_MS);
+      return Response.json({ ...nuevo, permitido: true, motivo: "reservado" } satisfies MedidaTutor);
+    }
+
+    if (accion === "liquidar") {
+      const cobrado = Number(url.searchParams.get("microdolares") ?? "0");
+      const nuevo: EstadoDelDia = {
+        llamadas: estado.llamadas,
+        // La reserva se devuelve entera y el costo real se apunta. `Math.max`
+        // porque una liquidación sin su reserva —un reinicio a mitad de vuelo—
+        // no debe dejar el reservado en negativo, que daría cuota de regalo.
+        reservado: Math.max(0, estado.reservado - costoMaximo(banda)),
+        gastado: estado.gastado + (Number.isFinite(cobrado) ? cobrado : costoMaximo(banda)),
+      };
+      await this.state.storage.put("tutor", nuevo);
+      return Response.json({ ...nuevo, permitido: true, motivo: "liquidado" } satisfies MedidaTutor);
+    }
+
+    return Response.json({ ...estado, permitido: false, motivo: "accion_desconocida" } satisfies MedidaTutor);
+  }
+
   /** La ventana expiró y no volvió nadie: se borra el estado. */
   async alarm(): Promise<void> {
     await this.state.storage.deleteAll();
+  }
+}
+
+/** Siete días (plan §5.3). Lo que el objeto guarda de un perfil, y nada más. */
+export const RETENCION_TUTOR_MS = 7 * 24 * 60 * 60 * 1000;
+
+export interface MedidaTutor extends EstadoDelDia {
+  permitido: boolean;
+  motivo: string;
+}
+
+/**
+ * Consulta el medidor del tutor. **Falla CERRADO**, al revés que `consultarLimite`.
+ *
+ * Y la diferencia no es un descuido: son dos cosas distintas las que se
+ * protegen. El limitador de arriba protege contra volumen, y su ausencia deja el
+ * formulario **lento**, no abierto — fallar cerrado ahí impediría a un padre
+ * crear la cuenta de su hijo. Este medidor protege contra **gasto**, y su
+ * ausencia dejaría el gasto sin cota: un objeto caído se convertiría en barra
+ * libre de inferencia y nadie se enteraría hasta la factura.
+ *
+ * Lo que cuesta fallar cerrado aquí es exactamente nada para quien juega: se
+ * sirve la explicación pregenerada, que es la misma que recibe el 95% de las
+ * veces, instantánea y revisada por humano.
+ */
+export async function medirTutor(
+  ns: DurableObjectNamespace | undefined,
+  opciones: {
+    pd: string;
+    banda: TemaVisual;
+    tope: { llamadas: number; microdolares: number };
+    accion: "consultar" | "reservar" | "liquidar";
+    microdolares?: number;
+  },
+): Promise<MedidaTutor> {
+  const cerrado: MedidaTutor = { ...ESTADO_VACIO, permitido: false, motivo: "sin_medidor" };
+  if (!ns || !opciones.pd) return cerrado;
+  try {
+    const id = ns.idFromName(`tutor:${opciones.pd}`);
+    const stub = ns.get(id);
+    const q = new URLSearchParams({
+      accion: opciones.accion,
+      banda: opciones.banda,
+      topeLlamadas: String(opciones.tope.llamadas),
+      topeMicrodolares: String(opciones.tope.microdolares),
+    });
+    if (typeof opciones.microdolares === "number") q.set("microdolares", String(opciones.microdolares));
+    const r = await stub.fetch(`https://ratelimiter/tutor?${q.toString()}`);
+    return (await r.json()) as MedidaTutor;
+  } catch {
+    return cerrado;
   }
 }
 

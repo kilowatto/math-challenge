@@ -166,8 +166,44 @@
       // línea roja #2, y `audits/telemetria-infantil.mjs` lo hace cumplir.
       "binding": "FUNNEL_AE",
       "dataset": "math-challenge-funnel-ae"
+    },
+    {
+      // Uso y costo del tutor en vivo (F6 #136). Índice `banda|locale|modelo`,
+      // y NUNCA el perfil — ni siquiera hasheado.
+      //
+      // El inventario decía literalmente «per-child, per-model» y era falso de
+      // dos maneras a la vez: contradice la línea roja #2, y Analytics Engine
+      // retiene tres meses y **no borra bajo demanda** (`mc-32` riesgo #7), así
+      // que lo que entrara ahí no saldría cuando un padre ejerciera su derecho.
+      // El renglón está corregido en docs/infrastructure.md en este mismo PR.
+      // El contador POR perfil vive en el Durable Object, siete días, y sí se
+      // borra.
+      "binding": "TUTOR_AE",
+      "dataset": "math-challenge-tutor-usage-ae"
     }
   ],
+
+  // ── Workers AI (F6 #136, D-035) ──────────────────────────────────────────
+  //
+  // D-035 movió toda la inferencia a Workers AI y el dueño la amplió el mismo
+  // día: «solo vamos a trabajar con Cloudflare, es una decisión tomada». No
+  // queda ningún camino a la API de Claude, y por eso este binding sustituye a
+  // la `ANTHROPIC_BASE_URL` que el inventario todavía nombraba.
+  //
+  // El binding NO crea ningún objeto de cuenta: Workers AI se factura por uso.
+  // Lo que sí es un objeto y **todavía no está creado** es el AI Gateway
+  // `math-challenge-tutor-gateway`, que es la red de seguridad en DÓLARES. El
+  // Worker lo usa solo si `AI_GATEWAY_ID` está definido; sin él llama directo,
+  // y el tope por perfil lo sigue haciendo cumplir el Durable Object, que es
+  // donde el plan de F6 §5.1 lo puso. Ver docs/infrastructure.md.
+  //
+  // `TUTOR_PD_SECRET` es un SECRETO (`wrangler secret put`), jamás una var:
+  // es la sal del HMAC con el que se deriva el seudónimo diario del perfil. Sin
+  // él no se llama al modelo en absoluto — sin `pd` no hay contador por perfil,
+  // y un camino en vivo sin tope no se enciende.
+  "ai": {
+    "binding": "AI"
+  },
 
   "vars": {
     // Los siete locales. No cinco: es-MX y es-ES no comparten separador
@@ -181,7 +217,11 @@
   //   F4  math-challenge-learner-do      (modelo adaptativo por niño)
   //   F7  math-challenge-league-do       (liga de ~30, WebSocket)
   //   F9  math-challenge-classroom-do    (salón y club de papás)
-  //   F6  math-challenge-tutor-gateway   (AI Gateway delante de Claude)
+  //   F6  math-challenge-tutor-gateway   (AI Gateway — red de seguridad en
+  //                                       dólares del tutor. NO es «delante de
+  //                                       Claude»: D-035 quitó ese camino. El
+  //                                       tope por perfil ya no depende de él,
+  //                                       vive en el Durable Object)
   //
   // Quien cree cualquiera de ellos escribe su renglón en la bitácora de
   // docs/infrastructure.md EN EL MISMO PR (CLAUDE.md § Cloudflare).

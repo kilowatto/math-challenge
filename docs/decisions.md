@@ -3522,3 +3522,511 @@ pérdida (`racha-lexico` vigila los siete locales).
 `max_streak` (#208 lo prohíbe para salones y clubs, y el mismo criterio se
 extiende aquí), ni escudos, ni pausas, ni histórico. Sin nombre real jamás
 (línea roja #2, D-081).
+
+---
+
+## D-107 — El dueño de un grupo ve siempre alias, racha y puntos; el opt-in de D-087 gobierna solo las vistas ordenadas · 2026-08-03
+
+**Decisión del dueño** (F9), cerrando una contradicción interna del primer
+diseño de F9: su §5 omitía racha y puntos del roster para el niño sin
+`leaderboard_opt_in`, y su §6 afirmaba que alias/racha/puntos son siempre
+visibles al dueño del grupo como la visibilidad mínima de D-027.
+
+**Queda el §6.** D-027 fijó que el dueño de un `grupo_infantil` ve «solo
+alias, puntos y racha» de cada miembro aprobado — eso no es ranking, es la
+condición mínima para que un salón o un club sirva. El opt-in de D-087
+gobierna únicamente las **vistas ordenadas por posición**: un niño con
+`leaderboard_opt_in = 0` aparece en el roster con sus tres datos, y no
+aparece en ninguna tabla ordenada, posición ni tercio.
+
+**Lo que esto NO cambia:** la lista cerrada sigue siendo esos tres datos.
+Ni nombre real, ni edad exacta, ni otros grupos (D-027), y la aprobación
+del padre sigue siendo la puerta (D-011).
+
+**Nota de numeración:** esta decisión se escribió primero como D-093 y se
+renumeró al integrarla — D-093 a D-106 las ocupó el cierre de F7 en una
+sesión paralela (dudas §24.5 y AGENTS.md §1: los números los reparte el
+orquestador).
+
+**Investigación relacionada:** `mc-28`, `mc-18`, D-027, D-087.
+
+---
+
+## D-108 — F9 entra al área de adulto como área propia `/app/grupos/`, no como sexta pestaña · 2026-08-03
+
+**Decisión del dueño** (F9), cerrando la pregunta que D-065 dejó abierta
+(«si F9 llega: ¿6ª pestaña o área separada?»).
+
+**Área separada.** El tope de 5 pestañas de D-065 no se toca (máximo HIG /
+Material 3 que D-064 ya invocó). La entrada a los grupos es una **acción
+desde `/app/home`** — el patrón de D-082: acciones posteriores, nunca una
+elección en la puerta ni una pestaña permanente que no aplica a la mayoría
+de las cuentas.
+
+**Consecuencia:** `apps/web/src/lib/pestanas-privadas.ts` no gana claves.
+Las pantallas de grupo viven bajo `/[locale]/app/grupos/` con
+`layouts/Privada.astro` (D-065). Una cuenta cuyo único vínculo es ser
+dueña de grupo aterriza en `/app/grupos/` desde `/app/home`.
+
+**Investigación relacionada:** D-064, D-065, D-082, `mc-49`.
+
+---
+
+## D-109 — El reporte de un grupo no lleva captura de pantalla: el estado se reconstruye de D1 · 2026-08-03
+
+**Decisión del dueño** (F9), retirando `screenshot_r2_key` del primer
+diseño de F9 (captura automática de la pantalla del padre al reportar,
+patrón Roblox julio 2026).
+
+**Por qué se retira:** el patrón de Roblox captura la pantalla del
+INFRACTOR dentro de su plataforma; aquí la captura sería de la pantalla
+del padre que reporta, que puede mostrar datos de **otros** niños
+(hermanos en el panel del hogar). Copiar esa imagen a R2 es recolectar
+datos de menores ajenos sin consentimiento de sus padres — la línea roja
+#2 no la salva que el botón lo presione un adulto. Y D-075 fijó el
+principio: ninguna captura que no sea acción explícita, y «la respuesta
+por defecto a ampliarla es no».
+
+**Lo que lo reemplaza:** `child_group_report` guarda el `reason_code`
+(CHECK cerrado) y las referencias; el revisor reconstruye el estado desde
+D1 (grupo, dueño, `assurance`, código, membresías) con una consulta, sin
+imagen.
+
+**Investigación relacionada:** D-075, línea roja #2, `mc-25`.
+
+---
+
+## D-110 — La membresía del grupo ES el consentimiento; no se añade `CLASSROOM_JOIN` al catálogo · 2026-08-03
+
+**Decisión del dueño** (F9), resolviendo una promesa incumplida del plan
+de F2: su §3.3 anunció el código `classroom_join` en
+`consent_type_catalog` «a llenar en F9», y la migración `0003` real nunca
+lo insertó (los códigos vivos son `CHILD_PROFILE`, `LEADERBOARD`,
+`SCREEN_TIME`, `DATA_RETENTION`, más `LEAGUE`/`DUEL` de la `0012`).
+
+**No se inserta.** `child_group_membership` ya guarda lo que el
+consentimiento exige demostrar: **quién aprobó** (`decided_by`, siempre
+el padre dueño del perfil), **cuándo** (`decided_at`), **qué se
+comparte** (`leaderboard_opt_in`, D-107), y la revocación es una
+transición de estado (`removed`), nunca un borrado. Registrar además la
+aprobación en `child_consents` crearía dos filas que afirman lo mismo y
+pueden desincronizarse — el defecto exacto que D-051 cerró congelando
+`consent_records`.
+
+**Diferencia con el tablero y la liga:** `LEADERBOARD`/`LEAGUE`/`DUEL` sí
+son códigos de `child_consents` porque esos consentimientos **no tienen
+tabla de membresía propia** donde vivir. Aquí la tabla existe y es la
+fuente única.
+
+**Investigación relacionada:** D-011, D-051, `mc-25`.
+
+---
+
+## D-111 — El niño ve una mención neutra de su grupo en su mapa, sin números ni posiciones · 2026-08-03
+
+**Decisión del dueño** (F9), en contra de la recomendación presentada
+(que era no mostrar nada en v1).
+
+**La forma, con las restricciones de cada banda:**
+
+- **Sin números, sin posiciones, sin comparación, en ninguna banda.** La
+  mención es identidad («estás en el salón de…»), nunca desempeño.
+  `mapa-sin-numero-de-nivel` y D-017 aplican sin excepción.
+- **KINDER:** sello visual (ícono) con `aria-label` autorado, nunca texto
+  obligatorio — el niño de 4-6 no lee (D-019, `mc-20`).
+- **PRIMARIA/SECUNDARIA:** una línea de texto autorada por locale, fuera
+  del árbol de habilidades — no es un nodo de dominio.
+- **Nada dentro de un reto activo** (la regla de `mision-silenciosa`).
+- **Lo que el niño NUNCA ve:** el roster, el tablero del grupo aunque
+  tenga opt-in (la vista ordenada es de adultos en v1), la identidad del
+  dueño más allá de la mención, ni los demás miembros.
+
+**Por qué aun así:** un niño cuyo maestro usa el producto en clase va a
+oír hablar del salón; que su propia app lo niegue sería lo raro. La
+mención responde «¿por qué mi maestra sabe que jugué?» sin abrir ninguna
+superficie social — el ranking entre compañeros que se conocen sigue
+fuera (`mc-28` §6, Domínguez et al. 2013).
+
+**Investigación relacionada:** `mc-28` (implicaciones 6 y 8), `mc-18`,
+D-017, D-019, D-107.
+
+---
+
+## D-112 — `math-challenge-classroom-do` sí se usa: un Durable Object por grupo para standings en vivo · 2026-08-03
+
+**Decisión del dueño** (F9), en contra de la recomendación presentada
+(que era declararlo innecesario, como `math-challenge-tutor`).
+
+- **Un objeto por grupo** (`idFromName(child_group_id)`), clase `Grupo` —
+  mismo patrón que `Liga` por cohorte (`mc-32` riesgo #2; borrar el
+  grupo es `deleteAll()`).
+- **Solo standings, nunca presencia.** Hereda la condición 2 de D-081:
+  sin contador de sockets, sin `last_seen`, sin «fulano acaba de jugar».
+  La difusión manda la tabla entera del grupo y nada más.
+- **Solo miembros con `leaderboard_opt_in = 1`** (D-107): el DO no recibe
+  jamás datos de un niño sin opt-in — no es que no los difunda, no los
+  tiene.
+- **El roster se lee de D1, no del DO.** El objeto guarda estado
+  derivado para difundir (alias, avatar, puntos, racha — la lista de
+  D-027); el registro maestro sigue siendo la base.
+- **El niño no es cliente de este DO** (D-111): ningún WebSocket llega a
+  una superficie de niño.
+
+**Investigación relacionada:** `mc-32` (riesgo #2), D-081, D-107,
+`apps/web/src/lib/liga-do.ts` (el patrón a copiar).
+
+---
+
+## D-113 — El código de unión: 6 caracteres sin ambiguos, regenerable y desactivable, sin expiración · 2026-08-03
+
+**Decisión del dueño** (F9), completando la mecánica que D-011 dejó en
+«código de 6 caracteres».
+
+- **Alfabeto sin ambiguos:** sin `0/O`, sin `1/I/L`, sin vocales
+  adyacentes que formen palabra. Se genera en servidor, nunca lo escribe
+  el dueño.
+- **Reset y disable, los dos** (verificado en vivo contra Google
+  Classroom, que ofrece ambos): el dueño puede **regenerar** el código —
+  el anterior muere en el acto, las membresías aprobadas no se tocan— y
+  **desactivarlo** sin borrar el grupo (`disabled_at`).
+- **Sin expiración automática:** un salón real dura el ciclo escolar; un
+  código que caduca solo obliga al maestro a reactivarlo frente a 30
+  familias.
+- **El código nunca mueve a un niño a ningún roster** (`mc-28`
+  implicación 2): solo una decisión explícita del padre crea la
+  membresía.
+
+**Investigación relacionada:** D-011, `mc-28` §1.
+
+---
+
+## D-114 — Topes de F9: club de papás ≤ 20 niños, 3 grupos por tipo y cuenta, 1 creación por día, solicitud expira a 30 días · 2026-08-03
+
+**Decisión del dueño** (F9), poniendo los números que D-027 («tope menor
+que el de salón») y D-087 («límite de creación») dejaron sin cifra.
+
+- **Club de papás: máximo 20 niños** (contra el 12 recomendado: un club
+  deportivo o de colonia completo debe caber). Sigue por debajo del salón
+  (30-35, D-087).
+- **Creación: 3 salones + 3 clubs por cuenta** (D-011 fijó los 3
+  salones; simétrico a clubs), **y 1 grupo creado por día por cuenta** —
+  la velocidad es la palanca que `mc-28` implicación 12 nombra.
+- **Solicitud pendiente expira a los 30 días:** `status` pasa a
+  `expired`, la fila queda en la bitácora. 7 días castiga a la familia
+  de vacaciones; nunca expirar deja estados zombi.
+- **Tasa de aprobaciones sin tope duro en v1:** el cuello real es el
+  tamaño del grupo y la tasa de creación; se mide antes de apretar.
+
+**Investigación relacionada:** D-011, D-027, D-087, `mc-28` (implicación
+12), `mc-46` §6.
+
+---
+
+## D-115 — El toggle del ranking opt-in vive en la pantalla de aprobación de la membresía · 2026-08-03
+
+**Decisión del dueño** (F9), resolviendo una dependencia mal puesta: el
+primer diseño de F9 ubicaba el control del ranking «en el panel de
+familia (F8)» — una fase cuyo panel no está construido.
+
+**El padre decide el ranking al aprobar la membresía** (default apagado,
+D-087), en la misma pantalla donde ve la tarjeta de identidad del dueño
+del grupo. Después puede cambiarlo desde la bitácora de membresía (issue
+#386), que es superficie de F9, no de F8. Cuando el panel de F8 exista
+puede reflejar el mismo control leyendo la misma columna — una sola
+fuente, dos vistas.
+
+**Investigación relacionada:** D-087, D-107, D-110.
+
+---
+
+## D-116 — Las colas de revisión de F9 se operan con SQL y correo, sin pantalla de admin en v1 · 2026-08-03
+
+**Decisión del dueño** (F9), acotando la herramienta mínima de D-089.
+
+**v1 sin UI de administración.** El dueño revisa escuelas pendientes y
+reportes abiertos con `wrangler d1 execute` contra `school` y
+`child_group_report`, y responde por correo. Una pantalla de admin es una
+superficie autenticada nueva que construir y auditar — costo real contra
+un volumen esperado mínimo en el lanzamiento acotado de D-087.
+
+**Lo que sí exige esta vía:** los `UPDATE` de `verification_status` y de
+`reviewed_at`/`reviewed_by` quedan escritos como consultas de runbook en
+el plan de F9, con los valores cerrados que el esquema admite — un
+`UPDATE` a mano sin runbook es como `assurance='verified'` escrito donde
+no toca.
+
+**Condición de revisión:** la misma de D-089 — cuando el volumen lo
+exija, se construye la pantalla con esta decisión enmendada.
+
+**Investigación relacionada:** D-089, D-090, `mc-28` (pregunta abierta
+4).
+
+---
+
+## D-117 — Los retos del club de adultos viven aislados: no mueven tablero global ni ligas · 2026-08-03
+
+**Decisión del dueño** (F10), cerrando la pregunta abierta 4 de `mc-46`.
+
+Los puntos que un adulto gana dentro de su `adult_club` **solo cuentan
+dentro del club**. El tablero global y las ligas no se enteran de que el
+club existe, y el club no escribe en `score_totals_adulto` — tiene su
+propio acumulado por reto.
+
+**Por qué:** contar en el global activaría la maquinaria anti-colusión
+de `mc-29` (índices omega/GBT, solo significativos con banco grande)
+sobre la competencia principal, y la visibilidad del análisis legal de
+D-028 sobre el tablero entero.
+
+**Investigación relacionada:** `mc-46` (pregunta 4), `mc-18`, D-025.
+
+---
+
+## D-118 — El club de adultos tiene tope de 20 miembros · 2026-08-03
+
+**Decisión del dueño** (F10), poniendo el número que `mc-46` no da.
+
+**20 miembros por club**, espejo del tope del club de papás (D-114) y
+por la misma razón: una prenda solo funciona si todos se conocen. La
+liga de ~30 ya existe para la competencia anónima; el club es lo otro.
+
+Sin límite de clubs por cuenta más allá del de creación (1 grupo/día,
+compartido con F9 — la palanca es la velocidad, no el inventario).
+
+**Investigación relacionada:** `mc-46` §6, D-114.
+
+---
+
+## D-119 — F10 sale en dos pasos: club primero, prendas tras la revisión legal · 2026-08-03
+
+**Decisión del dueño** (F10), ordenando el lanzamiento contra la
+condición de D-028.
+
+**Paso 1:** el club completo sin apuestas — creación, código, miembros
+(incluida la membresía de adolescentes de D-120), tabla del club, retos
+con ventana de tiempo. Todo eso es un tablero compartido y no toca la
+categoría legal de juego.
+
+**Paso 2:** las tres formas de prenda (D-028) con su moderación (D-029)
+y su apelación (D-121), habilitadas por `CONFIG_KV.f10_prendas_enabled`
+**solo después de que la revisión legal de D-126 quede escrita**. El
+paso 2 se diseña junto y se construye detrás de la bandera: habilitarlo
+es un flip de configuración, no un despliegue.
+
+**Investigación relacionada:** D-028, D-029, `mc-46` §1.
+
+---
+
+## D-120 — Un adolescente de 12-17 puede ser miembro de un club de adultos, con aprobación del padre — y JAMÁS en una prenda · 2026-08-03
+
+**Decisión del dueño** (F10), **contra la recomendación presentada** (el
+default de `mc-46`: ningún menor en `club_adulto`). Cierra el caso de un
+club de primos o de compañeros de prepa.
+
+1. **La membresía puede ser de un adolescente** (12-17, SECUNDARIA) si su
+   padre la aprueba — mismo mecanismo que F9: aprobación registrada
+   (quién, cuándo), revocable. Juega retos y aparece en la tabla del
+   club con su alias.
+2. **Un menor no entra JAMÁS a un reto con prenda, y eso es estructural,
+   no una regla de código.** D-028 ya lo dice sin matiz; se hace cumplir
+   por esquema: la aceptación de una prenda (`club_stake_acceptance`)
+   referencia únicamente `users.id` — un adolescente no tiene una, así
+   que no puede aceptar, y solo quien aceptó juega la prenda. Ni siquiera
+   con el padre aprobando: la prenda es un juego entre adultos por
+   definición (`mc-46` implicación 1), y la exposición regulatoria de una
+   apuesta con un menor (`mc-17`) no la consiente nadie.
+
+**Lo que esto NO abre:** chat (D-027), datos del menor más allá de
+alias/racha/puntos dentro del club, y ninguna superficie donde un menor
+escriba texto libre (línea roja #3). La separación de D-027 no se
+ablanda: la entrada de un adolescente es un acto explícito de su padre
+sobre un club concreto, nunca una consecuencia por defecto.
+
+**Investigación relacionada:** `mc-46` (pregunta 1, implicación 1),
+`mc-17`, `mc-25`, D-027, D-028.
+
+---
+
+## D-121 — La apelación de prendas la atiende el dueño a mano, con el patrón de D-116 · 2026-08-03
+
+**Decisión del dueño** (F10), dando dueño y herramienta a la cola que
+D-029 exige («toda prenda rechazada debe poder mandarse a revisión
+humana con un toque»).
+
+Mismo patrón que las colas de F9 (D-089, D-116): el dueño revisa las
+apelaciones con las consultas SQL escritas en el runbook del plan de
+F10 y responde por correo. Se registra `appealed_at` de cada apelación
+para medir el tiempo real de respuesta.
+
+**Condición de revisión:** la misma de D-089 — cuando el volumen lo
+exija, se construye la pantalla de admin compartida para todas las
+colas (F9 + F10), no antes.
+
+**Investigación relacionada:** D-029, D-089, D-116.
+
+---
+
+## D-122 — Piso de contenido del cierre: 6 retos por nivel en N4-N12, mixto 2 fijos + 4 plantillas; kinder se rige por F5 · 2026-08-03
+
+**Decisión del dueño** (F11 — requisito declarado por él: «al menos 6
+retos por cada nivel excepto kinder, que tendrá un tratamiento
+diferente»), con la forma cerrada por preguntas interactivas.
+
+- **El piso: 6 retos por nivel en N4-N12** (9 niveles, 54 retos).
+- **Qué es «un reto» aquí: 2 fijos curados a mano + 4 plantillas
+  paramétricas** por nivel. Los fijos son la vitrina (como los 4 retos
+  de F5c); las plantillas son la rejugabilidad — 6 ítems fijos por nivel
+  se agotarían en una semana y la ubicación adaptativa (10-15 ítems por
+  sesión, `mc-44`) se consumiría el banco entero. Las plantillas llevan
+  su bloque `variacion.{varia, constante, por_que}` completo (esquema de
+  ítem §10): no son «6 ítems al azar», son 6 reglas de enseñanza.
+- **Kinder NO se mide por este piso.** Su unidad de diseño es la
+  habilidad (K01-K14) y su fase es F5 — trayectoria de `mc-06`, 14
+  lugares de la Sabana, ~400 ítems, ~2.500 retos curados.
+- **Cada reto lleva su etiqueta de dificultad experta (1-100)** al
+  autorarse (`mc-44` implicación 2) y el log de respuestas desde el
+  primer despliegue — a ~200-400 respuestas/ítem para Rasch son
+  ~10.800-21.600 respuestas totales, que un banco chico acumula rápido:
+  se calibra antes.
+- **Costo estimado (mc-40, etiquetado como estimación):** ~50-60
+  días-persona incluyendo revisión y renders de notación.
+
+**Investigación relacionada:** `mc-40`, `mc-44`, `mc-15`, `mc-34`,
+D-006, D-018, D-034, D-073.
+
+---
+
+## D-123 — Los retos de N4-N12 se autoran una vez y se renderizan en las 7 notaciones · 2026-08-03
+
+**Decisión del dueño** (F11), aplicando a N4-N12 el patrón que D-034 ya
+fijó para la franja N8-N10.
+
+**Una sola autoría estructural por reto** (`autoria: "universal"` del
+esquema de ítem — prohíbe el campo `locale`), renderizada por locale
+con `MATH_CONVENTIONS`: punto/coma decimal (`es-MX` contra todos), `÷`
+contra `:` como signo de división, `·` en `de-DE`, escala larga/corta si
+aparece un número ≥10⁹ (`pt-PT` contra `pt-BR`, riesgo ×1.000). Lo que
+en kinder exigía autoría separada (las palabras-número) en N4+ ya no
+cambia el aprendizaje — solo la notación, y la notación es render, no
+autoría (`mc-34`).
+
+El copy de interfaz alrededor del reto sí se autora por locale (D-022).
+
+**Investigación relacionada:** `mc-34`, D-034, D-022.
+
+---
+
+## D-124 — N11-N12: base auto-calificable más la pista Lean 4 como capstone · 2026-08-03
+
+**Decisión del dueño** (F11), **contra la recomendación presentada**
+(solo formatos auto-calificables). Cierra la pregunta abierta 1 de
+`mc-12` con un sí.
+
+**La base de los 6 retos de N11 y N12** son formatos con respuesta
+cerrada, que no necesitan mecanismo de calificación nuevo: combinatoria
+y teoría de números estilo AIME, respuesta numérica, equivalencia
+simbólica verificada por CAS, «detecta el error en esta prueba»,
+ordenamiento de pasos (`mc-12` implicaciones 2-10). La prueba en prosa
+libre **nunca** es reto puntuado — 52-54% de acuerdo LLM-humano en
+ciego (IMO-GradingBench) la descarta como calificación; toda evaluación
+asistida es contra referencia, nunca en ciego (RefGrader).
+
+**Encima de la base, la pista Lean 4** (estilo *Natural Number Game*):
+una serie capstone autorada en Lean 4 contra mathlib, donde **el
+compilador es el calificador** — cero ambigüedad, resistencia total a
+solvers. Con su costo dicho de frente: cada ejercicio necesita un
+esqueleto formalizado y revisado (la autoría más cara por reto de todo
+el proyecto), y el jugador aprende sintaxis Lean como parte de la
+pista. **La pista es aditiva: los 6 retos por nivel de D-122 se cumplen
+sin ella** — N11/N12 no se bloquean si Lean se retrasa; la pista
+aterriza cuando esté, como bandera de contenido.
+
+**Investigación relacionada:** `mc-12`, D-074, T-6 (queda respondida en
+su parte operativa: esto ES lo calificable de verdad en niveles altos).
+
+---
+
+## D-125 — El anti-trampa de F11 construye los tiers 0 y 1, y solo esos · 2026-08-03
+
+**Decisión del dueño** (F11), tomando la fila de master-plan §13.2 al
+pie de la letra.
+
+F11 construye: **tier 0** (puntuación del lado del servidor —ya existe—
+más el piso de tiempo de respuesta solo-logging, que nunca bloquea ni
+pone cero) y **tier 1** (monitoreo silencioso de varianza con señal
+suave —nunca bloqueo, nunca penalización visible, nunca framing
+punitivo— más el rate limiting en endpoints de envío, que ya existe vía
+`math-challenge-ratelimiter-do`). Regla permanente intacta: nunca
+cámara, micrófono, biometría ni navegador bloqueado (línea roja #1 con
+su única excepción, D-075).
+
+**Los tiers 2-5 no se construyen en F11.** Los ganchos del tier 3 ya
+existen (Turnstile, rate limiter, WebAuthn como camino principal), y los
+tiers altos llegan cuando haya tráfico real que los justifique — antes
+de eso son heurísticas afinadas a ciegas. Cuando las ligas o los clubs
+tengan volumen, el tier 2-3 es la primera ampliación de esta decisión.
+
+**Investigación relacionada:** `mc-29` (escalera de 6 tiers), D-010,
+D-020, D-084.
+
+---
+
+## D-126 — La revisión legal de F11 es un checklist interno documentado, sin abogado externo · 2026-08-03
+
+**Decisión del dueño** (F11), **contra la recomendación presentada**
+(abogado externo). **Enmienda D-028 en su condición «se revisa con
+abogado antes de habilitar prendas en cualquier mercado», y master-plan
+§14.2 («antes de lanzar con menores esto se revisa con abogado»).**
+
+**Lo que queda en su lugar:** un **checklist legal interno, escrito y
+fechado**, construido desde `mc-25`, `mc-38` §12 y la investigación web
+verificada del 2026-08-03 — COPPA 2025 (cumplimiento general desde
+2026-04-22), GDPR Art. 8, Children's Code (15 estándares), LGPD Art. 14,
+LFPDPPP post-INAI, EAA (vinculante desde 2025-06-28), DSA Art. 28 — con
+cada punto marcado: cumple / no aplica / **exposición aceptada por el
+dueño**. El paso 2 de F10 (prendas, D-119) se habilita cuando ese
+checklist existe y su sección de prendas está completa — la condición
+de D-028 se mantiene como *revisión*, pero la revisión es interna.
+
+**El precio, dicho de frente y asumido por el dueño:** `mc-25` marca
+afirmaciones `[unverified]` que solo un abogado licenciado en cada
+jurisdicción puede cerrar; la LFPDPPP post-INAI no tiene postura madura;
+CAADCA sigue en litigio; y «no es asesoría legal» deja de ser protección
+cuando nadie la ejerce. La exposición queda entera sobre el dueño, a
+sabiendas. **Condición de revisión:** la primera queja formal, el primer
+mercado con multa concreta (EAA), o el primer contrato escolar que exija
+papel — cualquiera convierte esta decisión en «abogado externo» de
+inmediato.
+
+**Investigación relacionada:** `mc-25`, `mc-38` §12, `mc-17`, D-028,
+D-087, D-119.
+
+---
+
+## D-127 — El offline completo de F11 es D-047 más Web Push · 2026-08-03
+
+**Decisión del dueño** (F11), **contra la recomendación presentada**
+(solo el alcance de D-047).
+
+F11 construye el offline completo de D-047 (descarga explícita del nivel
+actual y el siguiente, cola de intentos en IndexedDB con flush en
+foreground, precisión sin tablero offline, revalidación en servidor,
+presupuesto de precaché vigilado, nada se baja solo) **y completa la
+infraestructura de Web Push**: claves VAPID, service worker de push,
+suscripción por dispositivo, permiso tras gesto con mensaje de valor —
+diseñado para el piso de iOS (push solo con app instalada, `mc-33`).
+
+**Alineación con D-105:** el cierre de F7 ya construye el primer
+consumidor del canal (el recordatorio de misión al padre, #207, con
+`audits/recordatorio-sin-culpa.mjs` como condición). F11 no lo duplica:
+construye lo que #207 no cubra de la infraestructura (claves, SW,
+suscripción) y deja el canal listo para los demás consumidores decididos
+(reportes de F8, avisos de colas del dueño). **Ningún push va jamás a un
+niño.**
+
+**Lo que esto NO incluye:** Background Sync como camino confiable (solo
+acelerador best-effort en Chromium — `mc-33`), ni ninguna notificación
+con culpa (D-014; `recordatorio-sin-culpa.mjs` y la carta
+`patrones-oscuros` lo vigilan).
+
+**Investigación relacionada:** `mc-33`, `mc-19`, D-047, D-030, D-084,
+D-105.

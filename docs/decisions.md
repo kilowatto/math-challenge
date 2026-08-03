@@ -3434,3 +3434,91 @@ a la vez.
 
 **Investigación relacionada:** D-086 (el modelo de escuela verificada que
 esta decisión completa), `mc-28`.
+
+## D-103 — Misiones por día: 3 en PRIMARIA y SECUNDARIA, 4 en SERIO · 2026-08-03
+
+**Decisión:** `MISIONES_POR_DIA` deja de ser una constante única. PRIMARIA y
+SECUNDARIA juegan **3 misiones simultáneas**; SERIO (la banda adulta con
+contenido en el MVP, D-034) juega **4**. Responde las dos preguntas abiertas
+de `docs/dudas.md` §23 (misiones diarias), contestadas por el dueño el
+2026-08-03.
+
+El 3 de las bandas de menor se queda como estaba implementado en D-092: es el
+número de Duolingo (bronce/plata/oro, corroborado en fuentes secundarias) y
+está justo por debajo del techo de memoria de trabajo que Cowan (2010, «The
+Magical Mystery Four») fija en ~4±1 **para adultos** — los niños de 7-11
+todavía están subiendo hacia ese techo, no lo han alcanzado.
+
+El 4 de SERIO usa exactamente esa misma fuente: la memoria de trabajo adulta
+sí alcanza el techo de Cowan, así que la banda adulta puede aprovecharlo. El
+número es `[criterio propio]` con la fuente escrita al lado, misma honestidad
+que la tabla de D-016.
+
+**Lo que esto cuesta:** una tabla por banda en vez de una constante. El cambio
+vive solo en `packages/motor/src/misiones.ts`; la interfaz pinta lo que
+`elegirMisionesDelDia()` devuelva y no conoce el número.
+
+**Condición de revisión:** cuando haya datos reales de tasas de completado por
+banda, se recalibran los dos números midiendo, no discutiendo.
+
+**Investigación relacionada:** `mc-16` (el 3 de Duolingo), Cowan (2010) citado
+en `docs/dudas.md` §23.1. Implementa la respuesta del dueño a §23.1 y §23.2.
+
+## D-104 — KINDER no escribe `mission_daily_summary` · 2026-08-03
+
+**Decisión:** el avance en la Sabana de KINDER **no cuenta como «misión
+completada»** en el panel del padre. KINDER no escribe ninguna fila en
+`mission_daily_summary`: `elegirMisionesDelDia()` le devuelve una lista vacía
+(D-092 §5) y así se queda. Responde §23.3 de `docs/dudas.md`, contestada por
+el dueño el 2026-08-03.
+
+La alternativa —contarlo— infla una tasa de «misiones completadas» hasta
+hacerla indistinguible de «jugó hoy», y una métrica que mide dos cosas no mide
+ninguna. El precio aceptado, dicho: KINDER queda sin fila en esa métrica del
+panel, y su avance se lee por la vía del mapa (F7 §4), no por la de misiones.
+
+Si un día se quiere mostrar «jugó hoy» en el panel, se muestra como eso —con
+sus palabras—, no como misión.
+
+## D-105 — El recordatorio por push se construye ahora, no se aplaza a F8 · 2026-08-03
+
+**Decisión:** el mecanismo de recordatorio de misión por Web Push **se
+coordina ahora**, dentro del cierre de F7, y no se aplaza al diseño de F8 ·
+Padres. Revierte el «fuera de alcance» que el agente había asumido en
+`docs/dudas.md` §23.4 por no haber superficie; el dueño lo contestó distinto
+el 2026-08-03.
+
+Las reglas del canal no cambian y vienen de `mc-19`, no de esta decisión: el
+push va **al padre, nunca al niño**; máximo **uno al día por hogar**; copy de
+intención-implementación (eco de un compromiso hora/lugar elegido por la
+familia, Gollwitzer vía `mc-19`), **sin culpa y sin mencionar la racha**;
+silencio permanente en un toque que no se vuelve a preguntar (D-026). iOS
+exige 16.4+ con la PWA instalada (puerta absoluta), y el primer *ask* es
+siempre *soft-ask*: el permiso rechazado no se puede re-pedir.
+
+Implementa #207. La superficie de suscripción vive del lado del padre;
+`audits/recordatorio-sin-culpa.mjs` (escrito en la especificación de #207) es
+condición de cierre: ninguna ruta de push toma `childProfileId`.
+
+## D-106 — La racha SÍ se muestra entre pares de liga · 2026-08-03
+
+**Decisión:** la fila que una liga difunde entre pares incluye la **racha**,
+junto a alias, avatar, puntos y posición. **Enmienda #243** («nunca se muestra
+racha… entre pares de liga») y supera la lectura restrictiva que el PR #395
+implementó al encontrar la contradicción con #242 («avatar, alias, puntos,
+racha, posición»). Contestada por el dueño el 2026-08-03.
+
+El conflicto y su historia, para que quede por qué se dudó: el agente eligió
+el restrictivo porque una racha es el patrón de presencia diaria de un menor,
+y `mc-25` recital 26 recuerda que un alias sigue siendo dato personal mientras
+se guarde el mapeo. Esa lectura era la prudente *sin dueño disponible*; con el
+dueño disponible, la decisión es suya y es la contraria: la racha es, con los
+puntos, la señal de constancia que la liga existe para hacer visible (D-081),
+y va protegida por las mismas tres condiciones de siempre — la liga no puede
+quitarla, no hay presencia en vivo, y ningún texto la nombra con lenguaje de
+pérdida (`racha-lexico` vigila los siete locales).
+
+**Lo que NO cambia:** la racha entre pares es `current_streak` y nada más. Ni
+`max_streak` (#208 lo prohíbe para salones y clubs, y el mismo criterio se
+extiende aquí), ni escudos, ni pausas, ni histórico. Sin nombre real jamás
+(línea roja #2, D-081).

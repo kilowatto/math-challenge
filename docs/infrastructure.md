@@ -169,6 +169,23 @@ escrito antes de que alguien la busque y no la encuentre.
 guardar datos personales de menores de la UE o el Reino Unido en `SESSION_KV` o
 `CONFIG_KV`.
 
+### `math-challenge-db-eu`: existe, y este proyecto NO la usa
+
+En la cuenta de Cloudflare hay una segunda base D1 llamada `math-challenge-db-eu`.
+Comprobado el 2026-08-03, no supuesto: **no aparece en ninguna configuración de
+wrangler del repositorio** — ningún `wrangler.jsonc` la referencia, ningún
+binding apunta a ella, y ninguna migración se le ha aplicado jamás por la vía
+normal. No es la «base europea» que la sección de jurisdicción de arriba
+contempla: esa segunda base, cuando haga falta, se creará con jurisdicción `eu`
+explícita y con la decisión de enrutado en el registro.
+
+**Decisión del dueño (2026-08-03): se documenta y se deja quieta; no se borra.**
+Borrarla es irreversible y exigiría primero confirmar que está vacía; documentarla
+cuesta este renglón y cierra la pregunta «¿esto se puede borrar?» durante un año.
+Si alguien la necesita para la jurisdicción europea, la decisión es crear una base
+NUEVA con ajuste de jurisdicción — esta no lo tiene fijado por escrito en ningún
+lado del proyecto.
+
 ## Riesgo conocido
 
 El precio por escritura de Analytics Engine **no pudo confirmarse** contra la

@@ -76,6 +76,9 @@
 | 23 | [Adulto / universidad / experto](2026-07-31-mc-23-ui-adult-expert.md) | ⭐ KaTeX vs MathJax vs MathLive con licencias y accesibilidad; entrada de matemáticas por dispositivo |
 | 38 | [Accesibilidad y diferencias de aprendizaje](2026-07-31-mc-38-accessibility-learning-differences.md) | ⭐ Cómo un juego cronometrado puede cumplir WCAG 2.2 (la excepción textual); modo discalculia |
 | 34 | [i18n de la notación matemática](2026-07-31-mc-34-i18n-math-notation.md) | ⭐⭐ México usa **punto** decimal y el resto del mundo hispano **coma**; la división larga se dibuja de 4 formas distintas |
+| 49 | [Patrones de navegación PWA](2026-08-01-mc-49-navigation-patterns-pwa-mobile-desktop.md) | Una sola navegación primaria a la vez; la barra inferior solo instalada |
+| 50 | [Navegación del área privada](2026-08-02-mc-50-private-app-navigation.md) | El área autenticada nunca hereda el layout público; pestañas derivadas de la cuenta real |
+| 51 | [Clasificación de las ramas y sus prerrequisitos](2026-08-03-mc-51-clasificacion-ramas-matematicas.md) | ⭐⭐ MSC 2020 (63 áreas), arXiv e ICM; la espina escolar universal y las cadenas universitarias verificadas en 10 instituciones; el mapa de 26 ramas con puertas |
 
 ## Plataforma, seguridad y negocio
 

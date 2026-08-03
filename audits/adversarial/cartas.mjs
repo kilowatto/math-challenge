@@ -121,7 +121,13 @@ export const CARTAS = [
       "persona y lo revisó otra; el texto en vivo no lo ha visto nadie cuando llega a la pantalla, así que " +
       "una instrucción del prompt que empuje a hablar DE la persona en vez de del pensamiento produce " +
       "humillación a escala y sin revisor. Mira también el tope de gasto: un aviso al niño de que se " +
-      "agotó su cuota sería monetización apuntada a un menor, y no existe ninguno.",
+      "agotó su cuota sería monetización apuntada a un menor, y no existe ninguno. " +
+      "**Y desde F7 #257 esto incluye la apariencia y la identidad del niño**: cualquier comentario de " +
+      "Larry sobre su avatar, su alias o sus cosméticos — incluso un cumplido. mc-43 §10 lo dice " +
+      "literal: un bot que «elogia» un nombre también puede juzgarlo, y con D-080 el tutor y el " +
+      "compañero que lleva puestos los accesorios son LA MISMA criatura, así que «qué bonito tu " +
+      "sombrero» y «qué feo te quedó» entran por la misma puerta. La voz de Larry se queda en la " +
+      "matemática; la frontera no es el tono del comentario, es que el comentario exista.",
     ciega_a:
       "Dificultad del contenido. Un problema difícil no es humillación. Y el léxico literal por locale, que " +
       "ya cubre `audits/larry-nunca-averguenza.mjs` con su lista de construcciones — aquí lo que se busca es " +
@@ -130,7 +136,10 @@ export const CARTAS = [
     // hallazgo de Mueller & Dweck sobre el elogio a la capacidad —92% contra
     // 33%— ni el de Kluger & DeNisi sobre las 607 mediciones, que son
     // exactamente las dos fuentes que sostienen lo que Larry no dice.
-    cita: ["LR-7", "D-003", "D-004", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-18", "mc-46"],
+    // `mc-43` se añade en F7 (#257): sin ella la carta no podía invocar la
+    // implicación 10 —«Larry never comments on the child's alias or avatar
+    // choice»— que es la fuente de la frontera de apariencia e identidad.
+    cita: ["LR-7", "D-003", "D-004", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-18", "mc-43", "mc-46"],
     // `explicacion|larry` porque el módulo de explicación vive en
     // `packages/motor/`, que ninguno de los alcances heredados alcanza: sin esta
     // línea, la carta dormía justo sobre el archivo que compone lo que un niño
@@ -139,6 +148,10 @@ export const CARTAS = [
     // `tutor|en-vivo|gasto|lexico` porque F6 #136 puso el camino en vivo, su
     // compuerta y su tope en `packages/tutor/`, que ningún alcance heredado
     // alcanzaba — y ahí el texto llega al niño SIN que nadie lo haya leído.
+    // `cosmetic|avatar|alias` porque #257 extendió la caza a la apariencia y la
+    // identidad del niño: `packages/motor/src/cosmeticos.ts`, `alias.ts` y el
+    // catálogo de #255 no tocan ningún alcance heredado, y sin esta línea la
+    // carta dormiría justo sobre el código que la frontera vigila.
     alcance: [
       ...INTERFAZ,
       ...TEXTOS,
@@ -147,6 +160,7 @@ export const CARTAS = [
       /explicacion|larry/i,
       /packages\/tutor\//,
       /en-vivo|gasto\.ts|lexico/i,
+      /cosmetic|avatar|alias/i,
     ],
   },
   {

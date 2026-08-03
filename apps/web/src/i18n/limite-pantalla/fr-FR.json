@@ -1,0 +1,17 @@
+{
+  "_locale": "fr-FR",
+  "_nota": "Autorado en francés, no traducido (D-022). Tutoiement. Tipografía francesa real: apóstrofo tipográfico U+2019, espacio insécable U+00A0 antes de «:» y fina insécable U+202F antes de «!» — audits/notacion-locale.mjs bloqueó la primera versión de este archivo por escribirlos rectos. KINDER nunca lleva cifra (mc-20).",
+  "limite.aviso.kinder": "Encore une, et après on se repose.",
+  "limite.aviso.lector": "Encore cinq minutes, et on s’arrête pour aujourd’hui.",
+  "limite.descanso.titulo": "On s’étire",
+  "limite.descanso.cuerpo": "Lève-toi, regarde quelque chose de loin par la fenêtre et bois un peu d’eau.",
+  "limite.descanso.afuera": "Encore mieux : sors prendre l’air un moment.",
+  "limite.descanso.seguir": "Continuer à jouer",
+  "limite.despedida.kinder": "C’est tout pour aujourd’hui. Larry t’attend demain !",
+  "limite.despedida.lector": "Beau travail aujourd’hui. À demain.",
+  "limite.despedida.retos_uno": "1 défi aujourd’hui",
+  "limite.despedida.retos_otros": "{n} défis aujourd’hui",
+  "limite.despedida.hasta_manana": "À demain",
+  "limite.nocturno.kinder": "La savane s’endort. Bonne nuit !",
+  "limite.nocturno.lector": "C’est bientôt l’heure de dormir. Bonne nuit, à demain."
+}

@@ -69,6 +69,7 @@ import {
   type Jugador,
   type Progreso,
 } from "../../lib/progreso";
+import { registrarAvanceDeHoy } from "../../lib/misiones-dia";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
 
 /*
@@ -517,6 +518,24 @@ async function recibirRespuesta(
       motivo: { tipo: "RETO_COMPLETADO" },
       ahora: Date.now(),
       zona: await zonaDelHogar(env, quien),
+    });
+
+    /*
+     * Las misiones del día (F7 · #211). Misma forma que la racha: el motor
+     * calcula el estado completo, el cable decide por referencia qué se
+     * escribe, y si algo falla se pierde un contador y no el juego — la
+     * función no lanza.
+     *
+     * Solo cuando el intento CUENTA: un reintento del mismo ítem no puede
+     * subir el progreso de una misión, por la misma línea roja #8 que lo
+     * excluye del modelo y de la racha.
+     *
+     * Qué tipos mueve un ítem confirmado —`volumen` y `variedad` hoy— está
+     * dicho en el encabezado de `lib/misiones-dia.ts`, con sus D-PENDIENTE.
+     */
+    await registrarAvanceDeHoy(env, quien, {
+      habilidad: veredicto.habilidad,
+      ahora: Date.now(),
     });
   }
 

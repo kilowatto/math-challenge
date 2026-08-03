@@ -1,0 +1,127 @@
+---
+/**
+ * El resumen de fin de día — SOLO lo logrado (#222, línea roja #7).
+ *
+ * ─── La regla que este componente hace cumplir por construcción ────────────
+ *
+ * `cierreDelDia()` no devuelve denominador, y **este componente no lo recibe**:
+ * no hay prop `meta`, ni `progreso`, ni `total`, así que aquí no se puede
+ * pintar un «0/3» ni una casilla vacía ni un «te faltaron dos» aunque alguien
+ * quiera. Un renglón «0 de 3 misiones» es un veredicto negativo aunque el copy
+ * no lo diga — es la línea roja #7, no una preferencia de copy, y
+ * `audits/mision-resumen-sin-ceros.mjs` vigila que ninguna de esas props vuelva.
+ *
+ * La lista es una lista que CRECE: cada renglón es algo que sí pasó hoy. Si no
+ * pasó nada, quien monta el componente ni siquiera lo renderiza — la ausencia
+ * de lista es el estado neutro, no un fracaso dibujado.
+ *
+ * ─── El bono es una suma, jamás un cofre (#220) ────────────────────────────
+ *
+ * Completar las tres misiones del día suma XP directo y se muestra como una
+ * línea de suma: «…— son {xp} XP más». Nada se «abre», se «desenvuelve» ni se
+ * «descubre»: aunque el contenido sea conocido de antemano, la metáfora del
+ * cofre sugiere sorpresa, y `mc-43` (hallazgo 5) documenta que el mecanismo del
+ * refuerzo variable no necesita dinero para funcionar sobre un niño.
+ *
+ * ─── Lo que NO tiene ───────────────────────────────────────────────────────
+ *
+ *  · Sin denominadores, sin ceros, sin casillas — ver arriba.
+ *  · Sin contador colectivo de liga: si la liga no llegó a la meta, el contador
+ *    desaparece al día siguiente SIN anuncio de meta fallida (#226). Este
+ *    componente lista logros individuales de hoy; la meta de liga, cuando se
+ *    logra, aparece como un logro más de la lista — y cuando no, no aparece.
+ *  · Sin `<script>` y sin animación de celebración: una suma que aparece al
+ *    cargar la página, no un evento que señale al niño.
+ */
+import { formatear } from "../../../../../packages/motor/src/numeros.ts";
+import type { Locale } from "../../i18n";
+import { TEXTOS_MISIONES, rellenar } from "./textos";
+
+/** Un logro del día: el tipo de misión y el XP fijo que pagó. */
+export interface LogroDeMision {
+  readonly tipo: string;
+  readonly xp: number;
+}
+
+interface Props {
+  locale: Locale;
+  /** Solo las completadas, en el orden del plan del día. Nunca las que faltan. */
+  logros: readonly LogroDeMision[];
+  /** XP total del día por misiones, bono incluido. */
+  xpTotal: number;
+  diaCompleto: boolean;
+  /** El bono fijo por las tres. Se muestra como una suma (#220). */
+  xpBono: number;
+}
+
+const { locale, logros, xpTotal, diaCompleto, xpBono } = Astro.props;
+const t = TEXTOS_MISIONES[locale] ?? TEXTOS_MISIONES["en"];
+const num = (n: number) => formatear(n, locale, 0);
+const textoDe = (clave: string) => t[clave] ?? "";
+---
+
+<section class="resumen-misiones" aria-labelledby="resumen-misiones-titulo">
+  <h2 id="resumen-misiones-titulo" class="resumen-misiones__titulo">
+    {textoDe("misiones.resumen.titulo")}
+  </h2>
+  <ul class="resumen-misiones__lista">
+    {logros.map((logro) => (
+      <li class="resumen-misiones__logro">
+        {rellenar(textoDe(`mision.${logro.tipo}.logro`), { xp: num(logro.xp) })}
+      </li>
+    ))}
+  </ul>
+  {diaCompleto && (
+    <p class="resumen-misiones__bono">
+      {rellenar(textoDe("misiones.resumen.bono"), { xp: num(xpBono) })}
+    </p>
+  )}
+  <p class="resumen-misiones__total">
+    {rellenar(textoDe("misiones.resumen.total"), { xp: num(xpTotal) })}
+  </p>
+</section>
+
+<style>
+  /* Solo tokens de `tokens.css` — ver la nota de `MenuMisiones.astro`. */
+  .resumen-misiones {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--space) * 0.5);
+  }
+
+  .resumen-misiones__titulo {
+    margin: 0;
+    font-family: var(--font-sistema);
+    font-size: var(--text-base);
+    font-weight: var(--weight-subtitle);
+    color: var(--color-text);
+  }
+
+  .resumen-misiones__lista {
+    margin: 0;
+    padding-inline-start: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .resumen-misiones__logro {
+    color: var(--color-text);
+    font-size: var(--text-base);
+  }
+
+  /* El bono es una línea de suma más, en el color de marca cálido que SÍ pasa
+     contraste como texto (4.58:1). Nada de dorados ni de brillos de premio. */
+  .resumen-misiones__bono {
+    margin: 0;
+    font-size: var(--text-base);
+    color: var(--color-text-brand-warm);
+  }
+
+  .resumen-misiones__total {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: var(--weight-subtitle);
+    color: var(--color-text-brand);
+  }
+</style>

@@ -315,6 +315,13 @@ const ACTIVE = [
   ["limite-pantalla-motor-unico", "una sola tabla de límite, la de D-016",         "D-016, #266, #267, mc-26"],
   ["limite-no-rompe-el-dia",      "cuando el límite corta, el día se da por cumplido", "líneas rojas #1 #6 #7, D-014, D-016, #271, #272"],
   ["limite-nunca-se-levanta-pagando", "el límite de pantalla no se levanta pagando", "línea roja #4, D-021, D-057, #265"],
+  // ─── La superficie de F7 · Misiones diarias (#220, #222, #227) ───────────
+  //
+  // Nace VERDE como los cuatro del motor: la superficie se construyó con él
+  // delante. Vigila la mitad que el motor no alcanza — que la PANTALLA no
+  // reconstruya el denominador que `cierreDelDia()` se niega a devolver, y que
+  // ningún texto de locale sugiera un cofre ni escriba un número a mano.
+  ["mision-resumen-sin-ceros", "el resumen lista solo lo logrado; el bono es una suma", "#220, #222, #227, línea roja #7"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

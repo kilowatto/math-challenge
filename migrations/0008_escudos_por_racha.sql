@@ -1,0 +1,47 @@
+-- 0008 — El cupo de escudos es POR RACHA, no cada siete días (D-079)
+--
+-- ─── Qué arregla ───────────────────────────────────────────────────────────
+--
+-- `ganarEscudos` implementaba la fórmula literal de #203 —`min(2, floor(racha
+-- / 7))`— comparada contra el banco disponible. Da los tres vectores que el
+-- issue escribe, y abre un hueco que el issue no menciona: **el banco se repone
+-- al crecer la racha**. Un niño que gasta un escudo con racha 15 vuelve a tener
+-- 2 al llegar a 21, porque `floor(21/7) = 3` capado a 2.
+--
+-- Es decir: pasado el día 14, saltarse un día de cada siete no costaba
+-- prácticamente nada. Una red de protección que se repone para siempre deja de
+-- ser una red y se vuelve un permiso permanente.
+--
+-- ─── Por qué una migración nueva y no editar la 0007 ───────────────────────
+--
+-- Se intentó editar `0007` en su sitio, comprobando antes contra
+-- `math-challenge-db` remota que `child_streak` y `xp_totals` no existían.
+-- **Esa comprobación era la equivocada, y `audits/migration-safety.mjs` la
+-- paró**: D1 lleva el control de migraciones **por nombre de archivo**, no por
+-- el estado de las tablas. Una `0007` ya marcada como aplicada en el registro
+-- nunca vuelve a correr, así que el cambio se habría perdido en silencio — el
+-- peor modo de fallo posible para un esquema.
+--
+-- ─── Qué hace, y qué NO ────────────────────────────────────────────────────
+--
+-- Solo AGREGA una columna con DEFAULT. No borra, no renombra, no reescribe.
+-- Sobre una base vacía es indistinguible de haber estado en la 0007; sobre una
+-- base con filas, cada racha en curso arranca con el cupo en 0 — lo que
+-- significa que el primer múltiplo de 7 que alcance le dará su escudo. Es la
+-- degradación amable: un niño puede ganar un escudo de más una vez, nunca uno
+-- de menos.
+--
+-- Cloudflare: cero recursos nuevos. Todo vive en `math-challenge-db` y su
+-- réplica `math-challenge-db-eu`, ya inventariadas en `docs/infrastructure.md`.
+
+-- Cuántos escudos ha ganado ESTA racha. Vuelve a 0 cuando `current_streak`
+-- vuelve a 1, y ese reinicio lo hace `conDia()` en `packages/motor/src/racha.ts`
+-- — sin él el contador nunca bajaría y esta columna no serviría de nada.
+--
+-- El CHECK va aquí y no solo en el código por la misma razón que
+-- `shields_available` lleva el suyo en la 0007: el tope de 2 de D-014/#203 es
+-- una promesa al padre, y una promesa que solo vive en un `Math.min()` se rompe
+-- el día que alguien escriba la fila por otra vía.
+ALTER TABLE child_streak
+  ADD COLUMN shields_earned_this_streak INTEGER NOT NULL DEFAULT 0
+  CHECK (shields_earned_this_streak BETWEEN 0 AND 2);

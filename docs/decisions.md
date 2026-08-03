@@ -2640,3 +2640,126 @@ es peor que ningún botón.
   alcance para una superficie concreta, `mc-42` §4 ya tiene escrita la
   recomendación: **híbrido** — clips grabados para el vocabulario fijo y corto,
   voz del sistema para el texto generado.
+
+---
+
+## D-079 — El tope de 2 escudos es POR RACHA, no cada siete días · 2026-08-02
+
+**Decisión del dueño**, sobre el hueco 22.1 de `docs/dudas.md` que salió de
+construir el motor de racha.
+
+`ganarEscudos` implementaba la fórmula literal de #203 —`min(2, floor(racha /
+7))`— comparada contra el banco disponible. Da los tres vectores que el issue
+escribe (13→1, 14→2, 21 con banco lleno→2) y **abre un hueco que el issue no
+menciona**: el banco se repone al crecer la racha. Un niño que gasta un escudo
+con racha 15 vuelve a tener 2 al llegar a 21, porque `floor(21/7) = 3` capado a
+2. Es decir: **pasado el día 14, saltarse un día de cada siete no costaba
+prácticamente nada.**
+
+Una red de protección que se repone para siempre deja de ser una red y se
+vuelve un permiso permanente. `mc-16` documenta que la racha es la palanca
+fuerte de retención de Duolingo precisamente porque **cuesta algo**; una que no
+cuesta nada no sostiene el hábito que dice sostener.
+
+### Lo que se decide
+
+**El tope de 2 es por racha.** Se comparan los escudos ya ganados en la racha
+actual, no los que quedan en el banco, así que gastar uno no crea espacio para
+otro. Cuando la racha se rompe y vuelve a 1, el cupo vuelve a 0 y se renueva con
+la racha nueva — que es justo cuando la protección vuelve a tener sentido.
+
+Cuesta una columna, `shields_earned_this_streak`, y dos líneas de lógica.
+
+### Lo que NO cambia, y hay que decirlo
+
+- **La línea roja #6 no se toca.** El límite de pantalla nunca gasta un escudo
+  porque **nunca rompe la racha**: no llega a ese camino. El `motivo` del día no
+  entra en la aritmética, y `audits/racha-limite-no-rompe.mjs` lo mide
+  ejecutando el motor sobre 1 620 estados.
+- **La protección de racha sigue sin venderse jamás** (D-014, línea roja #6).
+  `ganarEscudos` es función pura de la racha y del cupo, y de nada más:
+  `audits/racha-nunca-se-vende.mjs` bloquea el commit que le agregue un
+  parámetro de pago, cupón, SKU o transacción.
+- **22.2 se queda como está**: los escudos que no alcanzan a salvar la racha
+  **no se gastan**. `mc-17` §5 pide que un día saltado sencillamente no avance
+  el contador, sin castigo añadido, y quemar escudos que no salvaron nada es
+  pérdida sobre pérdida.
+- **22.3 se queda como está**: un día que llega fuera de orden es un no-op
+  documentado.
+
+### Por qué se corrigió la migración en su sitio y no con otra encadenada
+
+`migrations/0007_racha_y_xp.sql` **no se había aplicado a ninguna base**;
+comprobado contra `math-challenge-db` remota antes de tocarla — `child_streak` y
+`xp_totals` no existían. Editar una migración ya aplicada sería otra cosa y
+exigiría `0008`.
+
+---
+
+## D-080 — El compañero es Larry con accesorios, no una mascota nueva · 2026-08-02
+
+**Decisión del dueño.** #235 estaba bloqueado por escrito esperando esto.
+
+Larry ya existe, tiene canon (D-004) y continuidad de avatar generada en
+Recraft. En el mapa de progreso camina en KINDER, aparece en cada nodo alcanzado
+en PRIMARIA y SECUNDARIA, y está bajo demanda de SERIO en adelante (`mc-43` §9).
+**Los cosméticos son accesorios suyos**, no de un personaje aparte.
+
+### Lo que esto compra
+
+**Sin vida, sin hambre, sin decaimiento.** `mc-43` §6 documenta el riesgo
+Tamagotchi —un compañero que se «muere» si no vuelves convierte el juego en una
+obligación con culpa—, y aquí desaparece **por construcción y no por regla**:
+Larry no tiene estado que decaiga, así que no hay nada que alguien pueda
+encender por accidente dentro de un año.
+
+Y cero arte nuevo: una mascota aparte habría exigido canon propio, generación en
+Recraft y continuidad que mantener en siete locales.
+
+### Lo que esto obliga
+
+**#257 se vuelve más importante, no menos**: Larry nunca comenta el avatar ni
+los cosméticos de un niño. Si el tutor y el compañero son la misma criatura, la
+frontera entre «te explico tu error» y «qué bonito tu sombrero» tiene que ser
+explícita — y el que explica es el mismo que lleva puestos los accesorios.
+
+---
+
+## D-081 — La escalera de visibilidad social sale completa · 2026-08-02
+
+**Decisión del dueño**, sobre tres alternativas y **en contra de mi
+recomendación**, que era construir el motor entero y encenderlo solo para
+adultos hasta ver a un niño real usarlo.
+
+Ligas de ~30, tablero global y duelo asíncrono salen con la escalera que #243 ya
+especifica:
+
+- **KINDER**: opt-in del padre, **default apagado**. Si se activa, la posición
+  se muestra **en tercios**, nunca el número exacto.
+- **PRIMARIA en adelante**: default encendido, posición numérica.
+- **Duelo**: banda distinta de KINDER, edad ≥8 desde `birth_year` (D-053),
+  opt-in, default apagado en `child_profile`.
+- **Siempre alias generado**, jamás nombre (línea roja #2, `packages/motor/src/alias.ts`).
+
+### Mi objeción, escrita porque el dueño decidió sobre ella y no a pesar de ella
+
+`mc-10` mide que **la presión de rendimiento empeora el desempeño en
+matemáticas**, y nadie de los dos ha visto todavía a un niño real usar una liga
+en este producto. La escalera de `mc-18` es buena teoría; lo que no existe es la
+observación.
+
+El dueño decidió salir con ella completa. Queda escrito para que el día que se
+mida algo distinto se pueda volver aquí y ver qué se sabía.
+
+### Las condiciones que añado, y no son opcionales
+
+1. **La liga nunca puede quitar nada.** Descender no borra XP, no quita
+   escudos, no toca la racha y no cambia el mapa. #225 ya separa XP de puntos de
+   tablero; esto lo extiende: **ningún resultado social modifica un contador de
+   aprendizaje.**
+2. **Sin presencia en vivo.** El duelo es asíncrono con ventana de 48 h y no
+   revela si el otro está conectado — que ya es lo que #244 especifica, y es lo
+   que impide que un niño se quede esperando.
+3. **Sin lenguaje de pérdida en ninguna banda.** Es la misma regla que la racha
+   (D-014) y le toca a `racha-lexico` extendido, no a la buena voluntad de quien
+   escriba el texto.

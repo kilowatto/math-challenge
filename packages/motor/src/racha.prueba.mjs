@@ -252,11 +252,71 @@ caso("racha de 14 con banco vacío gana 2", () => {
 });
 
 caso("racha de 21 con el banco ya en 2 sigue en 2, sin error ni evento de desperdicio", () => {
-  const base = con({ current_streak: 21, shields_available: 2, shields_earned_total: 2 });
+  // `shields_earned_this_streak: 2` no es decoración del fixture: con D-079 un
+  // banco de 2 ganado en ESTA racha implica que el cupo ya se agotó. Un estado
+  // con 2 en el banco y 0 en el cupo es imposible de alcanzar por el motor.
+  const base = con({
+    current_streak: 21,
+    shields_available: 2,
+    shields_earned_total: 2,
+    shields_earned_this_streak: 2,
+  });
   const e = ganarEscudos(base);
   igual(e, base, "el mismo objeto: no hay nada que escribir");
   igual(e.shields_available, TOPE_ESCUDOS, "tope");
   igual(e.shields_earned_total, 2, "no se contó un escudo que no se ganó");
+});
+
+// ─── D-079: el tope de 2 es POR RACHA, no cada siete días ───────────────────
+//
+// Los tres casos que siguen son el hueco que la fórmula literal de #203 dejaba
+// abierto, y que ninguna prueba anterior podía ver porque `ganarEscudos` medía
+// contra el banco disponible: gastar un escudo creaba espacio para otro.
+
+caso("D-079: gastar un escudo NO crea espacio para otro dentro de la misma racha", () => {
+  // Racha 21, cupo agotado (2 ganados), y uno gastado salvando un día.
+  const gastado = con({
+    current_streak: 21,
+    shields_available: 1,
+    shields_earned_total: 2,
+    shields_earned_this_streak: 2,
+  });
+  const e = ganarEscudos(gastado);
+  igual(e.shields_available, 1, "el banco NO se repone: el cupo de esta racha ya se agotó");
+  igual(e.shields_earned_total, 2, "no se contó un escudo nuevo");
+});
+
+caso("D-079: con la fórmula vieja, la racha 21 habría repuesto el banco a 2", () => {
+  // Este caso existe para dejar el hueco por escrito, no para probar el código:
+  // `floor(21/7) = 3` capado a 2, comparado contra un banco de 1, daba +1.
+  // Es exactamente lo que ya NO pasa.
+  const gastado = con({
+    current_streak: 21,
+    shields_available: 1,
+    shields_earned_total: 2,
+    shields_earned_this_streak: 2,
+  });
+  const viejo = Math.min(2, Math.floor(gastado.current_streak / 7));
+  igual(viejo > gastado.shields_available, true, "la fórmula vieja SÍ habría repuesto");
+  igual(ganarEscudos(gastado).shields_available, 1, "la nueva no");
+});
+
+caso("D-079: cuando la racha se rompe y vuelve a 1, el cupo se renueva", () => {
+  const agotado = con({
+    current_streak: 30,
+    max_streak: 30,
+    last_completed_local_date: "2026-03-01",
+    shields_available: 0,
+    shields_earned_total: 2,
+    shields_earned_this_streak: 2,
+  });
+  // Cinco días de hueco y cero escudos: la racha se rompe y vuelve a 1.
+  const roto = registrarDia(agotado, "2026-03-07", { tipo: "RETO_COMPLETADO" });
+  igual(roto.current_streak, 1, "la racha vuelve a empezar HOY, en 1");
+  igual(roto.shields_earned_this_streak, 0, "el cupo de la racha anterior se cierra con ella");
+  igual(roto.max_streak, 30, "la mejor marca personal nunca baja");
+  // Y en la racha nueva se vuelven a ganar, que es cuando protege de verdad.
+  igual(ganarEscudos({ ...roto, current_streak: 14 }).shields_available, 2, "cupo renovado");
 });
 
 caso("por debajo de 7 días no hay escudo, y ganarEscudos nunca QUITA uno", () => {

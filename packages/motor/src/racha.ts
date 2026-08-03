@@ -80,6 +80,21 @@ export interface EstadoRacha {
   readonly last_completed_local_date: DiaLocal | null;
   readonly shields_available: number;
   readonly shields_earned_total: number;
+  /**
+   * Cuántos escudos ha ganado ESTA racha (D-079).
+   *
+   * Existe para cerrar el hueco de `min(2, floor(racha/7))`: sin ella el banco
+   * se repone cada siete días para siempre, y pasado el día 14 saltarse un día
+   * de cada siete no costaba nada. Vuelve a 0 cuando la racha vuelve a 1.
+   *
+   * La columna llega en `migrations/0008_escudos_por_racha.sql`, no en la 0007.
+   * Se intentó editar la 0007 en su sitio —comprobando antes que las tablas no
+   * existían en la base remota— y `audits/migration-safety.mjs` lo paró con la
+   * razón correcta: **D1 lleva el control por nombre de archivo**, no por el
+   * estado de las tablas, así que una 0007 ya marcada como aplicada nunca
+   * volvería a correr y el cambio se habría perdido en silencio.
+   */
+  readonly shields_earned_this_streak: number;
   readonly pause_until_local_date: DiaLocal | null;
   readonly pause_uses_this_year: number;
   readonly pause_year: number | null;
@@ -108,6 +123,7 @@ export const ESTADO_INICIAL: EstadoRacha = Object.freeze({
   last_completed_local_date: null,
   shields_available: 0,
   shields_earned_total: 0,
+  shields_earned_this_streak: 0,
   pause_until_local_date: null,
   pause_uses_this_year: 0,
   pause_year: null,
@@ -157,16 +173,17 @@ export const ZONA_DE_RESPALDO = "UTC";
 export const SQL_UPSERT_RACHA = `
 INSERT INTO child_streak (
   id, child_profile_id, current_streak, max_streak, last_completed_local_date,
-  shields_available, shields_earned_total,
+  shields_available, shields_earned_total, shields_earned_this_streak,
   pause_until_local_date, pause_uses_this_year, pause_year, updated_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (child_profile_id) WHERE child_profile_id IS NOT NULL DO UPDATE SET
   current_streak            = excluded.current_streak,
   max_streak                = excluded.max_streak,
   last_completed_local_date = excluded.last_completed_local_date,
   shields_available         = excluded.shields_available,
   shields_earned_total      = excluded.shields_earned_total,
+  shields_earned_this_streak = excluded.shields_earned_this_streak,
   pause_until_local_date    = excluded.pause_until_local_date,
   pause_uses_this_year      = excluded.pause_uses_this_year,
   pause_year                = excluded.pause_year,
@@ -355,6 +372,10 @@ function conDia(
     max_streak: Math.max(estado.max_streak, racha),
     last_completed_local_date: dia,
     shields_available: escudos,
+    // La racha volvió a empezar: el cupo de escudos de la anterior se cierra
+    // con ella (D-079). Sin esta línea el contador nunca baja y la columna no
+    // serviría de nada — es la mitad del arreglo, y la menos visible.
+    shields_earned_this_streak: racha === 1 ? 0 : estado.shields_earned_this_streak,
   };
 }
 
@@ -363,37 +384,48 @@ function conDia(
 /**
  * Los escudos que la racha ya se ganó.
  *
- * Función pura de `current_streak` y `shields_available`, y **de nada más**. No
- * hay parámetro de pago, de cupón, de SKU ni de transacción, y no puede
- * haberlo: `audits/racha-nunca-se-vende.mjs` bloquea el commit que agregue uno.
- * D-014 lo dice por nombre («nunca se vende protección de racha») y `mc-16`
- * documenta que ese es exactamente el punto donde Duolingo cruza la línea —
- * sus vías de obtención del freeze se mezclan con gemas comprables.
+ * Función pura de `current_streak` y `shields_earned_this_streak`, y **de nada
+ * más**. No hay parámetro de pago, de cupón, de SKU ni de transacción, y no
+ * puede haberlo: `audits/racha-nunca-se-vende.mjs` bloquea el commit que
+ * agregue uno. D-014 lo dice por nombre («nunca se vende protección de racha»)
+ * y `mc-16` documenta que ese es exactamente el punto donde Duolingo cruza la
+ * línea — sus vías de obtención del freeze se mezclan con gemas comprables.
  *
- * La fórmula es la de #203: `min(2, floor(current_streak / 7))`.
+ * ─── Por qué NO se mide contra el banco disponible (D-079) ──────────────────
  *
- * **La consecuencia que hay que decir en voz alta:** el banco se REPONE al
- * crecer la racha. Un niño que gasta un escudo con racha 15 vuelve a tener 2
- * cuando llegue a 21, porque `floor(21/7) = 3`, capado a 2. Es decir: pasado el
- * día 14, saltarse un día de cada siete no cuesta prácticamente nada. La
- * alternativa —contar los escudos ganados DENTRO de la racha actual— necesita
- * una columna que `child_streak` no tiene, y agregarla es una migración, que
- * este trabajo no toca. Queda como decisión pendiente del dueño.
+ * La fórmula de #203 es `min(2, floor(current_streak / 7))`, y comparada contra
+ * `shields_available` da los tres vectores del issue (13→1, 14→2, 21 con banco
+ * lleno→2). Pero implica que el banco se REPONE cada siete días para siempre:
+ * un niño que gasta un escudo con racha 15 vuelve a tener 2 al llegar a 21,
+ * porque `floor(21/7) = 3` capado a 2. O sea que **pasado el día 14, saltarse
+ * un día de cada siete no costaba prácticamente nada**, y la red de protección
+ * dejaba de ser una red para volverse un permiso permanente.
  *
- * Nunca quita un escudo: si el banco tiene más de lo que la fórmula da, se
- * queda como está. Un escudo que aparece y desaparece solo es peor que no
- * tenerlo.
+ * D-079 cierra eso: el tope de 2 es **por racha**, no cada siete días. Se
+ * comparan los escudos ya ganados en esta racha, no los que quedan en el banco,
+ * así que gastar uno no crea espacio para otro. Cuando la racha se rompe y
+ * vuelve a 1, `conDia` pone el contador a 0 y el cupo se renueva con la racha
+ * nueva — que es justo cuando la protección vuelve a tener sentido.
+ *
+ * Lo que NO cambia: la línea roja #6. El límite de pantalla nunca gasta un
+ * escudo porque nunca rompe la racha — no llega a este camino.
+ *
+ * Nunca quita un escudo: si el banco tiene más de lo que el cupo da, se queda
+ * como está. Un escudo que aparece y desaparece solo es peor que no tenerlo.
  */
 export function ganarEscudos(estado: EstadoRacha): EstadoRacha {
   const merecidos = Math.floor(estado.current_streak / DIAS_POR_ESCUDO);
-  const objetivo = Math.min(TOPE_ESCUDOS, merecidos);
-  if (objetivo <= estado.shields_available) return estado;
+  const cupo = Math.min(TOPE_ESCUDOS, merecidos);
+  // Contra lo GANADO en esta racha, no contra lo que queda en el banco: es la
+  // línea entera del arreglo de D-079.
+  if (cupo <= estado.shields_earned_this_streak) return estado;
 
-  const nuevos = objetivo - estado.shields_available;
+  const nuevos = cupo - estado.shields_earned_this_streak;
   return {
     ...estado,
-    shields_available: objetivo,
+    shields_available: Math.min(TOPE_ESCUDOS, estado.shields_available + nuevos),
     shields_earned_total: estado.shields_earned_total + nuevos,
+    shields_earned_this_streak: estado.shields_earned_this_streak + nuevos,
   };
 }
 

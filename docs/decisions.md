@@ -4030,3 +4030,355 @@ con culpa (D-014; `recordatorio-sin-culpa.mjs` y la carta
 
 **Investigación relacionada:** `mc-33`, `mc-19`, D-047, D-030, D-084,
 D-105.
+
+---
+
+## D-128 — El banco clasifica por rama con los códigos MSC 2020 de dos dígitos, explicados en lenguaje de personas · 2026-08-03
+
+**Decisión del dueño** (respuesta personalizada, no una de las opciones
+presentadas), cerrando la pregunta 1 de `mc-51`.
+
+Cada reto del banco lleva un campo `rama` con el **código MSC 2020 de dos
+dígitos** (`11` teoría de números, `15` álgebra lineal, `26` funciones
+reales, `51` geometría, `54` topología general…) — el estándar mundial,
+mantenido por AMS/zbMATH, con revisión decanal, para que la
+clasificación no sea una cosa más que mantener.
+
+**Y cada código lleva su nombre en lenguaje de personas**, autorado por
+locale: «números y conteo», «fracciones», «figuras y medida», «ángulos y
+triángulos», «matrices», no «11 Number theory». El rigor es el del
+estándar; la cara es la de una persona que no estudió matemáticas. La
+tabla de equivalencia código ↔ nombre vive en el módulo de D-135, no en
+el documento.
+
+**Lo que esto cambia en `mc-51`:** el mapa de 26 códigos propios de su
+§4 queda como **mapa de lectura** (de nuestras ramas a sus códigos
+MSC), no como vocabulario del banco. El banco habla MSC; el producto
+habla persona; mc-51 §4 es el diccionario entre los dos.
+
+**Investigación relacionada:** `mc-51` (MSC 2020 [1][2]), D-022 (los
+nombres se autoran por locale), D-122.
+
+---
+
+## D-129 — El auditor del piso exige ≥3 ramas distintas por nivel · 2026-08-03
+
+**Decisión del dueño**, cerrando la pregunta 2 de `mc-51`.
+
+`audits/piso-seis-retos.mjs` (F11) no solo cuenta: exige que cada nivel
+N4-N12 tenga **al menos 6 retos Y al menos 3 ramas MSC distintas**
+(D-128) entre ellos. Un nivel con seis retos de una sola materia es un
+nivel incompleto — es exactamente la queja que produjo el catálogo
+(«no veo cálculo, topología, teoría de números…»), y la regla que la
+vuelve imposible de repetir en silencio.
+
+**Investigación relacionada:** `mc-51` §5.2, D-070 (el auditor se
+demuestra degradando el banco real), D-122.
+
+---
+
+## D-130 — Variable compleja y ecuaciones diferenciales entran como niveles futuros · 2026-08-03
+
+**Decisión del dueño**, cerrando la pregunta 3 de `mc-51`.
+
+No se declaran fuera del producto ni se publican como lectura sin
+puntaje: **entran como niveles futuros del banco**, porque `mc-12`
+demuestra que SÍ son auto-calificables con los mecanismos que ya
+existen — integral de contorno por residuos es respuesta numérica (su
+banda G3), y verificar la solución de una EDO por sustitución directa
+es mecánica CAS-friendly (su banda PhD-1). Cuando el piso de D-122 esté
+en producción, son las dos primeras ramas en crecer.
+
+**Investigación relacionada:** `mc-12` (bandas G3 y PhD-1), `mc-51`
+§5.3, D-124.
+
+---
+
+## D-131 — Las espirales de geometría y estadística son aristas débiles; las puertas duras solo donde la evidencia las tiene · 2026-08-03
+
+**Decisión del dueño**, cerrando la pregunta 4 de `mc-51`.
+
+El grafo de prerrequisitos del adaptativo tiene **dos tipos de arista**:
+las **duras**, solo donde los ocho currículos escolares verificados
+tienen la dependencia (fracciones ← división, porcentaje ← fracciones,
+razón ← fracciones + multiplicación, trigonometría ← geometría +
+funciones, cálculo ← funciones, análisis real ← cálculo) — el
+adaptativo no ofrece el reto sin la puerta; y las **débiles**, para las
+espirales (geometría, estadística): el adaptativo **recomienda** sin
+bloquear («conviene repasar figuras antes de ángulos»), porque en los
+ocho sistemas esos hilos corren en paralelo, no en serie.
+
+**La regla que esto impone a futuras discusiones:** quien proponga una
+puerta dura nueva trae su sistema verificado; la queja «álgebra exige
+geometría básica» queda documentada en `mc-51` §2.2 como el ejemplo de
+puerta que NO existe.
+
+**Investigación relacionada:** `mc-51` §2.2, D-002 (el adaptativo decide
+por habilidad estimada, las puertas solo acotan la oferta).
+
+---
+
+## D-132 — El puente de demostración es una pista transversal visible, no un nivel más · 2026-08-03
+
+**Decisión del dueño**, cerrando la pregunta 5 de `mc-51`.
+
+Las diez universidades verificadas tienen su puente de demostración
+(curso explícito, integrado, o pista acelerada — `mc-51` patrón 3), y
+el producto tendrá el suyo: una **pista transversal visible en el
+mapa**, disponible desde que el jugador llega a N9-N10, con los
+formatos de `mc-12` (detectar el error, ordenamiento de pasos, lógica
+de la negación, y la pista Lean 4 de D-124 como su cima). No es un
+nivel 11.5 — la escalera de 12 niveles es D-017 y no se toca — y no
+queda diluido dentro de N11-N12: el patrón de las diez universidades
+es que el puente tiene que ser **explícito**, y una pista con nombre
+propio en el mapa es exactamente eso.
+
+**Investigación relacionada:** `mc-51` (patrón 3), `mc-12`, D-124,
+D-017.
+
+---
+
+## D-133 — mc-51 se mantiene con entradas fechadas en dudas.md: revisión curricular 2027 y MSC 2030 · 2026-08-03
+
+**Decisión del dueño**, cerrando la pregunta 6 de `mc-51`.
+
+El mecanismo es el que el proyecto ya usa para deuda con vencimiento
+(D-072): entradas en `docs/dudas.md` con fecha comprometida — **2027**
+(revisar los currículos en transición: México MCCEMS, streaming de
+Singapur, la maquette de la Sorbonne que quedó sin verificar, A-level y
+BNCC por año) y **2030** (la revisión decanal del MSC, declarada por
+msc2020.org). Un auditor automático se descartó: «¿sigue vigente el
+MSC?» no es comprobable determinísticamente — sería un auditor que
+siempre pasa hasta que un día no, que es fallar abierto por diseño.
+
+**Investigación relacionada:** `mc-51` §6, D-072 (el patrón), D-070.
+
+---
+
+## D-134 — `FUNC` (funciones) es una rama explícita del banco · 2026-08-03
+
+**Decisión del dueño**, cerrando la pregunta añadida sobre `mc-51` §4.
+
+**Funciones** es la puerta dura de trigonometría y de TODO el cálculo
+(«cálculo exige funciones» es el eslabón 9 de la espina escolar), y una
+puerta que no se puede medir es una puerta que no se puede auditar
+(D-129). El catálogo de los 54 se re-etiqueta en su inserción a D1:
+los retos de evaluar/graﬁcar funciones salen de `ALGE`/`EXP` y pasan a
+`FUNC` (MSC `26` — funciones reales). Costo declarado: re-etiquetar
+~10 retos ya autorados; beneficio: la puerta más importante de la
+escolaridad queda visible para el auditor de cobertura.
+
+**Investigación relacionada:** `mc-51` §2.1 eslabón 6 y §4, D-128,
+D-129.
+
+---
+
+## D-135 — El grafo de prerrequisitos vive como módulo puro en `packages/motor` · 2026-08-03
+
+**Decisión del dueño**, cerrando la última pregunta de incorporación de
+`mc-51`.
+
+`packages/motor/src/ramas.ts`: módulo puro con la tabla de ramas MSC ↔
+nombre de persona (D-128), las aristas duras y débiles (D-131), y
+funciones tipo `puertasDe(rama)` / `cumplePuertas(rama, estado)` —
+testeable con su `ramas.prueba.mjs` en el gate, visible para los
+auditores (el patrón de `tabla-bandas.mjs`), sin migración (las puertas
+cambian una vez por década, D-133; la flexibilidad de D1 no se iba a
+usar). El adaptativo (F4) lo importa para acotar la oferta; la
+interfaz lo importa para nombrar las ramas.
+
+**Investigación relacionada:** `mc-51`, D-135 es la materialización de
+D-128/D-131/D-134.
+
+---
+
+## D-136 — La foto del maestro se mantiene: migración y superficie de subida · 2026-08-03
+
+**Decisión del dueño, contra la recomendación presentada** (que era
+enmendar D-011 para quitarla), cerrando dudas §24.1.
+
+D-011 queda intacta: el padre ve **nombre, escuela y foto** del dueño
+del grupo antes de aprobar. Consecuencias de implementación:
+
+- `group_owner_identity` gana la columna `photo_r2_key` (en la `0015`
+  de F9, que aún no existe — no hace falta migración aparte).
+- La subida es una superficie nueva de adulto: acción explícita
+  (principio de D-075), AVIF con respaldo WebP en `math-challenge-media`,
+  parte del runbook de borrado de los cuatro sistemas.
+- La foto es presentación, **no verificación**: la insignia sigue
+  siendo la señal (`assurance`), y la tarjeta nunca la mezcla con ella
+  — una foto bajada de internet no compra el ✓.
+
+**Investigación relacionada:** D-011, D-086, dudas §24.1, plan de F9 §4
+(corregido con esta decisión).
+
+---
+
+## D-137 — `contextual_marks` se construye de verdad: lector y ampliación del CHECK · 2026-08-03
+
+**Decisión del dueño, contra la recomendación presentada** (que era
+retirar el mecanismo), cerrando dudas §24.2.
+
+El mecanismo de F2 vive: se construye el **lector** (la regla «se
+muestra una vez por usuario» hoy no existe — ningún código hace
+`SELECT` de `contextual_marks`) y se amplía el `CHECK` de `mark_code`
+para las marcas nuevas (empezando por `NO_CHAT` de F9), con la
+reconstrucción de tabla que eso exige en SQLite, hecha en la `0015` de
+F9 con su control negativo. F9 vuelve a disparar la marca `no-chat` la
+primera vez que un adulto abre un grupo — el plan de F9 §5.1 paso 6
+queda corregido.
+
+**Investigación relacionada:** dudas §24.2, D-026 (las cinco marcas),
+plan de F9 §5.1.
+
+---
+
+## D-138 — El corte nocturno también impide empezar de madrugada · 2026-08-03
+
+**Decisión del dueño**, confirmando lo implementado y cerrando la
+pregunta 1 de la paraguas #265 (dudas §23 F8 23.1).
+
+Con `bedtime_local` configurada, entre la hora de dormir y
+`FIN_DE_LA_NOCHE` (05:00, `[criterio propio]`) no se puede **iniciar**
+una sesión nueva ni continuar una en curso. Es el caso que motiva el
+único ECA de `mc-26` §5: un niño despierto a la 1 a.m. que abre la
+app. El costo declarado: el niño que madruga legítimamente espera a la
+hora de fin de noche.
+
+**Investigación relacionada:** `mc-26` §5, D-016, dudas §23 F8 23.1.
+
+---
+
+## D-139 — El límite de pantalla protege solo tras configuración del padre · 2026-08-03
+
+**Decisión del dueño, contra la recomendación presentada Y contra lo
+implementado** (dudas §23 F8 23.3). **Supera** la lectura «protección
+silenciosa desde el día uno» que F8 construyó.
+
+Sin fila en `screen_time_settings` **no hay límite diario**: el padre
+decide, y la protección empieza cuando él la activa — es la lectura de
+«el padre decide» que el dueño prefiere sobre la de «garantía por
+default». `configuracionVigente(banda, null)` deja de devolver el
+default de la banda; devuelve «sin límite». El corte nocturno no
+cambia: sigue apagado por defecto (`bedtime_local` nace NULL) y es
+independiente (D-138).
+
+**Lo que esto exige en código:** cambiar `limite-pantalla.ts` y su
+prueba, y el copy de la marca `LIMITE_PANTALLA` para que ofrezca
+configurar en lugar de afirmar que ya hay límite. Queda como criterio
+nuevo de #269 y #404.
+
+**Investigación relacionada:** D-016, línea roja #6 (intacta: cuando el
+límite existe y corta, la racha se da por cumplida), dudas §23 F8 23.3
+(queda marcada SUPERADA por esta).
+
+---
+
+## D-140 — El sesgo de la edad del duelo queda ratificado: solo el año, siempre a favor del acceso · 2026-08-03
+
+**Decisión del dueño**, ratificando lo implementado (dudas §23 social
+23.3).
+
+La elegibilidad del duelo (≥8, D-018) se calcula como
+`añoActual − birth_year`, con error de hasta 11 meses **siempre a
+favor del acceso**. Es la consecuencia directa de D-053 (solo el año):
+corregir el sesgo exigiría pedir el mes — 12 veces más precisión sobre
+la identidad de un menor, para nada. El duelo sigue siendo opt-in del
+padre (D-081).
+
+**Investigación relacionada:** D-053, D-081, dudas §23 social 23.3.
+
+---
+
+## D-141 — El descenso de liga ignora a los inactivos: ratificado como extensión de D-014 · 2026-08-03
+
+**Decisión del dueño**, firmando la extensión que el agente implementó
+sin decisión escrita (dudas §23 social 23.5).
+
+La semana en que una familia respeta su límite de pantalla, declara una
+pausa, o no juega, **la liga no se lo cobra**: no hay descenso por
+inactividad. Es D-014 leída de forma consistente con la línea roja #6
+y con D-091: ninguna protección del sistema puede castigar a quien la
+usa. El precio declarado se acepta: una cohorte con pocos activos
+apenas mueve a nadie.
+
+**Investigación relacionada:** D-014, D-091, dudas §23 social 23.5.
+
+---
+
+## D-142 — Kinder no tiene modelo en vivo: 100% pregenerado · 2026-08-03
+
+**Decisión del dueño**, cerrando F6 P-1 y **enmendando D-015** en su
+lectura ambigua.
+
+En KINDER toda explicación de Larry es **pregenerada y revisada por
+humano**: instantánea, gratis, disponible offline, y sin posibilidad de
+alucinación — la combinación correcta para la banda que no lee. Un
+error no catalogado recibe la plantilla genérica revisada, nunca una
+generación en vivo. Si algún día se reabre, es con una decisión nueva,
+no por omisión.
+
+**Investigación relacionada:** D-015 (enmendada), D-035, plan de F6
+§8 P-1.
+
+---
+
+## D-143 — El tope de gasto de Larry vive en el Durable Object · 2026-08-03
+
+**Decisión del dueño**, confirmando la implementación y **enmendando el
+mecanismo de D-015** (F6 P-15).
+
+El tope por perfil y por día lo hace cumplir el **Durable Object**, que
+decide ANTES de gastar y puede degradar sirviendo la explicación
+pregenerada revisada por humano. AI Gateway no puede hacer eso — su
+única degradación es negar el servicio o cambiar de modelo, y lo
+segundo está prohibido para la banda Pro. El Gateway queda como red de
+seguridad en dólares, sin crear todavía (infrastructure.md ya lo
+declara).
+
+**Investigación relacionada:** D-015 (enmendada), plan de F6 §5.1,
+`packages/tutor/src/gasto.prueba.mjs` (10.000 peticiones sin pasar del
+tope).
+
+---
+
+## D-144 — La medición de costos reales de Larry se corre (~$5, una tarde) · 2026-08-03
+
+**Decisión del dueño**, cerrando F6 P-18.
+
+Se ejecuta la medición de costo real por explicación en vivo — el
+primer entregable pendiente declarado de F6. D-085 dejó sin base la
+derivación de topes desde un precio (ya no hay), así que el tope del
+adulto se recalibra con datos de esta medición, no con criterio propio.
+
+**Investigación relacionada:** plan de F6 §8 P-18, D-085.
+
+---
+
+## D-145 — Las 15 preguntas restantes de F6 quedan ratificadas en bloque con las lecturas del plan · 2026-08-03
+
+**Decisión del dueño**, cerrando F6 §8 (P-2 a P-4, P-8 a P-14, P-16,
+P-17) — todas construidas ya con las recomendaciones del plan.
+
+Se ratifica en bloque lo implementado, que incluye: el conteo de
+ayudas de Larry **agregado por cuenta, nunca por hijo** (P-17 — evita
+el regaño por la puerta de atrás, Maloney et al. 2015 vía mc-10), el
+interruptor de transcripción para el padre que co-juega (P-23 en su
+parte), y las trece lecturas restantes del §8 del plan de F6. Cada una
+puede reabrirse individualmente con una decisión nueva que la cite.
+
+**Investigación relacionada:** `docs/planes/f6-larry-profe.md` §8,
+D-015.
+
+---
+
+## D-146 — Las redirecciones 301 del corpus se mantienen para siempre · 2026-08-03
+
+**Decisión del dueño**, cerrando dudas §6.
+
+Las 301 de las URL viejas traducidas (D-049) **no caducan**: cuestan
+una línea en `rutas-tabla.mjs`, y los enlaces entrantes del corpus son
+el activo SEO de D-033 — romperlos es perder autoridad ganada en
+papers, foros y citas que siguen vivas.
+
+**Investigación relacionada:** D-049, D-033, `mc-48`.

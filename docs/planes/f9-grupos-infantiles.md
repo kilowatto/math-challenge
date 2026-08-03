@@ -299,7 +299,7 @@ distintos.
 
 ```
 ┌──────────────────────────────────────────┐
-│ [inicial del nombre]   Nombre del dueño   │
+│ [foto del dueño]    Nombre del dueño      │  ← D-136: foto real subida por el adulto
 │                        ✓ Escuela verificada │  ← solo si school verificada (D-086)
 │                        o                    │
 │                        Sin verificar        │  ← neutro, sin rojo, sin ⚠ de alarma
@@ -317,13 +317,14 @@ distintos.
 └──────────────────────────────────────────┘
 ```
 
-- **Sin foto en v1.** El primer borrador dibujaba «[foto o inicial]».
-  La foto del dueño existe en el plan de F2 (`photo_r2_key` en R2),
-  pero la migración `0005` real **no tiene esa columna** `[leído:
-  migrations/0005_group_owner_identity.sql]` — tiene `assurance`,
-  `phone_verified_at`, `declared_context`. Mostrar foto exigiría otra
-  migración y otra superficie de subida; se difiere y se registra en
-  `dudas.md` §24.1. La tarjeta muestra la inicial.
+- **Con foto (D-136, 2026-08-03 noche).** Este apartado decía «sin foto
+  en v1» porque la migración `0005` no tiene `photo_r2_key`. El dueño
+  decidió lo contrario: D-011 se mantiene y la `0015` añade la columna
+  `photo_r2_key` a `group_owner_identity`, con su superficie de subida
+  (adulto, acción explícita, AVIF/WebP en `math-challenge-media`, parte
+  del runbook de borrado). La foto es presentación, **no verificación**:
+  la insignia sigue siendo la señal (`assurance`) y nunca se mezcla con
+  ella.
 - **Sin correo parcial.** El primer borrador mostraba `•••••@dominio`.
   Se quita: el correo del dueño no añade confianza verificable al padre
   y sí es un dato personal del dueño expuesto a cada familia que
@@ -371,14 +372,12 @@ siguientes son la lista completa; ninguno acepta texto libre.
    pasan 3:1) con botón de copiar, y el texto autorado que explica:
    «comparte este código solo con los padres de tus alumnos; cada padre
    verá tu nombre y tu insignia antes de aprobar».
-6. **La marca `no-chat`:** el plan de F2 la diseñó para este momento.
-   La migración `0003` real creó `contextual_marks` con un `CHECK` de
-   cinco códigos que **no la incluye** `[leído:
-   migrations/0003_accounts_onboarding.sql:179-195]`, y la app no tiene
-   lector de marcas (§16.1). F9 no introduce una reconstrucción de
-   tabla para esto: el «sin chat, nunca» se dice en la propia pantalla
-   de éxito (paso 5) y queda registrado en `dudas.md` §24.2 como deuda
-   del mecanismo de marcas.
+6. **La marca `no-chat` se dispara aquí** (D-137, 2026-08-03 noche):
+   el mecanismo de marcas de F2 se construye de verdad — lector y
+   `CHECK` ampliado con `NO_CHAT` en la `0015` — y su primer disparo
+   nuevo es este: la primera vez que un adulto termina de crear un
+   grupo. *Nota de corrección: este paso decía que F9 no usaría el
+   mecanismo y lo diría solo en pantalla; D-137 lo revierte.*
 
 ### 5.2 Unirse con código (padre)
 

@@ -979,3 +979,98 @@ renumerando a D-107 en adelante. **Pregunta:** ¿hace falta una regla de
 que ninguna sesión haga limpieza de worktrees/directorios mientras haya
 ramas con trabajo no commiteado, o basta con la regla de commitear al
 final de cada encargo?
+
+---
+
+## 25. Revisión completa de dudas (2026-08-03, pedida por el dueño)
+
+El dueño pidió revisar todo el archivo para resolver lo abierto. Se verificó
+cada entrada contra `decisions.md` (D-001 a D-135), las migraciones, los PRs
+mergeados (#403-#408, #410, #431, #433-#436) y el código — no contra la
+memoria.
+
+### 25.1 Resueltas y verificadas (sin necesidad de acción)
+
+| Duda | Cerrada por |
+|---|---|
+| §1, §11, §12 (corpus es-MX/fr-FR) | D-067 + PR #174 — 282/282 desplegado |
+| §2 (arreglar-decimales) | Superada por la corrida del 2026-08-01; hallazgos restantes son falsos positivos documentados |
+| §5 (aviso «aún no traducido») | Implementado en `[slug].astro:413-414` |
+| §7 (auditores antes que el código) | D-070 + el arnés de 103 controles negativos |
+| §8 (nadie vio el sitio) | D-068, capturas automáticas |
+| §9 (JR vs PRO) | D-066: es el perfil |
+| §13 (reportes sin verificar) | D-069 |
+| §14 (contraste + espaciado) | D-058 + D-059 |
+| §21 (voz de Larry) | D-077 → D-078 (`speechSynthesis`, 7 locales) |
+| §22.1-22.3 (escudos) | D-079 |
+| §22.5 (XP de misiones) | D-092 |
+| §23 social 23.1 (racha entre pares) | D-106 + PR #406 |
+| §23 social 23.2 (opt-in duelo) | migración `0012` (LEAGUE/DUEL en el catálogo) + patrón ratificado por D-110 |
+| §23 cableado 23.1 (racha en KINDER) | #205 + PRs #431, #436 |
+| §23 cableado 23.3 (`d1_migrations`) | el dueño autorizó la corrección el 2026-08-03; 12/12 registradas |
+| §23 misiones 23.1-23.4 | D-103, D-104, D-105 + PRs #433-#435 |
+| §24.5 (números de migración) | Reparto confirmado por el dueño: 0013/0014 F8, 0015 F9, 0016 F10, 0017 F11 |
+| F6 P-5, P-6, P-7, precio del adulto | D-085 retiró la tabla de planes: ya no hay gratis vs. pago |
+| F6 P-19 (voz en 4 locales) | D-077 → D-078 |
+
+### 25.2 Cerradas en esta sesión por el dueño (olas A, B y C del 2026-08-03)
+
+Preguntas interactivas con pros y contras por opción; sus respuestas quedan
+como decisiones D-136 en adelante: §24.1 (foto del dueño del grupo), §24.2
+(`contextual_marks`), §23 F8 23.1 (corte nocturno), §23 F8 23.3 (límite
+desde el día uno), §23 social 23.3 (sesgo de edad del duelo), §23 social
+23.5 (descenso ignora inactivos), F6 P-1 (kinder sin modelo en vivo),
+F6 P-15 (tope en el DO), F6 P-18 (medición de costos), F6 bloque de 15
+(ratificación), §6 (redirecciones 301).
+
+### 25.3 Ejecutables sin el dueño (quedan como trabajo, no como duda)
+
+- **§3 — `scripts/correr-lote.mjs`** con PID, `--parar` y avance reanudable
+  (AGENTS.md §8 lo sigue pidiendo: «deja escrito cómo se para»).
+- **§22.4 / §23.4 — ratificaciones de código ya implementado** (nombres de
+  columna en `EstadoRacha`; rename `tier`→`escalon`): una línea en
+  decisions.md en el próximo batch.
+- **§22 P4 / §23 cableado 23.2 — el bono `reto_completado` sin llamador**:
+  hay que construir una señal de cierre de reto observable por el servidor
+  (#192 sigue abierta).
+- **§23 F8 23.2 — `cerrarPorLimite` lo construye F8 y F7 lee**: ya está así
+  en código; se ratifica por escrito.
+- **§24.3 — chip «activo esta semana»**: `screen_time_daily_usage` (existe
+  para todo niño), nunca `last_seen` (D-081). Se aplica en #383.
+- **§24.4 — el `ALTER` del CHECK de `assurance`**: lo que #380 ya
+  especifica, degradando primero (D-070).
+- **§24.6 — regla anti-limpieza**: añadir a AGENTS.md «ninguna sesión hace
+  limpieza de worktrees/directorios mientras haya ramas con trabajo no
+  commiteado».
+
+### 25.4 Advertencia de la revisión
+
+`node audits/corpus-integridad.mjs` **falla hoy** — no por las dudas viejas
+sino por `mc-49`, `mc-50` y `mc-51`: investigaciones nuevas sin traducir.
+El verde del 2026-08-01 cubre mc-01…mc-48; los tres documentos nuevos están
+fuera de ese estado y su traducción sigue el marco de D-050/D-067 (pausada
+salvo es-MX/fr-FR). Decidir su traducción es tema aparte de este cierre.
+
+### 25.5 Vigencias comprometidas (D-133)
+
+- **2027**: revisar currículos en transición — México MCCEMS, streaming de
+  Singapur, la maquette de la Sorbonne, A-level y BNCC por año (los cinco
+  huecos `[unverified]` de `mc-51`).
+- **2030**: revisión decanal del MSC (msc2020.org) — re-mapear `ramas.ts`
+  (D-135) si los códigos de dos dígitos cambian.
+
+### 25.6 Resoluciones de las olas A, B y C (2026-08-03, noche)
+
+| Duda | Respuesta | Decisión |
+|---|---|---|
+| §24.1 foto del maestro | **Se agrega**: columna en 0015 + upload (contra la recomendación) | D-136 |
+| §24.2 `contextual_marks` | **Se construye el lector** y se amplía el CHECK (contra la recomendación) | D-137 |
+| §23 F8 23.1 nocturno | También impide empezar de madrugada | D-138 |
+| §23 F8 23.3 día uno | **Solo tras configurar** — supera lo implementado | D-139 |
+| §23 social 23.3 edad duelo | Sesgo a favor del acceso, ratificado | D-140 |
+| §23 social 23.5 descenso | Ignora inactivos, extensión de D-014 firmada | D-141 |
+| F6 P-1 kinder en vivo | 100% pregenerado, enmienda D-015 | D-142 |
+| F6 P-15 tope | En el Durable Object, enmienda D-015 | D-143 |
+| F6 P-18 medición | Se corre (~$5) | D-144 |
+| F6 bloque de 15 | Ratificadas en bloque | D-145 |
+| §6 redirecciones | Para siempre | D-146 |

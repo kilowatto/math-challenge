@@ -447,6 +447,91 @@ const CASOS = [
     parche: (t) => t.replace("function pintarEscena", "function pintarLaEscena"),
     espera: "no pude leer una de las fuentes",
   },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // F6 · la explicación pregenerada — los seis controles negativos
+  //
+  // Los seis son de DEGRADACIÓN (D-070). Los dos auditores nacieron verdes
+  // porque el módulo se construyó con ellos delante, y eso es exactamente el
+  // caso donde un control negativo escrito a mano no vale: probaría que el
+  // auditor sabe leer un archivo inventado, no que habría cazado la erosión.
+  // Aquí se le quita al archivo REAL la propiedad que lo hace seguro.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  {
+    // La lista blanca crece con un campo que trae los operandos. Es el modo de
+    // falla más probable de todos: nadie escribe `calcular()`, alguien añade un
+    // campo «que hace falta para explicar mejor».
+    auditor: "larry-nunca-calcula",
+    que: "los operandos entran al sobre de Larry por un campo nuevo en la lista blanca",
+    archivo: "packages/motor/src/explicacion.ts",
+    parche: (t) => t.replace('  "materia",\n', '  "materia",\n  "vars",\n'),
+    espera: "un campo `vars`",
+  },
+  {
+    // Aritmética en el camino de explicación. La resta de aquí es inocente y
+    // hace lo mismo que el `some()` que sustituye — y ese es el punto: la regla
+    // no es «no calcules mal», es «no calcules».
+    auditor: "larry-nunca-calcula",
+    que: "una operación aritmética dentro del módulo de explicación",
+    archivo: "packages/motor/src/explicacion.ts",
+    parche: (t) =>
+      t.replace(
+        "const describeSinDictaminar = pasos.some((p) => !p.dictamina);",
+        "const describeSinDictaminar = pasos.length - pasos.filter((p) => p.dictamina).length > 0;",
+      ),
+    espera: "hace aritmética: una resta",
+  },
+  {
+    // El llamador se salta el sellado. El tipo de TypeScript no lo impide en
+    // tiempo de ejecución: el veredicto llega de otro Worker por RPC, así que lo
+    // que ese Worker añada mañana viajaría entero.
+    auditor: "larry-nunca-calcula",
+    que: "el endpoint compone la explicación sin sellar el sobre",
+    archivo: "apps/web/src/pages/api/jugar.ts",
+    parche: (t) =>
+      t.replace(
+        "sellarSobre(veredicto as unknown as Record<string, unknown>),",
+        "(veredicto as unknown as Record<string, unknown>),",
+      ),
+    espera: "sin sellar el sobre",
+  },
+  {
+    // Comparación normativa en un texto real, en un solo locale. Se eligió una
+    // construcción que el regex de `retro-completa` NO caza —no lleva ninguna
+    // palabra de capacidad— para que el caso demuestre lo que este auditor
+    // añade y no lo que ya estaba cubierto.
+    auditor: "larry-nunca-averguenza",
+    que: "un texto de error que compara al niño con los demás, en es-MX y solo ahí",
+    archivo: "apps/web/src/i18n/reto/es-MX.json",
+    parche: (t) => t.replace('"Multiplicaste en vez de sumar.",', '"Los demás niños ya lo lograron.",'),
+    espera: "comparacion",
+  },
+  {
+    // El marcador desnudo. Shute (`mc-11` §5): decir que hubo un fallo sin decir
+    // qué hacer con él es de los tipos de retroalimentación más pobres medidos.
+    // El JSON sigue impecable — se rompe QUIEN LO JUNTA, que es justo lo que
+    // `retro-completa` no puede ver.
+    auditor: "larry-nunca-averguenza",
+    que: "la segunda frase se pierde al componer y el fallo llega como marcador desnudo",
+    archivo: "packages/motor/src/explicacion.ts",
+    parche: (t) => t.replace("      siguiente: texto[1],", '      siguiente: "",'),
+    espera: "marcador desnudo",
+  },
+  {
+    // #349 otra vez, en otra superficie: cuando falta texto se imprime el
+    // identificador. Es literalmente lo que un niño de cuatro años vio en su
+    // teléfono — tres botones que decían `casilla3`, `casilla0` y `casilla1`.
+    auditor: "larry-nunca-averguenza",
+    que: "una causa sin autorar se pinta como su clave en vez del genérico",
+    archivo: "packages/motor/src/explicacion.ts",
+    parche: (t) =>
+      t.replace(
+        "    titulo: generico ? generico[0] : RESPALDO.titulo,",
+        "    titulo: sobre.causa ?? (generico ? generico[0] : RESPALDO.titulo),",
+      ),
+    espera: "imprime la CLAVE",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

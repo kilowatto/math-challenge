@@ -1,0 +1,68 @@
+{
+  "locale": "es-MX",
+  "nota": "Español de México (es-MX) — punto decimal, «prueba otra vez».",
+  "porQue": "Lo que se prohíbe es una CONSTRUCCIÓN, no una palabra: las construcciones no se traducen. Una lista global traducida produce falsos positivos contra texto ya aprobado — es-ES sirve «Inténtalo otra vez, sin prisa» y de-DE «Versuch es noch einmal, in Ruhe», y prohibir «otra vez» marcaría eso, mientras que «otra vez te equivocaste», que sí humilla, es la misma palabra en otra construcción.",
+  "limite": "Es un cable trampa, no un juez. «No todos nacemos para los números» es atribución de rasgo fijo pura y no contiene ni una palabra de esta lista. Ninguna lista la caza, en ningún idioma. Ese hueco lo cubren la revisión humana por locale y la carta adversarial `anti-humillacion`, que corre a mano y cuesta dinero.",
+  "construcciones": [
+    {
+      "categoria": "elogio_inflado",
+      "patron": "[!¡]{2,}",
+      "porque": "exclamaciones apiladas. Brummelman et al. (2014/2017): el elogio inflado predice MENOR autoestima con el tiempo"
+    },
+    {
+      "categoria": "capacidad",
+      "patron": "\\b(?:eres|qu[eé]) (?:muy )?(?:list[oa]|inteligente|un genio|una genia|crack)\\b",
+      "porque": "Mueller & Dweck: el elogio al rasgo fijo hace que el siguiente fallo se lea como que el rasgo falló"
+    },
+    {
+      "categoria": "capacidad",
+      "patron": "\\bno (?:eres|se te dan) (?:de |los )?n[uú]meros\\b",
+      "porque": "el mismo rasgo, en negativo"
+    },
+    {
+      "categoria": "elogio_inflado",
+      "patron": "\\b(?:perfect[ií]sim|incre[ií]ble|espectacular|fant[aá]stic|genial|buen[ií]simo)",
+      "porque": "superlativo sobre un acierto rutinario (Brummelman)"
+    },
+    {
+      "categoria": "comparacion",
+      "patron": "\\b(?:los dem[aá]s ni[nñ]os|otros ni[nñ]os|los otros ni[nñ]os|tu edad|que tus compa[nñ]eros|el resto del grupo)\\b",
+      "porque": "retroalimentación normativa (Kluger & DeNisi)"
+    },
+    {
+      "categoria": "conteo_de_fallas",
+      "patron": "\\b(?:siempre te equivocas|siempre fallas|llevas \\w+ (?:errores|fallas|veces))\\b",
+      "porque": "contar fallas en voz alta"
+    },
+    {
+      "categoria": "conteo_de_fallas",
+      "patron": "\\b(?:otra vez|de nuevo)[^.!?]{0,20}\\b(?:mal|te equivocaste|fallaste)\\b",
+      "porque": "«otra vez» pegado al fallo. «Prueba otra vez» sola no es esto"
+    },
+    {
+      "categoria": "minimizadores",
+      "patron": "\\b(?:era|es|estaba) (?:muy )?(?:f[aá]cil|sencill[oa]|obvi[oa])\\b",
+      "porque": "si era fácil y fallé, el problema soy yo"
+    },
+    {
+      "categoria": "minimizadores",
+      "patron": "\\bsolo (?:te )?faltaba\\b",
+      "porque": "igual"
+    },
+    {
+      "categoria": "tiempo_velocidad",
+      "patron": "\\b(?:tardaste|te tardaste|fuiste (?:muy )?(?:lent[oa]|r[aá]pid[oa])|ap[uú]rate|m[aá]s r[aá]pido)\\b",
+      "porque": "D-024/D-045: el niño no ve el tiempo, no lo oye y no le cuesta puntos"
+    },
+    {
+      "categoria": "culpa",
+      "patron": "\\b(?:fracasaste|fallaste|lo arruinaste)\\b",
+      "porque": "el nivel «yo» (Hattie & Timperley)"
+    },
+    {
+      "categoria": "culpa",
+      "patron": "\\best[aá]s? mal\\b",
+      "porque": "marcador de fracaso sin siguiente paso (Shute)"
+    }
+  ]
+}

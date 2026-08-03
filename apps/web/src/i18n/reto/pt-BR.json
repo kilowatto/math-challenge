@@ -139,5 +139,8 @@
   "habilidad.K11": "somar contando",
   "habilidad.K12": "subtrair tirando",
   "habilidad.K13": "reconhecer formas",
-  "habilidad.K14": "padrões que se repetem"
+  "habilidad.K14": "padrões que se repetem",
+  "paso.bien": "{paso}: esta etapa se sustenta.",
+  "paso.mal": "{paso}: esta etapa não se sustenta.",
+  "paso.sin_juicio": "{paso}: esta etapa não é verificada aqui."
 }

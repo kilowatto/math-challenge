@@ -123,7 +123,28 @@ const {
 
     {mostrarContexto && <p id="pista" class="pista" hidden>{rotulos.elige}</p>}
 
-    <p id="veredicto" class="veredicto" hidden></p>
+    {/*
+      El veredicto, en dos partes que el servidor manda ya escritas:
+      QUÉ pasó y CUÁL es el siguiente paso.
+
+      Son dos `<span>` y no una cadena pegada porque `mc-11` §5 (Shute) las
+      distingue: un marcador desnudo —«mal»— es de los tipos de
+      retroalimentación más pobres que se han medido, y lo que lo salva es
+      justamente la segunda mitad. Separadas, una hoja de estilo futura puede
+      darles peso distinto sin que nadie tenga que partir texto en el cliente.
+    */}
+    {/* El espacio entre los dos `<span>` es significativo: separa las dos
+        frases. Van en la misma línea a propósito — un salto de línea aquí lo
+        deja a merced de cómo cada compilador trate el espacio en blanco. */}
+    <p id="veredicto" class="veredicto" hidden><span id="veredicto-que"></span> <span id="veredicto-siguiente"></span></p>
+
+    {/*
+      Los pasos del procedimiento (D-074). Vacío en kinder **siempre**: el
+      disparador es la MATERIA, y contar patos no tiene procedimiento que
+      explicar. Existe aquí para que el día que entre la primera materia con
+      proceso no haya que tocar dos pantallas.
+    */}
+    <ul id="pasos" class="pasos-larry" hidden></ul>
 
     <div class="acciones">
       <button type="button" id="confirmar" class="opcion accion" hidden>{rotulos.confirmar}</button>
@@ -204,6 +225,9 @@ const {
     const $opciones = document.getElementById("opciones");
     const $pista = document.getElementById("pista");
     const $veredicto = document.getElementById("veredicto");
+    const $veredictoQue = document.getElementById("veredicto-que");
+    const $veredictoSiguiente = document.getElementById("veredicto-siguiente");
+    const $pasos = document.getElementById("pasos");
     const $confirmar = document.getElementById("confirmar");
     const $reintentar = document.getElementById("reintentar");
     const $siguiente = document.getElementById("siguiente");
@@ -532,8 +556,11 @@ const {
      */
     function limpiarVeredicto() {
       $veredicto.hidden = true;
-      $veredicto.textContent = "";
+      $veredictoQue.textContent = "";
+      $veredictoSiguiente.textContent = "";
       delete $veredicto.dataset.acierto;
+      $pasos.hidden = true;
+      $pasos.replaceChildren();
     }
 
     // ---------------------------------------------------------------------
@@ -610,15 +637,52 @@ const {
       /*
        * Lo que se dice, y lo que NO.
        *
-       * `r.causa` trae el error con nombre y aquí no se pinta: es material de
-       * Larry (F6). Decirle a un niño de cuatro «contaste uno dos veces» sin
-       * la voz y el dibujo que lo acompañan es señalarle el error y ya
-       * (línea roja #7). Tampoco se pinta `r.nivel` ni `r.etapa`: el número de
-       * escalón no se enseña a nadie (criterio #100, D-017).
+       * ─── Lo que cambió en F6, y por qué la nota anterior era la equivocada ─
+       *
+       * Aquí decía que `r.causa` no se pinta *«porque decirle a un niño de
+       * cuatro "contaste uno dos veces" sin la voz y el dibujo que lo acompañan
+       * es señalarle el error y ya»*. La primera mitad es cierta —la voz de
+       * kinder es F6 y todavía no existe—, pero la conclusión estaba al revés:
+       * lo que se servía en su lugar era **«Esta vez no. Vamos a intentarlo
+       * otra vez.»**, que es un marcador desnudo, y `mc-11` §5 (Shute) lo
+       * clasifica entre los tipos de retroalimentación más pobres que se han
+       * medido. Kluger & DeNisi, sobre 607 tamaños de efecto, midieron que más
+       * de un tercio de las intervenciones de retroalimentación **empeoran** el
+       * desempeño, y el mecanismo es exactamente ése: decir que hubo un fallo
+       * sin decir qué hacer con él.
+       *
+       * Los quince textos de causa **ya estaban autorados en los siete
+       * locales** y `audits/retro-completa.mjs` ya los vigilaba. Lo único que
+       * faltaba era pintarlos.
+       *
+       * Lo que sigue sin pintarse, y sigue siendo correcto: `r.nivel` y
+       * `r.etapa` — el número de escalón no se enseña a nadie (criterio #100,
+       * D-017) —, y `r.causa` **en crudo**, que es una clave de mensaje y no un
+       * texto. La clave nunca llega al cliente como algo que se imprima: quien
+       * la traduce es el servidor, y si no encontrara texto serviría el
+       * genérico en vez del identificador (#349).
        */
-      $veredicto.textContent = r.correcto ? rotulos.bien : rotulos.otra;
+      const exp = r.explicacion || {};
+      $veredictoQue.textContent = exp.titulo || (r.correcto ? rotulos.bien : rotulos.otra);
+      $veredictoSiguiente.textContent = exp.siguiente || "";
       $veredicto.dataset.acierto = r.correcto ? "1" : "0";
       $veredicto.hidden = false;
+
+      /*
+       * Los pasos (D-074). Hoy siempre vacío —ninguna materia del banco tiene
+       * procedimiento— y por eso esto es lo único que hay que dejar puesto: la
+       * decisión de si se DICTAMINA o solo se DESCRIBE ya la tomó el servidor,
+       * y aquí no se puede deshacer. `data-dictamina` viaja para que se pueda
+       * comprobar desde fuera, no para decorar.
+       */
+      const pasos = Array.isArray(exp.pasos) ? exp.pasos : [];
+      for (const paso of pasos) {
+        const li = document.createElement("li");
+        li.textContent = paso.texto;
+        li.dataset.dictamina = paso.dictamina ? "1" : "0";
+        $pasos.append(li);
+      }
+      $pasos.hidden = pasos.length === 0;
       // Volver a intentarlo solo se ofrece cuando hay algo que corregir.
       $reintentar.hidden = r.correcto === true;
       $siguiente.hidden = false;

@@ -139,5 +139,8 @@
   "habilidad.K11": "adding by counting on",
   "habilidad.K12": "subtracting by taking away",
   "habilidad.K13": "recognising shapes",
-  "habilidad.K14": "patterns that repeat"
+  "habilidad.K14": "patterns that repeat",
+  "paso.bien": "{paso}: this step holds.",
+  "paso.mal": "{paso}: this step does not hold.",
+  "paso.sin_juicio": "{paso}: this step is not checked here."
 }

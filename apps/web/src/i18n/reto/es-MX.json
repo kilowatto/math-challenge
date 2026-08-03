@@ -139,5 +139,8 @@
   "habilidad.K11": "sumar contando",
   "habilidad.K12": "restar quitando",
   "habilidad.K13": "reconocer figuras",
-  "habilidad.K14": "patrones que se repiten"
+  "habilidad.K14": "patrones que se repiten",
+  "paso.bien": "{paso}: este paso se sostiene.",
+  "paso.mal": "{paso}: este paso no se sostiene.",
+  "paso.sin_juicio": "{paso}: este paso no se revisa aquí."
 }

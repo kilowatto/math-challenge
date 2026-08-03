@@ -53,6 +53,7 @@
 export const prerender = false;
 
 import Privada from "../../../layouts/Privada.astro";
+import RecordatorioPush from "../../../components/push/RecordatorioPush.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
 import { rutaKids, rutaPerfilNuevo } from "../../../lib/rutas-app";
@@ -351,6 +352,15 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
       La pestaña apunta a `/app/perfil/` y `?vista=cuenta` redirige allí
       (arriba, en el frontmatter), así que ningún enlace viejo se rompe.
     */}
+    {/*
+      El recordatorio push al padre (F7 #207, D-105). Vive en las dos vistas
+      que son del propio adulto —la de sus hijos y la de su propia práctica—
+      porque el recordatorio es del HOGAR: sirve igual al padre de tres que al
+      adulto que aprende solo (issue #207 § banda adulta). El componente nace
+      oculto y solo aparece cuando el navegador y la cuenta dicen qué estado
+      toca; el soft-ask, la puerta de iOS y el silencio permanente son suyos.
+    */}
+    {(vista === "hijos" || vista === "practicar") && <RecordatorioPush locale={locale} />}
 
   </article>
 

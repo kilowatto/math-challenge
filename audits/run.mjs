@@ -315,6 +315,12 @@ const ACTIVE = [
   ["limite-pantalla-motor-unico", "una sola tabla de límite, la de D-016",         "D-016, #266, #267, mc-26"],
   ["limite-no-rompe-el-dia",      "cuando el límite corta, el día se da por cumplido", "líneas rojas #1 #6 #7, D-014, D-016, #271, #272"],
   ["limite-nunca-se-levanta-pagando", "el límite de pantalla no se levanta pagando", "línea roja #4, D-021, D-057, #265"],
+  // F7 #207, D-105. El recordatorio push: al PADRE, tope de 1/día por hogar,
+  // silencio permanente de una vía, plantillas sin culpa. Es estático a
+  // propósito (D-070): no importa el motor que vigila — lee los archivos como
+  // texto y comprueba las fronteras (sin `childProfileId` en el camino de
+  // envío, `silenciado_at` de una sola vía, la constante de tope por nombre).
+  ["recordatorio-sin-culpa",    "el push es al padre, 1/día, sin culpa, silencio permanente", "issue #207, D-014, D-026, D-105, mc-19"],
   // ─── La superficie de F7 · Misiones diarias (#220, #222, #227) ───────────
   //
   // Nace VERDE como los cuatro del motor: la superficie se construyó con él
@@ -465,6 +471,13 @@ for (const prueba of [
   // seguida sin jugar archive en silencio. Lo que defiende tampoco rompe nada
   // visible: un doble cierre no da error, asciende a alguien dos veces.
   "apps/ingest/src/ciclo-liga.prueba.mjs",
+  // F7 #207, D-105. El decisor del recordatorio al padre: lo que defiende
+  // tampoco rompe nada visible — un push a las 21:00, dos pushes el mismo día,
+  // o un empujón en un día ya completado no dan error 500; los ve un padre que
+  // apaga el recordatorio para siempre. 18 casos: las orillas de 07:00 y
+  // 20:00, el tope que no se reinicia a medianoche UTC, el silencio que se
+  // mira primero, y un hermano completado silenciando el día entero.
+  "packages/motor/src/recordatorio.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

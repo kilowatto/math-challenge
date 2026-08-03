@@ -1598,14 +1598,15 @@ const CASOS = [
     // El fallo que el hueco existe para cazar, y que ninguna reserva declara:
     // una migración que ya corrió en algún ambiente y se borró del repo.
     //
-    // El número se mueve con cada migración que aterriza, y eso es a propósito:
-    // el caso apunta al PRIMER hueco libre por delante de la última migración.
-    // Era `0014` hasta que la 0013 del sendero de racha (#205) aterrizó y el
-    // arnés lo cazó corriendo en verde sin degradar nada — reapuntado, no
+    // Reapuntado a 0016 el 2026-08-03: con la 0013 (sendero kinder) y la 0014
+    // (recordatorio push) ya aterrizadas, una sonda en 0016 deja la 0015 sin
+    // declarar, y ese es el hueco que tiene que cazar. El número se mueve con
+    // cada migración que aterriza, y eso es a propósito: el caso apunta al
+    // PRIMER hueco libre por delante de la última migración. Reapuntado, no
     // borrado (un control cuyo objetivo se movió es un auditor apagado).
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0015_prueba_hueco.sql",
+    archivo: "migrations/0016_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -1744,6 +1745,40 @@ const CASOS = [
         'import type { Banda } from "../../../../packages/motor/src/puntuacion.ts";\nconst _SQL_PROHIBIDO = "UPDATE child_streak SET current_streak = 0";',
       ),
     espera: "child_streak",
+  },
+  {
+    // F7 #207, criterio #1. El caso real que este auditor existe para cazar:
+    // alguien añade la columna de niño a la tabla de suscripciones «para
+    // personalizar», y un push termina dirigido a un menor.
+    auditor: "recordatorio-sin-culpa",
+    que: "una columna child_profile_id en la migración del push",
+    archivo: "migrations/0014_push_recordatorio_padre.sql",
+    parche: (t) =>
+      t.replace(
+        "  user_id          TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,",
+        "  user_id          TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n  child_profile_id TEXT,",
+      ),
+    espera: "child_profile_id",
+  },
+  {
+    // F7 #207, criterio #2. El tope deja de llamarse por su nombre — la puerta
+    // a volverlo configurable «para el experimento». El auditor lo exige por
+    // nombre, así que renombrarlo tiene que bloquear.
+    auditor: "recordatorio-sin-culpa",
+    que: "el tope UN_PUSH_POR_HOGAR_POR_DIA renombrado en el motor",
+    archivo: "packages/motor/src/recordatorio.ts",
+    parche: (t) => t.replace("UN_PUSH_POR_HOGAR_POR_DIA = 1", "TOPE_PUSH_DIARIO = 1"),
+    espera: "UN_PUSH_POR_HOGAR_POR_DIA",
+  },
+  {
+    // F7 #207, criterio #5 y D-026. La forma escrita del nagging: una ruta que
+    // limpia el silencio. El parche convierte el upsert del silencio en su
+    // borrado, y el auditor tiene que decir que el silencio es permanente.
+    auditor: "recordatorio-sin-culpa",
+    que: "una escritura `silenciado_at = NULL` en la ruta del padre",
+    archivo: "apps/web/src/pages/api/push.ts",
+    parche: (t) => t.replace("silenciado_at = excluded.silenciado_at,", "silenciado_at = NULL,"),
+    espera: "silenciado_at",
   },
 
   // ─── F7 · El sendero de racha de KINDER (#205) ───────────────────────────

@@ -1,0 +1,17 @@
+{
+  "push.sup.titulo": "Tägliche Erinnerung",
+  "push.sup.texto": "Wir können dir höchstens eine Benachrichtigung pro Tag schicken, zur Zeit des Mathe-Moments deiner Familie. Sie kommt nur, wenn an diesem Tag noch niemand geübt hat, und niemals mit Schuldgefühlen. Du kannst sie mit einer Berührung für immer ausschalten.",
+  "push.sup.activar": "Tägliche Erinnerung einschalten",
+  "push.sup.ahora_no": "Jetzt nicht",
+  "push.sup.activo": "Die tägliche Erinnerung ist eingeschaltet. Höchstens eine Benachrichtigung pro Tag, und du kannst sie hier ausschalten.",
+  "push.sup.silenciar": "Erinnerung ausschalten",
+  "push.sup.silenciado": "Die Erinnerung ist ausgeschaltet. Wir fragen nicht wieder.",
+  "push.sup.denegado": "Benachrichtigungen sind in diesem Browser blockiert. Um sie einzuschalten, öffne die Website-Einstellungen in deinem Browser und erlaube Benachrichtigungen; von hier aus können wir nicht wieder fragen.",
+  "push.sup.ios_instalar": "Auf iPhone und iPad funktionieren Erinnerungen nur, wenn Math Challenge installiert ist: Öffne das Teilen-Menü und tippe auf «Zum Home-Bildschirm», und komm dann hierher zurück.",
+  "push.sup.sin_soporte": "Dieser Browser kann keine Benachrichtigungen empfangen.",
+  "push.sup.error": "Etwas hat nicht funktioniert. Versuche es gleich noch einmal.",
+  "push.notif.titulo": "Der Mathe-Moment",
+  "push.notif.cuerpo_uno": "Es ist ein guter Moment für den Mathe-Moment von {alias}.",
+  "push.notif.cuerpo_varios": "Es ist ein guter Moment für den heutigen Mathe-Moment.",
+  "push.notif.cuerpo_propio": "Es ist ein guter Moment für deinen Mathe-Moment."
+}

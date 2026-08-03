@@ -1,0 +1,17 @@
+{
+  "push.sup.titulo": "Recordatorio diario",
+  "push.sup.texto": "Te podemos mandar una notificación al día, como máximo, a la hora del momento de matemáticas de tu familia. Solo llega si nadie ha practicado ese día, y nunca con culpa. La puedes apagar para siempre con un toque.",
+  "push.sup.activar": "Activar el recordatorio diario",
+  "push.sup.ahora_no": "Ahora no",
+  "push.sup.activo": "El recordatorio diario está activado. Una notificación al día como máximo, y la puedes apagar aquí.",
+  "push.sup.silenciar": "Apagar el recordatorio",
+  "push.sup.silenciado": "El recordatorio está apagado. No te lo vamos a volver a preguntar.",
+  "push.sup.denegado": "Las notificaciones están bloqueadas en este navegador. Para activarlas, abre la configuración de este sitio en tu navegador y permite las notificaciones; desde aquí no podemos volver a pedirlo.",
+  "push.sup.ios_instalar": "En iPhone y iPad los recordatorios solo funcionan si Math Challenge está instalado: abre el menú Compartir y toca «Agregar a pantalla de inicio», y vuelve aquí.",
+  "push.sup.sin_soporte": "Este navegador no puede recibir notificaciones.",
+  "push.sup.error": "Algo no funcionó. Inténtalo de nuevo en un momento.",
+  "push.notif.titulo": "El momento de matemáticas",
+  "push.notif.cuerpo_uno": "Es un buen momento para el momento de matemáticas de {alias}.",
+  "push.notif.cuerpo_varios": "Es un buen momento para el momento de matemáticas de hoy.",
+  "push.notif.cuerpo_propio": "Es un buen momento para tu momento de matemáticas."
+}

@@ -164,6 +164,72 @@ if (Object.keys(dDoc).length === 0 || Object.keys(nDoc).length === 0) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// El CHECK de `league_cohort.banda` contra la tabla de D-010 (F7 #238)
+//
+// Es el TERCER sitio donde viven las mismas seis bandas, y el único que no
+// puede derivarse del motor porque es SQL. `packages/motor/src/liga.ts` deriva
+// su lista de `NIVELES_POR_BANDA` justamente para no ser un cuarto; este CHECK
+// no tiene esa salida, así que se cruza aquí.
+//
+// El síntoma cuando divergen no es un error de compilación: es un INSERT que
+// falla en producción y en ninguna prueba, la primera vez que alguien de esa
+// banda entra a una liga.
+// ---------------------------------------------------------------------------
+
+/** Los nombres de banda de la tabla de D-010, incluida KINDER (que no tiene `d`). */
+function bandasDeD010(texto) {
+  const seccion = texto.slice(texto.indexOf("## D-010"), texto.indexOf("## D-011"));
+  const out = [];
+  for (const m of seccion.matchAll(/^\|\s*([A-Z]{2,})[^|]*\|/gm)) {
+    if (m[1] === "Banda" || out.includes(m[1])) continue;
+    out.push(m[1]);
+  }
+  return out;
+}
+
+const bandasDoc = bandasDeD010(decisiones);
+const migracionesSql = fuentes.filter((f) => f.endsWith(".sql"));
+let cohorteEncontrada = false;
+
+for (const archivo of migracionesSql) {
+  const sql = (leer(archivo) ?? "").replace(/--[^\n]*/g, "");
+  const cuerpo = sql.match(/CREATE\s+TABLE\s+league_cohort\s*\(([\s\S]*?)\n\);/i)?.[1];
+  if (!cuerpo) continue;
+  cohorteEncontrada = true;
+
+  const check = cuerpo.match(/banda\s+TEXT[\s\S]{0,120}?CHECK\s*\(([^)]*)\)/i)?.[1] ?? "";
+  const enElCheck = [...check.matchAll(/'([A-Z]+)'/g)].map((m) => m[1]);
+
+  if (bandasDoc.length === 0) {
+    problemas.push(
+      "no pude leer los nombres de banda de la tabla de D-010 para cruzarlos contra " +
+        "`league_cohort.banda`. Un auditor que no encuentra su fuente aprueba siempre.",
+    );
+  }
+  for (const b of bandasDoc) {
+    if (!enElCheck.includes(b)) {
+      problemas.push(
+        `${archivo}: \`league_cohort.banda\` no admite '${b}', y D-010 la declara. Una banda sin ` +
+          "liga se descubre en producción, con un INSERT que falla la primera vez que alguien " +
+          "de esa banda entra — y en ninguna prueba.",
+      );
+    }
+  }
+  for (const b of enElCheck) {
+    if (!bandasDoc.includes(b)) {
+      problemas.push(
+        `${archivo}: \`league_cohort.banda\` admite '${b}', que no está en la tabla de D-010. ` +
+          "Manda el documento.",
+      );
+    }
+  }
+}
+
+if (cohorteEncontrada) {
+  notas.push(`league_cohort.banda cruzada contra D-010: ${bandasDoc.join(", ")}`);
+}
+
 if (declaradores.length > 1) {
   problemas.push(
     `${declaradores.length} archivos declaran la tabla de bandas o niveles (${declaradores.join(", ")}). ` +

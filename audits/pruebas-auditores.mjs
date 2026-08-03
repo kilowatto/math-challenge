@@ -942,6 +942,161 @@ const CASOS = [
       ),
     espera: "fallar CERRADO",
   },
+  // ─────────────────────────────────────────────────────────────────────────
+  // F7 · Ligas, tablero y duelo (#237-#250, D-081)
+  //
+  // Los doce DEGRADAN el archivo real, salvo los dos que tienen que crear uno
+  // que no existe. La razón es D-070 y es la misma que en las tandas de arriba:
+  // el subsistema social se construyó CON sus auditores delante, así que un
+  // archivo inventado probaría que el auditor sabe leer un archivo inventado.
+  //
+  // Y cada degradación es una que alguien haría de buena fe: «guardo el
+  // `total_xp` aquí para no consultarlo dos veces», «pongo el nombre, que se
+  // entiende mejor», «un `last_seen` para saber si vale la pena retarlo».
+  // Ninguna es sabotaje, y ésas son las que llegan a producción.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  {
+    // La condición 1 de D-081 se rompe por el import, antes que por la llamada.
+    auditor: "liga-no-quita",
+    que: "el motor de liga importa el de racha",
+    archivo: "packages/motor/src/liga.ts",
+    parche: (t) =>
+      t.replace(
+        'import { NIVELES_POR_BANDA, type Banda } from "./puntuacion.ts";',
+        'import { NIVELES_POR_BANDA, type Banda } from "./puntuacion.ts";\nimport { ganarEscudos } from "./racha.ts";',
+      ),
+    espera: "motor de racha",
+  },
+  {
+    // «Guardo el XP aquí para no consultarlo dos veces». Una semana después,
+    // alguien lo actualiza desde aquí.
+    auditor: "liga-no-quita",
+    que: "la tabla de membresía gana una columna de XP",
+    archivo: "migrations/0011_ligas_tablero_duelo.sql",
+    parche: (t) =>
+      t.replace(
+        "  points_this_week INTEGER NOT NULL DEFAULT 0,",
+        "  points_this_week INTEGER NOT NULL DEFAULT 0,\n  total_xp         INTEGER NOT NULL DEFAULT 0,",
+      ),
+    espera: "total_xp",
+  },
+  {
+    // «Pon el nombre, que se entiende mejor». La primera pantalla que alguien
+    // maquete de una liga.
+    auditor: "alias-nunca-nombre",
+    que: "el tablero publica un nombre escrito en vez del alias generado",
+    archivo: "packages/motor/src/tablero.ts",
+    parche: (t) =>
+      t.replace(
+        "export interface FilaDeTablero {\n  readonly alias: string;",
+        "export interface FilaDeTablero {\n  readonly display_name: string;",
+      ),
+    espera: "display_name",
+  },
+  {
+    // El descenso deja de respetar a quien no jugó. Es la extensión razonada de
+    // D-014 que #241 marca como tal: no jugar no es perder.
+    auditor: "liga-ascenso-determinista",
+    que: "el descenso vuelve a alcanzar a los inactivos",
+    archivo: "packages/motor/src/liga.ts",
+    parche: (t) => t.replace("  const activos = tabla.filter(estaActivo);", "  const activos = tabla;"),
+    espera: "inactivo",
+  },
+  {
+    // La partición que no está en ninguna decisión, y por eso es la que se
+    // pierde en la primera refactorización.
+    auditor: "liga-sin-fusion-cohorte",
+    que: "la llave de cohorte deja de distinguir niño de adulto",
+    archivo: "packages/motor/src/liga.ts",
+    parche: (t) =>
+      t.replace(
+        "  return `${banda}|${tipo}|e${escalon}|${weekStart}`;",
+        "  return `${banda}|e${escalon}|${weekStart}`;",
+      ),
+    espera: "no distingue niño de adulto",
+  },
+  {
+    // El portón que un `if` mal escrito abre sin dar ningún error.
+    auditor: "duelo-elegibilidad",
+    que: "el portón de KINDER deja de cerrarse",
+    archivo: "packages/motor/src/duelo.ts",
+    parche: (t) =>
+      t.replace(
+        'if (retador.banda === "KINDER") return { puede: false, motivo: "banda_kinder" };',
+        'if (retador.banda === "NINGUNA") return { puede: false, motivo: "banda_kinder" };',
+      ),
+    espera: "banda_kinder",
+  },
+  {
+    // «Un `last_seen` para saber si vale la pena retarlo». Convierte un reto
+    // asíncrono en una sala de espera, y quien espera es un niño (D-081 cond. 2).
+    auditor: "duelo-elegibilidad",
+    que: "el duelo gana una columna de presencia",
+    archivo: "migrations/0011_ligas_tablero_duelo.sql",
+    parche: (t) =>
+      t.replace(
+        "  item_set                 TEXT NOT NULL,",
+        "  item_set                 TEXT NOT NULL,\n  last_seen                INTEGER,",
+      ),
+    espera: "presencia",
+  },
+  {
+    // El opt-in del tablero desaparece de la consulta. D-040 se hace cumplir en
+    // el JOIN justamente porque un filtro en código se olvida en la segunda ruta.
+    auditor: "tablero-orden-puntos",
+    que: "la consulta del tablero de niños pierde el cruce con el consentimiento",
+    archivo: "packages/motor/src/tablero.ts",
+    parche: (t) =>
+      t.replace(
+        "JOIN child_consents c\n  ON c.child_profile_id = p.id\n AND c.consent_code = 'LEADERBOARD'\n AND c.revoked_at IS NULL\n",
+        "",
+      ),
+    espera: "child_consents",
+  },
+  {
+    // El Durable Object empieza a guardar el intento crudo. A diferencia de D1,
+    // un DO no topa en 10 GB: crece sin que nada avise (mc-32 riesgo #1).
+    auditor: "no-attempts-in-d1",
+    que: "el Durable Object de la liga guarda el itemId del intento",
+    archivo: "apps/web/src/lib/liga-do.ts",
+    parche: (t) =>
+      t.replace(
+        "  points_this_week: number;\n  active_days: number;",
+        "  points_this_week: number;\n  item_id: string;\n  active_days: number;",
+      ),
+    espera: "item_id",
+  },
+  {
+    // Lenguaje de pérdida en un texto de liga, CON ACENTO — que es justo lo que
+    // el `\b` de JavaScript no cazaba: /\bse acab[oó]\b/ no encuentra «Se acabó».
+    auditor: "racha-lexico",
+    que: "un texto de liga habla de que algo se acabó (con acento)",
+    archivo: "apps/web/src/i18n/liga/es-MX.json",
+    parche: (t) =>
+      t.replace('"liga.se_queda": "Se queda en esta liga",', '"liga.se_queda": "Se acabó tu racha",'),
+    espera: "perdida",
+  },
+  {
+    // Una pantalla de kinder que pinta el número de posición. D-081: tercios,
+    // nunca el número exacto.
+    auditor: "kinder-sin-examen",
+    que: "una superficie de kinder pinta la posición exacta",
+    archivo: "apps/web/src/components/kids/TableroKinder.astro",
+    contenido:
+      "---\nconst { posicion } = Astro.props;\n---\n<p>Vas en el lugar {posicion.rank}</p>\n",
+    espera: "posición exacta",
+  },
+  {
+    // La reserva de número caduca sola: en cuanto el archivo reservado existe,
+    // el renglón sobra y bloquea. Sin eso, un hueco excusado lo queda para
+    // siempre.
+    auditor: "migration-safety",
+    que: "aparece la migración cuyo número estaba declarado como reservado",
+    archivo: "migrations/0009_prueba_reserva.sql",
+    contenido: "CREATE TABLE prueba_reserva (id TEXT PRIMARY KEY);\n",
+    espera: "reserva",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

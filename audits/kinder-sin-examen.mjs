@@ -108,10 +108,54 @@ for (const archivo of fuentes) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 4. Ninguna superficie de kinder pinta una posición exacta (F7 #243, D-081)
+// ---------------------------------------------------------------------------
+//
+// D-081 dice, para KINDER: «si se activa, la posición se muestra **en tercios**,
+// nunca el número exacto». Es hermana de las tres reglas de arriba y por la
+// misma fuente: `mc-10` mide que la presión de rendimiento empeora el desempeño
+// en matemáticas, y `mc-18` implicación 7 recomienda no exponer el fondo de la
+// tabla a los más chicos. «Eres el 27 de 30» es exactamente esa presión, escrita
+// con un número.
+//
+// Se mira la INTERFAZ, no el motor: `liga.ts` nombra `rank` porque es quien
+// decide cuándo NO mandarlo, y `posicionVisible` devuelve un tercio para KINDER.
+// Lo que no puede existir es una pantalla de kinder que pinte el número.
+
+const RANGO_EXACTO = /(\.rank\b|\bfinal_rank\b|\brank\s*[:=]|posicion\s*\.\s*rank|#\{?\s*(rank|posicion))/;
+
+const superficies = fuentes.filter((f) =>
+  /^apps\/web\/src\/(components|pages|layouts)\//.test(f),
+);
+let superficiesDeKinder = 0;
+
+for (const archivo of superficies) {
+  const texto = leer(archivo) ?? "";
+  const esDeKinder = KINDER.test(archivo) || /(^|\/)(app\/kids|components\/kids)\//.test(archivo) || KINDER.test(texto);
+  if (!esDeKinder) continue;
+  superficiesDeKinder++;
+
+  const m = texto.replace(/\/\/.*$/gm, "").match(RANGO_EXACTO);
+  if (m) {
+    problemas.push(
+      `${archivo}: una superficie de kinder pinta una posición exacta (\`${m[0].trim()}\`). ` +
+        "D-081: en KINDER la posición se muestra en tercios, nunca el número exacto y nunca el " +
+        "último lugar. Y el número no se oculta al pintar: no viaja — `posicionVisible()` de " +
+        "`liga.ts` devuelve el tercio ya calculado en el servidor.",
+    );
+  }
+}
+
 notas.push(
   archivosDeKinder > 0
     ? `${archivosDeKinder} archivo(s) hablan de kinder, ninguno con examen ni cronómetro`
     : "todavía no hay superficies de kinder; el auditor está listo para la primera",
+);
+notas.push(
+  superficiesDeKinder > 0
+    ? `${superficiesDeKinder} superficie(s) de kinder sin un número de posición (D-081)`
+    : "todavía no hay pantalla de liga de kinder; el auditor bloquea la primera que pinte un rango",
 );
 notas.push("D-045 SÍ permite medir el tiempo en kinder — lo que no puede es verse ni puntuar");
 

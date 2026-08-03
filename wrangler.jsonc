@@ -222,6 +222,26 @@
     "binding": "AI"
   },
 
+  // ── El cron del recordatorio al padre (F7 #207, D-105) ───────────────────
+  //
+  // Cada 30 minutos. La hora exacta la decide el motor puro
+  // (`packages/motor/src/recordatorio.ts`) por hogar y en la zona de
+  // `users.timezone`: la primera pasada a partir del inicio de la ventana de
+  // pantalla —o de las 17:00 locales si no hay— y nunca fuera de 07:00-20:00.
+  // El tope de UN push al día por hogar se persiste en D1
+  // (`push_recordatorio.last_sent_local_date`), así que la frecuencia del cron
+  // no puede convertirse en más de un empujón al día aunque falle el reloj.
+  //
+  // Vive aquí y no en `math-challenge-ingest` (que ya tiene el cron semanal
+  // del ciclo de liga): la suscripción, el copy y la clave pública VAPID son
+  // de la superficie del padre, que es ESTE Worker. Justificación completa en
+  // `apps/web/src/worker.ts` y en el PR de #207.
+  //
+  // Sin `VAPID_PRIVATE_KEY` (secreto, `wrangler secret put`) y
+  // `VAPID_PUBLIC_KEY` (var, la instala el orquestador) el ciclo corre y no
+  // envía nada: degradación silenciosa, el estado seguro por defecto.
+  "triggers": { "crons": ["*/30 * * * *"] },
+
   "vars": {
     // Los siete locales. No cinco: es-MX y es-ES no comparten separador
     // decimal, pt-BR y pt-PT no comparten escala numérica (mc-34, D-022).

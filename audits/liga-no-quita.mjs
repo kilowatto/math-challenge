@@ -86,11 +86,34 @@ const fuentes = archivos(/\.(ts|tsx|js|jsx|mjs|astro)$/)
   .filter((f) => SOCIAL.test(f))
   .filter((f) => !/\.prueba\.mjs$/.test(f));
 
+// ─── La excepción de D-106, con marcador escrito ────────────────────────────
+//
+// D-106 (2026-08-03) enmendó #243: la racha SÍ se muestra entre pares de liga,
+// como dato de SOLO LECTURA que el DO recibe ya calculada. Eso obliga a que
+// `apps/web/src/lib/liga-do.ts` pueda NOMBRAR `current_streak` sin que este
+// auditor lo confunda con una escritura. La excepción funciona como
+// `migration-safety-reserva`: el archivo que la necesita declara el marcador
+//
+//     liga-no-quita-difusion: current_streak — D-106 · <razón>
+//
+// y solo ENTONCES, y solo para ESE nombre, se le perdona la mención. Todo lo
+// demás sigue bloqueando en ese mismo archivo: el import de `racha.ts`, el
+// nombre `child_streak`, cualquier UPDATE/DELETE, y el resto de contadores
+// (`max_streak`, escudos, XP) — #208 los excluye de toda vista social.
+
+/** El marcador que autoriza UNA mención de solo lectura, con razón escrita. */
+const MARCADOR_DIFUSION = /liga-no-quita-difusion: current_streak — D-106.{10,}/;
+
 for (const archivo of fuentes) {
   // Sin comentarios: este subsistema tiene que poder EXPLICAR por qué no toca
   // la racha sin que explicarlo cuente como tocarla. Es la misma clase de falso
   // positivo que ya apagó a cuatro auditores antes (ver `sinComentarios`).
-  const texto = sinComentarios(leer(archivo) ?? "");
+  const crudo = leer(archivo) ?? "";
+  const texto = sinComentarios(crudo);
+  const difusionAutorizada = MARCADOR_DIFUSION.test(crudo);
+  if (difusionAutorizada) {
+    notas.push(`${archivo}: difusión de current_streak autorizada por marcador (D-106)`);
+  }
 
   for (const [modulo, que] of MOTORES_PROHIBIDOS) {
     const re = new RegExp(`(?:import|require)[^;\\n]*["'\`][^"'\`]*${modulo.replace(".", "\\.")}["'\`]`);
@@ -104,12 +127,14 @@ for (const archivo of fuentes) {
   }
 
   for (const [columna, que] of CONTADORES) {
+    if (columna === "current_streak" && difusionAutorizada) continue;
     if (palabra(columna).test(texto)) {
       problemas.push(
         `${archivo}: nombra \`${columna}\` — ${que}. D-081 condición 1: la liga no puede ` +
           "quitar nada, y un subsistema social que puede NOMBRAR un contador de aprendizaje " +
           "está a una línea de escribirlo. Descender no borra XP, no quita escudos, no toca " +
-          "la racha y no cambia el mapa.",
+          "la racha y no cambia el mapa. (La ÚNICA excepción es la difusión de solo lectura " +
+          "de `current_streak` con el marcador de D-106 escrito en el archivo.)",
       );
     }
   }

@@ -73,6 +73,52 @@ export function palabra(...alternativas) {
   return new RegExp(`(?<![a-z0-9])(?:${alternativas.join("|")})(?![a-z0-9])`, "i");
 }
 
+/**
+ * Frontera de palabra que entiende ACENTOS. La hermana de `palabra()` para
+ * texto de cara al usuario, no para identificadores de código.
+ *
+ * ─── El fallo que costó un locale entero ───────────────────────────────────
+ *
+ * `\b` de JavaScript solo conoce ASCII. Para el motor de expresiones regulares,
+ * `ó` **no es un carácter de palabra**, así que entre `ó` y un espacio no hay
+ * frontera:
+ *
+ *     /\bse acab[oó]\b/iu.test("Se acabó la racha")   →  false
+ *
+ * Es decir: la construcción escrita con acento —que es como se escribe de
+ * verdad— pasaba de largo, y el auditor informaba verde. La bandera `u` no
+ * arregla nada; hace falta pedir la clase Unicode a mano.
+ *
+ * La alternancia de las dos direcciones sirve para las dos posiciones a la vez:
+ * al principio de un token la mirada hacia adelante falla sola (el siguiente
+ * carácter es una letra del propio token) y manda la mirada hacia atrás, y al
+ * final ocurre al revés. Así una misma cadena sustituye a `\b` esté donde esté.
+ *
+ *   conFronteraUnicode("se acab[oó]", "racha")
+ *     → /(?<![\p{L}\p{N}_])(?:se acab[oó]|racha)(?![\p{L}\p{N}])/iu
+ */
+export function conFronteraUnicode(...alternativas) {
+  return new RegExp(
+    `(?<![\\p{L}\\p{N}_])(?:${alternativas.join("|")})(?![\\p{L}\\p{N}])`,
+    "iu",
+  );
+}
+
+/**
+ * Reescribe los `\b` de un patrón ya escrito para que entiendan acentos.
+ *
+ * Existe para los léxicos que viven en JSON —`audits/lib/racha-lexico/`— donde
+ * las construcciones ya están autoradas con `\b` y reescribirlas a mano en los
+ * siete locales sería siete oportunidades de equivocarse. Se arregla al
+ * compilar, en un solo sitio.
+ */
+export function patronUnicode(patron) {
+  return new RegExp(
+    String(patron).replace(/\\b/g, "(?:(?<![\\p{L}\\p{N}_])|(?![\\p{L}\\p{N}_]))"),
+    "iu",
+  );
+}
+
 /** Lee un archivo del repo, o `null` si no se puede. */
 export function leer(archivo) {
   try {

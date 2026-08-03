@@ -52,7 +52,11 @@
 -- El renglón se borra solo en cuanto 0009 y 0010 existan: el auditor bloquea si
 -- una reserva sigue escrita con el archivo ya en el repositorio.
 --
--- migration-safety-reserva: 0009 — repartida a F7 misiones, todavía en rama sin mergear; ninguna migración se ha borrado de este repositorio. La 0010 ya aterrizó (mapa y compañero) y por eso salió de esta reserva: el auditor lo exigió al detectar el archivo, que es justo para lo que sirve el marcador.
+-- La reserva de numeración que vivía aquí SE BORRÓ, y el auditor la exigió:
+-- las 0009 (misiones) y 0010 (mapa) ya aterrizaron en `main`, así que no queda
+-- hueco que declarar. Una reserva sobre archivos que ya existen deja de vigilar
+-- el hueco para siempre — que es exactamente cómo una excepción temporal se
+-- vuelve permanente sin que nadie lo decida.
 --
 -- Cloudflare: cero recursos nuevos. Todo vive en `math-challenge-db` y su
 -- réplica `math-challenge-db-eu`, ya inventariadas en `docs/infrastructure.md`.

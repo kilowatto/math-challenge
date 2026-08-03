@@ -237,6 +237,27 @@ const ACTIVE = [
   ["motor-xp",                 "XP y puntos son dos monedas que no se cambian",   "D-055, D-025, #192, #194, #219, #225"],
   ["racha-lexico",             "la racha no habla de pérdida, prisa ni de nadie más", "#206, D-014, mc-17 §83"],
 
+  // ─── Los cuatro de F7 · Misiones diarias (#211) ──────────────────────────
+  //
+  // Nacen VERDES, como los de racha y cosméticos, y por el mismo motivo: el
+  // motor de misiones se construyó CON ellos delante. Lo que vigilan es que no
+  // se erosione, no que se arregle — así que sus controles negativos son
+  // DEGRADACIONES del módulo, de la migración 0009 y de la pantalla del reto
+  // REALES (D-070), nunca archivos inventados.
+  //
+  // Los cuatro cubren las cuatro formas de romper esto sin romper nada visible:
+  // un desempate «que da igual» resuelto con `Math.random()`, un slot que se
+  // queda vacío para el niño nuevo, un import de F4 «para no duplicar el tipo»,
+  // y un contador de misión en la esquina de la pantalla del reto.
+  //
+  // `mision-slot-nunca-vacio` lleva escrita a mano la tabla de precondiciones
+  // del diseño en vez de importarla del módulo, y eso no es duplicar: es lo que
+  // impide que ablandar una precondición ablande a la vez a su guardián — el
+  // auditor aprobando su propia violación, que es lo que D-070 prohíbe.
+  ["mision-recompensa-deterministica", "una misión se gana, no se compra ni se sortea", "líneas rojas #4 y #5, D-014, #216, #219"],
+  ["mision-slot-nunca-vacio",   "ningún slot vacío y ninguna misión incumplible",  "#217, #218, #228, D-018"],
+  ["misiones-sin-do-ajeno",     "F7 lee a F4 y a la liga por un sobre, no por dentro", "#214, #215, mc-32, D-027"],
+  ["mision-silenciosa",         "ninguna misión se pinta dentro de un reto activo", "#221, D-018, D-024, mc-42 §3"],
   // ─── Los tres del mapa y el compañero (F7, #230-#235) ────────────────────
   //
   // Nacen VERDES, como los de F6 y los tres primeros de F7: el mapa se
@@ -373,6 +394,12 @@ for (const prueba of [
   // describe se descubre roto por la factura.
   "packages/tutor/src/en-vivo.prueba.mjs",
   "packages/tutor/src/gasto.prueba.mjs",
+  // #211, #216, #217, #219, #228. Lo que defiende tampoco rompe nada visible:
+  // un menú de dos misiones en vez de tres no da error, y una misión de DUELO
+  // para quien nunca dio opt-in tampoco. Aquí se recorren 3 600 combinaciones de
+  // perfil × día × banda × resumen de F4 × resumen de liga, incluida la
+  // ausencia entera de F4, y se exige que las tres salgan y sean cumplibles.
+  "packages/motor/src/misiones.prueba.mjs",
   // F7 #231-#235. Las dos miden AUSENCIAS, que es lo que no se ve leyendo el
   // código: que el sendero de kinder no tenga un solo campo numérico del que
   // una plantilla pueda sacar un porcentaje, que el número de nivel no salga

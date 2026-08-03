@@ -3,7 +3,11 @@
 -- El número 0009 queda reservado a la rama de misiones de F7, que todavía no
 -- está en `main`. Sin esta línea el hueco bloquea, y con razón — ver la nota de
 -- numeración al final de este encabezado.
--- migration-safety-reserva: 0009 — F7-misiones la tiene tomada en su propia rama y aún no llega a main; el reparto en orden de merge es misiones 0009, mapa 0010, social 0011, límite de pantalla 0012.
+-- La reserva de numeración que vivía aquí SE BORRÓ, y la exigió el propio
+-- auditor: la 0009 (misiones) ya aterrizó, así que no queda hueco que declarar.
+-- Una reserva sobre un archivo que ya existe deja de vigilar el hueco para
+-- siempre — que es exactamente cómo una excepción temporal se vuelve permanente
+-- sin que nadie lo decida.
 --
 -- ─── Por qué esta migración existe, si #231 dice «sin tabla propia» ────────
 --

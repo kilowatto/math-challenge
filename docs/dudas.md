@@ -664,6 +664,98 @@ sin aciertos. Implementé la de `mc-16`.
 
 ---
 
+## 23. F7 · Misiones diarias — cuatro preguntas del dueño y cinco supuestos míos · 2026-08-03
+
+El código de #211 está construido y no depende de ninguna de estas respuestas:
+todas cambian un número o una fila de analítica, ninguna cambia la forma del
+módulo. Se anotan aquí en vez de detenerse (memoria: «dudas a un md, sin
+detenerse»). La decisión implementada está en **D-090**.
+
+### 23.1 ¿Tres misiones simultáneas para PRIMARIA en adelante, o dos?
+
+**Implementé 3** (`MISIONES_POR_DIA` en `packages/motor/src/misiones.ts`).
+
+La evidencia es débil en las dos direcciones y por eso es una pregunta real:
+
+- **Duolingo usa 3** (bronce/plata/oro), corroborado en varias fuentes
+  secundarias pero **sin un post oficial** que lo confirme como cifra primaria —
+  mismo nivel de confianza que `mc-16` ya le da a otras cifras suyas.
+- **Cowan (2010), «The Magical Mystery Four»** fija ~4±1 como techo de memoria de
+  trabajo **adulta**, y los niños de 7-11 todavía están **subiendo** hacia ese
+  techo, no habiéndolo alcanzado. O sea: 3 casi roza un techo que a esa edad
+  todavía no se tiene.
+
+**2** sería más conservador; **3** es más simple de construir y de explicar.
+Cambiarlo es una constante.
+
+### 23.2 ¿SERIO usa el mismo tope que PRIMARIA, o uno mayor?
+
+**Implementé un solo número para todas las bandas.** La memoria de trabajo adulta
+sí alcanza el techo de Cowan, así que un tope mayor para SERIO —la única banda
+≥7 con contenido en el MVP (D-034)— aprovecharía mejor su capacidad real. El
+costo es que F7 tendría dos configuraciones en vez de una. Cambiarlo es pasar de
+una constante a una tabla por banda.
+
+### 23.3 ¿El avance en la Sabana de KINDER cuenta como «misión completada» en el panel del padre?
+
+**Hoy no cuenta**: KINDER no escribe ninguna fila en `mission_daily_summary`,
+porque `elegirMisionesDelDia()` le devuelve una lista vacía (D-090 §5).
+
+Las dos opciones tienen un defecto real. Contarlo **infla** una tasa de «misiones
+completadas» que en KINDER es indistinguible de «jugó hoy». No contarlo deja a
+KINDER **sin ninguna fila** en esa métrica del panel. Con kinder aplazado (D-073)
+la pregunta no corre prisa, pero decide si `MISION_DE_KINDER` acaba siendo una
+fila o solo una etiqueta.
+
+### 23.4 ¿Notificaciones push de recordatorio de misión en v1?
+
+**Fuera de alcance**, y ni siquiera hay superficie donde ponerlas. `mc-19` exige
+que vayan **al padre**, máximo 1/día y sin culpa. La pregunta es si este
+subsistema tiene que coordinarse con Web Push (D-030) ahora o al diseñar
+F8 · Padres.
+
+---
+
+### Los cinco supuestos que tomé sin que estuvieran escritos
+
+**23.5 — `duelo` exige `dueloOptIn` Y `enLiga`.** El diseño de
+`docs/planes/f7-juego.md` §3 solo pedía el opt-in. Un duelo sin liga es contra
+nadie, y #217 dice que una misión incumplible es peor que no tener misión.
+**Desviación consciente**, escrita en el catálogo y en D-090 §4a.
+
+**23.6 — El XP se otorga en la TRANSICIÓN a completada, una sola vez.**
+`avanzarMision()` devuelve **el mismo objeto** si la misión ya estaba completa,
+igual que `registrarDia()` en `racha.ts`: quien llama compara por referencia para
+saber si hay algo que escribir, y el reintento de una cola offline no paga dos
+veces. El issue no dice qué pasa con un reintento.
+
+**23.7 — No hay `completed_at`.** Un sello de tiempo obligaría al módulo a leer
+el reloj, y el reloj es la puerta que la cabecera cierra. `completed` es 0 o 1 y
+el `updated_at` de la fila lo pone quien escribe. El precio: no se puede saber a
+qué hora se completó una misión, solo qué día.
+
+**23.8 — El cierre del día no devuelve ningún denominador.** `cierreDelDia()`
+lista **solo lo logrado**, y no hay campo con el total. Un renglón «0/3 misiones»
+es un veredicto negativo aunque el copy no lo diga (`mc-17` §5: el
+*confirm-shaming* y la urgencia son categorías nombradas por la FTC). Quien quiera
+pintar un progreso tiene `Mision.meta` y el estado, que son datos; lo que no hay
+es un «te faltaron dos». La prueba comprueba que ningún campo del cierre se llame
+`total`, `faltan`, `pendientes` ni `restantes`.
+
+**23.9 — `EstadoDeMision` usa los nombres de columna de D1, no camelCase.**
+Rompe el estilo del resto de `packages/motor/`, igual que `EstadoRacha` (§22.4) y
+por la misma razón: los auditores vigilan el grafo de lo que toca `xp_awarded`, y
+una capa de traducción entre `xp_awarded` y `xpOtorgado` es exactamente el punto
+donde el auditor deja de ver.
+
+---
+
+> **§22.5 queda superada por D-090.** Esa sección dice que la tabla de XP fija
+> `mision_diaria: 20` y `mision_semanal: 100` sin fuente. `mision_diaria` **ya no
+> existe**: lo sustituyen once claves `mision_<tipo>` más `mision_dia_completo`,
+> porque un solo número daba dos respuestas a «¿cuánto vale una misión diaria?» y
+> ese par iba a divergir sin que nadie lo tocara a propósito. Los once siguen
+> siendo `[criterio propio]`. `mision_semanal` se queda publicado y sin usar.
 ## 23. F8 · Las tres preguntas de #265 que implementé sin respuesta · 2026-08-02
 
 La issue paraguas del límite de pantalla (#265) hace tres preguntas al dueño y

@@ -193,7 +193,8 @@ caso("el XP de un reto nunca puede ser negativo, se responda lo que se responda"
 
 caso("la tabla de XP por tipo es fija, y un tipo desconocido LANZA en vez de dar 0", () => {
   igual(xpDeTipo("reto_completado"), BONO_FINALIZACION_XP, "reto");
-  igual(xpDeTipo("mision_diaria"), XP_POR_TIPO.mision_diaria, "misión diaria");
+  igual(xpDeTipo("mision_repaso"), XP_POR_TIPO.mision_repaso, "misión de repaso");
+  igual(xpDeTipo("mision_dia_completo"), XP_POR_TIPO.mision_dia_completo, "bono del día");
   igual(xpDeTipo("mision_semanal"), XP_POR_TIPO.mision_semanal, "misión semanal");
   lanza(() => xpDeTipo("cofre_sorpresa"), "tabla publicada");
 });
@@ -208,8 +209,8 @@ caso("la tabla está congelada: no se le puede añadir un tipo en caliente", () 
 });
 
 caso("mil llamadas al mismo tipo dan el mismo número: cero varianza", () => {
-  const primera = xpDeTipo("mision_diaria");
-  for (let i = 0; i < 1000; i++) igual(xpDeTipo("mision_diaria"), primera, `llamada ${i}`);
+  const primera = xpDeTipo("mision_dominio");
+  for (let i = 0; i < 1000; i++) igual(xpDeTipo("mision_dominio"), primera, `llamada ${i}`);
 });
 
 // --- El evento de Rango (#192) ---------------------------------------------

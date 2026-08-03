@@ -942,6 +942,144 @@ const CASOS = [
       ),
     espera: "fallar CERRADO",
   },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // F7 · Misiones diarias (#211, #214, #216, #217, #219, #221, #228).
+  //
+  // Los ocho casos DEGRADAN archivos REALES —el motor, la migración 0009 y la
+  // pantalla del reto—, por lo mismo que los de arriba: los cuatro auditores de
+  // misiones se escribieron CON el módulo delante, así que un archivo inventado
+  // probaría que el auditor sabe leer un archivo inventado y no que habría
+  // cazado la erosión (D-070).
+  //
+  // Y cada degradación es una que alguien haría de buena fe. Ninguna es
+  // sabotaje: son «un desempate que da igual», «el catálogo se lee mejor con el
+  // número escrito», «el esquema acepta un tipo más por si acaso», «el duelo ya
+  // pide estar en liga, el opt-in sobra», «importemos el tipo de F4 para no
+  // duplicarlo», «pongamos el contador de la misión en la esquina de la
+  // pantalla». Ésas son las que llegan a producción.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  {
+    // El azar entrando por la puerta más pequeña que hay: la semilla. Con esto
+    // la selección deja de ser reproducible y «¿por qué le tocó esta misión a mi
+    // hijo?» pasa a no tener respuesta.
+    auditor: "mision-recompensa-deterministica",
+    que: "un grano de azar en la semilla del día",
+    archivo: "packages/motor/src/misiones.ts",
+    parche: (t) =>
+      t.replace(
+        "  let h = 0x811c9dc5;",
+        "  let h = 0x811c9dc5 + Math.floor(Math.random() * 3);",
+      ),
+    espera: "azar",
+  },
+  {
+    // El catálogo deja de derivar su XP de la tabla publicada y escribe el
+    // número a mano. Es el momento en que nacen dos precios para la misma cosa.
+    auditor: "mision-recompensa-deterministica",
+    que: "una misión vale algo distinto de lo que la tabla publicada promete",
+    archivo: "packages/motor/src/misiones.ts",
+    parche: (t) =>
+      t.replace(
+        "    xp: xpDeTipo(claveDeXp(tipo)),",
+        '    xp: tipo === "volumen" ? 42 : xpDeTipo(claveDeXp(tipo)),',
+      ),
+    espera: "tabla publicada",
+  },
+  {
+    // El esquema acepta un tipo que el módulo no conoce. La fila existiría en la
+    // base y el motor no sabría completarla nunca.
+    auditor: "mision-recompensa-deterministica",
+    que: "la migración acepta un tipo de misión fuera del catálogo cerrado",
+    archivo: "migrations/0009_misiones_diarias.sql",
+    parche: (t) =>
+      t.replace(
+        "'fluidez', 'precision', 'descubre', 'duelo', 'meta_de_liga'",
+        "'fluidez', 'precision', 'descubre', 'duelo', 'meta_de_liga', 'cofre_diario'",
+      ),
+    espera: "catálogo cerrado",
+  },
+  {
+    // La columna de precio «por si acaso». Nadie la cobra el primer año; existe,
+    // y el día que exista un plan de pago ya está el hueco hecho.
+    auditor: "mision-recompensa-deterministica",
+    que: "una columna de precio en la tabla de misiones",
+    archivo: "migrations/0009_misiones_diarias.sql",
+    parche: (t) =>
+      t.replace(
+        "  updated_at       INTEGER NOT NULL,",
+        "  price_cents      INTEGER,\n  updated_at       INTEGER NOT NULL,",
+      ),
+    espera: "precio",
+  },
+  {
+    // «El duelo ya exige estar en una liga; el opt-in sobra». D-018 dice que no,
+    // y #218 prohíbe hasta enseñarlo bloqueado.
+    auditor: "mision-slot-nunca-vacio",
+    que: "`duelo` deja de exigir el opt-in y le sale a quien nunca lo pidió",
+    archivo: "packages/motor/src/misiones.ts",
+    parche: (t) =>
+      t.replace(
+        'def("duelo", 1, true, (_r, l) => l.dueloOptIn === true && l.enLiga === true),',
+        'def("duelo", 1, true, (_r, l) => l.enLiga === true),',
+      ),
+    espera: "opt-in",
+  },
+  {
+    // `fluidez` sin nada dominado: una misión formalmente asignada e imposible
+    // de cumplir. Es la que demuestra que el auditor NO puede juzgarse con la
+    // misma función que el motor usa para elegir — si lo hiciera, ablandar la
+    // precondición ablandaría también al guardián y esto pasaría en verde.
+    auditor: "mision-slot-nunca-vacio",
+    que: "`fluidez` se asigna a un niño que no domina nada todavía",
+    archivo: "packages/motor/src/misiones.ts",
+    parche: (t) =>
+      t.replace(
+        'def("fluidez", 1, true, (r) => r !== null && r.habilidadesDominadas.length > 0),',
+        'def("fluidez", 1, true, SIEMPRE),',
+      ),
+    espera: "cumplible",
+  },
+  {
+    // El tipo de F4 importado «para no duplicarlo». Es el import que convierte
+    // dos subsistemas con dueños distintos en uno solo.
+    auditor: "misiones-sin-do-ajeno",
+    que: "el motor de misiones importa el árbol de F4 en vez de recibir el sobre",
+    archivo: "packages/motor/src/misiones.ts",
+    parche: (t) =>
+      t.replace(
+        'import type { Banda } from "./puntuacion.ts";',
+        'import type { Banda } from "./puntuacion.ts";\nimport { kPara } from "./adaptativo.ts";',
+      ),
+    espera: "F4",
+  },
+  {
+    // «Un campo más, para poder afinar la misión». Es el momento exacto en que
+    // el sobre deja de ser un sobre.
+    auditor: "misiones-sin-do-ajeno",
+    que: "la lista blanca del contrato con F4 crece un campo",
+    archivo: "packages/motor/src/misiones.ts",
+    parche: (t) =>
+      t.replace(
+        "  readonly habilidadesDominadas: readonly string[];",
+        "  readonly habilidadesDominadas: readonly string[];\n  readonly thetaActual: number;",
+      ),
+    espera: "lista blanca",
+  },
+  {
+    // El contador de misión en la pantalla del reto. No rompe nada: solo hace
+    // que se aprenda peor (`mc-42` §3), que es el daño que ninguna prueba ve.
+    auditor: "mision-silenciosa",
+    que: "la pantalla del reto activo importa el motor de misiones",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) =>
+      t.replace(
+        "---\n",
+        '---\nimport { elegirMisionesDelDia } from "../../../../../packages/motor/src/misiones.ts";\n',
+      ),
+    espera: "reto activo",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

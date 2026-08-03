@@ -186,14 +186,50 @@ export const BONO_FINALIZACION_XP = Math.round(valorDelItem(1));
  * máquina tragamonedas que el Center for Humane Technology nombra por su nombre,
  * y Bélgica y Países Bajos declararon juego ilegal a su versión pagada en 2018.
  *
- * `[criterio propio, no hay fuente que fije estos dos números]` — la misma
+ * `[criterio propio, no hay fuente que fije estos números]` — la misma
  * honestidad que D-016 usa para su tabla de minutos. Lo que sí está sostenido
  * por `mc-16` es la FORMA: un bono plano por sesión terminada, para que
  * cualquier sesión completada se sienta como progreso.
+ *
+ * ─── Por qué hay una clave por TIPO de misión y ya no un `mision_diaria` ────
+ *
+ * Había un solo renglón, `mision_diaria: 20`, y era un marcador: F7 todavía no
+ * tenía catálogo. Ahora lo tiene, y los diez tipos no valen lo mismo — `dominio`
+ * (tres correctas seguidas en algo que casi se domina) no cuesta lo que
+ * `descubre` (jugar un modo que no jugaste esta semana).
+ *
+ * Con un solo número había DOS respuestas posibles a «¿cuánto vale una misión
+ * diaria?»: la genérica y la del tipo. Eso es exactamente lo que la línea roja
+ * #5 no admite — el jugador tiene que poder saber **de antemano** cuánto vale
+ * cada cosa, y una tabla con dos respuestas no es una tabla publicada.
+ *
+ * `packages/motor/src/misiones.ts` **deriva** su catálogo de aquí con
+ * `xpDeTipo(claveDeXp(tipo))` en vez de escribir los números otra vez, y
+ * `audits/mision-recompensa-deterministica.mjs` cruza los dos archivos: cada
+ * tipo del catálogo tiene su clave aquí, y ninguna clave `mision_*` sobra.
+ *
+ * `mision_semanal` se queda y hoy no la usa nadie: las misiones semanales están
+ * diferidas a propósito (§9 del diseño de F7), porque complicarían la lógica de
+ * «día» con dos horizontes a la vez y D-014 solo nombra las **diarias**.
  */
 export const XP_POR_TIPO: Readonly<Record<string, number>> = Object.freeze({
   reto_completado: BONO_FINALIZACION_XP,
-  mision_diaria: 20,
+
+  // Los diez tipos de misión diaria (#212, #219). Cantidad y amplitud valen
+  // menos que lo adaptativo, que es lo que de verdad cuesta.
+  mision_volumen: 15,
+  mision_variedad: 15,
+  mision_repaso: 20,
+  mision_dominio: 25,
+  mision_problema: 20,
+  mision_fluidez: 15,
+  mision_precision: 15,
+  mision_descubre: 10,
+  mision_duelo: 20,
+  mision_meta_de_liga: 10,
+  /** El bono por completar las tres del día. Suma directa, jamás un cofre. */
+  mision_dia_completo: 15,
+
   mision_semanal: 100,
 });
 

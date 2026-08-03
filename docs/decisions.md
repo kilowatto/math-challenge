@@ -2763,3 +2763,151 @@ mida algo distinto se pueda volver aquí y ver qué se sabía.
 3. **Sin lenguaje de pérdida en ninguna banda.** Es la misma regla que la racha
    (D-014) y le toca a `racha-lexico` extendido, no a la buena voluntad de quien
    escriba el texto.
+
+---
+
+## D-082 — El precio de una misión se publica POR TIPO, y ninguna misión se sortea ni se cobra · 2026-08-03
+
+**Decisión:** las misiones diarias salen con un catálogo cerrado de diez tipos,
+un precio en XP **por tipo** publicado en un solo sitio, y selección
+**determinista desde `(perfil, día)`**. Implementa #211 (#212, #213, #214, #215,
+#216, #217, #218, #219, #221, #228) en `packages/motor/src/misiones.ts`, un
+módulo puro con el mismo contrato que `racha.ts`.
+
+### 1. La tabla de XP es por TIPO, y `mision_diaria` se retira
+
+`XP_POR_TIPO` en `packages/motor/src/xp.ts` tenía un solo renglón,
+`mision_diaria: 20`, escrito cuando F7 todavía no tenía catálogo. Ahora lo tiene,
+y los diez tipos no valen lo mismo: `dominio` —tres correctas seguidas en algo
+que casi se domina— no cuesta lo que `descubre` —jugar un modo que no jugaste
+esta semana—.
+
+Con un solo número había **dos respuestas posibles** a «¿cuánto vale una misión
+diaria?»: la genérica y la del tipo. Eso es exactamente lo que la línea roja #5
+no admite —el jugador tiene que poder saber **de antemano** cuánto vale cada
+cosa— y, sobre todo, es un par de números que va a divergir: nadie los mantiene
+sincronizados porque nadie sabe que son el mismo hecho escrito dos veces.
+
+| Tipo | XP `[criterio propio]` | Eje que mide |
+|---|---|---|
+| `volumen` | 15 | cantidad (el único sin precondición que no rota) |
+| `variedad` | 15 | amplitud de **tema** |
+| `repaso` | 20 | adaptativo (vencimiento, no debilidad) |
+| `dominio` | 25 | adaptativo |
+| `problema` | 20 | modo PROBLEMA (D-018, sin reloj) |
+| `fluidez` | 15 | modo FLUIDEZ (D-018, solo temas dominados) |
+| `precision` | 15 | calidad |
+| `descubre` | 10 | amplitud de **modo** |
+| `duelo` | 20 | liga, individual |
+| `meta_de_liga` | 10 | liga, cooperativo |
+| bono por las tres | +15 | suma directa, jamás un cofre |
+
+La tabla vive **solo** en `xp.ts`. `misiones.ts` la **deriva** con
+`xpDeTipo(claveDeXp(tipo))` en vez de escribir los números otra vez, y
+`audits/mision-recompensa-deterministica.mjs` cruza los dos archivos en las dos
+direcciones: cada tipo del catálogo tiene su clave publicada, y ninguna clave
+`mision_*` sobra.
+
+**`docs/dudas.md` §22.5 queda superada por esta entrada.** Esa sección documenta
+`mision_diaria: 20` y `mision_semanal: 100` como los dos números sin fuente de la
+tabla de XP; el primero ya no existe. Los once que lo sustituyen siguen siendo
+`[criterio propio]` con la misma honestidad que D-016 usa para su tabla de
+minutos — lo que sí sostiene `mc-16` (implicación de diseño 7) es la FORMA, no
+las cifras. `mision_semanal` se queda publicado y sin usar: las misiones
+semanales están diferidas a propósito, porque complicarían la lógica de «día» con
+dos horizontes a la vez y D-014 solo nombra las **diarias**.
+
+### 2. Ninguna recompensa de misión es aleatoria — ni de pago ni gratis
+
+**Es más estricto que la letra de D-014, y se documenta así en vez de fingir que
+D-014 ya lo decía.** La columna «No» de D-014 dice literalmente *«recompensas
+aleatorias de **pago**»*. Tres cosas cierran esa rendija:
+
+1. La columna «Sí» exige **cosméticos ganados, deterministas** — no dice
+   «deterministas si se cobran».
+2. `mc-17` (implicación de diseño 3) y `mc-43` (hallazgo 5) son explícitos en que
+   el mecanismo dañino —el refuerzo de razón variable— **no necesita dinero para
+   funcionar sobre un niño**.
+3. Bélgica y Países Bajos declararon juego ilegal a las cajas de botín en 2018
+   por ser **aleatorias**, no por ser de pago.
+
+Y la otra mitad la cierra la línea roja #4: **nunca se cobra por dejar que un
+niño practique**, así que ninguna misión puede estar detrás de un pago. La
+migración `0009_misiones_diarias.sql` no tiene columna de precio, moneda, cupón,
+plan, probabilidad ni rareza — no es que estén vacías: no existen.
+
+### 3. Selección determinista, nunca `Math.random()`
+
+`semillaDelDia()` es un FNV-1a de 32 bits sobre `(childProfileId, fechaLocal)`.
+No es preferencia de estilo:
+
+- Es **reproducible**: se puede contestar «¿por qué le tocó esta misión a mi
+  hijo?» sin guardar una semilla aparte.
+- `Math.random()` y `Date.now()` **no existen** en varios de nuestros entornos de
+  prueba.
+- El día es un día **local del hogar** y llega ya calculado por
+  `racha.ts::diaEfectivo()`, que sigue siendo la única puerta entre un instante y
+  un día. Un reloj dentro de este módulo sería entropía con otro nombre.
+
+### 4. Tres desviaciones conscientes del diseño de `docs/planes/f7-juego.md`
+
+**a. `duelo` exige `dueloOptIn` Y `enLiga`.** El diseño solo pedía el opt-in
+(D-018: opcional, 8+). Se añade la liga porque **un duelo sin liga es contra
+nadie**, y #217 dice que una misión que no se puede cumplir es peor que no tener
+misión. Un perfil sin opt-in no la ve de ninguna forma —tampoco «bloqueada,
+actívala para intentarlo» (#218)—: enseñarla bloqueada es un empujón hacia una
+función que D-018 ya decidió opcional, y roza el *nagging* que `mc-17` nombra por
+su nombre.
+
+**b. `MISIONES_POR_DIA = 3`, un solo número para todas las bandas, SERIO
+incluida.** `[criterio propio, la evidencia es débil en las dos direcciones]`. No
+existe un estudio de HCI con la cifra. Duolingo usa 3, corroborado en fuentes
+secundarias pero sin post oficial. Cowan (2010) fija ~4±1 como techo de memoria
+de trabajo **adulta**, con los niños de 7-11 todavía **subiendo** hacia ese techo.
+Queda como pregunta abierta al dueño en `docs/dudas.md`.
+
+**c. `EstadoDeMision` no tiene `completed_at`.** Un sello de tiempo obligaría a
+este módulo a leer el reloj. `completed` es 0 o 1, y el `updated_at` de la fila lo
+pone quien escribe, que sí sabe qué hora es.
+
+### 5. KINDER no recibe nada, y eso es la decisión
+
+En KINDER «misión diaria» no es una función nueva: es una etiqueta interna sobre
+el reto HISTORIA del día en la Sabana (D-019), que F5/F6 construyen de todas
+formas. `elegirMisionesDelDia()` devuelve una lista **vacía** y
+`tieneMenuDeMisiones()` existe para que nadie lo deduzca de un arreglo vacío. **No
+cuesta ni una cadena de audio nueva**, y kinder sigue aplazado (D-073), así que
+esto es la forma del hueco y no una promesa de pantalla.
+
+### 6. Los cuatro auditores, y el que se cazó a sí mismo
+
+- `mision-recompensa-deterministica` — sin azar, sin reloj, sin precio, sin
+  metáfora de cofre; cruza el catálogo del módulo contra el `CHECK` del esquema y
+  contra la tabla publicada de `xp.ts`; y **ejecuta** el motor 360 tuplas × 64
+  repeticiones.
+- `mision-slot-nunca-vacio` — 10 080 estados de aprendiz: siempre tres misiones,
+  siempre distintas, siempre cumplibles.
+- `misiones-sin-do-ajeno` — el contrato con F4 y con la liga es de solo lectura y
+  las dos listas blancas no crecen.
+- `mision-silenciosa` — ninguna superficie de reto activo importa ni nombra el
+  motor de misiones (#221, `mc-42` §3).
+
+**Y una lección que esta entrada existe para dejar escrita:
+`mision-slot-nunca-vacio` aprobaba su propia violación.** Juzgaba la salida con
+`definicionDe(t).elegible` —la MISMA función que el motor usa para elegir—, así
+que ablandar una precondición ablandaba a la vez la regla y su guardián: el caso
+«`fluidez` se asigna a un niño que no domina nada» pasaba **en verde**. Se
+descubrió **escribiendo el control negativo, no leyendo el código**, que es
+exactamente por qué D-070 existe. El arreglo es que el auditor lleva la tabla de
+precondiciones de §3 del diseño **reescrita a mano**: dos fuentes independientes,
+como `cosmeticos-deterministas` cruza el enum del módulo contra el CHECK del
+esquema.
+
+### Lo que esta decisión NO decide
+
+No hay **ninguna interfaz** de misión: ni pantalla, ni componente, ni texto en
+los siete locales (#220, ~210 cadenas, autoradas por locale y diferidas). No hay
+Durable Object de misiones —el módulo es puro y `mission_daily_summary` basta— y
+por tanto **cero recursos nuevos de Cloudflare**. No hay ninguna ruta que llame
+al motor todavía. Y no decide nada del mecanismo interno de ligas ni de DUELO:
+F7 · Misiones solo **lee** su estado por `ResumenDeLigaParaMisiones`.

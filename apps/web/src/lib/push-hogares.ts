@@ -14,10 +14,17 @@
  *     No contiene la cadena `child_profile_id` ni puede contenerla:
  *     `audits/recordatorio-sin-culpa.mjs` lo bloquea de forma estática.
  *
- * «Meta completada» hoy significa `mission_daily_summary.completed = 1` en el
- * día LOCAL del hogar (D-104: KINDER no escribe fila, así que para un hogar
- * de solo kinder la meta cuenta como nunca completada — declarado en el PR,
- * no escondido en el código).
+ * «Meta completada» hoy significa, por banda (D-128, 2026-08-03):
+ *
+ *   · PRIMARIA en adelante — `mission_daily_summary.completed = 1` en el día
+ *     LOCAL del hogar.
+ *   · KINDER — **haber jugado hoy**, es decir `child_streak
+ *     .last_completed_local_date` = el día local. KINDER no escribe fila de
+ *     misión (D-104: su «misión» es el reto HISTORIA del día, una etiqueta),
+ *     así que leer misiones era leer «nunca completada» y el recordatorio
+ *     habría sonado a diario en hogares de kinder. El dueño lo decidió hoy:
+ *     para esa banda la meta ES haber jugado, que es exactamente lo que la
+ *     racha ya mide (D-091).
  */
 
 export interface ConteosDelHogar {
@@ -48,10 +55,15 @@ export async function conteosDelHogar(
            WHERE parent_user_id = ?1 AND deleted_at IS NULL)
        + (SELECT is_learner FROM users WHERE id = ?1)
            AS aprendices,
-         (SELECT COUNT(DISTINCT m.child_profile_id) FROM mission_daily_summary m
-           JOIN child_profiles cp ON cp.id = m.child_profile_id
+         (SELECT COUNT(DISTINCT cp.id) FROM child_profiles cp
            WHERE cp.parent_user_id = ?1 AND cp.deleted_at IS NULL
-             AND m.local_date = ?2 AND m.completed = 1)
+             AND (
+               EXISTS (SELECT 1 FROM mission_daily_summary m
+                        WHERE m.child_profile_id = cp.id AND m.local_date = ?2 AND m.completed = 1)
+               OR (cp.theme_band = 'KINDER' AND EXISTS (
+                     SELECT 1 FROM child_streak s
+                      WHERE s.child_profile_id = cp.id AND s.last_completed_local_date = ?2))
+             ))
        + (SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM mission_daily_summary
            WHERE user_id = ?1 AND local_date = ?2 AND completed = 1)
            AS completados`,
@@ -92,6 +104,12 @@ export async function pendientesDelHogar(
           AND NOT EXISTS (
             SELECT 1 FROM mission_daily_summary m
              WHERE m.child_profile_id = cp.id AND m.local_date = ?2 AND m.completed = 1
+          )
+          AND NOT (
+            cp.theme_band = 'KINDER' AND EXISTS (
+              SELECT 1 FROM child_streak s
+               WHERE s.child_profile_id = cp.id AND s.last_completed_local_date = ?2
+            )
           )
         ORDER BY cp.created_at`,
     )

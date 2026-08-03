@@ -3522,3 +3522,29 @@ pérdida (`racha-lexico` vigila los siete locales).
 `max_streak` (#208 lo prohíbe para salones y clubs, y el mismo criterio se
 extiende aquí), ni escudos, ni pausas, ni histórico. Sin nombre real jamás
 (línea roja #2, D-081).
+
+## D-128 — La meta de KINDER para el recordatorio es «jugó hoy» · 2026-08-03
+
+**Decisión:** para el recordatorio push del padre (#207), la «meta completada»
+de un niño de KINDER es **haber jugado hoy** — `child_streak
+.last_completed_local_date` igual al día local del hogar. Las demás bandas
+siguen midiéndose por fila de `mission_daily_summary` completada. Contestada
+por el dueño el 2026-08-03 de forma interactiva.
+
+El problema que cierra: KINDER no escribe fila de misión (D-104 — su «misión»
+es el reto HISTORIA del día, una etiqueta interna), así que leer misiones era
+leer «nunca completada», y el recordatorio habría sonado **todos los días** en
+hogares de kinder aunque el niño hubiera jugado — exactamente el ruido que
+`mc-19` enseña a no fabricar (un recordatorio que no distingue se desactiva, y
+el que se desactiva no vuelve).
+
+Por qué la racha y no otra fuente: «jugó hoy» es literalmente lo que la meta de
+KINDER es (D-091: el día se cuenta en el primer ítem contestado, y en KINDER
+la racha se registra aunque no se muestre). No hay dato nuevo que guardar y
+ninguna columna que añadir: `theme_band` ya está en `child_profiles` y la racha
+ya está en `child_streak`.
+
+**La frontera, dicha:** la racha NO se vuelve la meta de las demás bandas. Un
+niño de PRIMARIA que juega sin completar ninguna misión sigue contando como
+pendiente — la regla está probada como caso explícito en
+`apps/web/src/lib/push-hogares.prueba.mjs`, ejecutado contra SQLite de verdad.

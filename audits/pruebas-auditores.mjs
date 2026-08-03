@@ -1794,6 +1794,57 @@ const CASOS = [
     espera: "cifra de racha",
   },
 
+  // ─── F7 · El guardarraíl de naming Rango vs Nivel (#195) ─────────────────
+  //
+  // Los cuatro degradan archivos REALES (D-070): la erosión de verdad sería
+  // una cadena editada en un locale, un ORDER BY de más en una consulta que ya
+  // existe, o una interpolación de más en una plantilla que ya se pinta.
+  {
+    // La trampa clásica: llamar «Level» al eje de XP, como hace Duolingo. Aquí
+    // «Level» ya tiene dueño — la dificultad de D-017 — y la clave no está en
+    // la lista blanca escrita a mano.
+    auditor: "rango-vs-nivel",
+    que: "el XP se etiqueta «Level», la palabra del eje de dificultad",
+    archivo: "apps/web/src/i18n/en.json",
+    parche: (t) => t.replace('"mapaXp": "Experience"', '"mapaXp": "Level"'),
+    espera: "mapaXp",
+  },
+  {
+    // Una clave PERMITIDA que gana el número: «Niveles» → «Nivel 3». La lista
+    // blanca autoriza la palabra en superficies del padre, nunca la cifra.
+    auditor: "rango-vs-nivel",
+    que: "una clave de la lista blanca escribe el número de nivel",
+    archivo: "apps/web/src/i18n/es-MX.json",
+    parche: (t) => t.replace('"navLevels": "Niveles"', '"navLevels": "Nivel 3"'),
+    espera: "#100",
+  },
+  {
+    // El Rango convertido en ranking con once caracteres. Compila, no da
+    // error, y ordena a un niño de KINDER contra un adulto SERIO por un número
+    // que no mide lo mismo (D-003).
+    auditor: "rango-vs-nivel",
+    que: "la consulta de XP ordena por total_xp",
+    archivo: "apps/web/src/lib/progreso.ts",
+    parche: (t) =>
+      t.replace(
+        "SELECT total_xp FROM xp_totals WHERE child_profile_id = ?",
+        "SELECT total_xp FROM xp_totals WHERE child_profile_id = ? ORDER BY total_xp DESC",
+      ),
+    espera: "D-003",
+  },
+  {
+    // El descuido de una línea en una plantilla: interpola `nivel` y lo pinta
+    // delante de quien no debe verlo nunca (D-017, #100).
+    auditor: "rango-vs-nivel",
+    que: "el tablero de SERIO interpola el nivel de dificultad",
+    archivo: "apps/web/src/components/mapa/Tablero.astro",
+    parche: (t) =>
+      t.replace(
+        '<span class="tablero__pericia">{textoPericia(f.pericia)}</span>',
+        '<span class="tablero__pericia">{textoPericia(f.pericia)}{(f as any).nivel}</span>',
+      ),
+    espera: "interpola",
+  },
   // ─── F7 #257 · Larry nunca comenta avatar, alias ni cosméticos ───────────
   //
   // Los cuatro casos degradan archivos REALES (D-070), uno por cada mitad que

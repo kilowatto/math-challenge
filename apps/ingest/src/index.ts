@@ -336,7 +336,11 @@ export class Ingest extends WorkerEntrypoint<Env> {
     formato: string;
     enunciado: string;
     vars: Record<string, string>;
-    opciones: Array<{ valor: number | string; texto: string }>;
+    opciones: Array<{
+      valor: number | string;
+      texto: string;
+      dibujo?: { glifo: string; cuantos: number; grande: boolean };
+    }>;
   } | null> {
     const item = this.banco().get(itemId);
     if (!item) return null;
@@ -362,14 +366,36 @@ export class Ingest extends WorkerEntrypoint<Env> {
     ];
     const unicas = [...new Set(crudas)];
 
-    // Barajado determinista: hash del id, mezcla de Fisher-Yates con ese hash
-    // como semilla. Ver el encabezado.
-    let semilla = 0;
-    for (let i = 0; i < itemId.length; i++) semilla = (semilla * 31 + itemId.charCodeAt(i)) & 0x7fffffff;
-    const siguiente = () => ((semilla = (semilla * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
-    for (let i = unicas.length - 1; i > 0; i--) {
-      const j = Math.floor(siguiente() * (i + 1));
-      [unicas[i], unicas[j]] = [unicas[j], unicas[i]];
+    // ── Las opciones DIBUJADAS no se barajan: su orden es la disposición ────
+    //
+    // Barajar «3, 5, 4» solo cambia dónde está el 3. Barajar cuatro figuras de
+    // «cuál sobra» cambia el DIBUJO — el intruso deja de estar donde el ítem
+    // lo puso, y en «¿de qué lado hay más?» el montón de la izquierda puede
+    // acabar a la derecha, que convierte el enunciado en mentira.
+    //
+    // Por eso las opciones con dibujo salen en el orden en que el ítem las
+    // declaró. Lo que el barajado protegía —que la respuesta no caiga siempre
+    // en la misma casilla— pasa a ser responsabilidad del banco, y ahí es donde
+    // tiene que estar: K07 alterna el lado del montón mayor y K13 mueve el
+    // intruso por las cuatro casillas. Un barajado en la presentación tapaba
+    // que el banco no lo hiciera.
+    if (item.dibujos) {
+      const declarado = Object.keys(item.dibujos);
+      unicas.sort((a, b) => {
+        const ia = declarado.indexOf(String(a));
+        const ib = declarado.indexOf(String(b));
+        return (ia === -1 ? declarado.length : ia) - (ib === -1 ? declarado.length : ib);
+      });
+    } else {
+      // Barajado determinista: hash del id, mezcla de Fisher-Yates con ese hash
+      // como semilla. Ver el encabezado.
+      let semilla = 0;
+      for (let i = 0; i < itemId.length; i++) semilla = (semilla * 31 + itemId.charCodeAt(i)) & 0x7fffffff;
+      const siguiente = () => ((semilla = (semilla * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+      for (let i = unicas.length - 1; i > 0; i--) {
+        const j = Math.floor(siguiente() * (i + 1));
+        [unicas[i], unicas[j]] = [unicas[j], unicas[i]];
+      }
     }
 
     return {
@@ -379,10 +405,39 @@ export class Ingest extends WorkerEntrypoint<Env> {
       formato: item.formato,
       enunciado,
       vars,
-      opciones: unicas.map((v) => ({
-        valor: v,
-        texto: typeof v === "number" ? formatear(v, locale) : String(v),
-      })),
+      // ── El texto de una opción JAMÁS es su valor crudo (#349) ────────────
+      //
+      // Esta línea decía `String(v)` para todo lo que no fuera un número, y
+      // eso es lo que puso `casilla3` en un botón delante de un niño de cuatro
+      // años. La forma del defecto merece nombre: **un valor interno con
+      // conversión automática a texto sale a pantalla sin que nadie escriba
+      // «pinta el identificador»**. `String()` no falla nunca; solo dice algo
+      // que no era para leerse.
+      //
+      // Ahora un valor de cadena solo puede presentarse por su `dibujo`, que
+      // el ítem declara y `validarItem` exige. El `texto` que sale de aquí es
+      // el NOMBRE ACCESIBLE —autorado en los siete locales—, no el rótulo
+      // visible: la pantalla dibuja el glifo.
+      opciones: unicas.map((v) => {
+        if (typeof v === "number") return { valor: v, texto: formatear(v, locale) };
+        const dib = item.dibujos?.[String(v)];
+        if (!dib) {
+          // No debería llegar aquí: `validarItem` bloquea el ítem antes. Si
+          // llega, se sirve el valor y se acepta que es feo — negarle el ítem
+          // a alguien que está jugando es peor (línea roja #4).
+          return { valor: v, texto: String(v) };
+        }
+        const nombre = (textos as Record<string, unknown>)[dib.clave];
+        return {
+          valor: v,
+          texto: typeof nombre === "string" ? nombre : dib.clave,
+          dibujo: {
+            glifo: dib.glifo,
+            cuantos: dib.cuantos ?? 1,
+            grande: dib.grande === true,
+          },
+        };
+      }),
     };
   }
 

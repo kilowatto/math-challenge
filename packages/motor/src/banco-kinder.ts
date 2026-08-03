@@ -24,7 +24,50 @@
  * reales cometen, así que **todo esto pasa por revisión humana antes de F5**.
  */
 
-import type { Item, Formato, Proposito, Variacion } from "./item.ts";
+import type { Item, Formato, Proposito, Variacion, OpcionDibujada } from "./item.ts";
+
+/**
+ * ─── Los glifos viajan con el ítem, y por qué eso no es un detalle ─────────
+ *
+ * Hasta el 2026-08-02 la pantalla dibujaba **un pato, siempre**: el literal
+ * `"🦆"` estaba escrito en cinco sitios de `Pantalla.astro`. Como el banco
+ * elige entre patos, estrellas y piedras, **dos de cada tres ítems de contar
+ * pedían una cosa y enseñaban otra** (#347): «Toca cada piedrita para
+ * contarlas» sobre una fila de patos.
+ *
+ * Para quien está aprendiendo la correspondencia uno a uno a los cuatro años,
+ * eso no es un desajuste estético: es la tarea rota. Contar exige saber qué se
+ * cuenta.
+ *
+ * Y había un segundo caso, peor porque era silencioso: la pantalla tenía su
+ * propia lista de figuras `["●","▲","■","★"]` mientras el banco tenía
+ * `["circulo","cuadrado","triangulo","rectangulo"]`. **Distinto orden.** Un
+ * ítem autorado como «tres cuadrados y un triángulo» se dibujaba con las dos
+ * figuras cambiadas, y ninguna prueba podía verlo porque las dos listas eran
+ * correctas por separado.
+ *
+ * Dos listas del mismo hecho siempre se separan. La única forma de que no pase
+ * es que haya una, y que viaje con el ítem.
+ */
+const GLIFO_DE_FORMA: Record<string, string> = {
+  circulo: "●",
+  cuadrado: "■",
+  triangulo: "▲",
+  rectangulo: "▬",
+};
+
+/** Los objetos que se cuentan, en el mismo orden que `COSAS_CONTAR`. */
+const GLIFOS_CONTAR = ["🦆", "⭐", "🪨"] as const;
+
+/**
+ * Los objetos del destello, en el mismo orden que `COSAS_FLASH`.
+ *
+ * El primero es cadena vacía a propósito: «puntos» se dibuja con el círculo de
+ * la hoja de estilo, que es una forma geométrica y no un emoji. Un emoji de
+ * círculo cambia de aspecto en cada plataforma, y subitizar depende de que los
+ * puntos se vean iguales entre sí.
+ */
+const GLIFOS_FLASH = ["", "⭐", "🦆"] as const;
 
 /** Las 14 habilidades de kinder (plan §9). */
 export const HABILIDADES_KINDER = {
@@ -173,7 +216,14 @@ const contar = (habilidad: "K03" | "K04", tope: number, nivel: number): Plantill
       habilidad,
       nivel,
       formato: "toca_para_contar",
-      enunciado: { clave: COSAS_CONTAR[cosa] ?? "k.contar.patos", vars: { n } },
+      // `glifo` va en las variables del enunciado y no en un campo aparte
+      // porque es exactamente eso: la cosa que el enunciado nombra. La
+      // plantilla del locale no lo usa, y la pantalla sí — igual que
+      // `disposicion` en el destello (#347).
+      enunciado: {
+        clave: COSAS_CONTAR[cosa] ?? "k.contar.patos",
+        vars: { n, glifo: GLIFOS_CONTAR[cosa] ?? GLIFOS_CONTAR[0] },
+      },
       respuesta: { valor: n, tol: 0 },
       errores: [
         { valor: n - 1, causa: "error.se_salto_uno" },
@@ -250,7 +300,18 @@ const subitizar = (habilidad: "K01" | "K02", desde: number, hasta: number): Plan
       // El NOMBRE de la disposición, no su índice: es lo que el cliente pone en
       // `data-disposicion` para elegir la retícula. Un índice ahí obligaría a
       // repetir la lista de nombres en el cliente, y dos listas se separan.
-      enunciado: { clave, vars: { n, disposicion: DISPOSICIONES[disp] ?? "linea" } },
+      // `glifo` vacío significa «el punto de la hoja de estilo». Sin este
+      // campo, «¿Cuántas estrellas viste?» destellaba puntos y «¿Cuántos
+      // patitos viste?» también: dos de cada tres destellos enseñaban algo que
+      // el enunciado no nombraba (#347).
+      enunciado: {
+        clave,
+        vars: {
+          n,
+          disposicion: DISPOSICIONES[disp] ?? "linea",
+          glifo: GLIFOS_FLASH[cosa] ?? "",
+        },
+      },
       respuesta: { valor: n, tol: 0 },
       errores: [
         { valor: n - 1, causa: "error.subestimo" },
@@ -363,11 +424,22 @@ export const K07: Plantilla = {
       habilidad: "K07",
       nivel: 1,
       formato: "toca_la_respuesta",
-      enunciado: { clave: "k.comparar.grupos", vars: { izq, der } },
+      enunciado: { clave: "k.comparar.grupos", vars: { izq, der, glifo: "🦆" } },
       respuesta: { valor: ladoCorrecto, tol: 0 },
       errores: [
         { valor: ladoCorrecto === "izq" ? "der" : "izq", causa: "error.eligio_el_menor" },
       ],
+      // Lo que se toca es **el montón**, no la palabra «izquierda».
+      //
+      // Sin esto, `presentarItem` no tenía más que el valor para poner en el
+      // botón, y el botón decía `izq` — la abreviatura española del código,
+      // igual en alemán y en francés. Es el mismo fallo de #349 en otra
+      // habilidad, y estaba a la vista desde antes: la respuesta se decidió
+      // que fuera un lado y no un número justo para que se tocara el montón.
+      dibujos: {
+        izq: { clave: "lado.izq", glifo: "🦆", cuantos: izq },
+        der: { clave: "lado.der", glifo: "🦆", cuantos: der },
+      },
       proposito: "clasificar",
       contexto: "dos montones de patos en el lago de Larry",
       variacion,
@@ -418,30 +490,64 @@ export const K13: Plantilla = {
   formato: "cual_sobra",
   nivel: 1,
   proposito: "clasificar",
-  generar({ familia, intruso, grande }, variacion) {
+  generar({ familia, intruso, donde, grande }, variacion) {
     const f = FORMAS[familia];
     const i = FORMAS[intruso];
     // `grande` marca cuál de las cuatro casillas se dibuja más grande. Cuando
     // cae sobre una de la familia, esa casilla es una segunda respuesta
     // defendible: sobra por tamaño en vez de por forma.
-    const laGrandeEsDeLaFamilia = grande !== 3;
+    const laGrandeEsDeLaFamilia = grande !== donde;
+
+    // ── Las cuatro casillas se dibujan, y las cuatro se pueden tocar ────────
+    //
+    // Antes solo TRES llegaban a la pantalla —la correcta y dos distractores—
+    // y llegaban como los rótulos `casilla3`, `casilla0` y `casilla1` (#349).
+    // Ahora la opción ES la figura: las cuatro casillas son las cuatro
+    // opciones, en el orden en que se dibujan, y no hay nada que leer.
+    //
+    // Que sean cuatro y no tres importa por sí solo. Con el intruso siempre en
+    // la casilla 3 y solo tres opciones servidas, la que faltaba **nunca era
+    // la buena**: el ítem filtraba su propia respuesta.
+    const dibujos: Record<string, OpcionDibujada> = {};
+    for (let casilla = 0; casilla < 4; casilla++) {
+      const forma = casilla === donde ? i : f;
+      dibujos[`casilla${casilla}`] = {
+        clave: `forma.${forma}`,
+        glifo: GLIFO_DE_FORMA[forma] ?? "●",
+        grande: casilla === grande,
+      };
+    }
+
     return {
-      id: id("K13", { familia, intruso, grande }),
+      id: id("K13", { familia, intruso, donde, grande }),
       habilidad: "K13",
       nivel: 1,
       formato: "cual_sobra",
-      enunciado: { clave: "k.formas.cual_sobra", vars: { familia, intruso, grande } },
-      // El intruso está siempre en la casilla 3; `grande` decide qué casilla se
-      // dibuja mayor, así que la posición del intruso no predice nada por sí
-      // sola — lo que predice es la FORMA, que es lo que se quiere enseñar.
-      respuesta: { valor: "casilla3", tol: 0 },
+      enunciado: { clave: "k.formas.cual_sobra", vars: { familia, intruso, donde, grande } },
+      // ── El intruso NO está siempre al final ───────────────────────────────
+      //
+      // Estaba: la respuesta era `casilla3` en los 40 ítems de la habilidad, y
+      // el comentario de esta línea decía que la posición «no predice nada»
+      // porque `grande` variaba. Eso es falso y es exactamente el fallo que ya
+      // se cometió una vez en K07 —el montón mayor siempre a la derecha— y que
+      // está escrito en su encabezado como advertencia.
+      //
+      // Nadie lo veía porque las opciones que llegaban a la pantalla eran
+      // ilegibles: un defecto tapaba al otro. Al hacer tocables las cuatro
+      // figuras, «toca siempre la última» habría acertado el 100% sin mirar.
+      respuesta: { valor: `casilla${donde}`, tol: 0 },
       tambienCorrectas: laGrandeEsDeLaFamilia
         ? [{ valor: `casilla${grande}`, razon: "razon.sobra_por_tamano" }]
         : undefined,
-      errores: [
-        { valor: "casilla0", causa: "error.eligio_al_azar" },
-        { valor: "casilla1", causa: "error.eligio_al_azar" },
-      ].filter((e) => e.valor !== `casilla${grande}` || !laGrandeEsDeLaFamilia),
+      // Las TRES de la familia, no dos. La tercera existía en el dibujo y no
+      // en las opciones, así que tocarla salía como «respuesta inesperada» —la
+      // señal que `mc-40` reserva para un `errores` incompleto— en un ítem
+      // cuyo `errores` estaba completo salvo por esta omisión.
+      errores: [0, 1, 2, 3]
+        .filter((casilla) => casilla !== donde)
+        .map((casilla) => ({ valor: `casilla${casilla}`, causa: "error.eligio_al_azar" }))
+        .filter((e) => !(laGrandeEsDeLaFamilia && e.valor === `casilla${grande}`)),
+      dibujos,
       proposito: "clasificar",
       contexto: `tres ${f}s y un ${i} en la sabana`,
       variacion,
@@ -457,20 +563,27 @@ export const K13: Plantilla = {
         // falso. Lo señaló la crítica adversarial del plan de F5.
         const par = [FORMAS[familia], FORMAS[intruso]];
         if (par.includes("cuadrado") && par.includes("rectangulo")) continue;
-        for (let grande = 0; grande < 4; grande++) {
-          out.push({
-            params: { familia, intruso, grande },
-            variacion: {
-              varia:
-                grande === 3
-                  ? "el intruso es además el más grande"
-                  : `la casilla ${grande} se dibuja más grande y es de la familia`,
-              constante: `tres ${FORMAS[familia]}s y un ${FORMAS[intruso]}`,
-              por_que:
-                "separar el tamaño de la forma enseña que la categoría no es lo que más salta " +
-                "a la vista, y da una segunda respuesta defendible (D-048)",
-            },
-          });
+        // `donde` es la casilla del intruso, y recorre las cuatro. Sin este
+        // bucle la respuesta era `casilla3` en toda la habilidad, y con las
+        // cuatro figuras ya tocables eso se acierta sin mirar la pantalla —
+        // que es el fallo que K07 ya cometió y dejó escrito.
+        for (let donde = 0; donde < 4; donde++) {
+          for (let grande = 0; grande < 4; grande++) {
+            out.push({
+              params: { familia, intruso, donde, grande },
+              variacion: {
+                varia:
+                  grande === donde
+                    ? `el intruso está en la casilla ${donde} y es además el más grande`
+                    : `el intruso está en la casilla ${donde}, y el más grande es de la familia`,
+                constante: `tres ${FORMAS[familia]}s y un ${FORMAS[intruso]}`,
+                por_que:
+                  "separar el tamaño de la forma enseña que la categoría no es lo que más salta " +
+                  "a la vista, y da una segunda respuesta defendible (D-048); mover el intruso " +
+                  "impide que la posición sustituya a la clasificación",
+              },
+            });
+          }
         }
       }
     }
@@ -503,7 +616,10 @@ export const K05: Plantilla = {
       habilidad: "K05",
       nivel: 1,
       formato: "toca_la_respuesta",
-      enunciado: { clave: "k.unoauno.gorros", vars: { patos, gorros } },
+      enunciado: {
+        clave: "k.unoauno.gorros",
+        vars: { patos, gorros, glifo: "🦆", glifoB: "🎩" },
+      },
       respuesta: { valor: sobran, tol: 0 },
       errores: [
         { valor: patos + gorros, causa: "error.conto_los_dos_grupos" },
@@ -726,6 +842,27 @@ export const K14: Plantilla = {
     // alternan» de «veo que hay un grupo que vuelve», que es lo que un patrón
     // es de verdad.
     const sigue = (primero + largo) % ciclo;
+
+    // ── La respuesta es la FIGURA, no su índice (#349) ─────────────────────
+    //
+    // Antes la respuesta era el número `0`, `1` o `2`, y `presentarItem` lo
+    // escribía tal cual: una fila de figuras alternándose y debajo tres
+    // botones que decían «0», «1», «2». Nada en la pantalla decía qué figura
+    // era el 0. Peor que ilegible: **parece contestable** —son números, y todo
+    // el resto del banco pregunta números— así que quien juega contesta un
+    // conteo a una pregunta que no lo era.
+    //
+    // Es el mismo defecto de `casilla3` con otra cara, y por eso se arregla
+    // igual: la opción es la cosa. `figura0` no se lee nunca; se dibuja.
+    const figurasDelCiclo = FORMAS.slice(0, ciclo);
+    const dibujos: Record<string, OpcionDibujada> = {};
+    for (let k = 0; k < ciclo; k++) {
+      dibujos[`figura${k}`] = {
+        clave: `forma.${figurasDelCiclo[k]}`,
+        glifo: GLIFO_DE_FORMA[figurasDelCiclo[k]] ?? "●",
+      };
+    }
+
     return {
       id: id("K14", { largo, primero, ciclo }),
       habilidad: "K14",
@@ -733,13 +870,22 @@ export const K14: Plantilla = {
       formato: "toca_la_respuesta",
       enunciado: {
         clave: ciclo === 2 ? "k.patron.sigue" : "k.patron.sigue_tres",
-        vars: { largo, primero, ciclo },
+        // `figuras` es el ciclo ya resuelto en glifos, en orden. La pantalla
+        // dibujaba la fila con SU propia lista de figuras y en otro orden que
+        // el banco; con esto hay una sola lista y es la del ítem.
+        vars: {
+          largo,
+          primero,
+          ciclo,
+          figuras: figurasDelCiclo.map((n) => GLIFO_DE_FORMA[n] ?? "●").join(""),
+        },
       },
-      respuesta: { valor: sigue, tol: 0 },
+      respuesta: { valor: `figura${sigue}`, tol: 0 },
       errores: [
-        { valor: (sigue + ciclo - 1) % ciclo, causa: "error.repitio_el_ultimo" },
-        { valor: (sigue + 1) % ciclo, causa: "error.siguio_el_patron_al_reves" },
-      ].filter((e) => e.valor !== sigue),
+        { valor: `figura${(sigue + ciclo - 1) % ciclo}`, causa: "error.repitio_el_ultimo" },
+        { valor: `figura${(sigue + 1) % ciclo}`, causa: "error.siguio_el_patron_al_reves" },
+      ].filter((e) => e.valor !== `figura${sigue}`),
+      dibujos,
       proposito: "analizar",
       variacion,
     };

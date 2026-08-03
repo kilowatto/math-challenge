@@ -536,6 +536,15 @@ for (const prueba of [
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
 
+  // F7 #237, #242, #243 · D-040, D-081, D-106. El ALTA, el CABLE de puntos y
+  // la BAJA de la liga, contra SQLite de verdad (`node:sqlite`) con un DO de
+  // mentira que graba las llamadas. Lo que defiende tampoco rompe nada
+  // visible: un default por banda mal leído no da error — da un niño de
+  // KINDER en una liga sin que su padre lo activara; un adulto y un menor en
+  // la misma cohorte; un participante 31 sin cohorte jamás; un cierre semanal
+  // que lee ceros porque nadie escribió el espejo de D1. Las expectativas
+  // están escritas a mano (D-070), no importadas del módulo.
+  "apps/web/src/lib/liga-membresia.prueba.mjs",
 
 ]) {
   const r = spawnSync(

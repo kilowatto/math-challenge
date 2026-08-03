@@ -69,6 +69,7 @@ import {
   type Jugador,
   type Progreso,
 } from "../../lib/progreso";
+import { sumarPuntosDeLiga } from "../../lib/liga-membresia";
 import { limiteAlServir, limiteAlResponder } from "../../lib/limite-dia";
 import { registrarAvanceDeHoy } from "../../lib/misiones-dia";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
@@ -128,13 +129,14 @@ interface Ingest {
     acc: 0 | 1; causa: string | null; razonAlterna: string | null;
     inesperada: boolean; nivel: number; habilidad: string;
   }>;
-  recordAttempt(input: Record<string, unknown>): Promise<unknown>;
+  recordAttempt(input: Record<string, unknown>): Promise<{ puntos: number }>;
 }
 
 interface Env {
   INGEST: Ingest;
   SESSION_KV: KVNamespace;
   LEARNER_DO?: DurableObjectNamespace;
+  LEAGUE_DO?: DurableObjectNamespace;
   DB?: D1Database;
 }
 
@@ -485,28 +487,39 @@ async function recibirRespuesta(
   // vez que alguien vuelve a mirar el mismo ítem haría que el Elo del ítem
   // bajara por ser el ítem que invita a reintentar, que es lo contrario de lo
   // que ese número mide.
+  //
+  // Los `puntos` que devuelve —ya calculados por `calificar()` en la ingesta
+  // (F3, D-010)— se capturan para la liga (F7): son los puntos del tablero, y
+  // hasta hoy se descartaban.
+  let puntosCalificados: number | null = null;
   try {
-    if (!reintento) await env.INGEST.recordAttempt({
-      childProfileId,
-      itemId,
-      skillId: veredicto.habilidad,
-      correct: veredicto.acc,
-      level: veredicto.nivel,
-      // KINDER no se cronometra (D-024): se manda 0 y el motor de puntuación
-      // ni siquiera recibe el campo. Poner aquí un tiempo del cliente sería
-      // exactamente lo que F3 prohíbe.
-      responseTimeMs: 0,
-      themeBand: "KINDER",
-      locale,
-      authoredDifficulty: undefined,
-      itemEloBefore: dificultad,
-      itemEloAfter: dificultad,
-      learnerBefore: estado.habilidad,
-      learnerAfter: despues.habilidad,
-      kUsed: kUsado,
-      indexInSession: undefined,
-      selectionMode: "adaptativo",
-    });
+    if (!reintento) {
+      const telemetria = await env.INGEST.recordAttempt({
+        childProfileId,
+        itemId,
+        skillId: veredicto.habilidad,
+        correct: veredicto.acc,
+        level: veredicto.nivel,
+        // KINDER no se cronometra (D-024): se manda 0 y el motor de puntuación
+        // ni siquiera recibe el campo. Poner aquí un tiempo del cliente sería
+        // exactamente lo que F3 prohíbe.
+        responseTimeMs: 0,
+        themeBand: "KINDER",
+        locale,
+        authoredDifficulty: undefined,
+        itemEloBefore: dificultad,
+        itemEloAfter: dificultad,
+        learnerBefore: estado.habilidad,
+        learnerAfter: despues.habilidad,
+        kUsed: kUsado,
+        indexInSession: undefined,
+        selectionMode: "adaptativo",
+      });
+      puntosCalificados =
+        typeof telemetria?.puntos === "number" && Number.isFinite(telemetria.puntos)
+          ? telemetria.puntos
+          : null;
+    }
   } catch {
     // Silencio a propósito: la telemetría nunca interrumpe a un niño.
   }
@@ -536,7 +549,7 @@ async function recibirRespuesta(
   let limite: Awaited<ReturnType<typeof limiteAlResponder>> = null;
   if (!reintento) {
     const zona = await zonaDelHogar(env, quien);
-    progreso = await registrarItem(env, quien, {
+    const registro = await registrarItem(env, quien, {
       nivel: veredicto.nivel,
       acc: veredicto.acc,
       // F8 es quien produce el otro motivo (`docs/planes/f8-limite-pantalla.md`
@@ -547,6 +560,7 @@ async function recibirRespuesta(
       ahora: Date.now(),
       zona,
     });
+    progreso = registro?.progreso ?? null;
 
     /*
      * Las misiones del día (F7 · #211). Misma forma que la racha: el motor
@@ -565,6 +579,26 @@ async function recibirRespuesta(
       habilidad: veredicto.habilidad,
       ahora: Date.now(),
     });
+
+    /*
+     * La liga (F7 · #237, #242). Los puntos son los que ya calculó
+     * `calificar()` en la ingesta —capturados arriba de la respuesta de
+     * telemetría, que era quien los recibía y los descartaba—; el día local y
+     * si es día nuevo salen del registro de arriba (D-091), y la racha viaja
+     * ya calculada, de solo lectura (D-106). **Falla abierto**: si la liga no
+     * responde, se pierde la posición de la semana, nunca el juego. Solo
+     * cuando el intento CUENTA y hay registro: un reintento no suma, por la
+     * misma línea roja #8.
+     */
+    if (registro && puntosCalificados !== null) {
+      await sumarPuntosDeLiga(env, quien, {
+        puntos: puntosCalificados,
+        diaLocal: registro.diaLocal,
+        diaNuevo: registro.diaNuevo,
+        racha: registro.progreso.racha.actual,
+        ahora: Date.now(),
+      });
+    }
 
     /*
      * El límite de pantalla (F8 #270, #271, #273). Va DESPUÉS de la racha a

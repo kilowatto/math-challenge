@@ -312,6 +312,32 @@ const CASOS = [
   },
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Los duplicados de sincronización — el único auditor con la causa FUERA
+  //
+  // Aquí el caso de prueba no es inventado aunque se escriba a mano: el
+  // archivo que aparece es literalmente lo que iCloud Drive fabrica al perder
+  // un conflicto, con ese mismo nombre. Reproducirlo ES el fallo.
+  //
+  // El primero copia una PÁGINA, que es el caso caro: para Astro,
+  // `…/app/index 2.astro` es una ruta más y se despliega. El segundo es
+  // `wrangler 2.jsonc`, que es el que apareció de verdad el 2026-08-02.
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    auditor: "archivos-duplicados",
+    que: "una página fantasma dentro de apps/web/src/ — una ruta de más, servida en producción",
+    archivo: "apps/web/src/pages/[locale]/app/index 2.astro",
+    contenido: "---\nconst locale = 'en';\n---\n<p>copia perdedora de un conflicto de sincronización</p>\n",
+    espera: "duplicado de sincronización",
+  },
+  {
+    auditor: "archivos-duplicados",
+    que: "una segunda configuración de despliegue en la raíz",
+    archivo: "wrangler 2.jsonc",
+    contenido: '{ "name": "math-challenge-web-copia-perdedora" }\n',
+    espera: "la raíz del repositorio",
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Los cuatro de #341, y por qué casi todos son de DEGRADACIÓN
   //
   // D-070: «el control negativo no basta si el caso de prueba se escribe a

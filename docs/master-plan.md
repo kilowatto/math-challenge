@@ -526,12 +526,18 @@ audiencia. Si sale ahora, la app aterriza sobre público ya formado.
 | **F5b · Franja adulta** | ~150 ítems N8-N10, **autorados una vez y renderizados en 7 notaciones**. Sin Sabana, sin modo historia, sin curaduría por serie (D-034) | esquema de ítem (§9) · en paralelo con F5 |
 | **F6 · Larry Profe** | Explicación pregenerada al cerrar el reto + Workers AI en vivo con ruteo por banda y tope de gasto (D-035), voz en los siete locales | F3, F5 |
 | **F7 · Juego** | XP, rachas con red, misiones, mapa, ligas de ~30, tablero con alias generados | F4 |
-| **F8 · Padres** | Panel con diagnóstico, límite de pantalla con corte suave, reportes — todo gratis, sin Stripe (D-085) | F2 |
+| **F8 · Padres** | Panel con diagnóstico, límite de pantalla con corte suave, reportes — todo gratis, sin Stripe (D-085) | F2, F7 *(corregido 2026-08-03: la tabla decía solo F2; el panel lee racha, XP, liga y cosméticos de F7 — ver nota en §13.3)* |
 | **F9 · Grupos infantiles** | Salón del maestro y club de papás sobre la misma tabla `grupo_infantil`: código, aprobación del padre, tablero, bitácora. Sin chat, en ninguna dirección (D-027) | F2, F7 |
 | **F10 · Clubs de adultos** | `club_adulto`, retos con ventana de tiempo, las tres formas de prenda, y Larry moderando el texto libre a prueba de fallos (D-028, D-029) | F2, F7, **F5b** |
 | **F11 · Cierre** | Anti-trampa tier 0-1, accesibilidad auditada, revisión legal con abogado, offline completo, interfaz adaptativa terminada en las cuatro plataformas | todas |
 
 ### 13.3 Cuatro cosas que la tabla no dice sola
+
+> **Corrección (2026-08-03).** La fila de F8 declaraba «Depende de: F2». En la
+> práctica F8 depende también de **F7**: el panel lee `child_streak`,
+> `xp_totals`, `league_membership` y los cosméticos, y el límite de pantalla
+> comparte el día efectivo con la racha (`limite-pantalla.ts` reexporta
+> `diaEfectivo` de `racha.ts`). La celda ya lo refleja.
 
 **F0 y F1 van primero por una razón, no por burocracia.** Construir 35 auditores
 después del código es reajustar; construirlos antes es que el código nazca

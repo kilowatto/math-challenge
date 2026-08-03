@@ -914,3 +914,68 @@ minutos. El primero hace falta porque `bedtime_local` dice dónde empieza la
 noche y **ninguna decisión dice dónde termina**; el segundo recorta el
 checkpoint de un aparato que se durmió con la sesión abierta, para que cerrar la
 tapa no le cueste minutos al niño.
+
+---
+
+## 24. F9 — lo que la segunda pasada dejó abierto (2026-08-03)
+
+Registrado tras reescribir `docs/planes/f9-grupos-infantiles.md`. Las 12
+preguntas de diseño se cerraron en decisiones D-107 a D-116 (escritas
+primero como D-093 a D-102 y renumeradas tras el cierre de F7, que tomó
+D-103 a D-106 en una sesión paralela); esto es lo que NO se cerró.
+
+### 24.1 La foto del dueño del grupo no existe en el esquema real
+
+El plan de F2 diseñó `group_owner_identity` con `full_name`,
+`school_name`, `photo_r2_key`, `revoked_at` y `revoked_reason`; la
+migración `0005` real solo tiene `assurance`, `phone_verified_at` y
+`declared_context`. La tarjeta de identidad de F9 se diseñó sin foto por
+esto. **Pregunta:** ¿la foto del maestro (que D-011 menciona) entra como
+migración + superficie de subida aparte, o se enmienda D-011 para
+quitarla?
+
+### 24.2 `contextual_marks` no tiene lector, y `no-chat` no existe en su CHECK
+
+La migración `0003` real creó `contextual_marks` con cinco códigos
+(`PRIMER_PERFIL`, `PRIMER_RETO`, `LIMITE_PANTALLA`, `TABLERO_OPTIN`,
+`SEGUNDO_DISPOSITIVO`) — no el `onboarding_marks` con `no-chat` que el
+plan de F2 diseñó. Además ningún código de la app hace
+`SELECT … FROM contextual_marks`: las marcas se escriben y nunca se
+leen, así que «se muestra una vez» no está implementado. F9 dice «sin
+chat» en la propia pantalla de éxito de creación del grupo en vez de
+disparar una marca. **Pregunta:** ¿se construye el lector de marcas y se
+amplía el CHECK (reconstrucción de tabla), o se retira el mecanismo de
+marcas como camino y cada fase lo dice en contexto como hizo F9?
+
+### 24.3 La fuente del chip «activo esta semana» del roster
+
+`docs/planes/f9-grupos-infantiles.md` §6 lo deja por decidir en la issue
+#383: `league_membership.active_days` (solo existe si el niño está en
+liga) vs `screen_time_daily_usage` (existe para todo niño con límite
+configurado). Nunca `last_seen` (D-081). Recomendación:
+`screen_time_daily_usage`.
+
+### 24.4 El `ALTER` del `CHECK` de `assurance` contra migration-safety
+
+F9 necesita agregar `school_verified` al dominio de
+`group_owner_identity.assurance`. En SQLite eso es reconstrucción de
+tabla; `audits/migration-safety.mjs` puede exigir marcador. Se decide
+contra el auditor real en la issue #380, degradando primero (D-070).
+
+### 24.5 Los números de migración de F8 y F9 chocaban si no se repartían
+
+**RESUELTA (2026-08-03):** el dueño confirmó el reparto — `0013` = F8
+panel (#278), `0014` = F8 reportes (#287), `0015` = F9 grupos (#380),
+`0016` = F10 clubs (nueva). Los planes quedaron con su número.
+
+### 24.6 El checkout se borró y se recreó en medio de la sesión
+
+El 2026-08-03 el directorio del repo desapareció durante ~1 hora con
+trabajo no commiteado dentro, y reapareció sincronizado con
+`origin/main` — el trabajo local se perdió y hubo que re-aplicarlo.
+Además, la sesión paralela de cierre de F7 escribió D-103 a D-106
+mientras esta escribía las suyas: la colisión de números se resolvió
+renumerando a D-107 en adelante. **Pregunta:** ¿hace falta una regla de
+que ninguna sesión haga limpieza de worktrees/directorios mientras haya
+ramas con trabajo no commiteado, o basta con la regla de commitear al
+final de cada encargo?

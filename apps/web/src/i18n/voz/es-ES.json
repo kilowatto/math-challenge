@@ -1,0 +1,28 @@
+{
+  "_nota": "Hablado, no escrito. Coincide con es-MX hasta el 25 y deja de coincidir en cuanto entra la escala larga y el separador decimal (mc-34). Dos archivos desde hoy, no el día que duela.",
+  "numeros": {
+    "0": "cero",
+    "1": "uno",
+    "2": "dos",
+    "3": "tres",
+    "4": "cuatro",
+    "5": "cinco",
+    "6": "seis",
+    "7": "siete",
+    "8": "ocho",
+    "9": "nueve",
+    "10": "diez",
+    "11": "once",
+    "12": "doce",
+    "13": "trece",
+    "14": "catorce",
+    "15": "quince",
+    "16": "dieciséis",
+    "17": "diecisiete",
+    "18": "dieciocho",
+    "19": "diecinueve",
+    "20": "veinte",
+    "21": "veintiuno",
+    "25": "veinticinco"
+  }
+}

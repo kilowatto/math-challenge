@@ -942,6 +942,56 @@ const CASOS = [
       ),
     espera: "fallar CERRADO",
   },
+
+  // ─── F7 frente A: el cable entre los motores y una persona ───────────────
+  //
+  // Los cuatro auditores de racha y XP miraban el MOTOR, y el motor estaba
+  // perfecto: escrito, probado y sin un solo llamador. Los tres casos de abajo
+  // degradan el archivo REAL que cierra ese hueco —`lib/progreso.ts`— porque un
+  // archivo inventado solo probaría que el auditor sabe leer un archivo
+  // inventado (D-070).
+  {
+    // El bug de #311 otra vez, en F7. Si `registrarDia` deja de llamarse, no
+    // hay error, no hay pantalla rota y no hay auditor rojo: hay una tabla
+    // `child_streak` vacía, y se descubre semanas después por un padre.
+    auditor: "funcion-sin-llamar",
+    que: "el motor de racha vuelve a quedarse sin ningún llamador",
+    archivo: "apps/web/src/lib/progreso.ts",
+    parche: (t) =>
+      t.replace(
+        "    const conDia = registrarDia(antes, hoy, entrada.motivo);",
+        "    const conDia = antes;",
+      ),
+    espera: "registrarDia",
+  },
+  {
+    // La línea roja #6 escrita como una columna. Nadie escribe `venderEscudo()`;
+    // alguien añade «un campo que hace falta» al lado del banco de escudos, y
+    // `mc-16` documenta el producto donde eso ya pasó.
+    auditor: "racha-nunca-se-vende",
+    que: "un precio a una línea del banco de escudos en el cable de la racha",
+    archivo: "apps/web/src/lib/progreso.ts",
+    parche: (t) =>
+      t.replace(
+        "  shields_available: number;\n  shields_earned_total: number;",
+        "  shields_available: number;\n  precio_del_escudo: number;\n  shields_earned_total: number;",
+      ),
+    espera: "línea roja #6",
+  },
+  {
+    // #225 y D-055. En KINDER los dos ejes coinciden por construcción, así que
+    // mezclarlos NO se vería hasta que hubiera filas en producción calculadas
+    // con la fórmula equivocada — que es cuando ya no hay dónde separarlos.
+    auditor: "motor-xp",
+    que: "el XP acumulado se suma con los puntos del tablero",
+    archivo: "apps/web/src/lib/progreso.ts",
+    parche: (t) =>
+      t.replace(
+        "    const total = (filaXp?.total_xp ?? 0) + ganado;",
+        "    const total = filaXp.total_xp + fila.total_score;",
+      ),
+    espera: "dos monedas",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

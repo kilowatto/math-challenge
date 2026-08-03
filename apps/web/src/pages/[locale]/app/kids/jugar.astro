@@ -95,11 +95,24 @@ const texto = (clave: string, respaldo: string) =>
 
 const rotulos = {
   bien: texto("juego.bien", "That's it!"),
-  otra: texto("juego.otra", "Not this time. Look again."),
+  // «Míralo otra vez» asumía que hay un estímulo en pantalla, y en los ítems
+  // sin dibujo le pedía a un niño que mirara algo que no existe (#348 §3).
+  otra: texto("juego.otra", "Not this time. Have another go."),
   siguiente: texto("juego.siguiente", "Next"),
   salir: texto("juego.salir", "Done for now"),
   cargando: texto("juego.cargando", "Here it comes…"),
   mirar: texto("juego.mirar", "Look!"),
+  verlo: texto("juego.verlo", "I'm ready"),
+  otraVez: texto("juego.otraVez", "See it again"),
+  confirmar: texto("juego.confirmar", "Ready!"),
+  reintentar: texto("juego.reintentar", "Try it again"),
+  // `elige` no se pinta aquí: es texto para leer, y esta pantalla no enciende
+  // `mostrarContexto`. Va en los rótulos porque el componente es UNO — dos
+  // copias es como una se queda sin el arreglo de la otra.
+  elige: texto("juego.elige", "Tap one, then Ready."),
+  practicando: texto("juego.practicando", "You're practising: {habilidad}"),
+  llevas: texto("juego.llevas", "{n} so far"),
+  ubicando: texto("juego.ubicando", "Still working out where to start you."),
 };
 
 const rutaCaras = `/${locale}/app/kids/`;

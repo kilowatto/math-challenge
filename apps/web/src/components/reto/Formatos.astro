@@ -31,12 +31,28 @@ interface Props {
   opciones: string[];
   /** Cuántos objetos hay que contar o cuántas casillas tiene el marco. */
   cantidad?: number;
+  /**
+   * QUÉ se cuenta. El glifo llega de fuera y no se escribe aquí (#347).
+   *
+   * Estaba cableado a `🦆`, y el banco elige entre patos, estrellas y piedras:
+   * dos de cada tres ítems de contar pedían una cosa y enseñaban otra. En el
+   * reto real el glifo viaja con el ítem; aquí, que es una demostración sin
+   * banco, lo pone la página.
+   */
+  glifo?: string;
   /** Exposición del estímulo en ms. NO es un reloj: no puntúa ni se muestra. */
   flashMs?: number;
   etiquetaGrupo: string;
 }
 
-const { formato, opciones, cantidad = 10, flashMs = 500, etiquetaGrupo } = Astro.props;
+const {
+  formato,
+  opciones,
+  cantidad = 10,
+  glifo = "🦆",
+  flashMs = 500,
+  etiquetaGrupo,
+} = Astro.props;
 ---
 
 {formato === "toca_la_respuesta" && (
@@ -74,7 +90,7 @@ const { formato, opciones, cantidad = 10, flashMs = 500, etiquetaGrupo } = Astro
           aria-pressed="false"
           data-indice={i}
           aria-label={`${etiquetaGrupo}: ${i + 1}`}
-        >🦆</button>
+        >{glifo}</button>
       </li>
     ))}
   </ul>

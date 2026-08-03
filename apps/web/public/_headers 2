@@ -1,0 +1,57 @@
+# Cabeceras de seguridad y de caché. Issue #329 y #325.
+#
+# ─── Por qué este archivo y no el Worker ───────────────────────────────────
+#
+# Cloudflare aplica `_headers` a los ASSETS estáticos, que es de donde sale casi
+# todo este sitio (414 páginas prerrenderizadas). Ponerlo en el Worker obligaría
+# a que cada respuesta pasara por código, y las estáticas hoy no pasan.
+#
+# LO QUE ESTE ARCHIVO NO PUEDE HACER: las respuestas que SÍ genera el Worker
+# —`/app/**` y `/api/**`, que son SSR— no lo leen. Esas necesitan las mismas
+# cabeceras puestas en el código, y no están. Es un hueco conocido: la parte con
+# sesión y datos de menores es justo la que queda sin CSP.
+
+/*
+  # ─── CSP en modo OBSERVACIÓN ──────────────────────────────────────────────
+  #
+  # Decisión del dueño (2026-08-02): `Report-Only` primero, estricta cuando
+  # pasen días sin reportes. Una CSP mal puesta no degrada: rompe la página
+  # entera, y la primera señal sería el dueño viéndola rota.
+  #
+  # **El riesgo de este modo es quedarse en él para siempre.** Muchas CSP nunca
+  # pasan a bloquear porque nadie vuelve. Queda escrito aquí y en el issue #329.
+  #
+  # Por qué se puede aspirar a algo estricto: `live.mjs` verifica en cada
+  # despliegue que hay CERO peticiones a terceros. El único externo es Turnstile.
+  #
+  # `'unsafe-inline'` en script-src es real y hace falta: hay 11 scripts inline
+  # (detección de plataforma, service worker, el aviso de error, el bucle de
+  # juego). Quitarlo exige hashes o nonces por script, y con páginas estáticas
+  # los nonces no sirven — el hash sí, y es el siguiente paso.
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  # ─── HSTS SIN preload ─────────────────────────────────────────────────────
+  #
+  # Decisión del dueño: `includeSubDomains` sí, `preload` NO. Salir de la lista
+  # de precarga tarda meses y afecta a TODO `kilowatto.com`, incluidos otros
+  # proyectos que quizá no tengan HTTPS todavía. Protege a quien ya visitó; la
+  # primera visita de cada persona sigue expuesta, y eso es lo que se acepta.
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  # Nadie nos mete en un iframe. Duplica `frame-ancestors` a propósito: navegadores viejos no leen CSP.
+  X-Frame-Options: DENY
+  # Impide que el navegador adivine el tipo y ejecute como script algo que no lo es.
+  X-Content-Type-Options: nosniff
+  # La URL de una superficie de niño no debe viajar a ningún sitio externo.
+  Referrer-Policy: strict-origin-when-cross-origin
+  # ─── Línea roja #1, hecha cabecera ────────────────────────────────────────
+  #
+  # Nunca cámara, nunca micrófono, nunca biometría, nunca geolocalización. Esto
+  # no es defensa en profundidad: es la línea roja #1 expresada de forma que el
+  # navegador la haga cumplir aunque alguien escriba el código que la cruza.
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
+
+# Los assets con hash en el nombre no cambian nunca: su contenido ES su nombre (#325).
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable

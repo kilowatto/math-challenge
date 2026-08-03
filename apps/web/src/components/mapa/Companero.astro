@@ -1,0 +1,80 @@
+---
+/**
+ * El compañero del mapa — **Larry, con accesorios**. D-080, #235.
+ *
+ * ─── HUECO DE ARTE, marcado a propósito ────────────────────────────────────
+ *
+ * Aquí no hay una imagen y no es un olvido. CLAUDE.md § Imágenes: Recraft es la
+ * herramienta oficial y **la continuidad del avatar de Larry la mantiene el
+ * dueño**. Generar arte nuevo desde aquí es exactamente cómo se pierde esa
+ * continuidad — dos Larrys parecidos son peores que uno.
+ *
+ * Lo que sí queda hecho es el sitio: del tamaño correcto, con el marco
+ * punteado que dice «esto es un hueco» sin una palabra, y con el nombre
+ * accesible ya resuelto en los siete locales. Meter la imagen será sustituir
+ * este bloque por un `<picture>` con AVIF y respaldo WebP (`mc-47` §5), sin
+ * tocar el layout.
+ *
+ * **Las piezas que hacen falta están descritas en el PR**, no inventadas aquí.
+ *
+ * ─── Sin estado de vida, sin hambre, sin decaimiento ───────────────────────
+ *
+ * `mc-43` §6: en Tamagotchi el mecanismo de retención y el mecanismo de culpa
+ * son el mismo mecanismo. Este componente recibe `visible` y `accesorios` y
+ * nada más — no hay una propiedad de humor, ni de energía, ni de «hace cuánto
+ * que no vienes». Lo garantiza `packages/motor/src/companero.ts`, cuyo estado
+ * tiene exactamente dos claves, y lo vigila
+ * `audits/companero-sin-decaimiento.mjs`.
+ *
+ * ─── #257: Larry no comenta lo que Larry lleva puesto ──────────────────────
+ *
+ * Este componente **no habla**. No tiene una sola cadena de diálogo, no importa
+ * el tutor y no puede llamarlo. El texto que sale de aquí es el nombre
+ * accesible del hueco y el rótulo del interruptor — dos etiquetas de interfaz,
+ * ninguna en voz de Larry.
+ *
+ * `mc-43` implicación 10 explica por qué la frontera importa más ahora que el
+ * tutor y el compañero son la misma criatura: un bot que felicita tu sombrero
+ * es el mismo que puede juzgarlo, y un niño no distingue las dos cosas —
+ * distingue que lo están mirando.
+ */
+import { t, type Locale } from "../../i18n";
+
+interface Props {
+  locale: Locale;
+  /**
+   * Si se pinta. En SERIO/JR/PRO nace en `false` (#234) y lo enciende la propia
+   * persona; en las tres bandas de niño nace en `true`.
+   */
+  visible: boolean;
+  /**
+   * Ids de accesorios equipados, ya filtrados contra lo desbloqueado por
+   * `equipar()`. Se pintan como `data-` para que el arte los pueda usar el día
+   * que exista, y para que se vea en el DOM que son ids y no texto de nadie.
+   */
+  accesorios?: readonly string[];
+}
+
+const { locale, visible, accesorios = [] } = Astro.props;
+const m = t(locale);
+---
+
+{
+  visible && (
+    <span
+      class="companero"
+      role="img"
+      aria-label={m.mapaCompaneroNombre}
+      data-hueco-de-arte="larry"
+      data-accesorios={accesorios.join(" ")}
+    >
+      {/*
+        El glifo es un marcador de posición legible, no arte. Va con
+        `aria-hidden` porque el nombre accesible ya lo da el `aria-label` del
+        contenedor: sin esto, un lector de pantalla anuncia el emoji además del
+        nombre.
+      */}
+      <span aria-hidden="true">◍</span>
+    </span>
+  )
+}

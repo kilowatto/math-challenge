@@ -1,0 +1,98 @@
+---
+/**
+ * SERIO / JR / PRO — el tablero de cifras. #234.
+ *
+ * ─── Sin mapa espacial, y el compañero apagado ─────────────────────────────
+ *
+ * `mc-43` §8 para la banda adulta: *plain numeric mastery metrics, gamified
+ * skin optional and off by default*. No hay sendero, no hay árbol, no hay
+ * decoración. Un adulto que abre una herramienta de estudio y encuentra un
+ * rinoceronte saludándolo cierra la herramienta.
+ *
+ * El interruptor existe y es de un toque, del propio usuario, sin pasar por
+ * soporte ni por un tutor —no hay tutela en estas bandas—: es el criterio 2 de
+ * #234. Vive en `Mapa.astro`, que es quien conoce el destino del formulario.
+ *
+ * ─── Las cifras se formatean por LOCALE, no por idioma ─────────────────────
+ *
+ * Cuarto criterio de #234: `numeros.ts`/`MATH_CONVENTIONS`, nunca un
+ * formateador nuevo. No es cosmético — México es el único país hispano con
+ * **punto** decimal, y `pt-PT` y `pt-BR` no comparten escala numérica
+ * (`mc-34`). Un separador de millares escrito a mano exporta la convención de
+ * un país a los otros seis.
+ *
+ * ─── Lo que este tablero NO trae, y no es un olvido ────────────────────────
+ *
+ * La misión activa y la posición de liga que #234 menciona son de otros dos
+ * subsistemas de F7, en construcción en paralelo. Inventar aquí su forma es
+ * literalmente la contradicción que la crítica cruzada de F7 §0 ya cazó una vez
+ * —XP definido dos veces de forma incompatible—, así que se deja el hueco y se
+ * dice en el PR.
+ *
+ * ─── El orden de las filas no es un ranking de tus fracasos ────────────────
+ *
+ * Alfabético, no por dominio ascendente. Una lista que pone al principio lo
+ * que peor se te da es una lista de tus fallos ordenada por gravedad, y
+ * `mc-10` mide qué le hace la presión de rendimiento a las matemáticas. El
+ * orden lo fija `construirTablero()`, no esta plantilla.
+ */
+import { t, type Locale } from "../../i18n";
+import { formatear } from "../../../../../packages/motor/src/numeros.ts";
+import { CLAVE_DE_PERICIA, type Tablero } from "../../../../../packages/motor/src/mapa.ts";
+
+interface Props {
+  locale: Locale;
+  tablero: Tablero;
+  /**
+   * `true` mientras F4 no exponga `estadoDeHabilidades()`. Con esto puesto, un
+   * tablero sin filas significa «todavía no lo estoy midiendo» y NO «no has
+   * aprendido nada» — que es la diferencia que el criterio 3 de #231 pide y la
+   * razón de que no se pinten catorce barras en cero.
+   */
+  sinFuenteDeHabilidades: boolean;
+}
+
+const { locale, tablero, sinFuenteDeHabilidades } = Astro.props;
+const m = t(locale);
+
+const textoPericia = (p: keyof typeof CLAVE_DE_PERICIA): string =>
+  (m as Record<string, string>)[CLAVE_DE_PERICIA[p]];
+---
+
+<div class="tablero">
+  <div class="tablero__totales">
+    {/*
+      XP y racha se pintan tal cual llegan. El mapa no los calcula: son de
+      `xp_totals` (D-055) y `child_streak` (D-016/D-079), y recalcularlos aquí
+      sería la segunda fórmula que `motor-xp.mjs` existe para impedir.
+    */}
+    <p class="tablero__total">
+      <span class="tablero__cifra">{formatear(tablero.xp, locale)}</span>
+      <span class="tablero__etiqueta">{m.mapaXp}</span>
+    </p>
+    <p class="tablero__total">
+      <span class="tablero__cifra">{formatear(tablero.rachaDias, locale)}</span>
+      <span class="tablero__etiqueta">{m.mapaRacha}</span>
+    </p>
+  </div>
+
+  {
+    tablero.filas.length === 0 ? (
+      <p class="mapa__hueco">
+        {sinFuenteDeHabilidades ? m.mapaSinFuente : m.mapaSinHabilidades}
+      </p>
+    ) : (
+      <ul class="tablero__filas">
+        {tablero.filas.map((f) => (
+          <li class="tablero__fila">
+            <span class="arbol__nombre">{f.rotulo ?? f.habilidad}</span>
+            <span class="tablero__pericia">{textoPericia(f.pericia)}</span>
+            <span class="barra" style={`--relleno: ${Math.round(f.relleno * 100)}%`}>
+              <span class="barra__relleno"></span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</div>

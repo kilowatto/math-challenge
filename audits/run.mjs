@@ -240,6 +240,14 @@ for (const prueba of [
   "packages/motor/src/programador.prueba.mjs",
   "apps/web/src/lib/aprendiz.prueba.mjs",
   "packages/motor/src/comparacion.prueba.mjs",
+  // F6 #134 y #135. Se registran aquí y no en una lista aparte por lo que este
+  // mismo archivo dice tres veces: PENDIENTE no corre, y un guardián que espera
+  // su turno en una lista es un guardián que no vigila. Lo que defienden no
+  // rompe nada visible al romperse — que los dos regímenes de audio sigan
+  // separados (`mc-42` §3), y que los siete bloques de locale sigan siendo
+  // siete autorías y no una copiada seis veces (D-022).
+  "packages/tutor/src/prefijo.prueba.mjs",
+  "packages/tutor/src/voz.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

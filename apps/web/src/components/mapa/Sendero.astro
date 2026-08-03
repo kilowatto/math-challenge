@@ -1,0 +1,83 @@
+---
+/**
+ * KINDER — el sendero de la Sabana. #232, D-019.
+ *
+ * ─── Envoltura, no un mapa nuevo ───────────────────────────────────────────
+ *
+ * Los 14 lugares y sus ~30 piezas de arte son presupuesto cerrado de D-019/F5.
+ * F7 no autora ni un lugar ni una pieza: pinta el estado de los que ya existen.
+ * Primer criterio de #232, y por eso este archivo no encarga nada.
+ *
+ * ─── Ni un número. Ni una palabra que el niño tenga que leer ──────────────
+ *
+ * El usuario tiene cuatro años y **no lee** (D-019). Lo que distingue un lugar
+ * de otro aquí es relleno y borde, no texto.
+ *
+ * La garantía no vive en este archivo: `construirSendero()` devuelve un modelo
+ * de vista **sin un solo campo numérico** (`packages/motor/src/mapa.ts`), así
+ * que no hay un porcentaje que una plantilla pueda pintar por descuido. Es lo
+ * que `mapa.prueba.mjs` recorre a cualquier profundidad buscando un `number`.
+ *
+ * Lo que sí lleva texto es el **nombre accesible** de cada lugar: es para el
+ * lector de pantalla y para el adulto que mira por encima del hombro, no para
+ * el niño — y no contiene ninguna cifra, que es lo que
+ * `audits/mapa-sin-numero-de-nivel.mjs` comprueba.
+ *
+ * ─── Un lugar sin visitar no es un fracaso ─────────────────────────────────
+ *
+ * Nada se tacha, nada se apaga a gris muerto, y perder una racha no regresa el
+ * sendero (`mc-43` implicación 7: *streak loss never erases or visually
+ * regresses the progress map*). Un lugar por visitar es un círculo vacío.
+ *
+ * ─── D-073: kinder está APLAZADO ───────────────────────────────────────────
+ *
+ * Esta pieza está construida y **no está en el camino de nadie**: `Mapa.astro`
+ * la pinta solo cuando la forma es `sendero`, y hoy ninguna ruta del producto
+ * pide esa forma. Se construye ahora porque el contrato de lectura es el mismo
+ * para las tres formas y separarlo habría significado escribirlo dos veces.
+ */
+import { t, type Locale } from "../../i18n";
+import Companero from "./Companero.astro";
+import type { Sendero } from "../../../../../packages/motor/src/mapa.ts";
+
+interface Props {
+  locale: Locale;
+  sendero: Sendero;
+  /** Si el compañero se pinta. En KINDER Larry camina: es el mapa (D-080). */
+  companeroVisible: boolean;
+  accesorios?: readonly string[];
+}
+
+const { locale, sendero, companeroVisible, accesorios = [] } = Astro.props;
+const m = t(locale);
+
+/**
+ * El nombre accesible de cada estado. Tres cadenas, ninguna con una cifra.
+ *
+ * Se resuelve aquí y no en el motor porque el motor no habla: `mapa.ts` guarda
+ * claves y estados, y el texto vive en los siete locales (misma regla que
+ * `cosmeticos.ts` con las claves i18n).
+ */
+const NOMBRE: Record<string, string> = {
+  terminado: m.mapaLugarTerminado,
+  en_curso: m.mapaLugarEnCurso,
+  por_visitar: m.mapaLugarPorVisitar,
+};
+---
+
+<ol class="sendero" aria-label={m.mapaSenderoNombre}>
+  {
+    sendero.lugares.map((l) => (
+      <li
+        class="sendero__lugar"
+        data-estado={l.estado}
+        data-aqui={l.aqui ? "si" : "no"}
+        aria-label={l.aqui ? `${NOMBRE[l.estado]} — ${m.mapaAqui}` : NOMBRE[l.estado]}
+      >
+        {l.aqui && (
+          <Companero locale={locale} visible={companeroVisible} accesorios={accesorios} />
+        )}
+      </li>
+    ))
+  }
+</ol>

@@ -1,0 +1,308 @@
+/* El mapa de progreso — F7, issues #231-#235.
+ *
+ * Hoja propia y no `reto.css`: son dos superficies distintas y hay tres frentes
+ * de F7 tocando el repo a la vez. `reto.css` es la pantalla del reto.
+ *
+ * ─── Solo tokens que EXISTEN ───────────────────────────────────────────────
+ *
+ * Un `var()` sin definir no cae a un valor por defecto: **invalida la
+ * declaración entera**, en silencio. Ya rompió la pantalla del reto dos veces.
+ * Todo lo que se usa aquí está en `tokens.css`:
+ *
+ *   --color-bg  --color-surface  --color-border  --color-text
+ *   --color-text-muted  --color-text-brand  --color-text-brand-warm
+ *   --color-accent  --color-accent-hover  --color-on-accent
+ *   --font-marca  --font-sistema  --weight-title  --weight-subtitle
+ *   --text-xs  --text-base  --text-lg  --text-xl  --text-2xl
+ *   --tap-min  --tap-primaria  --tap-kinder  --radius  --space  --measure
+ *
+ * Los `var(--x, y)` con respaldo que aparecen abajo NO son excepciones: son
+ * medidas propias del mapa que un contenedor puede querer redefinir, y todas
+ * traen su valor por defecto en el mismo `var()`.
+ *
+ * ─── El naranja de Ignia: 3.03:1 sobre blanco ──────────────────────────────
+ *
+ * Sirve para títulos grandes, botones y GRÁFICOS —el umbral de un gráfico es
+ * 3:1 y lo pasa por tres centésimas—, y no sirve para texto normal. Por eso el
+ * relleno de las barras y el sendero SÍ son `--color-accent`, y ningún texto
+ * pequeño de esta hoja lo es. `audits/brand-image.mjs` y `audits/contrast.mjs`
+ * lo verifican en cada commit.
+ */
+
+/* ─── El marco común a las tres formas ─────────────────────────────────────
+ *
+ * Lo único que comparten. `mc-43` §8 no describe un skin con tres pieles:
+ * describe tres productos, y el CSS lo refleja — abajo no hay una sola regla
+ * que valga para las tres a la vez salvo la caja exterior.
+ */
+.mapa {
+  max-inline-size: var(--measure, 46rem);
+  margin-inline: auto;
+}
+
+.mapa__lead {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+
+/* El hueco honesto: «todavía no estoy midiendo esto». No es un error ni un
+   cargando — es el stub declarado de #231, y se lee como lo que es. */
+.mapa__hueco {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+/* ─── KINDER · el sendero de la Sabana (#232) ──────────────────────────────
+ *
+ * Ni un número, ni una palabra que haya que leer: el usuario tiene cuatro años
+ * (D-019). Lo que distingue un lugar de otro es TAMAÑO y RELLENO, no texto —
+ * y el nombre accesible viaja en `aria-label`, para el lector de pantalla y
+ * para el adulto que mira por encima del hombro.
+ *
+ * El blanco táctil es `--tap-kinder` (88px): mc-20 lo midió como los 23.7 mm
+ * que dan 90% de acierto a los cuatro años. No es un mínimo generoso; es el
+ * tamaño con el que el dedo de un niño de cuatro acierta.
+ */
+.sendero {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space);
+}
+
+.sendero__lugar {
+  position: relative;
+  inline-size: var(--tap-kinder);
+  block-size: var(--tap-kinder);
+  border-radius: 50%;
+  border: 4px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* Visitado: relleno de marca. Es un gráfico (3:1), no texto. */
+.sendero__lugar[data-estado="terminado"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent-hover);
+}
+
+.sendero__lugar[data-estado="en_curso"] {
+  border-color: var(--color-accent);
+  border-style: dashed;
+}
+
+/*
+  Nunca se tacha, nunca se apaga a gris muerto lo ya conseguido.
+  `mc-43` implicación 7: perder una racha «never erases or visually regresses
+  the progress map». Un lugar por visitar es un círculo vacío, no un fracaso.
+*/
+.sendero__lugar[data-estado="por_visitar"] {
+  opacity: 1;
+}
+
+/* Dónde va Larry. El elemento del compañero se ancla al lugar marcado. */
+.sendero__lugar[data-aqui="si"] {
+  outline: 4px solid var(--color-text-brand);
+  outline-offset: 4px;
+}
+
+/* ─── PRIMARIA / SECUNDARIA · el árbol sin aristas (#233) ──────────────────
+ *
+ * Rejilla de nodos agrupados. **No hay ni una línea, flecha o candado** que
+ * insinúe un prerrequisito: la columna no existe en `skills` (F5 §4.8 bloqueo
+ * 10), y dibujar la flecha antes que el dato es prometer una funcionalidad sin
+ * nada detrás.
+ *
+ * El día que la columna exista, la arista entra como un `<svg>` posicionado
+ * sobre esta misma rejilla — sin tocar el layout, que es el cuarto criterio de
+ * #233.
+ */
+.arbol {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space) * 1.5);
+}
+
+.arbol__grupo {
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: var(--space);
+}
+
+/*
+  El grupo NO se titula con su número. D-017 y el criterio #100: el número de
+  nivel no se enseña a nadie, y `mc-10` mide qué le hace la presión de
+  rendimiento a las matemáticas. El modelo de vista ni siquiera lo trae
+  (`packages/motor/src/mapa.ts`), así que aquí no hay nada que ocultar.
+*/
+.arbol__rotulo {
+  font-family: var(--font-marca);
+  font-weight: var(--weight-subtitle);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  margin: 0 0 0.5rem;
+}
+
+.arbol__nodos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--space);
+}
+
+.arbol__nodo {
+  min-block-size: var(--tap-primaria);
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+}
+
+.arbol__nombre {
+  display: block;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* La pericia se dice con PALABRA, no con porcentaje: «vas empezando» informa,
+   «31%» califica. mc-17 §2 separa recompensa informativa de controladora, y la
+   misma distinción vale para el progreso. */
+.arbol__pericia,
+.tablero__pericia {
+  display: block;
+  color: var(--color-text-muted);
+  font-family: var(--font-sistema);
+  font-size: var(--text-xs);
+}
+
+/* ─── La barra de relleno, compartida por el árbol y el tablero ────────────
+ *
+ * Es un GRÁFICO: el umbral de contraste es 3:1 y el naranja de Ignia da 3.03:1
+ * sobre blanco. Aquí sí es su sitio.
+ */
+.barra {
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-border);
+  overflow: hidden;
+  margin-block-start: 0.35rem;
+}
+
+.barra__relleno {
+  block-size: 100%;
+  inline-size: var(--relleno, 0%);
+  background: var(--color-accent);
+}
+
+/* ─── SERIO / JR / PRO · el tablero de cifras (#234) ───────────────────────
+ *
+ * Sin mapa espacial y sin decoración. `mc-43` §8 para la banda adulta: *plain
+ * numeric mastery metrics, gamified skin optional and off by default*. Un
+ * adulto que abre una herramienta de estudio y encuentra un rinoceronte
+ * saludándolo cierra la herramienta.
+ */
+.tablero__totales {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+  margin-block-end: calc(var(--space) * 1.5);
+}
+
+.tablero__total {
+  flex: 1 1 8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  background: var(--color-surface);
+}
+
+.tablero__cifra {
+  display: block;
+  font-family: var(--font-marca);
+  font-weight: var(--weight-title);
+  font-size: var(--text-xl);
+  /* Cifra grande: `--color-text-brand-warm` da 4.58:1 en claro y sube en
+     oscuro. El naranja crudo (3.03:1) no se usa para números que se leen. */
+  color: var(--color-text-brand-warm);
+  line-height: 1.1;
+}
+
+.tablero__etiqueta {
+  display: block;
+  font-family: var(--font-sistema);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.tablero__filas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tablero__fila {
+  border-block-end: 1px solid var(--color-border);
+  padding-block-end: 0.6rem;
+}
+
+/* ─── El compañero (#235, D-080) ───────────────────────────────────────────
+ *
+ * HUECO DE ARTE MARCADO. La pieza de Larry no existe todavía y no se genera
+ * aquí: CLAUDE.md § Imágenes dice que Recraft es la herramienta oficial y que
+ * la continuidad del avatar la mantiene el dueño. Lo que hay es el sitio donde
+ * va, del tamaño correcto, para que meter la imagen sea sustituir un bloque y
+ * no rehacer el layout.
+ *
+ * Cuando llegue: AVIF con respaldo WebP (`<picture>`), porque el aparato de
+ * referencia es un Android de gama baja (`mc-47` §5).
+ */
+.companero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--companero-tam, 3rem);
+  block-size: var(--companero-tam, 3rem);
+  border-radius: 50%;
+  /* El punteado dice, sin una palabra, que esto es un hueco y no una decisión
+     de diseño. Se quita el día que entre la imagen. */
+  border: 2px dashed var(--color-accent);
+  background: var(--color-surface);
+  color: var(--color-text-brand-warm);
+  font-family: var(--font-sistema);
+  font-size: var(--text-xs);
+}
+
+/* En KINDER camina por el sendero, así que es del tamaño del lugar. */
+.sendero .companero {
+  --companero-tam: var(--tap-kinder);
+  position: absolute;
+  inset: 0;
+}
+
+/* El interruptor del adulto: un toque, sin pasar por nadie (criterio 2 de
+   #234). Es un control, así que habla en la voz del sistema (D-036). */
+.companero__interruptor {
+  min-block-size: var(--tap-primaria);
+  padding-inline: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sistema);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.companero__interruptor:hover {
+  border-color: var(--color-accent);
+}

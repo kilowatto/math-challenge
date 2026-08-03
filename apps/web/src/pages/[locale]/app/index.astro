@@ -260,6 +260,16 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
         <p class="muted">{m.practicarLead}</p>
         <p class="muted">{m.practicarAviso}</p>
         <a class="boton primario" href={`/${locale}/app/practicar/`}>{m.casaPracticarCta}</a>
+        {/*
+          El mapa de progreso del propio adulto (F7, #230-#234). No es la
+          pestaña «Progreso» —esa es F8 y es lo que un padre ve de sus hijos—:
+          es lo que TÚ ves de tu propio aprendizaje, y hasta ahora el adulto que
+          aprende solo (D-034) no tenía dónde mirar lo suyo.
+
+          Va aquí porque una página sin enlace es una página que no existe, y
+          porque «Practicar» ya es donde vive todo lo del adulto que juega solo.
+        */}
+        <a class="boton" href={`/${locale}/app/mapa/`}>{m.casaMapaCta}</a>
       </section>
     )}
 

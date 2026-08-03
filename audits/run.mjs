@@ -236,6 +236,25 @@ const ACTIVE = [
   // que hubiera filas en producción calculadas con la fórmula equivocada.
   ["motor-xp",                 "XP y puntos son dos monedas que no se cambian",   "D-055, D-025, #192, #194, #219, #225"],
   ["racha-lexico",             "la racha no habla de pérdida, prisa ni de nadie más", "#206, D-014, mc-17 §83"],
+
+  // ─── Los tres del mapa y el compañero (F7, #230-#235) ────────────────────
+  //
+  // Nacen VERDES, como los de F6 y los tres primeros de F7: el mapa se
+  // construyó con ellos delante. Lo que vigilan es que no se erosione.
+  //
+  // Los tres cuidan promesas que al romperse **no rompen nada visible**, que es
+  // el único tipo de promesa que hace falta vigilar con un programa:
+  //
+  //  · Una tabla de caché del mapa hace que el producto vaya MÁS RÁPIDO. El
+  //    precio —dos verdades sobre lo que un niño sabe— se cobra meses después.
+  //  · Un `nivel: e.nivel` de más compila, pasa la revisión de tipos, y pinta
+  //    «Nivel 3» delante de un niño de siete años (D-017, #100, mc-10).
+  //  · Un tercer campo en el compañero se propone en una reunión como «que
+  //    Larry se ponga contento cuando vuelves». Contento implica que puede no
+  //    estarlo, y ahí está Tamagotchi entero (mc-43 §6).
+  ["mapa-lectura-sin-tabla",   "el mapa lee de F4/F3; no tiene tabla propia",     "#231, D-017, D-019"],
+  ["mapa-sin-numero-de-nivel", "el número de nivel no se le enseña a nadie",      "D-017, #100, #232, mc-10"],
+  ["companero-sin-decaimiento","el compañero no tiene vida, hambre ni decaimiento","D-080, #235, #234, mc-43 §6"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -338,6 +357,13 @@ for (const prueba of [
   // describe se descubre roto por la factura.
   "packages/tutor/src/en-vivo.prueba.mjs",
   "packages/tutor/src/gasto.prueba.mjs",
+  // F7 #231-#235. Las dos miden AUSENCIAS, que es lo que no se ve leyendo el
+  // código: que el sendero de kinder no tenga un solo campo numérico del que
+  // una plantilla pueda sacar un porcentaje, que el número de nivel no salga
+  // del módulo, y que el estado del compañero tenga exactamente dos claves —
+  // así que cualquier tercera lo rompe, se llame como se llame.
+  "packages/motor/src/mapa.prueba.mjs",
+  "packages/motor/src/companero.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

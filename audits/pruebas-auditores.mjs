@@ -942,6 +942,97 @@ const CASOS = [
       ),
     espera: "fallar CERRADO",
   },
+
+  // ─── El mapa y el compañero (F7, #230-#235) ──────────────────────────────
+  //
+  // Los siete casos son de DEGRADACIÓN sobre archivos REALES (D-070). Ninguno
+  // es un archivo inventado a propósito: los tres auditores nacieron verdes
+  // porque el mapa se construyó con ellos delante, así que un caso escrito a
+  // mano solo probaría que el auditor sabe leer un archivo falso.
+  //
+  // Cada degradación es una que alguien haría de verdad, con buena intención.
+  {
+    // La tabla de caché. Es la degradación que suena a mejora: componer el mapa
+    // cuesta cuatro lecturas, «lo guardamos y ya». El precio son dos verdades
+    // sobre lo que un niño sabe, y se cobra meses después.
+    auditor: "mapa-lectura-sin-tabla",
+    que: "el mapa gana una tabla propia para cachear el progreso",
+    archivo: "migrations/0010_mapa_companero.sql",
+    parche: (t) =>
+      t + "\nCREATE TABLE map_progress (\n  id TEXT PRIMARY KEY,\n  skill_id TEXT NOT NULL,\n  fill REAL NOT NULL\n);\n",
+    espera: "no tiene tabla propia",
+  },
+  {
+    // Los cortes copiados a mano. Compila, pasa cualquier revisión, y se
+    // descubre el día que alguien mueva el corte en `serie.ts`.
+    auditor: "mapa-lectura-sin-tabla",
+    que: "los cortes de pericia se copian a mano en vez de reusar serie.ts",
+    archivo: "packages/motor/src/mapa.ts",
+    parche: (t) =>
+      t.replace(
+        "  const ejemplo = ejemploSegunPericia(skillState);\n  if (ejemplo === 1) return \"asomando\";\n  if (ejemplo === 0.5) return \"en_camino\";\n  return \"dominada\";",
+        "  if (skillState <= 0.2) return \"asomando\";\n  if (skillState <= 0.6) return \"en_camino\";\n  return \"dominada\";",
+      ),
+    espera: "0.2 o 0.6",
+  },
+  {
+    // El módulo del mapa aprende a escribir. Un solo INSERT y ya hay una
+    // segunda fuente de verdad del progreso.
+    auditor: "mapa-lectura-sin-tabla",
+    que: "el módulo del mapa escribe progreso en vez de solo leerlo",
+    archivo: "packages/motor/src/mapa.ts",
+    parche: (t) =>
+      t.replace(
+        "export const HABILIDADES_SIN_FUENTE = true;",
+        'export const SQL_GUARDAR_MAPA = "INSERT INTO map_progress (id) VALUES (?)";\nexport const HABILIDADES_SIN_FUENTE = true;',
+      ),
+    espera: "CAPA DE LECTURA",
+  },
+  {
+    // El nivel de vuelta en el modelo de vista. Es el descuido más barato del
+    // repo: una línea, compila, y pinta «Nivel 3» delante de un niño.
+    auditor: "mapa-sin-numero-de-nivel",
+    que: "el árbol devuelve el número de nivel junto al orden correlativo",
+    archivo: "packages/motor/src/mapa.ts",
+    parche: (t) => t.replace("    orden: i + 1,", "    orden: i + 1,\n    nivel,"),
+    espera: "criterio #100",
+  },
+  {
+    // Un porcentaje en el sendero de kinder. Suena útil —«así el padre ve cómo
+    // va»— y convierte un camino en una evaluación para alguien de cuatro años.
+    auditor: "mapa-sin-numero-de-nivel",
+    que: "el sendero de KINDER gana un campo numérico de progreso",
+    archivo: "packages/motor/src/mapa.ts",
+    parche: (t) =>
+      t.replace(
+        "    lugares.push({ lugar, estado, aqui });",
+        "    lugares.push({ lugar, estado, aqui, porcentaje: Math.round((i / orden.length) * 100) });",
+      ),
+    espera: "cuatro años",
+  },
+  {
+    // El medidor de humor, con el nombre más inocente posible. No dice
+    // «hambre»: dice `mood`, y por eso la comprobación principal es el CONTEO
+    // de claves y no una lista de palabras.
+    auditor: "companero-sin-decaimiento",
+    que: "el compañero gana un tercer campo de estado que puede decaer",
+    archivo: "packages/motor/src/companero.ts",
+    parche: (t) =>
+      t.replace(
+        "  return { visible: VISIBLE_AL_CREAR[tema], accesorios: [] };",
+        "  return { visible: VISIBLE_AL_CREAR[tema], accesorios: [], mood: 100 };",
+      ),
+    espera: "POR CONSTRUCCIÓN",
+  },
+  {
+    // El compañero encendido para el adulto. Nadie lo nota, y el adulto que
+    // abre una herramienta de estudio se encuentra un rinoceronte saludándolo.
+    auditor: "companero-sin-decaimiento",
+    que: "el compañero nace encendido en SERIO, contra el criterio 1 de #234",
+    archivo: "packages/motor/src/companero.ts",
+    parche: (t) => t.replace("  SERIO: false,\n  PRO: false,", "  SERIO: true,\n  PRO: false,"),
+    espera: "#234",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

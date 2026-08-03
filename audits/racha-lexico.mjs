@@ -66,6 +66,12 @@ const DIR_LEXICO = "audits/lib/racha-lexico";
 const DIRS_TEXTOS = [
   ["apps/web/src/i18n/racha", "racha"],
   ["apps/web/src/i18n/liga", "liga y duelo"],
+  // F7 #207: las plantillas del recordatorio push al padre. El criterio de
+  // aceptación #4 del issue pide que este auditor las escanee también — el
+  // destinatario es un adulto, pero la regla que se protege es la misma:
+  // «nunca con culpa», y el léxico de pérdida/urgencia/comparación es la
+  // forma escrita de esa regla.
+  ["apps/web/src/i18n/push", "recordatorio push al padre"],
 ];
 
 const CATEGORIAS = ["perdida", "urgencia", "comparacion"];

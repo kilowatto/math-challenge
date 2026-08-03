@@ -1,0 +1,286 @@
+---
+/**
+ * `RecordatorioPush` — la superficie del recordatorio, del ADULTO (F7 #207).
+ *
+ * ─── El *soft-ask*, que no es decoración ───────────────────────────────────
+ *
+ * mc-19 impl. 1 y §2.1: el permiso de notificaciones, una vez rechazado, NO se
+ * puede volver a pedir programáticamente en ninguna plataforma. Por eso el
+ * primer ask es nuestro —una pantalla que explica qué es, cuánto suena (uno al
+ * día, como máximo) y cómo se apaga (un toque, para siempre)— y el prompt del
+ * navegador solo se dispara si el padre toca «Activar». Quemar el único ask
+ * del navegador en la primera visita es cómo un producto se queda sin canal
+ * para siempre.
+ *
+ * ─── Los estados, y por qué no se re-pregunta ──────────────────────────────
+ *
+ *   · sin soporte → se dice y no se ofrece nada.
+ *   · iOS sin PWA instalada → se explica la instalación (puerta absoluta de
+ *     mc-19 §2.1: no es un bug, es la plataforma).
+ *   · permiso `denied` → se explica cómo reactivarlo A MANO en los ajustes del
+ *     navegador. No hay botón: no podemos re-pedir, y fingir que sí sería
+ *     mentirle al padre.
+ *   · silenciado → se dice que está apagado y NO se ofrece reactivación.
+ *     D-026: lo descartado no reaparece; un «¿seguro? ¿lo enciendo otra vez?»
+ *     es nagging de manual (mc-17, FTC 2022).
+ *
+ * ─── Superficie de ADULTO ──────────────────────────────────────────────────
+ *
+ * Vive en la casa (`app/index.astro`), detrás de `mc_s`. Un niño no llega aquí:
+ * no tiene sesión de adulto y esta página se la niega. No importa nada de la
+ * superficie de niño y ningún archivo suyo la referencia — línea roja #3 y
+ * `audits/recordatorio-sin-culpa.mjs`.
+ */
+
+import pushEn from "../../i18n/push/en.json";
+import pushEsMx from "../../i18n/push/es-MX.json";
+import pushEsEs from "../../i18n/push/es-ES.json";
+import pushFr from "../../i18n/push/fr-FR.json";
+import pushPtBr from "../../i18n/push/pt-BR.json";
+import pushPtPt from "../../i18n/push/pt-PT.json";
+import pushDe from "../../i18n/push/de-DE.json";
+
+const TEXTOS: Record<string, Record<string, string>> = {
+  en: pushEn,
+  "es-MX": pushEsMx,
+  "es-ES": pushEsEs,
+  "fr-FR": pushFr,
+  "pt-BR": pushPtBr,
+  "pt-PT": pushPtPt,
+  "de-DE": pushDe,
+};
+
+interface Props {
+  locale: string;
+}
+
+const { locale } = Astro.props;
+const t = TEXTOS[locale] ?? TEXTOS.en;
+---
+
+<section class="bloque recordatorio" id="recordatorio" hidden>
+  <h2>{t["push.sup.titulo"]}</h2>
+
+  {/* El soft-ask: explica ANTES de pedir. El prompt del navegador solo sale
+      del botón «Activar» — es un recurso de un solo uso (mc-19 impl. 1). */}
+  <div data-estado="pregunta" hidden>
+    <p class="muted">{t["push.sup.texto"]}</p>
+    <button type="button" class="boton primario" id="push-activar">{t["push.sup.activar"]}</button>
+    <button type="button" class="boton" id="push-ahora-no">{t["push.sup.ahora_no"]}</button>
+  </div>
+
+  <div data-estado="activo" hidden>
+    <p class="muted">{t["push.sup.activo"]}</p>
+    <button type="button" class="boton" id="push-silenciar">{t["push.sup.silenciar"]}</button>
+  </div>
+
+  {/* Sin botón. D-026: el silencio no se re-pregunta, ni siquiera para
+      ofrecer deshacerlo. */}
+  <p class="muted" data-estado="silenciado" hidden>{t["push.sup.silenciado"]}</p>
+
+  {/* Tampoco con botón: el navegador no deja re-pedir un permiso denegado. */}
+  <p class="muted" data-estado="denegado" hidden>{t["push.sup.denegado"]}</p>
+
+  <p class="muted" data-estado="ios" hidden>{t["push.sup.ios_instalar"]}</p>
+
+  <p class="muted" data-estado="sin-soporte" hidden>{t["push.sup.sin_soporte"]}</p>
+
+  <p class="muted" data-estado="error" role="alert" hidden>{t["push.sup.error"]}</p>
+</section>
+
+<style>
+  /* Los mismos tokens que la casa (`app/index.astro`): esta sección vive ahí
+     y no debe parecer de otro producto. Un `var()` sin token definido en
+     `tokens.css` invalida la declaración entera — todos estos existen. */
+  .recordatorio { border: 1px solid var(--color-border); border-radius: var(--radius);
+                  padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+  .recordatorio h2 { font-family: var(--font-sistema); font-size: var(--text-base);
+                     font-weight: var(--weight-subtitle); margin: 0 0 calc(var(--space) * 0.5); }
+  .recordatorio .muted { color: var(--color-text-muted); font-size: var(--text-sm);
+                         line-height: var(--leading-body); margin-block-end: var(--space); }
+  /* 44px, la vara del ADULTO. Los 88 de kinder son para las superficies de niño. */
+  .recordatorio .boton { display: inline-flex; align-items: center; justify-content: center;
+                         min-height: 44px; padding-inline: 1rem; margin-inline-end: 0.5rem;
+                         border-radius: var(--radius); border: 1px solid var(--color-border);
+                         background: transparent; color: var(--color-text);
+                         font-family: var(--font-sistema); font-size: var(--text-base);
+                         text-decoration: none; cursor: pointer; }
+  .recordatorio .boton.primario { background: var(--color-accent); color: var(--color-on-accent);
+                                  border-color: transparent; }
+  .recordatorio .boton:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+</style>
+
+<script is:inline>
+  // `is:inline` — Astro NO compila esto: JS PURO, sin anotaciones de tipo
+  // (D-032; lo vigila `audits/script-cliente-sin-ts.mjs`). Nada de `define:vars`:
+  // los textos ya están en el HTML, el script solo decide cuál se ve.
+  (() => {
+    const raiz = document.getElementById("recordatorio");
+    if (!raiz) return;
+
+    const estados = {};
+    raiz.querySelectorAll("[data-estado]").forEach((el) => {
+      estados[el.getAttribute("data-estado")] = el;
+    });
+
+    // Un estado a la vez; la sección entera nace oculta hasta saber cuál.
+    const mostrar = (cual) => {
+      raiz.hidden = false;
+      for (const nombre of Object.keys(estados)) {
+        estados[nombre].hidden = nombre !== cual;
+      }
+    };
+
+    const post = (accion, cuerpo) =>
+      fetch("/api/push?accion=" + accion, {
+        method: "POST",
+        headers: cuerpo ? { "content-type": "application/json" } : undefined,
+        body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+      }).then((r) => r.json());
+
+    const b64urlABytes = (valor) => {
+      const b64 = valor.replace(/-/g, "+").replace(/_/g, "/");
+      const crudo = atob(b64);
+      const bytes = new Uint8Array(crudo.length);
+      for (let i = 0; i < crudo.length; i++) bytes[i] = crudo.charCodeAt(i);
+      return bytes;
+    };
+
+    const bytesAB64url = (buffer) => {
+      const bytes = new Uint8Array(buffer);
+      let crudo = "";
+      for (const b of bytes) crudo += String.fromCharCode(b);
+      return btoa(crudo).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    };
+
+    // iOS: puerta absoluta de mc-19 §2.1 — sin PWA instalada no hay Web Push,
+    // y no es un bug ni algo que se pueda rodear: ES la plataforma.
+    const esIOS =
+      /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const instalada =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      navigator.standalone === true;
+
+    const iniciar = async () => {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+        mostrar("sin-soporte");
+        return;
+      }
+      if (esIOS && !instalada) {
+        mostrar("ios");
+        return;
+      }
+      // «Ahora no» es de ESTA sesión de navegador: no es el silencio
+      // permanente (que es servidor y para siempre), es no insistir hoy.
+      if (sessionStorage.getItem("push-ahora-no") === "1") return;
+
+      let estado;
+      try {
+        estado = await post("estado");
+      } catch {
+        return; // Sin red no se decide nada: la sección se queda oculta.
+      }
+      if (estado.silenciado) {
+        mostrar("silenciado");
+        return;
+      }
+      if (Notification.permission === "denied") {
+        mostrar("denegado");
+        return;
+      }
+      // ¿ESTE navegador tiene la suscripción viva? El servidor puede saber de
+      // otro aparato del mismo padre, y eso no activa este.
+      let sub = null;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        sub = await reg.pushManager.getSubscription();
+      } catch {
+        sub = null;
+      }
+      if (sub && estado.suscripciones > 0) {
+        mostrar("activo");
+        return;
+      }
+      if (Notification.permission === "granted" && sub) {
+        // Permiso dado y suscripción viva pero el servidor no la conoce: se
+        // re-registra sin preguntar nada (es la misma decisión ya tomada).
+        try {
+          const alta = await post("suscribir", {
+            endpoint: sub.endpoint,
+            keys: {
+              p256dh: bytesAB64url(sub.getKey("p256dh")),
+              auth: bytesAB64url(sub.getKey("auth")),
+            },
+          });
+          if (alta.ok) {
+            mostrar("activo");
+            return;
+          }
+        } catch {
+          /* cae al soft-ask, que es el estado seguro */
+        }
+      }
+      mostrar("pregunta");
+    };
+
+    document.getElementById("push-activar")?.addEventListener("click", async (ev) => {
+      const boton = ev.currentTarget;
+      boton.disabled = true;
+      try {
+        // La clave pública VAPID: sin ella no se puede suscribir, y el
+        // servidor dice la verdad (`vapidListo`) en vez de fallar después.
+        const { clavePublica } = await post("clave");
+        if (!clavePublica) {
+          mostrar("error");
+          return;
+        }
+        // SOLO aquí se pide el permiso del navegador: tras el toque explícito
+        // en «Activar», nunca al cargar la página (mc-19 impl. 1, §2.1).
+        const permiso = await Notification.requestPermission();
+        if (permiso !== "granted") {
+          mostrar("denegado");
+          return;
+        }
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: b64urlABytes(clavePublica),
+        });
+        const alta = await post("suscribir", {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: bytesAB64url(sub.getKey("p256dh")),
+            auth: bytesAB64url(sub.getKey("auth")),
+          },
+        });
+        mostrar(alta.ok ? "activo" : "error");
+      } catch {
+        mostrar("error");
+      } finally {
+        boton.disabled = false;
+      }
+    });
+
+    document.getElementById("push-ahora-no")?.addEventListener("click", () => {
+      sessionStorage.setItem("push-ahora-no", "1");
+      raiz.hidden = true;
+    });
+
+    document.getElementById("push-silenciar")?.addEventListener("click", async (ev) => {
+      const boton = ev.currentTarget;
+      boton.disabled = true;
+      try {
+        // Un toque y para siempre (D-026). Es servidor, no del navegador:
+        // aunque el padre cambie de aparato, el recordatorio sigue apagado.
+        const r = await post("silencio");
+        mostrar(r.ok ? "silenciado" : "error");
+      } catch {
+        mostrar("error");
+        boton.disabled = false;
+      }
+    });
+
+    iniciar();
+  })();
+</script>

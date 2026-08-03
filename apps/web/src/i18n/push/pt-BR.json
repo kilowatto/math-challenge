@@ -1,0 +1,17 @@
+{
+  "push.sup.titulo": "Lembrete diário",
+  "push.sup.texto": "Podemos mandar uma notificação por dia, no máximo, na hora do momento de matemática da sua família. Ela só chega se ninguém tiver praticado naquele dia, e nunca com culpa. Você pode desligar para sempre com um toque.",
+  "push.sup.activar": "Ativar o lembrete diário",
+  "push.sup.ahora_no": "Agora não",
+  "push.sup.activo": "O lembrete diário está ativado. Uma notificação por dia no máximo, e você pode desligar aqui.",
+  "push.sup.silenciar": "Desligar o lembrete",
+  "push.sup.silenciado": "O lembrete está desligado. Não vamos perguntar de novo.",
+  "push.sup.denegado": "As notificações estão bloqueadas neste navegador. Para ativar, abra as configurações deste site no seu navegador e permita as notificações; daqui não conseguimos pedir de novo.",
+  "push.sup.ios_instalar": "No iPhone e no iPad, os lembretes só funcionam se o Math Challenge estiver instalado: abra o menu Compartilhar e toque em «Adicionar à Tela de Início», e volte aqui.",
+  "push.sup.sin_soporte": "Este navegador não pode receber notificações.",
+  "push.sup.error": "Algo não funcionou. Tente de novo em instantes.",
+  "push.notif.titulo": "O momento de matemática",
+  "push.notif.cuerpo_uno": "É um bom momento para o momento de matemática de {alias}.",
+  "push.notif.cuerpo_varios": "É um bom momento para o momento de matemática de hoje.",
+  "push.notif.cuerpo_propio": "É um bom momento para o seu momento de matemática."
+}

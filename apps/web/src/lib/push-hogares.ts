@@ -64,3 +64,51 @@ export async function conteosDelHogar(
     completados: fila?.completados ?? 0,
   };
 }
+
+export interface PendientesDelHogar {
+  /** Los alias de los hijos con la meta SIN completar hoy, en orden de alta. */
+  aliases: string[];
+  /** El adulto aprendiz (SERIO/JR/PRO) tampoco completó la suya. */
+  adultoPendiente: boolean;
+}
+
+/**
+ * Quién falta por completar hoy — para componer el copy del recordatorio.
+ *
+ * Sale el ALIAS y nada más: es la forma pública del niño (D-003), la única que
+ * un texto puede nombrar, y es lo que `/api/push-mensaje.ts` interpola en la
+ * plantilla singular. Ningún identificador cruza esta frontera.
+ */
+export async function pendientesDelHogar(
+  db: D1Database,
+  userId: string,
+  diaLocal: string,
+  esAprendiz: boolean,
+): Promise<PendientesDelHogar> {
+  const pendientes = await db
+    .prepare(
+      `SELECT cp.alias FROM child_profiles cp
+        WHERE cp.parent_user_id = ?1 AND cp.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM mission_daily_summary m
+             WHERE m.child_profile_id = cp.id AND m.local_date = ?2 AND m.completed = 1
+          )
+        ORDER BY cp.created_at`,
+    )
+    .bind(userId, diaLocal)
+    .all<{ alias: string }>();
+
+  const adultoPendiente =
+    esAprendiz &&
+    !(await db
+      .prepare(
+        "SELECT 1 AS x FROM mission_daily_summary WHERE user_id = ?1 AND local_date = ?2 AND completed = 1 LIMIT 1",
+      )
+      .bind(userId, diaLocal)
+      .first());
+
+  return {
+    aliases: (pendientes.results ?? []).map((f) => f.alias),
+    adultoPendiente,
+  };
+}

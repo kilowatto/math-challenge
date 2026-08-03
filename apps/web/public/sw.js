@@ -12,6 +12,11 @@
  *
  * Estrategias (mc-33 §8): cache-first para estático versionado, network-first
  * para lo que cambia, y una página de respaldo cuando no hay red.
+ *
+ * Y desde F7 (#207): el manejador de `push` del recordatorio AL PADRE. El push
+ * viaja sin payload («tickle»); el cuerpo localizado se pide a
+ * `/api/push-mensaje` al recibirlo, así que el alias de un niño jamás pasa por
+ * los servidores de push de Google/Mozilla/Apple (mc-25).
  */
 
 // Subir esta versión invalida todo el caché anterior. Es deliberadamente
@@ -173,3 +178,66 @@ self.addEventListener("fetch", (event) => {
  * · No precachea audio. Son ~5 MB en la primera instalación (mc-42) y el
  *   auditor precache-budget los vigilará cuando existan.
  */
+
+// ─── El recordatorio al padre (F7 #207, D-105) ──────────────────────────────
+//
+// Dos manejadores y nada más. El envío, el tope de 1/día, el horario y el
+// silencio permanente son todos del servidor (`packages/motor/src/
+// recordatorio.ts` decide; `apps/web/src/lib/push-envio.ts` ejecuta). Este
+// archivo solo ENSEÑA lo que llega — un service worker no es lugar para
+// reglas de producto.
+self.addEventListener("push", (event) => {
+  event.waitUntil(
+    (async () => {
+      // Sin payload: se pide el copy localizado. Si no hay red, un título
+      // neutro — iOS exige que todo push termine en una notificación visible,
+      // y un fallo de red no puede convertirse en una suscripción revocada.
+      let titulo = "Math Challenge";
+      let cuerpo = "";
+      let destino = "/";
+      try {
+        const sub = await self.registration.pushManager.getSubscription();
+        const resp = await fetch("/api/push-mensaje", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ endpoint: sub ? sub.endpoint : "" }),
+        });
+        if (resp.ok) {
+          const datos = await resp.json();
+          if (datos.titulo) titulo = datos.titulo;
+          if (datos.cuerpo) cuerpo = datos.cuerpo;
+          if (datos.url) destino = datos.url;
+        }
+      } catch {
+        // Sin red: se enseña el título neutro. Mejor eso que nada visible.
+      }
+      await self.registration.showNotification(titulo, {
+        body: cuerpo,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        data: { url: destino },
+      });
+    })(),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const datos = event.notification.data || {};
+  const destino = typeof datos.url === "string" ? datos.url : "/";
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientes) => {
+        // Si ya hay una ventana nuestra abierta, se reusa: abrir pestañas
+        // nuevas a cada toque es cómo un recordatorio se vuelve molestia.
+        for (const cliente of clientes) {
+          if (typeof cliente.focus === "function") {
+            cliente.navigate(destino);
+            return cliente.focus();
+          }
+        }
+        return self.clients.openWindow(destino);
+      }),
+  );
+});

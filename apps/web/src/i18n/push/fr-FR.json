@@ -1,0 +1,17 @@
+{
+  "push.sup.titulo": "Rappel quotidien",
+  "push.sup.texto": "Nous pouvons vous envoyer une notification par jour, au maximum, à l’heure du moment de maths de votre famille. Elle n’arrive que si personne n’a encore pratiqué ce jour-là, et jamais avec culpabilité. Vous pouvez la désactiver pour toujours en un geste.",
+  "push.sup.activar": "Activer le rappel quotidien",
+  "push.sup.ahora_no": "Pas maintenant",
+  "push.sup.activo": "Le rappel quotidien est activé. Une notification par jour au maximum, et vous pouvez le désactiver ici.",
+  "push.sup.silenciar": "Désactiver le rappel",
+  "push.sup.silenciado": "Le rappel est désactivé. Nous ne le reproposerons pas.",
+  "push.sup.denegado": "Les notifications sont bloquées dans ce navigateur. Pour les activer, ouvrez les réglages de ce site dans votre navigateur et autorisez les notifications : nous ne pouvons pas les redemander ici.",
+  "push.sup.ios_instalar": "Sur iPhone et iPad, les rappels ne fonctionnent que si Math Challenge est installé : ouvrez le menu Partager et touchez « Sur l’écran d’accueil », puis revenez ici.",
+  "push.sup.sin_soporte": "Ce navigateur ne peut pas recevoir de notifications.",
+  "push.sup.error": "Quelque chose n’a pas fonctionné. Réessayez dans un moment.",
+  "push.notif.titulo": "Le moment de maths",
+  "push.notif.cuerpo_uno": "C’est un bon moment pour le moment de maths de {alias}.",
+  "push.notif.cuerpo_varios": "C’est un bon moment pour le moment de maths d’aujourd’hui.",
+  "push.notif.cuerpo_propio": "C’est un bon moment pour votre moment de maths."
+}

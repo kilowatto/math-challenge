@@ -577,3 +577,37 @@
   color: var(--color-text-muted);
   text-align: center;
 }
+
+/* --- La racha y el XP, arriba y discretos (F7 #201, #192, #206) --------
+ *
+ * Van aquí y no en un `<style>` de `Pantalla.astro` por la razón larga que ese
+ * archivo ya tiene escrita en su cabecera: Astro alcanza con CSS de alcance
+ * solo lo que está en la PLANTILLA, y media hoja de ese componente no se
+ * aplicaba nunca. `Racha.astro` sí trae el suyo, y ahí sí funciona — todo lo
+ * que estiliza está en su propia plantilla.
+ *
+ * Ni rojo, ni ámbar, ni parpadeo, ni fuego, ni cuenta regresiva.
+ * `audits/racha-lexico.mjs` bloquea el commit que los añada a una superficie
+ * de racha, y esto es voz del sistema en color apagado a propósito: es un dato,
+ * no un aviso.
+ */
+.progreso {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: baseline;
+  justify-content: center;
+  max-inline-size: var(--measure);
+  margin: 0 auto 0.5rem;
+}
+/* El XP lleva su unidad escrita en el texto («{n} XP ganados»), así que no hace
+   falta ninguna etiqueta extra: D-055 exige que dos números de progreso en la
+   misma pantalla se distingan por su etiqueta, y aquí una dice días y la otra
+   XP. */
+.progreso__xp {
+  margin: 0;
+  font-family: var(--font-sistema);
+  font-size: var(--text-xs, 0.85rem);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}

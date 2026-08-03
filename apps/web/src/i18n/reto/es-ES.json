@@ -124,6 +124,7 @@
   "juego.practicando": "Estás practicando: {habilidad}",
   "juego.llevas": "Llevas {n}",
   "juego.ubicando": "Todavía estamos viendo por dónde empezar.",
+  "juego.xp": "{n} XP ganados",
   "forma.circulo": "círculo",
   "forma.cuadrado": "cuadrado",
   "forma.triangulo": "triángulo",

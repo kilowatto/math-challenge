@@ -1,0 +1,17 @@
+{
+  "_locale": "de-DE",
+  "_nota": "Autorado en alemán, no traducido (D-022). Duzen. Frases cortas: la composición alemana alarga cualquier traducción literal y una interstitial de kinder no puede crecer. KINDER nunca lleva cifra (mc-20).",
+  "limite.aviso.kinder": "Noch eine, dann machen wir Pause.",
+  "limite.aviso.lector": "Noch fünf Minuten, dann hören wir für heute auf.",
+  "limite.descanso.titulo": "Zeit zum Strecken",
+  "limite.descanso.cuerpo": "Steh auf, schau aus dem Fenster in die Ferne und trink etwas Wasser.",
+  "limite.descanso.afuera": "Noch besser: geh kurz nach draußen.",
+  "limite.descanso.seguir": "Weiterspielen",
+  "limite.despedida.kinder": "Für heute ist Schluss. Larry wartet morgen auf dich!",
+  "limite.despedida.lector": "Gute Arbeit heute. Bis morgen.",
+  "limite.despedida.retos_uno": "1 Aufgabe heute",
+  "limite.despedida.retos_otros": "{n} Aufgaben heute",
+  "limite.despedida.hasta_manana": "Bis morgen",
+  "limite.nocturno.kinder": "Die Savanne geht schlafen. Gute Nacht!",
+  "limite.nocturno.lector": "Es ist fast Schlafenszeit. Gute Nacht, bis morgen."
+}

@@ -27,6 +27,17 @@ un tutor de IA que explica los errores como lo haría un profesor buena onda, en
 español, inglés, francés, portugués y alemán, sobre Cloudflare, con la privacidad
 de los menores como restricción de diseño y no como aviso legal.
 
+**Dos modos, igual de importantes, no uno derivado del otro**
+([D-082](decisions.md#d-082--el-registro-es-uno-solo-siempre-aterriza-en-modo-solo-familia-y-escuela-se-activan-después-nunca-se-eligen-en-la-puerta--2026-08-02)).
+**Solo** — un adulto que juega para sí mismo, de kinder a doctorado, con
+enganche competitivo pleno (ligas, clubs, racha, XP, sin ninguna de las
+protecciones de menor porque no hay ningún menor de por medio, D-084) — es el
+modo por default de toda cuenta nueva, y es el caso de uso del propio dueño
+(`por-que-existe.md`). **Familia** — perfiles de hijo, panel de diagnóstico,
+límite de pantalla — se **activa** desde dentro de la app, nunca se elige en
+la puerta de registro. Los dos modos no son excluyentes: un adulto puede ser
+las dos cosas a la vez.
+
 Lo que lo distingue de lo que ya existe, según el análisis competitivo (`mc-14`):
 Khan Academy tiene la escala pero no el juego; Prodigy tiene el juego pero se
 ganó una queja ante la FTC por monetizar niños; Brilliant tiene los problemas
@@ -456,22 +467,31 @@ Presupuesto de audio offline: ~5 MB en la primera instalación.
 
 ## 12. Dinero
 
-**La práctica es gratis para siempre.** Se cobra el acompañamiento.
+**Todo el producto es gratis, para cualquier tipo de cuenta, sin excepción**
+([D-085](decisions.md#d-085--todo-el-producto-es-gratis-para-cualquier-tipo-de-cuenta-sin-excepción--2026-08-02),
+que amplía [D-057](decisions.md#d-057--f8-pospone-el-cobro-panel-reportes-y-límite-de-pantalla-se-construyen-gratis-para-todo-padre--2026-08-01)
+más allá de F8). No importa si la cuenta es de un adulto que aprende solo, de
+un padre con hijos, de un maestro o de un club de adultos: **todo lo que hoy
+describe este documento está disponible sin gate de pago.**
 
-| Gratis | Plan Familia (~$8-10 USD/mes) |
-|--------|-------------------------------|
-| Práctica ilimitada | Hasta 6 perfiles |
-| 1 perfil de hijo | Panel del padre con diagnóstico |
-| Ligas, tablero, rachas, historia | Larry en vivo ilimitado |
-| Larry con explicaciones pregeneradas | Modo sin conexión, reportes |
+| Todo, para cualquier cuenta |
+|---|
+| Práctica ilimitada |
+| Perfiles de hijo (sin tope de pago — el tope técnico de `CONFIG_KV` sigue en 6 hasta que exista una decisión de producto que lo reemplace, D-085) |
+| Ligas, tablero, rachas, clubs de adulto, historia |
+| Panel del padre con diagnóstico, reportes por correo, límite de pantalla |
+| Larry con explicaciones pregeneradas y en vivo |
 
-Referencias verificadas (`mc-41`): IXL $9.95/mes +$4 por hijo extra; mediana
-anual en educación $44.99; una prueba de 17-32 días convierte 1.7× mejor que una
-de 4 días.
+**Esto ya no es una fase transitoria de lanzamiento sin Stripe** (que era el
+alcance de D-057): es la posición actual del producto completo. El día que
+exista una decisión de negocio real sobre monetización, esta sección se
+enmienda igual que D-057 preveía para sí misma — hasta entonces, ningún
+documento, issue ni pantalla presenta un plan de pago como parte del producto
+de hoy.
 
-**Dos hallazgos que afectan el lanzamiento por mercado:** OXXO (México) y Boleto
-(Brasil) **no pueden renovar una suscripción automáticamente**; y Stripe Tax no
-lista Brasil, lo cual es una puerta de decisión real antes de vender ahí.
+Referencias de mercado, ya sin ser accionables mientras D-085 esté vigente
+(`mc-41`): IXL $9.95/mes +$4 por hijo extra; mediana anual en educación
+$44.99; una prueba de 17-32 días convierte 1.7× mejor que una de 4 días.
 
 ---
 
@@ -506,7 +526,7 @@ audiencia. Si sale ahora, la app aterriza sobre público ya formado.
 | **F5b · Franja adulta** | ~150 ítems N8-N10, **autorados una vez y renderizados en 7 notaciones**. Sin Sabana, sin modo historia, sin curaduría por serie (D-034) | esquema de ítem (§9) · en paralelo con F5 |
 | **F6 · Larry Profe** | Explicación pregenerada al cerrar el reto + Workers AI en vivo con ruteo por banda y tope de gasto (D-035), voz en los siete locales | F3, F5 |
 | **F7 · Juego** | XP, rachas con red, misiones, mapa, ligas de ~30, tablero con alias generados | F4 |
-| **F8 · Padres** | Panel con diagnóstico, límite de pantalla con corte suave, reportes, Stripe | F2 |
+| **F8 · Padres** | Panel con diagnóstico, límite de pantalla con corte suave, reportes — todo gratis, sin Stripe (D-085) | F2 |
 | **F9 · Grupos infantiles** | Salón del maestro y club de papás sobre la misma tabla `grupo_infantil`: código, aprobación del padre, tablero, bitácora. Sin chat, en ninguna dirección (D-027) | F2, F7 |
 | **F10 · Clubs de adultos** | `club_adulto`, retos con ventana de tiempo, las tres formas de prenda, y Larry moderando el texto libre a prueba de fallos (D-028, D-029) | F2, F7, **F5b** |
 | **F11 · Cierre** | Anti-trampa tier 0-1, accesibilidad auditada, revisión legal con abogado, offline completo, interfaz adaptativa terminada en las cuatro plataformas | todas |

@@ -1,0 +1,118 @@
+---
+/**
+ * El mapa de progreso — el que decide CUÁL de las tres formas se pinta. #230.
+ *
+ * ─── Tres productos, no un skin con tres pieles ────────────────────────────
+ *
+ * `mc-43` §8 no describe «el progreso, con tres colores»: describe tres cosas
+ * distintas, y la que le toca a cada quien depende de su banda de edad.
+ *
+ *   KINDER              → un camino físico, sin un solo número (D-019, #232)
+ *   PRIMARIA/SECUNDARIA → un árbol por temas, sin aristas (#233)
+ *   SERIO/JR/PRO        → cifras planas, compañero apagado (#234)
+ *
+ * Este archivo es la única bifurcación. La decisión la toma `formaDeMapa()` en
+ * el motor a partir del tema visual, no un `if` escrito aquí: si D-017 gana un
+ * tema visual, la compilación se rompe en `mapa.ts` —el `Record` está
+ * completo— en vez de caer callada en «tablero».
+ *
+ * ─── El interruptor del compañero vive aquí ────────────────────────────────
+ *
+ * Porque es esta pantalla la que conoce el destino del formulario. Es un
+ * `<form method="post">` de verdad y no un botón con JavaScript: una
+ * preferencia que se guarda tiene que sobrevivir a que el script no cargue, y
+ * el aparato de referencia es un Android de gama baja (`mc-47` §5).
+ */
+import { t, type Locale } from "../../i18n";
+import Sendero from "./Sendero.astro";
+import Arbol from "./Arbol.astro";
+import Tablero from "./Tablero.astro";
+import Companero from "./Companero.astro";
+import { apareceSolo } from "../../../../../packages/motor/src/companero.ts";
+import type { TemaVisual } from "../../../../../packages/motor/src/bandas.ts";
+import type { Sendero as ModeloSendero, Arbol as ModeloArbol, Tablero as ModeloTablero }
+  from "../../../../../packages/motor/src/mapa.ts";
+
+interface Props {
+  locale: Locale;
+  tema: TemaVisual;
+  /** El modelo ya compuesto por `construirSendero`/`construirArbol`/`construirTablero`. */
+  mapa: ModeloSendero | ModeloArbol | ModeloTablero;
+  companeroVisible: boolean;
+  accesorios?: readonly string[];
+  sinFuenteDeHabilidades: boolean;
+  /**
+   * A dónde manda el interruptor del compañero. Si es `null`, no se pinta —
+   * una superficie sin endpoint no debe enseñar un control que no hace nada.
+   */
+  accionCompanero?: string | null;
+}
+
+const {
+  locale,
+  tema,
+  mapa,
+  companeroVisible,
+  accesorios = [],
+  sinFuenteDeHabilidades,
+  accionCompanero = null,
+} = Astro.props;
+const m = t(locale);
+
+/*
+ * El interruptor solo tiene sentido donde el compañero NO aparece solo, que es
+ * SERIO/JR/PRO (D-080, `mc-43` §9). En KINDER Larry camina por el sendero: es
+ * el mapa, y un interruptor para apagar el mapa no es una preferencia.
+ */
+const conInterruptor = accionCompanero !== null && !apareceSolo(tema);
+---
+
+<section class="mapa" data-tema={tema} data-forma={mapa.forma}>
+  {mapa.forma === "sendero" && (
+    <Sendero
+      locale={locale}
+      sendero={mapa}
+      companeroVisible={companeroVisible}
+      accesorios={accesorios}
+    />
+  )}
+
+  {mapa.forma === "arbol" && (
+    <Arbol
+      locale={locale}
+      arbol={mapa}
+      companeroVisible={companeroVisible}
+      accesorios={accesorios}
+    />
+  )}
+
+  {mapa.forma === "tablero" && (
+    <Tablero
+      locale={locale}
+      tablero={mapa}
+      sinFuenteDeHabilidades={sinFuenteDeHabilidades}
+    />
+  )}
+
+  {/*
+    En SERIO/JR/PRO Larry está «bajo petición» (D-080, `mc-43` §9): no lo pinta
+    el tablero, lo pinta esta línea, y solo cuando la persona lo encendió. El
+    tercer criterio de #234 es literal — con `visible = 0` **no** hay ningún
+    elemento decorativo del compañero en la vista, y `Companero.astro` no pinta
+    nada cuando `visible` es falso.
+  */}
+  {conInterruptor && (
+    <p>
+      <Companero locale={locale} visible={companeroVisible} accesorios={accesorios} />
+    </p>
+  )}
+
+  {conInterruptor && (
+    <form method="post" action={accionCompanero}>
+      <input type="hidden" name="visible" value={companeroVisible ? "0" : "1"} />
+      <button type="submit" class="companero__interruptor">
+        {companeroVisible ? m.mapaCompaneroApagar : m.mapaCompaneroEncender}
+      </button>
+    </form>
+  )}
+</section>

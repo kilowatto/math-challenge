@@ -669,7 +669,7 @@ sin aciertos. Implementé la de `mc-16`.
 El código de #211 está construido y no depende de ninguna de estas respuestas:
 todas cambian un número o una fila de analítica, ninguna cambia la forma del
 módulo. Se anotan aquí en vez de detenerse (memoria: «dudas a un md, sin
-detenerse»). La decisión implementada está en **D-082**.
+detenerse»). La decisión implementada está en **D-090**.
 
 ### 23.1 ¿Tres misiones simultáneas para PRIMARIA en adelante, o dos?
 
@@ -699,7 +699,7 @@ una constante a una tabla por banda.
 ### 23.3 ¿El avance en la Sabana de KINDER cuenta como «misión completada» en el panel del padre?
 
 **Hoy no cuenta**: KINDER no escribe ninguna fila en `mission_daily_summary`,
-porque `elegirMisionesDelDia()` le devuelve una lista vacía (D-082 §5).
+porque `elegirMisionesDelDia()` le devuelve una lista vacía (D-090 §5).
 
 Las dos opciones tienen un defecto real. Contarlo **infla** una tasa de «misiones
 completadas» que en KINDER es indistinguible de «jugó hoy». No contarlo deja a
@@ -721,7 +721,7 @@ F8 · Padres.
 **23.5 — `duelo` exige `dueloOptIn` Y `enLiga`.** El diseño de
 `docs/planes/f7-juego.md` §3 solo pedía el opt-in. Un duelo sin liga es contra
 nadie, y #217 dice que una misión incumplible es peor que no tener misión.
-**Desviación consciente**, escrita en el catálogo y en D-082 §4a.
+**Desviación consciente**, escrita en el catálogo y en D-090 §4a.
 
 **23.6 — El XP se otorga en la TRANSICIÓN a completada, una sola vez.**
 `avanzarMision()` devuelve **el mismo objeto** si la misión ya estaba completa,
@@ -750,9 +750,62 @@ donde el auditor deja de ver.
 
 ---
 
-> **§22.5 queda superada por D-082.** Esa sección dice que la tabla de XP fija
+> **§22.5 queda superada por D-090.** Esa sección dice que la tabla de XP fija
 > `mision_diaria: 20` y `mision_semanal: 100` sin fuente. `mision_diaria` **ya no
 > existe**: lo sustituyen once claves `mision_<tipo>` más `mision_dia_completo`,
 > porque un solo número daba dos respuestas a «¿cuánto vale una misión diaria?» y
 > ese par iba a divergir sin que nadie lo tocara a propósito. Los once siguen
 > siendo `[criterio propio]`. `mision_semanal` se queda publicado y sin usar.
+## 23. F8 · Las tres preguntas de #265 que implementé sin respuesta · 2026-08-02
+
+La issue paraguas del límite de pantalla (#265) hace tres preguntas al dueño y
+ninguna está contestada en `decisions.md`. **Las tres cambian lo que se
+construye**, así que no se podían dejar para después: se implementó la
+recomendación que el propio plan (`docs/planes/f8-limite-pantalla.md` §14)
+escribe para cada una, y aquí queda dicho cuál, dónde vive y qué costaría
+cambiarla.
+
+### 23.1 El corte nocturno TAMBIÉN impide empezar de madrugada (respuesta A)
+
+`limite-pantalla.ts::decidirAlIniciar` devuelve `CERRAR / BEDTIME` si la hora
+local cae en la ventana, así que un niño que se despierta a la una de la mañana
+no puede abrir un reto nuevo — no solo se le corta el que ya tenía abierto.
+
+Con la alternativa B, ese niño juega sin tropezar con nada, porque no había
+ninguna sesión «en curso» al momento del corte, y ése es exactamente el caso
+que motiva la única evidencia experimental de todo `mc-26` (el ECA de la
+Universidad de Bath, §5). **Costo de cambiar a B:** una línea —`decidirAlIniciar`
+deja de existir y las puertas se separan— pero entonces hay dos tablas de
+decisión y una regla nueva puede aplicarse a una y olvidarse en la otra.
+
+### 23.2 F8 construye `cerrarPorLimite`/`cerradaPorLimite`, y F7 lo lee (respuesta A)
+
+Están en `packages/motor/src/sesion.ts` y en `apps/ingest/src/sesion-do.ts`, que
+es donde F8 ya estaba tocando para el resto del mecanismo. La issue #202 de F7
+pide ese mismo campo; **se actualiza para LEERLO, no para construirlo**.
+
+`sesion.ts` no escribe ninguna racha y no la nombra: deja el hecho disponible.
+El motivo que la racha espera lo produce `limite-pantalla.ts::diaCumplidoPorCorte`,
+y `audits/limite-no-rompe-el-dia.mjs` ejecuta ese cable de punta a punta.
+
+### 23.3 El límite protege desde el día uno, sin que el padre haga nada (respuesta A)
+
+`configuracionVigente(banda, null)` devuelve el default de la banda, así que un
+perfil sin fila en `screen_time_settings` —que hoy son **todos**, porque el paso
+de onboarding que F2 diseñó nunca se construyó— ya juega con límite.
+
+La alternativa B es más fiel a «el padre decide» y deja a un perfil nuevo o
+viejo jugando sin ningún límite hasta que un adulto visite una pantalla que nada
+lo obliga a visitar. **Lo que NO se hizo por defecto:** el corte nocturno.
+`bedtime_local` nace en `NULL` y no se enciende solo, porque adivinar una hora
+de dormir a partir del año de nacimiento sería un dato que el producto no tiene
+y no debería fingir tener (D-053).
+
+### 23.4 Y dos números sin fuente, marcados como tales
+
+`FIN_DE_LA_NOCHE = "05:00"` y `TOPE_DE_CHECKPOINT_MIN = 10` son
+`[criterio propio]`, con la misma honestidad que D-016 usa para su tabla de
+minutos. El primero hace falta porque `bedtime_local` dice dónde empieza la
+noche y **ninguna decisión dice dónde termina**; el segundo recorta el
+checkpoint de un aparato que se durmió con la sesión abierta, para que cerrar la
+tapa no le cueste minutos al niño.

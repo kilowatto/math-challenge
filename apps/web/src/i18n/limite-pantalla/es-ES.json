@@ -1,0 +1,17 @@
+{
+  "_locale": "es-ES",
+  "_nota": "Autorado en español peninsular, no traducido del de México (D-022): «coge» y «vale» no existen en es-MX, y «ya estuvo» no existe aquí. KINDER nunca lleva cifra (mc-20).",
+  "limite.aviso.kinder": "Una más y descansamos.",
+  "limite.aviso.lector": "Cinco minutos más y lo dejamos por hoy.",
+  "limite.descanso.titulo": "A estirarse",
+  "limite.descanso.cuerpo": "Levántate, mira algo lejano por la ventana y bebe agua.",
+  "limite.descanso.afuera": "Mejor aún: sal fuera un rato.",
+  "limite.descanso.seguir": "Seguir jugando",
+  "limite.despedida.kinder": "Por hoy ya está. Larry te espera mañana.",
+  "limite.despedida.lector": "Buen trabajo hoy. Nos vemos mañana.",
+  "limite.despedida.retos_uno": "1 reto hoy",
+  "limite.despedida.retos_otros": "{n} retos hoy",
+  "limite.despedida.hasta_manana": "Hasta mañana",
+  "limite.nocturno.kinder": "La sabana se va a dormir. ¡Buenas noches!",
+  "limite.nocturno.lector": "Ya casi es hora de acostarse. Buenas noches, hasta mañana."
+}

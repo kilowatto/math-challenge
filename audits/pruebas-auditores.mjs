@@ -1080,6 +1080,335 @@ const CASOS = [
       ),
     espera: "reto activo",
   },
+
+  // ─── El mapa y el compañero (F7, #230-#235) ──────────────────────────────
+  //
+  // Los siete casos son de DEGRADACIÓN sobre archivos REALES (D-070). Ninguno
+  // es un archivo inventado a propósito: los tres auditores nacieron verdes
+  // porque el mapa se construyó con ellos delante, así que un caso escrito a
+  // mano solo probaría que el auditor sabe leer un archivo falso.
+  //
+  // Cada degradación es una que alguien haría de verdad, con buena intención.
+  {
+    // La tabla de caché. Es la degradación que suena a mejora: componer el mapa
+    // cuesta cuatro lecturas, «lo guardamos y ya». El precio son dos verdades
+    // sobre lo que un niño sabe, y se cobra meses después.
+    auditor: "mapa-lectura-sin-tabla",
+    que: "el mapa gana una tabla propia para cachear el progreso",
+    archivo: "migrations/0010_mapa_companero.sql",
+    parche: (t) =>
+      t + "\nCREATE TABLE map_progress (\n  id TEXT PRIMARY KEY,\n  skill_id TEXT NOT NULL,\n  fill REAL NOT NULL\n);\n",
+    espera: "no tiene tabla propia",
+  },
+  {
+    // Los cortes copiados a mano. Compila, pasa cualquier revisión, y se
+    // descubre el día que alguien mueva el corte en `serie.ts`.
+    auditor: "mapa-lectura-sin-tabla",
+    que: "los cortes de pericia se copian a mano en vez de reusar serie.ts",
+    archivo: "packages/motor/src/mapa.ts",
+    parche: (t) =>
+      t.replace(
+        "  const ejemplo = ejemploSegunPericia(skillState);\n  if (ejemplo === 1) return \"asomando\";\n  if (ejemplo === 0.5) return \"en_camino\";\n  return \"dominada\";",
+        "  if (skillState <= 0.2) return \"asomando\";\n  if (skillState <= 0.6) return \"en_camino\";\n  return \"dominada\";",
+      ),
+    espera: "0.2 o 0.6",
+  },
+  {
+    // El módulo del mapa aprende a escribir. Un solo INSERT y ya hay una
+    // segunda fuente de verdad del progreso.
+    auditor: "mapa-lectura-sin-tabla",
+    que: "el módulo del mapa escribe progreso en vez de solo leerlo",
+    archivo: "packages/motor/src/mapa.ts",
+    parche: (t) =>
+      t.replace(
+        "export const HABILIDADES_SIN_FUENTE = true;",
+        'export const SQL_GUARDAR_MAPA = "INSERT INTO map_progress (id) VALUES (?)";\nexport const HABILIDADES_SIN_FUENTE = true;',
+      ),
+    espera: "CAPA DE LECTURA",
+  },
+  {
+    // El nivel de vuelta en el modelo de vista. Es el descuido más barato del
+    // repo: una línea, compila, y pinta «Nivel 3» delante de un niño.
+    auditor: "mapa-sin-numero-de-nivel",
+    que: "el árbol devuelve el número de nivel junto al orden correlativo",
+    archivo: "packages/motor/src/mapa.ts",
+    parche: (t) => t.replace("    orden: i + 1,", "    orden: i + 1,\n    nivel,"),
+    espera: "criterio #100",
+  },
+  {
+    // Un porcentaje en el sendero de kinder. Suena útil —«así el padre ve cómo
+    // va»— y convierte un camino en una evaluación para alguien de cuatro años.
+    auditor: "mapa-sin-numero-de-nivel",
+    que: "el sendero de KINDER gana un campo numérico de progreso",
+    archivo: "packages/motor/src/mapa.ts",
+    parche: (t) =>
+      t.replace(
+        "    lugares.push({ lugar, estado, aqui });",
+        "    lugares.push({ lugar, estado, aqui, porcentaje: Math.round((i / orden.length) * 100) });",
+      ),
+    espera: "cuatro años",
+  },
+  {
+    // El medidor de humor, con el nombre más inocente posible. No dice
+    // «hambre»: dice `mood`, y por eso la comprobación principal es el CONTEO
+    // de claves y no una lista de palabras.
+    auditor: "companero-sin-decaimiento",
+    que: "el compañero gana un tercer campo de estado que puede decaer",
+    archivo: "packages/motor/src/companero.ts",
+    parche: (t) =>
+      t.replace(
+        "  return { visible: VISIBLE_AL_CREAR[tema], accesorios: [] };",
+        "  return { visible: VISIBLE_AL_CREAR[tema], accesorios: [], mood: 100 };",
+      ),
+    espera: "POR CONSTRUCCIÓN",
+  },
+  {
+    // El compañero encendido para el adulto. Nadie lo nota, y el adulto que
+    // abre una herramienta de estudio se encuentra un rinoceronte saludándolo.
+    auditor: "companero-sin-decaimiento",
+    que: "el compañero nace encendido en SERIO, contra el criterio 1 de #234",
+    archivo: "packages/motor/src/companero.ts",
+    parche: (t) => t.replace("  SERIO: false,\n  PRO: false,", "  SERIO: true,\n  PRO: false,"),
+    espera: "#234",
+  },
+
+  // ─── Los tres de F8, y por qué ocho de sus nueve casos DEGRADAN ─────────
+  //
+  // El motor del límite de pantalla se construyó con sus tres auditores
+  // delante, así que nacieron verdes. D-070 lo dice sin rodeos: un caso escrito
+  // a mano probaría que el auditor sabe leer un archivo inventado, no que
+  // habría cazado la erosión del verdadero. Los ocho parches de aquí abajo
+  // rompen `packages/motor/src/limite-pantalla.ts` de las ocho formas en que se
+  // rompería de verdad, y el noveno planta el único archivo que todavía no
+  // existe: la ruta de cierre que nadie ha cableado.
+
+  {
+    // La divergencia clásica: alguien «ajusta» un número en el código y la
+    // tabla de D-016 se queda como estaba. El síntoma no es un error — es un
+    // niño al que el servidor corta a los 25 minutos con el control de su padre
+    // marcando 20.
+    auditor: "limite-pantalla-motor-unico",
+    que: "el default de KINDER se mueve en el código y no en D-016",
+    archivo: "packages/motor/src/limite-pantalla.ts",
+    parche: (t) =>
+      t.replace(
+        "KINDER: Object.freeze({ defaultMin: 20,",
+        "KINDER: Object.freeze({ defaultMin: 25,",
+      ),
+    espera: "Manda el documento",
+  },
+  {
+    // El corte nocturno es la única columna con evidencia experimental detrás
+    // (el ECA de Bath), y la más fácil de tocar sin querer porque D-016 la
+    // escribe en horas y el código en minutos.
+    auditor: "limite-pantalla-motor-unico",
+    que: "el corte nocturno de SECUNDARIA pasa de 30 a 60 minutos",
+    archivo: "packages/motor/src/limite-pantalla.ts",
+    parche: (t) =>
+      t.replace(
+        "descansoCadaMin: 25, corteNocturnoMinAntes: 30",
+        "descansoCadaMin: 25, corteNocturnoMinAntes: 60",
+      ),
+    espera: "corteNocturnoMinAntes",
+  },
+  {
+    // Un DEFAULT en el esquema es un cuarto sitio donde vive la tabla de D-016,
+    // en un lenguaje donde nadie la va a buscar. La 0002 lo dice en su propio
+    // comentario y aun así es lo primero que alguien añadiría «por comodidad».
+    auditor: "limite-pantalla-motor-unico",
+    que: "una columna de minutos con DEFAULT en el esquema",
+    archivo: "migrations/9999_prueba_limite_default.sql",
+    contenido:
+      "ALTER TABLE screen_time_settings ADD COLUMN daily_minutes_v2 INTEGER NOT NULL DEFAULT 30;\n",
+    espera: "los defaults por edad los pone la aplicación",
+  },
+
+  {
+    // **El caso que da nombre a la fase.** No hace falta escribir
+    // `current_streak = 0` para romper la línea roja #6: basta con que un
+    // camino del corte no produzca motivo. Sin motivo nadie llama a la racha,
+    // el día no se registra, y el contador amanece en 1 sin que ningún grep
+    // encuentre nada. Es la omisión, no el reinicio.
+    auditor: "limite-no-rompe-el-dia",
+    que: "el corte nocturno deja de dar el día por cumplido",
+    archivo: "packages/motor/src/limite-pantalla.ts",
+    parche: (t) =>
+      t.replace(
+        "  void cierre;\n  return { tipo: \"LIMITE_DE_PANTALLA_CORTO_LA_SESION\" };",
+        "  if (cierre === \"BEDTIME\") return null as never;\n  return { tipo: \"LIMITE_DE_PANTALLA_CORTO_LA_SESION\" };",
+      ),
+    espera: "SIN SU DÍA",
+  },
+  {
+    // El otro extremo: el motor del límite empieza a saber de rachas. Una rama
+    // sobre `current_streak` dentro del límite es la que después se escribe mal.
+    auditor: "limite-no-rompe-el-dia",
+    que: "el motor del límite toca el contador de la racha",
+    archivo: "packages/motor/src/limite-pantalla.ts",
+    parche: (t) =>
+      t.replace(
+        "export function decidir(entrada: EntradaDeDecision): Decision {",
+        "export function decidir(entrada: EntradaDeDecision & { current_streak?: number }): Decision {\n" +
+          "  if (entrada.current_streak === 0) return SEGUIR;",
+      ),
+    espera: "toca el contador de la racha",
+  },
+  {
+    // #271, textual: «sin bloqueo cronometrado». El descanso con una cuenta
+    // regresiva de la que no se puede salir es la fricción punitiva que D-016
+    // evita, y `mc-21` marca los cronómetros encendidos por defecto como
+    // antipatrón. Se escribe en dos líneas y no rompe ninguna prueba.
+    auditor: "limite-no-rompe-el-dia",
+    que: "el descanso se convierte en una espera cronometrada",
+    archivo: "packages/motor/src/limite-pantalla.ts",
+    parche: (t) =>
+      t.replace(
+        "export function reiniciarDescanso(uso: UsoDelDia): UsoDelDia {",
+        "export const SEGUNDOS_DE_ESPERA = 30;\nexport function reiniciarDescanso(uso: UsoDelDia): UsoDelDia {",
+      ),
+    espera: "sin bloqueo cronometrado",
+  },
+  {
+    // Línea roja #1, que para un menor no admite excepción. El corte «de
+    // verdad» con pantalla completa forzada es lo que haría cualquier producto
+    // de control parental, y es exactamente lo que este no puede hacer.
+    auditor: "limite-no-rompe-el-dia",
+    que: "el corte fuerza pantalla completa sobre el aparato de un menor",
+    archivo: "packages/motor/src/sesion.ts",
+    parche: (t) =>
+      t.replace(
+        "export function cerrarPorLimite(estado: EstadoSesion): EstadoSesion {",
+        "export function cerrarPorLimite(estado: EstadoSesion): EstadoSesion {\n" +
+          "  document.documentElement.requestFullscreen();",
+      ),
+    espera: "secuestra el aparato",
+  },
+  {
+    // La vergüenza no llega como un insulto: llega como una explicación. «Se
+    // acabó la racha» en la despedida del límite es la línea roja #7 rota sin
+    // una sola palabra técnica, y en un solo locale de los siete.
+    //
+    // **Este caso encontró un fallo real en `racha-lexico`**, no solo en el
+    // auditor nuevo: salía en verde con la violación delante porque `\b` de
+    // JavaScript solo conoce ASCII y la `ó` de «acabó» no le hace frontera.
+    // Se dejó ADREDE con acento, que es como se escribe de verdad. Ver
+    // `conFronteraUnicode` en `audits/lib/repo.mjs`.
+    auditor: "limite-no-rompe-el-dia",
+    que: "la despedida usa lenguaje de pérdida CON ACENTO, en un solo locale",
+    archivo: "apps/web/src/i18n/limite-pantalla/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"limite.despedida.lector": "Buen trabajo hoy. Nos vemos mañana."',
+        '"limite.despedida.lector": "Se acabó la racha de hoy. Nos vemos mañana."',
+      ),
+    espera: "construcción de perdida",
+  },
+  {
+    // El mismo acento, sobre el auditor que ya existía. Sin la reparación de
+    // `conFronteraUnicode`, este caso sale en verde con «Se rompió la racha»
+    // delante — y ése era el estado del repositorio hasta hoy.
+    auditor: "racha-lexico",
+    que: "una construcción de pérdida con acento, que `\\b` de ASCII no veía",
+    archivo: "apps/web/src/i18n/racha/es-MX.json",
+    parche: (t) =>
+      t.replace('"racha.ninguno": ', '"racha.rota": "Se rompió la racha.",\n  "racha.ninguno": '),
+    espera: "perdida",
+  },
+  {
+    // El eje que `racha-limite-no-rompe` declara que NO puede ver: la ruta de
+    // cierre que escribe en la base y sencillamente no registra el día. No hay
+    // reinicio que buscar, hay una llamada que falta.
+    auditor: "limite-no-rompe-el-dia",
+    que: "una ruta cierra por el límite, escribe en D1 y no registra el día",
+    archivo: "apps/web/src/lib/prueba-cierre-limite.ts",
+    contenido:
+      "export async function cerrar(db: any, sesion: any, id: string) {\n" +
+      "  await sesion.cerrarPorLimite('DAILY_LIMIT');\n" +
+      "  await db.prepare('UPDATE screen_time_daily_usage SET ended_reason = ? WHERE child_profile_id = ?')\n" +
+      "    .bind('DAILY_LIMIT', id).run();\n" +
+      "}\n",
+    espera: "omisión silenciosa",
+  },
+
+  {
+    // Nadie escribe `venderMinutos()`. Alguien agrega un campo que «hace
+    // falta», y el límite deja de aplicar para quien paga sin que aparezca la
+    // palabra dinero en ninguna parte. Solo el eje que EJECUTA lo ve.
+    auditor: "limite-nunca-se-levanta-pagando",
+    que: "una bandera de plan premium desactiva el límite diario",
+    archivo: "packages/motor/src/limite-pantalla.ts",
+    parche: (t) =>
+      t.replace(
+        "  if (uso.minutes_used >= config.daily_minutes) {",
+        "  if (uso.minutes_used >= config.daily_minutes && !(entrada as { premium?: boolean }).premium) {",
+      ),
+    espera: "MUEVE la decisión",
+  },
+  {
+    // La otra forma, sin tocar ninguna rama: un campo en la interfaz de
+    // entrada. Es cómo se ve un paywall antes de ser un paywall.
+    auditor: "limite-nunca-se-levanta-pagando",
+    que: "la entrada de la decisión gana un campo de suscripción",
+    archivo: "packages/motor/src/limite-pantalla.ts",
+    parche: (t) =>
+      t.replace(
+        "  readonly puntoSeguro: boolean;\n}",
+        "  readonly puntoSeguro: boolean;\n  readonly plan: \"gratis\" | \"familia\";\n}",
+      ),
+    espera: "campo de pago",
+  },
+  {
+    // Y la más barata de todas: el precio junto al límite en un archivo de
+    // producto. Seis líneas es el radio en el que cabe un objeto de
+    // configuración, que es donde esto aparecería de verdad.
+    auditor: "limite-nunca-se-levanta-pagando",
+    que: "un precio para ensanchar el límite, en una ruta de producto",
+    archivo: "apps/web/src/lib/prueba-limite-precio.ts",
+    contenido:
+      "export const MINUTOS_EXTRA = {\n" +
+      "  daily_minutes: 30,\n" +
+      "  precio: 0.99,\n" +
+      "};\n",
+    espera: "dinero a",
+  },
+
+  // ─── El hueco declarado de la numeración, sus dos mitades ───────────────
+  //
+  // La mitad que permite (una reserva legítima no bloquea) no necesita caso:
+  // `migration-safety` pasa en verde con la 0011 delante, y eso se ve en cada
+  // corrida. Lo que sí necesita caso son las dos mitades que TIENEN que seguir
+  // bloqueando, porque son las que un mecanismo de excepción suele romper.
+
+  {
+    // El fallo que el hueco existe para cazar, y que ninguna reserva declara:
+    // una migración que ya corrió en algún ambiente y se borró del repo.
+    auditor: "migration-safety",
+    que: "un hueco de numeración que nadie declaró",
+    archivo: "migrations/0014_prueba_hueco.sql",
+    contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
+    espera: "hueco en la numeración",
+  },
+  {
+    // Y la otra mitad, la que impide que la excepción se vuelva permanente:
+    // una reserva sobre un número que ya existe es un renglón rancio, y una
+    // lista de excepciones que nadie vacía es cómo un gate se apaga sin que
+    // nadie lo decida (mismo criterio que `separarDeuda` en lib/repo.mjs).
+    auditor: "migration-safety",
+    que: "una reserva de numeración rancia, sobre una migración que ya existe",
+    archivo: "migrations/0011_screen_time_daily_usage.sql",
+    // El parche apuntaba a «0009, 0010» y ese texto murió cuando la 0010 del
+    // mapa aterrizó de verdad y el auditor exigió estrechar la reserva. El caso
+    // falló al integrar, que es exactamente lo que tiene que hacer un control
+    // negativo cuyo objetivo se movió — un parche que ya no cambia nada corre en
+    // verde sin degradar nada, y eso es un auditor apagado en silencio.
+    // El parche PLANTA la reserva rancia en vez de editarla, y ese cambio no es
+    // cosmético: las reservas reales ya se borraron —la 0009 y la 0010
+    // aterrizaron, el auditor lo exigió, y no queda ninguna en el repositorio—.
+    // Un caso que editara un texto inexistente correría en verde sin degradar
+    // nada, que es un auditor apagado en silencio. El arnés lo cazó al integrar.
+    parche: (t) => "-- migration-safety-reserva: 0008 — reserva rancia plantada a propósito por el arnés\n" + t,
+    espera: "La reserva sobra",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

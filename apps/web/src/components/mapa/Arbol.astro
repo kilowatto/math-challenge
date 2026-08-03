@@ -1,0 +1,97 @@
+---
+/**
+ * PRIMARIA / SECUNDARIA — el árbol de habilidades. #233, D-017.
+ *
+ * ─── Sin aristas de prerrequisito, y la ausencia es deliberada ─────────────
+ *
+ * F5 §4.8 (bloqueo 10) ya encontró que la tabla `skills` **no tiene columna de
+ * prerrequisito**. Dibujar flechas o candados de «desbloqueado por X» sería
+ * prometer una funcionalidad que ningún dato respalda — el mismo error, a
+ * propósito y con la advertencia ya escrita.
+ *
+ * El hueco está hecho para cuando el dato llegue: `Arbol.aristas` existe en el
+ * modelo (`packages/motor/src/mapa.ts`), hoy vale `[]`, y este layout es una
+ * rejilla — una arista futura entra como un `<svg>` posicionado encima sin
+ * mover un solo nodo. Es el cuarto criterio de #233, y `mapa.prueba.mjs` lo
+ * comprueba: añadir una arista no cambia `grupos`.
+ *
+ * ─── El grupo NO se titula con su número de nivel ──────────────────────────
+ *
+ * D-017 y el criterio #100: el número de nivel no se enseña a nadie. `mc-10`
+ * mide que la presión de rendimiento empeora el desempeño en matemáticas, y
+ * «Nivel 3» es esa presión en dos sílabas.
+ *
+ * Aquí no hay nada que ocultar porque el modelo de vista **no trae el nivel**:
+ * `construirArbol()` agrupa por nivel y devuelve un `orden` correlativo que no
+ * significa nada fuera de este árbol. Un alumno con habilidades de N5 y N7 ve
+ * grupos 1 y 2, y ese 1 y ese 2 tampoco se pintan.
+ *
+ * ─── Y hoy esta vista no tiene datos que mostrar ───────────────────────────
+ *
+ * No hay contenido de PRIMARIA/SECUNDARIA en el MVP (D-009/D-034). Con cero
+ * grupos, la pantalla lo **dice** en vez de quedarse en blanco: una pantalla
+ * vacía se lee como una pantalla rota.
+ */
+import { t, type Locale } from "../../i18n";
+import Companero from "./Companero.astro";
+import { CLAVE_DE_PERICIA, type Arbol } from "../../../../../packages/motor/src/mapa.ts";
+
+interface Props {
+  locale: Locale;
+  arbol: Arbol;
+  /** En PRIMARIA/SECUNDARIA Larry aparece en cada nodo alcanzado (D-080). */
+  companeroVisible: boolean;
+  accesorios?: readonly string[];
+  /**
+   * Etiqueta del grupo. Llega de fuera y **nunca es un número**: quien tiene el
+   * catálogo de habilidades sabe cómo se llama el tema. Sin catálogo, el grupo
+   * va sin título — que es honesto y no inventa un «Nivel 3».
+   */
+  rotuloDeGrupo?: (orden: number) => string | null;
+}
+
+const { locale, arbol, companeroVisible, accesorios = [], rotuloDeGrupo } = Astro.props;
+const m = t(locale);
+
+const textoPericia = (p: keyof typeof CLAVE_DE_PERICIA): string =>
+  (m as Record<string, string>)[CLAVE_DE_PERICIA[p]];
+
+/** Un nodo «alcanzado» es el que ya se tocó: ahí aparece Larry (mc-43 §9). */
+const alcanzado = (pericia: string): boolean => pericia !== "asomando";
+---
+
+{
+  arbol.grupos.length === 0 ? (
+    <p class="mapa__hueco">{m.mapaArbolSinContenido}</p>
+  ) : (
+    <div class="arbol">
+      {arbol.grupos.map((g) => (
+        <section class="arbol__grupo">
+          {rotuloDeGrupo?.(g.orden) && (
+            <h3 class="arbol__rotulo">{rotuloDeGrupo(g.orden)}</h3>
+          )}
+          <ul class="arbol__nodos">
+            {g.nodos.map((n) => (
+              <li class="arbol__nodo">
+                {/*
+                  El identificador (`P07`) solo se pinta cuando NO hay rótulo
+                  autorado. Es feo a propósito: un identificador interno en la
+                  pantalla se ve, y lo que se ve se arregla — es la misma regla
+                  que `audits/opciones-contestables.mjs` hace cumplir en el reto.
+                */}
+                <span class="arbol__nombre">{n.rotulo ?? n.habilidad}</span>
+                <span class="arbol__pericia">{textoPericia(n.pericia)}</span>
+                <span class="barra" style={`--relleno: ${Math.round(n.relleno * 100)}%`}>
+                  <span class="barra__relleno"></span>
+                </span>
+                {alcanzado(n.pericia) && (
+                  <Companero locale={locale} visible={companeroVisible} accesorios={accesorios} />
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  )
+}

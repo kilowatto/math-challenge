@@ -1,0 +1,197 @@
+---
+/**
+ * `/{locale}/app/mapa` — **el mapa de progreso del adulto.** F7, #230-#235.
+ *
+ * ─── Por qué esta ruta y no la pestaña «Progreso» ──────────────────────────
+ *
+ * Son dos cosas distintas y conviene que tengan dos sitios distintos:
+ *
+ *   · «Progreso» (`/app/?vista=progreso`) es **F8**: lo que un padre ve de sus
+ *     hijos. Sigue marcado «Próximamente» y esta rama no lo toca.
+ *   · Esto es **F7**: lo que tú ves de TU propio aprendizaje. D-034 hace que el
+ *     adulto que aprende para sí mismo sea de primera clase, y hasta hoy no
+ *     tenía dónde mirar lo suyo.
+ *
+ * Se llega desde la vista «Practicar» de la casa, que es donde ya vive todo lo
+ * del adulto que juega solo. Una página sin enlace es una página que no existe.
+ *
+ * ─── Qué se lee, y de quién es cada cosa (#231) ───────────────────────────
+ *
+ * El mapa **no tiene tabla propia**. Aquí solo hay `SELECT`, y cada uno va a la
+ * tabla de su dueño:
+ *
+ *   · `xp_totals.total_xp`         → subsistema de XP (D-055)
+ *   · `child_streak.current_streak`→ subsistema de racha (D-016/D-079)
+ *   · `companion_state`            → el compañero (#235, migración 0010)
+ *   · `skill_state`                → **F4, que todavía no tiene código**
+ *
+ * El único `INSERT` de este archivo escribe `companion_state`, que es una
+ * preferencia de la persona —si ve a Larry— y no progreso de nadie.
+ *
+ * ─── El dominio por tema NO se inventa ─────────────────────────────────────
+ *
+ * `HABILIDADES_SIN_FUENTE` es el stub declarado del criterio 3 de #231: F4 aún
+ * no expone `estadoDeHabilidades()`, así que la lista de habilidades va vacía y
+ * la pantalla **lo dice**. La alternativa —pintar catorce barras en cero— es
+ * exactamente lo que ese criterio prohíbe: un cero que parece un dato real y
+ * se lee como «no has aprendido nada».
+ *
+ * ─── El compañero, apagado (#234, D-080) ───────────────────────────────────
+ *
+ * En SERIO nace en `false` (`VISIBLE_AL_CREAR`) y lo enciende la propia persona
+ * con un toque. El interruptor es un `<form method="post">` de verdad: una
+ * preferencia que se guarda tiene que sobrevivir a que el script no cargue, y
+ * el aparato de referencia es un Android de gama baja (`mc-47` §5).
+ */
+export const prerender = false;
+
+import Privada from "../../../layouts/Privada.astro";
+import Mapa from "../../../components/mapa/Mapa.astro";
+import { t, isLocale, type Locale } from "../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../lib/sesiones";
+import { pestanasPrivadas } from "../../../lib/pestanas-privadas";
+import { ruta } from "../../../i18n/rutas";
+import {
+  construirTablero,
+  HABILIDADES_SIN_FUENTE,
+  type EntradaDeHabilidad,
+} from "../../../../../../packages/motor/src/mapa.ts";
+import {
+  estadoInicial,
+  ponerVisible,
+  SQL_UPSERT_COMPANERO,
+} from "../../../../../../packages/motor/src/companero.ts";
+
+import "../../../styles/mapa.css";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const m = t(locale);
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+// `?cambiar=1` por el mismo bucle que documenta `app/perfil.astro`: sin él,
+// una cookie viva con la sesión ya caducada gira entre `/entrar/` y `/app/`.
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+/**
+ * El adulto autenticado es SERIO (D-017: de 18 en adelante), así que su mapa es
+ * el tablero de cifras. No se deriva de una columna porque `users` no tiene
+ * banda: la banda vive en `child_profiles`, y un adulto no es un perfil de hijo.
+ *
+ * `PRO` (N11-N12) existe en D-017 y comparte forma con SERIO, así que la
+ * pantalla no cambiaría; el día que haya una forma de declararse PRO, lo que
+ * cambia es esta línea y nada más.
+ */
+const TEMA = "SERIO" as const;
+
+/* ─── El interruptor del compañero ───────────────────────────────────────── */
+
+let companero = estadoInicial(TEMA);
+let accesorios: string[] = [];
+
+if (env?.DB) {
+  if (Astro.request.method === "POST") {
+    const datos = await Astro.request.formData();
+    const quiereVisible = datos.get("visible") === "1";
+    try {
+      await env.DB.prepare(SQL_UPSERT_COMPANERO)
+        .bind(`comp_u_${sesion.userId}`, null, sesion.userId, quiereVisible ? 1 : 0, "[]")
+        .run();
+    } catch {
+      // Sin base, el interruptor no guarda. La pantalla se pinta igual: un mapa
+      // que devuelve un 500 porque no pudo guardar una preferencia visual es
+      // peor que un mapa con el compañero donde estaba.
+    }
+    // Redirección después de escribir: sin esto, recargar reenvía el formulario
+    // y el compañero parpadea entre encendido y apagado.
+    return Astro.redirect(`/${locale}/app/mapa/`);
+  }
+
+  try {
+    const fila = await env.DB.prepare(
+      "SELECT visible, accessory_ids FROM companion_state WHERE user_id = ?",
+    )
+      .bind(sesion.userId)
+      .first<{ visible: number; accessory_ids: string }>();
+    if (fila) {
+      companero = ponerVisible(companero, fila.visible === 1);
+      // `accessory_ids` es JSON con ids de una lista cerrada. Si viene roto se
+      // pinta a Larry sin accesorios, que es degradar y no reventar.
+      try {
+        const leidos = JSON.parse(fila.accessory_ids);
+        if (Array.isArray(leidos)) accesorios = leidos.filter((x) => typeof x === "string");
+      } catch {
+        accesorios = [];
+      }
+    }
+  } catch {
+    // La tabla puede no estar aplicada todavía en este entorno. El compañero se
+    // queda en su valor inicial, que en SERIO es apagado.
+  }
+}
+
+/* ─── Los totales: se leen, no se calculan ───────────────────────────────── */
+
+let xp = 0;
+let rachaDias = 0;
+if (env?.DB) {
+  try {
+    const r = await env.DB.prepare("SELECT total_xp FROM xp_totals WHERE user_id = ?")
+      .bind(sesion.userId)
+      .first<{ total_xp: number }>();
+    xp = r?.total_xp ?? 0;
+  } catch {
+    xp = 0;
+  }
+  try {
+    const r = await env.DB.prepare("SELECT current_streak FROM child_streak WHERE user_id = ?")
+      .bind(sesion.userId)
+      .first<{ current_streak: number }>();
+    rachaDias = r?.current_streak ?? 0;
+  } catch {
+    rachaDias = 0;
+  }
+}
+
+/**
+ * El dominio por habilidad. **Vacío a propósito** — ver el encabezado.
+ *
+ * Cuando F4 exponga `estadoDeHabilidades()` (ver `CONTRATO_ASUMIDO_F4`), esta
+ * constante deja de ser `[]` y la pantalla no cambia de forma: cambia de
+ * contenido.
+ */
+const habilidades: EntradaDeHabilidad[] = [];
+
+const tablero = construirTablero(habilidades, { xp, rachaDias });
+
+/*
+ * La franja de pestañas. `tieneHijos = false` a propósito: esta pantalla es la
+ * del adulto sobre SÍ MISMO, y quien no tiene hijos no lee una sola palabra
+ * sobre familia en su navegación (D-065 punto 3, issue #346). La pestaña activa
+ * es «Practicar», que es de donde se llega.
+ */
+const pestanas = pestanasPrivadas(locale, false, "practicar");
+---
+
+<Privada locale={locale} title={m.mapaTitulo} description={m.mapaLead} pestanas={pestanas}>
+  <article>
+    <h1>{m.mapaTitulo}</h1>
+    <p class="mapa__lead">{m.mapaLead}</p>
+
+    <Mapa
+      locale={locale}
+      tema={TEMA}
+      mapa={tablero}
+      companeroVisible={companero.visible}
+      accesorios={accesorios}
+      sinFuenteDeHabilidades={HABILIDADES_SIN_FUENTE}
+      accionCompanero={`/${locale}/app/mapa/`}
+    />
+  </article>
+</Privada>

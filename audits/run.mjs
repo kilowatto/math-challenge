@@ -168,6 +168,20 @@ const ACTIVE = [
   // verdad, en los siete locales, y juzga la cadena que un niño leería.
   ["larry-nunca-calcula",     "Larry recibe el veredicto, nunca los operandos", "línea roja #7, D-004, D-074, mc-37"],
   ["larry-nunca-averguenza",  "ninguna cadena de explicación humilla",          "línea roja #7, mc-11, D-022, #133"],
+
+  // ─── El único que no vigila una decisión, sino el sistema de archivos ────
+  //
+  // Su causa está FUERA del repositorio. `~/Documents` está bajo iCloud Drive
+  // en esta máquina, y cuando dos escritores tocan el mismo archivo el
+  // servicio guarda la versión perdedora al lado, con un número:
+  // `wrangler 2.jsonc`, `robots 2.txt`, `jugar 2.ts`. En `ae73db1` fueron 193
+  // y rompieron tres auditores y el build; el 2026-08-02 volvieron a aparecer
+  // 8, luego 15, y luego ninguno — sin que nadie los creara ni los borrara.
+  //
+  // En `dist/` son basura de compilación y NO bloquean. En
+  // `apps/web/src/pages/api/` son una RUTA: `jugar 2.ts` se habría desplegado
+  // a producción como `/api/jugar 2`.
+  ["archivos-duplicados",     "ningún duplicado de sincronización en el código", "CLAUDE.md § Git regla 1, ae73db1"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

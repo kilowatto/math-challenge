@@ -63,6 +63,73 @@ if (existsSync(msgDir)) {
   notes.push(`${msgDir} no existe todavía — se revisará cuando exista (F0/F2)`);
 }
 
+// 4. El catálogo de cosméticos: cada clave que la migración referencia tiene
+//    texto en los siete locales (#255, D-022)
+//
+// `cosmetic_catalog` guarda `nombre_clave` y `condicion_clave` — claves i18n,
+// jamás texto crudo, mismo patrón que `enunciado.clave` en item.ts. Una clave
+// que existe en la base y falta en un locale muestra la clave cruda o un hueco,
+// y solo en el idioma que no habla quien escribió el catálogo: funciona en sus
+// pruebas y falla para esa familia. Las claves se leen de la migración REAL
+// (segunda fuente, D-070), no de una lista escrita aquí a mano.
+const cosDir = "apps/web/src/i18n/cosmeticos";
+if (existsSync(cosDir)) {
+  const cosMsgs = {};
+  for (const loc of LOCALES) {
+    const ruta = join(cosDir, `${loc}.json`);
+    if (!existsSync(ruta)) {
+      problems.push(`falta ${ruta}: el locale ${loc} no tiene textos de cosméticos`);
+      continue;
+    }
+    try {
+      cosMsgs[loc] = JSON.parse(readFileSync(ruta, "utf8"));
+    } catch {
+      problems.push(`${ruta} no es JSON válido`);
+    }
+  }
+
+  // Mismo juego de llaves en los siete. Un locale con una llave de más es tan
+  // sospechoso como uno con una de menos: significa que alguien editó un solo
+  // archivo, y los otros seis quedaron atrás en silencio.
+  if (cosMsgs.en) {
+    const baseKeys = Object.keys(cosMsgs.en).sort();
+    for (const loc of LOCALES.filter((l) => l !== "en" && cosMsgs[l])) {
+      const otras = Object.keys(cosMsgs[loc]);
+      for (const k of baseKeys.filter((k) => !(k in cosMsgs[loc]))) {
+        problems.push(`cosmeticos/${loc}.json: falta la llave "${k}"`);
+      }
+      for (const k of otras.filter((k) => !baseKeys.includes(k))) {
+        problems.push(`cosmeticos/${loc}.json: llave sobrante "${k}"`);
+      }
+    }
+  }
+
+  // Las claves que la migración referencia, contra los archivos de mensajes.
+  const migDir2 = "migrations";
+  if (existsSync(migDir2)) {
+    const referenciadas = new Set();
+    for (const file of readdirSync(migDir2).filter((f) => f.endsWith(".sql"))) {
+      const sql = readFileSync(join(migDir2, file), "utf8");
+      for (const m of sql.matchAll(/'(cosmetico\.[a-z0-9_.]+)'/g)) referenciadas.add(m[1]);
+    }
+    for (const clave of [...referenciadas].sort()) {
+      const faltan = LOCALES.filter((l) => cosMsgs[l] && !(clave in cosMsgs[l]));
+      if (faltan.length > 0) {
+        problems.push(
+          `la clave "${clave}" está en el catálogo y no tiene texto en ${faltan.join(", ")}. ` +
+            "El catálogo guarda la clave y la pantalla mostraría la clave cruda o un hueco — " +
+            "y solo en ese idioma (D-022, #255).",
+        );
+      }
+    }
+    if (referenciadas.size > 0) {
+      notes.push(`${referenciadas.size} clave(s) de cosmético cruzadas contra los 7 locales`);
+    }
+  }
+} else {
+  notes.push(`${cosDir} no existe todavía — se revisará cuando exista (#255)`);
+}
+
 if (problems.length > 0) {
   console.error("✗ auditor locales-complete\n");
   for (const p of problems) console.error(`  · ${p}`);

@@ -1,0 +1,17 @@
+{
+  "push.sup.titulo": "Daily reminder",
+  "push.sup.texto": "We can send you one notification a day, at most, when it's time for your family's math moment. It only arrives if no one has practiced yet that day, and never with guilt. You can turn it off forever with one tap.",
+  "push.sup.activar": "Turn on the daily reminder",
+  "push.sup.ahora_no": "Not now",
+  "push.sup.activo": "The daily reminder is on. One notification a day at most, and you can turn it off here.",
+  "push.sup.silenciar": "Turn off the reminder",
+  "push.sup.silenciado": "The reminder is off. We won't ask again.",
+  "push.sup.denegado": "Notifications are blocked in this browser. To turn them on, open this site's settings in your browser and allow notifications — we can't ask again from here.",
+  "push.sup.ios_instalar": "On iPhone and iPad, reminders only work if Math Challenge is installed: open the Share menu and tap “Add to Home Screen”, then come back here.",
+  "push.sup.sin_soporte": "This browser can't receive notifications.",
+  "push.sup.error": "Something didn't work. Try again in a moment.",
+  "push.notif.titulo": "Math moment",
+  "push.notif.cuerpo_uno": "It's a good time for {alias}'s math moment.",
+  "push.notif.cuerpo_varios": "It's a good time for today's math moment.",
+  "push.notif.cuerpo_propio": "It's a good time for your math moment."
+}

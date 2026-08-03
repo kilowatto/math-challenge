@@ -4655,3 +4655,124 @@ F10 (`club_challenge`) sin tocar el club de adultos. Master-plan §13.2
 gana su fila en el mismo commit.
 
 **Investigación relacionada:** D-155, D-156, D-157, `mc-27`.
+## D-159 — Los tipos de misión sin fuente de eventos no fabrican progreso · 2026-08-03
+
+**Decisión:** mientras no exista la fuente de eventos de un tipo de misión,
+ese tipo puede salir asignado pero **no muestra progreso inventado**: ocho de
+los diez tipos del catálogo (D-092) dependen de algo que todavía no existe —
+`repaso`, `dominio` y `fluidez` del resumen de F4; `problema`, `precision` y
+`descubre` de los modos de D-018; `duelo` y `meta_de_liga` de la liga en
+producción. Solo `volumen` (ítem contestado) y `variedad` (habilidad distinta
+del día) tienen fuente real hoy.
+
+La alternativa rechazada: avanzar esas misiones con proxies («contestó algo»
+cuenta como repaso). Una misión que progresa sola enseña que las misiones no
+miden nada — y la línea roja #5 exige que el jugador pueda saber de antemano
+cuánto vale cada cosa, lo que incluye que el contador signifique lo que dice.
+
+Cuando cada fuente aterrice (F4, los modos, la liga), el tipo se enciende sin
+cambiar el motor: la elegibilidad ya está en el catálogo y
+`mision-slot-nunca-vacio` garantiza que el menú nunca queda vacío mientras
+tanto — la rotación rellena con los tipos incondicionales.
+
+Queda como regla escrita porque el D-PENDIENTE del frente de misiones (#409)
+y el del DO (#224) apuntaban aquí: el avance sin fuente NO se simula, se
+declara.
+
+## D-160 — La meta de KINDER para el recordatorio es «jugó hoy» · 2026-08-03
+> **Renumerada (2026-08-03):** escrita como D-128 por el frente de F7 en paralelo;
+> el número chocaba con la D-128 de la sesión de F9-F12 (MSC de ramas). La
+> asignación del orquestador la fija en D-160. Referencias en
+> `apps/web/src/lib/push-hogares.*` actualizadas en el mismo merge.
+
+**Decisión:** para el recordatorio push del padre (#207), la «meta completada»
+de un niño de KINDER es **haber jugado hoy** — `child_streak
+.last_completed_local_date` igual al día local del hogar. Las demás bandas
+siguen midiéndose por fila de `mission_daily_summary` completada. Contestada
+por el dueño el 2026-08-03 de forma interactiva.
+
+El problema que cierra: KINDER no escribe fila de misión (D-104 — su «misión»
+es el reto HISTORIA del día, una etiqueta interna), así que leer misiones era
+leer «nunca completada», y el recordatorio habría sonado **todos los días** en
+hogares de kinder aunque el niño hubiera jugado — exactamente el ruido que
+`mc-19` enseña a no fabricar (un recordatorio que no distingue se desactiva, y
+el que se desactiva no vuelve).
+
+Por qué la racha y no otra fuente: «jugó hoy» es literalmente lo que la meta de
+KINDER es (D-091: el día se cuenta en el primer ítem contestado, y en KINDER
+la racha se registra aunque no se muestre). No hay dato nuevo que guardar y
+ninguna columna que añadir: `theme_band` ya está en `child_profiles` y la racha
+ya está en `child_streak`.
+
+**La frontera, dicha:** la racha NO se vuelve la meta de las demás bandas. Un
+niño de PRIMARIA que juega sin completar ninguna misión sigue contando como
+pendiente — la regla está probada como caso explícito en
+`apps/web/src/lib/push-hogares.prueba.mjs`, ejecutado contra SQLite de verdad.
+
+## D-161 — Rango y Nivel son dos ejes con dos nombres: Q2 se llama «Rango», Q3 es una sola escalera, y el mapa es un tercer eje · 2026-08-03
+
+> **Renumerada (2026-08-03):** su propio marcador «Numeración pendiente — el
+> orquestador asigna el número» se resuelve aquí: D-161. El D-129 que pedía el
+> frente queda asignado a esta decisión; la D-129 de la sesión de F9-F12
+> (≥3 ramas por nivel) conserva su número.
+
+**Decisión:** quedan contestadas por escrito las dos preguntas abiertas de
+`docs/planes/f7-juego.md` §13 que la issue #195 exige cerrar antes de que
+«mapa» o «ligas» construyan sobre este eje. Las dos ya estaban resueltas DE
+HECHO —una por una decisión posterior, otra por el código aterrizado— y esta
+entrada lo que hace es dejarlo dicho, con fecha y con la consecuencia de
+interfaz que lo hace cumplible.
+
+**Q2 — el nombre del eje de XP es «Rango».** D-055 (2026-08-01) ya lo usa de
+forma normativa: «el eje de progreso de F7 (XP → Rango)», «Progresar de Rango
+(personal)», «un Rango ya ganado». La curva aterrizada en #194
+(`packages/motor/src/xp.ts`) lo implementa con ese nombre (`rangoDeXp`,
+`RANGOS_PUBLICADOS`, `EventoDeRango`). Se descartan las dos alternativas de la
+pregunta original: los títulos temáticos de la Sabana (habrían atado el eje de
+progreso al canon de D-019, que es de KINDER, y el eje es de por vida y de
+todas las bandas) y el «sin nombre» (un número sin etiqueta es exactamente la
+ambigüedad que #195 existe para prohibir).
+
+**Q3 — una sola escalera de Rango, universal.** Es lo que #194 ya construyó y
+lo que la base ya guarda: un solo `RANGO_ESCALA`, una sola fórmula de umbrales
+(`umbralXpParaRango`), y `xp_totals` **sin columna `theme_band`** (0007). Se
+descartan las cinco escaleras por tema visual: 5× la calibración y el
+mantenimiento a cambio de una incomparabilidad que ya se garantiza por regla,
+no por estructura — la regla de abajo.
+
+**La regla que sostiene Q3: el Rango nunca ordena a nadie contra nadie, y menos
+entre bandas (D-003).** El Rango 10 de un niño de KINDER y el de un adulto
+SERIO no representan el mismo esfuerzo, y por eso ninguna pantalla ni ninguna
+consulta ordena por Rango: `xp_totals` no tiene banda precisamente para que la
+comparación entre bandas sea imposible por construcción, y dentro de una banda
+el orden competitivo es de los puntos (`score_totals`, D-025), nunca del XP.
+`audits/rango-vs-nivel.mjs` bloquea cualquier `ORDER BY` sobre `total_xp` y
+cualquier columna de banda o período que alguien intente añadir a `xp_totals`.
+
+**El mapa de progreso es un TERCER eje, distinto de los dos.** Rango mide XP
+acumulado (`xp_totals`, nunca baja — D-055); Nivel de dificultad mide dónde
+trabaja el niño pedagógicamente (1–12, D-017, y su número no se le enseña a
+nadie); el mapa mide dominio por habilidad (`skill_state.mastered_at`, D-019).
+Las tres cosas se mueven por separado a propósito: un niño puede subir de Rango
+sin desbloquear mapa nuevo (fluidez de algo ya dominado) y desbloquear mapa sin
+que el número de Rango sea la noticia. Ninguna pantalla presenta uno como
+señal de otro.
+
+**La consecuencia de interfaz (la regla de naming que #195 pide):**
+
+- «Rango» nombra SIEMPRE el eje de XP, y ninguna cadena visible usa la palabra
+  «Nivel» para el XP (ni «Level», «Niveau», «Nível» ni «Stufe» en los otros
+  seis locales — son las palabras del eje de dificultad).
+- El número de nivel de dificultad no aparece en ninguna cadena visible
+  (D-017, criterio #100) — lo vigilan `audits/mapa-sin-numero-de-nivel.mjs` en
+  el mapa y `audits/rango-vs-nivel.mjs` en el resto de la interfaz.
+- Las excepciones actuales —todas en superficies del PADRE o públicas, como la
+  marca que explica los dos ejes al crear el primer perfil (D-026) o la página
+  pública `/niveles/`— están escritas a mano, una por una y con su justificación,
+  en `audits/rango-vs-nivel.mjs`. Una excepción nueva se añade a mano o el
+  auditor bloquea.
+
+**Investigación relacionada:** `mc-16` (XP separado del número competitivo),
+`mc-10` (la presión de rendimiento empeora el desempeño: por qué el número de
+nivel no se enseña), `mc-43` (progreso e identidad). Cierra las preguntas Q2 y
+Q3 de `docs/planes/f7-juego.md` §13 y el cuarto criterio de aceptación de #195.

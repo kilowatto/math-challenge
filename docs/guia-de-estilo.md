@@ -260,6 +260,46 @@ degradación del archivo real.
 
 ---
 
+## Rango y Nivel — dos ejes, dos nombres, y un tercero que no se mezcla (#195)
+
+El producto tiene **tres** ejes de progreso y ninguno se nombra con la palabra
+de otro. La confusión no es un riesgo de redacción: un niño puede estar en
+Nivel 3 de dificultad y en Rango 12 de XP el mismo día, y si la interfaz
+confunde los dos números el defecto es de arquitectura de información.
+
+| Eje | Qué mide | Su nombre visible | Su número |
+|---|---|---|---|
+| **Rango** | XP acumulado de por vida (`xp_totals`, D-055) | **«Rango»** — siempre esa palabra, en los siete locales | Se publica (`RANGOS_PUBLICADOS`) |
+| **Nivel de dificultad** | Dónde trabaja pedagógicamente (1–12, D-017) | «Nivel», solo en superficies del padre o públicas | **Nunca se muestra** (criterio #100) |
+| **Mapa** | Dominio por habilidad (`skill_state.mastered_at`, D-019) | El lugar, el tema, la habilidad — en palabra | Tampoco: es el tercer eje, no una vista de los otros dos |
+
+Las cuatro reglas de naming:
+
+1. **«Rango» nombra solo el XP.** Ninguna cadena visible llama «Nivel» (ni
+   «Level», «Niveau», «Nível», «Stufe») al eje de XP. Es la trampa clásica de
+   Duolingo, y aquí «Nivel» ya tiene dueño: la dificultad de D-017.
+2. **«Nivel» no aparece en pantallas del niño**, y su número no aparece en
+   ninguna cadena visible. Las excepciones de hoy son todas del padre o
+   públicas —la marca que explica los dos ejes al crear el primer perfil, la
+   página `/niveles/`— y están escritas una por una, con su justificación, en
+   `audits/rango-vs-nivel.mjs`. Una excepción nueva se escribe ahí a mano o el
+   commit no pasa.
+3. **Rango y puntos nunca comparten pantalla sin etiqueta** (D-055): los
+   puntos son «tu marcador de esta liga, puede subir y bajar»; el XP es «todo
+   lo que has aprendido, nunca baja». Y ninguno se deriva del otro.
+4. **El Rango nunca ordena a nadie.** Ni entre bandas (D-003: `xp_totals` no
+   tiene `theme_band` precisamente para que esa comparación sea imposible por
+   construcción) ni dentro de una — el orden competitivo es de los puntos.
+   Un Rango 10 de KINDER y uno de SERIO no son el mismo esfuerzo, y la
+   respuesta del producto a eso no es esconderlo: es no rankearlo jamás.
+
+Lo hace cumplir `audits/rango-vs-nivel.mjs`, con control negativo por
+degradación de archivos reales, complementando a
+`audits/mapa-sin-numero-de-nivel.mjs` (que vigila el módulo del mapa; este
+vigila el resto de la interfaz y el naming).
+
+---
+
 ## Lo que hace cumplir el auditor
 
 `audits/brand-image.mjs`, en cada commit:

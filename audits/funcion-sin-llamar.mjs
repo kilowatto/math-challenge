@@ -68,6 +68,17 @@ const PUERTAS = [
   ["registrarDia", "sin ella ningún día se cuenta jamás y `child_streak` se queda vacía (#201, D-014)"],
   ["ganarEscudos", "sin ella la red de protección de la racha no se otorga nunca (#203, D-079)"],
   ["xpDeItem", "sin ella `xp_totals` no se mueve y el Rango no avanza para nadie (#192, D-055)"],
+
+  // ─── El cable de F7 · Misiones diarias, añadido el 2026-08-03 ────────────
+  //
+  // La misma enfermedad una tercera vez: `misiones.ts` estaba escrito, probado
+  // y con cuatro auditores — y ninguno podía ver que no lo llamaba nadie, igual
+  // que le pasó a la racha hasta `progreso.ts`. Las dos entradas de la
+  // superficie: la que alimenta el motor en cada ítem y la que lee el día para
+  // pintarlo. Sin la primera `mission_daily_summary` se queda vacía para
+  // siempre; sin la segunda el menú y el resumen no existen para nadie.
+  ["registrarAvanceDeHoy", "sin ella ninguna misión avanza jamás y `mission_daily_summary` se queda vacía (#211)"],
+  ["leerMisionesDeHoy", "sin ella el menú y el resumen del día no se pintan en ninguna superficie (#211)"],
 ];
 
 const problemas = [];

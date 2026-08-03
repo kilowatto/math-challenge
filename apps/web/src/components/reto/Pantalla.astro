@@ -250,6 +250,42 @@ const {
       <button type="button" id="siguiente" class="opcion accion" hidden>{rotulos.siguiente}</button>
       <a href={salirA} class="opcion accion salir">{rotulos.salir}</a>
     </div>
+
+    {/*
+      El límite de pantalla (F8 #270, #271, #273). Tres superficies, y las tres
+      nacen ESCONDIDAS: solo las abre el script cuando el servidor manda la
+      decisión ya tomada y los textos ya escritos en el locale de quien juega.
+
+      Lo que NO hay aquí, y es la regla y no un descuido:
+
+       · Ningún temporizador. El descanso se OFRECE con su botón disponible
+         desde el primer instante (#271, textual: «sin bloqueo cronometrado»),
+         y el aviso es un evento único, no una cuenta regresiva — D-024 y D-045
+         prohíben el reloj visible en KINDER, y un cronómetro encendido por
+         defecto es un antipatrón medido (mc-21).
+       · Nada que retenga el aparato. Las dos cortinas son elementos de la
+         página: no fuerzan pantalla completa, no bloquean el navegador y no
+         impiden cerrar la pestaña (línea roja #1, que para un menor no admite
+         excepción). El corte termina la sesión; no secuestra nada.
+    */}
+    <p id="aviso-limite" class="aviso-limite" role="status" hidden></p>
+
+    <div id="descanso" class="limite-cortina" hidden>
+      <div class="limite-tarjeta" role="dialog" aria-labelledby="descanso-titulo">
+        <h2 id="descanso-titulo" class="limite-titulo"></h2>
+        <p id="descanso-cuerpo"></p>
+        <p id="descanso-afuera" class="limite-nota"></p>
+        <button type="button" id="descanso-seguir" class="opcion accion"></button>
+      </div>
+    </div>
+
+    <div id="despedida" class="limite-cortina" hidden>
+      <div class="limite-tarjeta" role="dialog" aria-labelledby="despedida-cuerpo">
+        <p id="despedida-cuerpo" class="limite-despedida"></p>
+        <p id="despedida-retos" class="limite-nota" hidden></p>
+        <a id="despedida-salir" class="opcion accion" href={salirA}></a>
+      </div>
+    </div>
   </main>
 
   {/*
@@ -372,6 +408,109 @@ const {
       ninguna otra cosa: el modelo es del servidor.
     */
     let ultimoItemId = null;
+
+    // ---------------------------------------------------------------------
+    // El límite de pantalla (F8 #270, #271, #273)
+    // ---------------------------------------------------------------------
+    /*
+      La decisión y los textos llegan YA TOMADOS y YA ESCRITOS desde el
+      servidor (`lib/limite-dia.ts`): este script no sabe cuántos minutos van,
+      ni a qué hora es la noche, ni qué banda juega. Solo pinta el hecho.
+
+      `terminado` es la única cosa que recuerda: cuando el día se cerró, no se
+      vuelve a pedir un ítem. No es un bloqueo — el enlace de salida sigue
+      siendo un enlace, y la pestaña se cierra igual que siempre (línea roja
+      #1). Es dejar de pedir, que es lo único que el corte suave de D-016 hace.
+    */
+    const $avisoLimite = document.getElementById("aviso-limite");
+    const $descanso = document.getElementById("descanso");
+    const $descansoTitulo = document.getElementById("descanso-titulo");
+    const $descansoCuerpo = document.getElementById("descanso-cuerpo");
+    const $descansoAfuera = document.getElementById("descanso-afuera");
+    const $descansoSeguir = document.getElementById("descanso-seguir");
+    const $despedida = document.getElementById("despedida");
+    const $despedidaCuerpo = document.getElementById("despedida-cuerpo");
+    const $despedidaRetos = document.getElementById("despedida-retos");
+    const $despedidaSalir = document.getElementById("despedida-salir");
+    /** ¿El día se cerró por el límite? Entonces no se pide otro ítem. */
+    let terminado = false;
+
+    /**
+     * El aviso de los 5 minutos (#270). Un EVENTO único, no un cronómetro:
+     * una línea de Larry, sin cifra en KINDER, que se quita sola cuando llega
+     * el ítem siguiente. No bloquea nada — el niño sigue contestando debajo.
+     */
+    function mostrarAvisoLimite(l) {
+      if (!$avisoLimite) return;
+      $avisoLimite.textContent = l.textos.cuerpo || "";
+      $avisoLimite.hidden = false;
+      decir(l.textos.cuerpo);
+    }
+
+    /**
+     * El descanso (#271). Se OFRECE, nunca se impone: «Seguir jugando» está
+     * disponible desde el primer instante — aquí no hay `setTimeout`, ni
+     * cuenta regresiva, ni espera obligatoria, y esa ausencia es el criterio
+     * de la issue hecho código. El contador ya lo reinició el servidor al
+     * ofrecerlo.
+     */
+    function mostrarDescanso(l) {
+      if (!$descanso) return;
+      $descansoTitulo.textContent = l.textos.titulo || "";
+      $descansoCuerpo.textContent = l.textos.cuerpo || "";
+      $descansoAfuera.textContent = l.textos.afuera || "";
+      $descansoSeguir.textContent = l.textos.seguir || "";
+      $descanso.hidden = false;
+      decir([l.textos.titulo, l.textos.cuerpo].filter(Boolean).join(" "));
+      $descansoSeguir.focus();
+    }
+
+    /**
+     * La despedida (#272, #273). El día terminó: se deja de pedir ítems y se
+     * despide Larry — sin candado, sin «ya jugaste demasiado», sin lenguaje
+     * de pérdida (línea roja #7; el copy ya pasó el léxico en el servidor).
+     *
+     * El conteo de retos lo pone aquí y no el servidor porque quien sabe
+     * cuántos ítems se contestaron en ESTA sesión es la pantalla; el servidor
+     * manda la plantilla con `{n}`. Son una o dos cifras, idénticas en los
+     * siete locales — no pasa por `formatear()` por la misma razón que el «5»
+     * del aviso: no hay separador de millares que decidir. KINDER no recibe
+     * plantilla: su despedida no lleva números (mc-20, D-024).
+     */
+    function mostrarDespedida(l) {
+      if (!$despedida) return;
+      terminado = true;
+      $confirmar.hidden = true;
+      $reintentar.hidden = true;
+      $siguiente.hidden = true;
+      $despedidaCuerpo.textContent = l.textos.cuerpo || "";
+      const plantilla = hechos === 1 ? l.textos.retosUno : l.textos.retosOtros;
+      if (plantilla && hechos > 0) {
+        $despedidaRetos.textContent = plantilla.replace("{n}", String(hechos));
+        $despedidaRetos.hidden = false;
+      }
+      $despedidaSalir.textContent = l.textos.salir || rotulos.salir;
+      $despedida.hidden = false;
+      decir(l.textos.cuerpo);
+      $despedidaSalir.focus();
+    }
+
+    /** Lo que el servidor decidió, pintado después del ítem o del veredicto. */
+    function atenderLimite(l) {
+      if (!l) return;
+      if (l.tipo === "CERRAR") mostrarDespedida(l);
+      else if (l.tipo === "DESCANSO") mostrarDescanso(l);
+      else if (l.tipo === "AVISO") mostrarAvisoLimite(l);
+    }
+
+    if ($descansoSeguir) {
+      $descansoSeguir.addEventListener("click", () => {
+        $descanso.hidden = true;
+        // Volver al juego donde estaba: si el veredicto estaba en pantalla,
+        // el foco regresa a «Siguiente»; si no, a la primera opción.
+        ($siguiente.hidden ? $opciones.querySelector("button") : $siguiente)?.focus();
+      });
+    }
 
     // ---------------------------------------------------------------------
     // La voz de Larry (#135, D-078)
@@ -877,6 +1016,9 @@ const {
     // El bucle
     // ---------------------------------------------------------------------
     async function siguiente() {
+      // El día se cerró por el límite: no se pide otro ítem. La despedida ya
+      // está en pantalla; «terminado» es dejar de pedir, no un bloqueo.
+      if (terminado) return;
       elegido = null;
       juzgado = false;
       esReintento = false;
@@ -886,6 +1028,7 @@ const {
       $reintentar.hidden = true;
       $siguiente.hidden = true;
       if ($pista) $pista.hidden = true;
+      if ($avisoLimite) $avisoLimite.hidden = true;
       $enunciado.textContent = rotulos.cargando;
       $escena.replaceChildren();
       $escena.removeAttribute("data-disposicion");
@@ -893,6 +1036,13 @@ const {
       $opciones.replaceChildren();
 
       const r = await pedir("siguiente", { ultimoItemId });
+      // El día terminó — por el tope o por la noche: la respuesta ES la
+      // despedida y no trae ítem. Se pinta y se acabó.
+      if (r?.corte) {
+        $enunciado.textContent = "";
+        mostrarDespedida(r.corte);
+        return;
+      }
       if (!r?.ok) {
         $enunciado.textContent = rotulos.cargando;
         return;
@@ -907,6 +1057,9 @@ const {
       if (actual.formato === "flash") prepararDestello(actual);
       pintarOpciones(actual);
       pintarContexto(r.contexto);
+      // El aviso o el descanso viajan JUNTO al ítem servido: se muestran
+      // encima, sin quitarlo ni interrumpirlo.
+      atenderLimite(r.limite);
     }
 
     /** Se confirma lo elegido. **Este** es el momento en que algo viaja. */
@@ -1016,8 +1169,20 @@ const {
       $pasos.hidden = pasos.length === 0;
       // Volver a intentarlo solo se ofrece cuando hay algo que corregir.
       $reintentar.hidden = r.correcto === true;
-      $siguiente.hidden = false;
-      $siguiente.focus();
+      /*
+       * El límite de pantalla viaja en ESTA respuesta, y el orden importa:
+       * primero el veredicto del ítem que el niño acaba de pensar, DESPUÉS el
+       * aviso, el descanso o la despedida — nunca al revés, porque el punto
+       * seguro de D-016 es exactamente éste: ya no hay nada esperando
+       * respuesta. Si el día se cerró, «Siguiente» no se ofrece.
+       */
+      atenderLimite(r.limite);
+      if (!terminado) {
+        $siguiente.hidden = false;
+        // Con la cortina del descanso abierta el foco se queda en su botón:
+        // moverlo a «Siguiente» debajo de la cortina esconde a dónde fue.
+        if (!$descanso || $descanso.hidden) $siguiente.focus();
+      }
     }
 
     /**

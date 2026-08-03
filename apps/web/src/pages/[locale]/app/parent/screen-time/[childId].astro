@@ -1,0 +1,327 @@
+---
+/**
+ * `/{locale}/app/parent/screen-time/[childId]` — la pantalla del padre para
+ * configurar y ver el límite de pantalla. F8 #269, D-016, `mc-26` impl. #11.
+ *
+ * ─── Qué hay aquí, y qué NO ─────────────────────────────────────────────────
+ *
+ * Contenido mínimo del panel (`mc-26` implicación de diseño #11):
+ *
+ *  · «Hoy jugó X de Y minutos», leído de `screen_time_daily_usage` del día
+ *    local del hogar (0 si no hay fila), refrescado al abrir y cada ~30 s si
+ *    la pantalla queda abierta — no un contador segundo a segundo (§5.2).
+ *  · Un control de minutos diarios limitado EN EL PROPIO HTML al rango de la
+ *    banda (`min`/`max`/`step` salen de `LIMITES_POR_BANDA` del motor) y
+ *    revalidado en el servidor con la misma función — la interfaz nunca ofrece
+ *    un valor que el servidor rechaza, porque los dos leen la misma tabla.
+ *  · Un interruptor de corte nocturno que revela la hora solo encendido.
+ *    Apagado = `bedtime_local = NULL`, el estado válido explícito que la 0003
+ *    distingue de medianoche. Nace apagado: no se enciende solo (dudas §23.3).
+ *
+ * Y lo que NO va, con su decisión:
+ *
+ *  · `break_every_min` no se expone — default fijo de la banda (§5.2).
+ *  · `bedtime_cutoff_min` no es un número editable — valor fijo de la banda
+ *    (D-016 publica un solo valor, sin rango; exponerla inventaría un rango).
+ *  · Nada de rendimiento medido sobre el niño (D-037). Los minutos de hoy no
+ *    son telemetría: salen del mismo reloj de servidor que existe para aplicar
+ *    el límite que el propio padre configuró — es la función, no una medición
+ *    añadida (§5.3).
+ *  · Ninguna sombra de plan o pago (línea roja #4, D-057): el límite no se
+ *    levanta pagando y esta pantalla no conoce la palabra.
+ *
+ * ─── Autorización ───────────────────────────────────────────────────────────
+ *
+ * Línea roja #2: el padre ve a SUS hijos. `hijoDelPadre()` responde la única
+ * pregunta —¿este `childId` es un perfil vivo de ESTA sesión?— y un `null`
+ * (inexistente o ajeno, sin distinguir) produce 404. Se falla CERRADO también
+ * sin base de datos: lo que no se puede comprobar, se niega.
+ *
+ * ─── SSR, como el resto del área privada ─────────────────────────────────────
+ *
+ * Lee cookies y consulta la base; una página prerrenderizada no ve ni lo uno
+ * ni lo otro. No lleva `getStaticPaths`: Astro lo ignora en páginas bajo
+ * demanda; el locale y el `childId` salen de `Astro.params`.
+ */
+export const prerender = false;
+
+import Privada from "../../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../../lib/sesiones";
+import { pestanasPrivadas } from "../../../../../lib/pestanas-privadas";
+import { estadoDelLimite, hijoDelPadre } from "../../../../../lib/padre-limite";
+import { zonaDelHogar } from "../../../../../lib/progreso";
+import { rutaCasa } from "../../../../../lib/rutas-app";
+import { ruta } from "../../../../../i18n/rutas";
+import { TEXTOS_PADRE, rellenarPadre } from "../../../../../components/parent/textos";
+import {
+  LIMITES_POR_BANDA,
+  tieneLimite,
+} from "../../../../../../../../packages/motor/src/limite-pantalla.ts";
+import { diaEfectivo } from "../../../../../../../../packages/motor/src/tiempo-local.ts";
+import { formatear } from "../../../../../../../../packages/motor/src/numeros.ts";
+import type { TemaVisual } from "../../../../../../../../packages/motor/src/bandas.ts";
+
+const { locale: raw, childId = "" } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+// `?cambiar=1` y no `/entrar/` a secas: sin eso hay un bucle infinito real
+// (ver `app/perfil.astro`, que lo documenta y lo vivió).
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+// Sin base no se puede comprobar la propiedad del perfil, y lo que no se puede
+// comprobar se niega. A la casa, que es superficie de adulto y sabe degradar.
+if (!env?.DB) return Astro.redirect(rutaCasa(locale));
+
+// ─── La puerta: ¿este niño es de ESTE padre? (línea roja #2) ────────────────
+//
+// `null` no distingue «no existe» de «no es tuyo», y el 404 tampoco: quien
+// prueba ids ajenos no aprende cuáles existen. Si la consulta revienta se
+// trata como lo que operativamente es — no se pudo demostrar que el perfil sea
+// de esta cuenta — y se niega igual.
+const noEncontrado = () =>
+  new Response("404 — perfil desconocido", {
+    status: 404,
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store, private" },
+  });
+
+let hijo: Awaited<ReturnType<typeof hijoDelPadre>> = null;
+try {
+  hijo = await hijoDelPadre(env.DB, sesion.userId, childId);
+} catch (err) {
+  console.error("padre-limite: no se pudo leer el perfil", String(err).slice(0, 200));
+}
+if (!hijo) return noEncontrado();
+
+// El CHECK de la 0002 restringe la columna a las tres bandas de niño, y las
+// tres tienen límite. Si esto falla es un dato roto, no un caso de uso.
+const banda = hijo.theme_band as TemaVisual;
+if (!tieneLimite(banda)) return noEncontrado();
+
+// ─── El estado: configuración vigente + minutos de hoy ───────────────────────
+//
+// La zona es la del HOGAR (`users.timezone` del padre), nunca la del aparato
+// desde el que consulta: «hoy» tiene que ser el mismo día que cuenta la racha
+// y el que aplica el límite (migración 0011, línea roja #6).
+const zona = await zonaDelHogar(env, { id: sesion.userId, esAdulto: true });
+const estado = await estadoDelLimite(env.DB, hijo.id, banda, diaEfectivo(Date.now(), zona));
+const deLaBanda = LIMITES_POR_BANDA[banda];
+
+const textos = TEXTOS_PADRE[locale];
+// La plantilla de «hoy» con el alias ya puesto; `{jugados}` y `{limite}` se
+// quedan para el refresco de ~30 s, que rellena la misma plantilla en cliente.
+const plantillaHoy = rellenarPadre(textos["padre.limite.hoy"], { alias: hijo.alias });
+const textoHoy = rellenarPadre(plantillaHoy, {
+  jugados: formatear(estado.minutosUsados, locale),
+  limite: formatear(estado.config.daily_minutes, locale),
+});
+const lead = rellenarPadre(textos["padre.limite.lead"], { alias: hijo.alias });
+const textoRango = rellenarPadre(textos["padre.limite.rango"], {
+  min: formatear(deLaBanda.minMin, locale),
+  max: formatear(deLaBanda.maxMin, locale),
+});
+const textoNocturno = rellenarPadre(textos["padre.limite.nocturnoAyuda"], {
+  antes: formatear(estado.config.bedtime_cutoff_min, locale),
+});
+
+// El error vuelve en la URL como clave de un conjunto cerrado
+// (`lib/respuesta-de-formulario.ts` corta el sufijo de bitácora).
+const e = Astro.url.searchParams.get("e");
+const errorEnPantalla =
+  e === "minutos_fuera_de_rango"
+    ? rellenarPadre(textos["padre.limite.errRango"], {
+        min: formatear(deLaBanda.minMin, locale),
+        max: formatear(deLaBanda.maxMin, locale),
+      })
+    : e === "hora_mal_formada"
+      ? textos["padre.limite.errHora"]
+      : e !== null
+        ? textos["padre.limite.errGenerico"]
+        : null;
+const guardado = Astro.url.searchParams.get("guardado") === "1";
+
+// La franja de pestañas del área privada, con «Pantalla» activa. Hay hijos a
+// ciencia cierta: esta pantalla ES de uno de ellos.
+const pestanas = pestanasPrivadas(locale, true, "limite");
+
+// Los minutos de hoy de un niño concreto: nunca en caché, en ningún
+// intermediario. `sw.js` ya se salta `/app/` entero por la misma razón.
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={textos["padre.limite.titulo"]} description={lead} pestanas={pestanas}>
+  <article class="limite">
+    <h1>{textos["padre.limite.titulo"]} · {hijo.alias}</h1>
+    <p class="lead">{lead}</p>
+
+    {/* ── «Hoy jugó X de Y minutos» (mc-26 implicación #11) ─────────────────
+        `aria-live="polite"` porque el texto cambia solo cada ~30 s si la
+        pantalla queda abierta: un cambio de contenido no anunciado es un
+        cambio que el lector de pantalla no ve. */}
+    <section class="bloque">
+      <p class="hoy" id="uso-hoy" aria-live="polite">{textoHoy}</p>
+    </section>
+
+    {/* ── El formulario. Funciona sin JavaScript: el deslizador limita por
+        nativo (`min`/`max`/`step`), la hora se revela por CSS (`:checked`),
+        y el servidor revalida todo con la misma función del motor. */}
+    <form method="post" action="/api/padre-limite" class="bloque">
+      <input type="hidden" name="hijo" value={hijo.id} />
+      <input type="hidden" name="locale" value={locale} />
+
+      {guardado && <p class="ok">{textos["padre.limite.guardado"]}</p>}
+      {errorEnPantalla !== null && <p class="mal" role="alert">{errorEnPantalla}</p>}
+
+      <div class="campo">
+        <label for="min-diarios">{textos["padre.limite.diarios"]}</label>
+        <div class="deslizador">
+          <input
+            type="range"
+            id="min-diarios"
+            name="daily_minutes"
+            min={deLaBanda.minMin}
+            max={deLaBanda.maxMin}
+            step="1"
+            value={estado.config.daily_minutes}
+          />
+          <output id="salida-min" for="min-diarios">
+            {formatear(estado.config.daily_minutes, locale)}
+          </output>
+        </div>
+        <p class="pista">{textoRango}</p>
+      </div>
+
+      <div class="campo interruptor">
+        <input
+          type="checkbox"
+          id="corte"
+          name="corte_nocturno"
+          checked={estado.config.bedtime_local !== null}
+        />
+        <label for="corte">{textos["padre.limite.nocturno"]}</label>
+        <p class="pista">{textoNocturno}</p>
+        <div class="hora">
+          <label for="hora-dormir">{textos["padre.limite.horaDormir"]}</label>
+          <input
+            type="time"
+            id="hora-dormir"
+            name="bedtime_local"
+            value={estado.config.bedtime_local ?? ""}
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="boton primario">{textos["padre.limite.guardar"]}</button>
+    </form>
+
+    {/* D-016 hecha copy: los rangos son criterio propio. Presentarlos como
+        recomendación médica sería una cita fabricada con evidencia que no
+        existe — solo el tope OMS de 2-4 años tiene fuente, y esa franja está
+        por debajo del producto. */}
+    <p class="muted honestidad">{textos["padre.limite.honestidad"]}</p>
+  </article>
+
+  <style>
+    .limite { max-width: 34rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .hoy { font-family: var(--font-marca); font-weight: var(--weight-subtitle);
+           font-size: var(--text-lg); margin: 0; }
+    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space); }
+    label { font-family: var(--font-sistema); font-size: var(--text-base); }
+    .deslizador { display: flex; align-items: center; gap: var(--space); }
+    .deslizador input[type="range"] { flex: 1; min-height: 44px; accent-color: var(--color-accent); }
+    .deslizador output { font-family: var(--font-marca); font-weight: var(--weight-subtitle);
+                         font-size: var(--text-lg); min-inline-size: 2ch; text-align: end; }
+    .pista { font-size: var(--text-xs); color: var(--color-text-muted);
+             line-height: var(--leading-body); margin: 0; }
+    /* El interruptor y su etiqueta, en fila; la hora se revela SOLO encendido,
+       por CSS, sin una línea de JavaScript (`:checked ~ .hora`). Apagado, el
+       servidor guarda `bedtime_local = NULL` aunque la hora viaje en el
+       cuerpo: el interruptor es lo que decide. */
+    .interruptor { display: grid; grid-template-columns: auto 1fr; column-gap: 0.5rem; align-items: center; }
+    .interruptor input[type="checkbox"] { inline-size: 1.5rem; block-size: 1.5rem;
+                                          accent-color: var(--color-accent); }
+    .interruptor .pista { grid-column: 2; }
+    .hora { display: none; grid-column: 2; margin-block-start: 0.5rem; }
+    #corte:checked ~ .hora { display: flex; flex-direction: column; gap: 0.35rem; }
+    .hora input[type="time"] { font-family: var(--font-sistema); font-size: var(--text-base);
+                               min-height: 44px; padding-inline: 0.75rem; color: var(--color-text);
+                               background: var(--color-surface); border: 1px solid var(--color-border);
+                               border-radius: var(--radius); inline-size: 9rem; }
+    input:focus-visible, button:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    /* 44px, la vara del ADULTO. Los 88 de kinder son para superficies de niño. */
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             background: transparent; color: var(--color-text); font-family: var(--font-sistema);
+             font-size: var(--text-base); cursor: pointer; text-decoration: none; }
+    .boton.primario { background: var(--color-accent); color: var(--color-on-accent);
+                      border-color: transparent; }
+    .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-end: var(--space); }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-end: var(--space); }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-body); }
+    .honestidad { margin-block-start: calc(var(--space) * 1.5); }
+  </style>
+
+  {/*
+    Un solo script, y hace DOS cosas: enseñar el valor del deslizador y releer
+    los minutos de hoy cada ~30 s. `define:vars` implica `is:inline` (D-032):
+    aquí abajo va JS PURO — sin `as`, sin anotaciones, sin imports. El guardián
+    `audits/script-cliente-sin-ts.mjs` lo vigila.
+
+    No valida el rango en cliente porque no hace falta: el `<input type=range
+    min max step>` nativo no puede salirse, y el servidor revalida con
+    `minutosDiariosPermitidos()` de todas formas — el caso de la petición
+    directa saltándose la UI lo cubre el endpoint, no este script.
+  */}
+  <script is:inline define:vars={{
+    URL_USO: `/api/padre-limite?hijo=${encodeURIComponent(hijo.id)}&locale=${locale}`,
+    PLANTILLA_HOY: plantillaHoy,
+    MS_ESPERA: 30000,
+  }}>
+    // El valor del deslizador, visible. Son enteros de 10 a 90: `formatear()`
+    // los escribe idéntico en los siete locales (sin millares ni decimales),
+    // así que el valor del control ES ya el texto formateado.
+    var salida = document.getElementById("salida-min");
+    var deslizador = document.getElementById("min-diarios");
+    if (deslizador && salida) {
+      deslizador.addEventListener("input", function () {
+        salida.textContent = deslizador.value;
+      });
+    }
+
+    // Los minutos de hoy, releídos cada ~30 s mientras la pantalla esté
+    // abierta. NO es un contador segundo a segundo: es la cadencia más barata
+    // que cumple «today's minutes vs. limit» (mc-26, implicación #11). Los
+    // números llegan YA formateados del servidor; aquí solo se cambia texto.
+    var uso = document.getElementById("uso-hoy");
+    function refrescarUso() {
+      fetch(URL_USO, { headers: { accept: "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (d && d.ok && uso) {
+            uso.textContent = PLANTILLA_HOY.split("{jugados}").join(d.jugados)
+                                           .split("{limite}").join(d.limite);
+          }
+        })
+        .catch(function () {
+          // Sin red o sesión caducada: se queda el número que sirvió el
+          // servidor al abrir. Un refresco fallido no borra información.
+        });
+    }
+    setInterval(refrescarUso, MS_ESPERA);
+  </script>
+</Privada>

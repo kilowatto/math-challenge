@@ -55,13 +55,18 @@
  *    deciden D-060, el criterio #100 y #206, en la pantalla.
  */
 import {
+  DIAS_MAXIMOS_DE_PAUSA,
   ESTADO_INICIAL,
   ZONA_DE_RESPALDO,
+  declararPausa,
   diaEfectivo,
+  diasEntre,
   ganarEscudos,
+  PausaRechazada,
   registrarDia,
   zonaValida,
   SQL_UPSERT_RACHA,
+  type DiaLocal,
   type EstadoRacha,
   type MotivoDelDia,
 } from "../../../../packages/motor/src/racha.ts";
@@ -93,6 +98,15 @@ export interface Progreso {
     readonly actual: number;
     /** `max_streak`. Viaja SIEMPRE con el actual (#206, mc-17 §83). */
     readonly mejor: number;
+    /**
+     * `days_played_total`: los días jugados de por vida (#205).
+     *
+     * Es el único número de racha que una superficie de KINDER puede conocer,
+     * y aun así no se pinta como cifra: es la posición del sendero de Larry,
+     * un paso por día jugado. A diferencia de `actual`, NUNCA baja — ni con un
+     * escudo de por medio, ni con la racha reiniciada (`mc-43` §6).
+     */
+    readonly diasJugadosTotal: number;
   };
   readonly xp: {
     readonly total: number;
@@ -117,19 +131,22 @@ interface FilaRacha {
   pause_until_local_date: string | null;
   pause_uses_this_year: number;
   pause_year: number | null;
+  days_played_total: number;
 }
 
 const SQL_LEER_RACHA_NINO = `
 SELECT current_streak, max_streak, last_completed_local_date,
        shields_available, shields_earned_total, shields_earned_this_streak,
-       pause_until_local_date, pause_uses_this_year, pause_year
+       pause_until_local_date, pause_uses_this_year, pause_year,
+       days_played_total
 FROM child_streak WHERE child_profile_id = ?
 `.trim();
 
 const SQL_LEER_RACHA_ADULTO = `
 SELECT current_streak, max_streak, last_completed_local_date,
        shields_available, shields_earned_total, shields_earned_this_streak,
-       pause_until_local_date, pause_uses_this_year, pause_year
+       pause_until_local_date, pause_uses_this_year, pause_year,
+       days_played_total
 FROM child_streak WHERE user_id = ?
 `.trim();
 
@@ -150,8 +167,8 @@ FROM child_streak WHERE user_id = ?
  * ─── Por qué esto no era obvio, y cómo se descubrió ────────────────────────
  *
  * `SQL_UPSERT_RACHA` **no tiene columna `user_id` en absoluto** — se escribió
- * para el caso del niño y su lista es de 12 columnas. La primera versión de este
- * archivo reemplazaba solo el `ON CONFLICT` y ataba 13 valores contra 12 huecos.
+ * para el caso del niño. La primera versión de este archivo reemplazaba solo el
+ * `ON CONFLICT` y ataba un valor de más contra los huecos de entonces.
  * No lo vio ningún auditor, ningún tipo y ninguna prueba: `registrarItem` atrapa
  * su propia excepción a propósito, así que el síntoma era `progreso: null` en la
  * respuesta y una tabla vacía. Se encontró jugando de verdad contra un D1 local
@@ -207,6 +224,7 @@ function estadoDeFila(fila: FilaRacha | null): EstadoRacha {
     pause_until_local_date: fila.pause_until_local_date,
     pause_uses_this_year: fila.pause_uses_this_year,
     pause_year: fila.pause_year,
+    days_played_total: fila.days_played_total,
   };
 }
 
@@ -225,7 +243,11 @@ export async function leerProgreso(env: Env, quien: Jugador): Promise<Progreso |
     const estado = estadoDeFila(racha ?? null);
     const total = xp?.total_xp ?? 0;
     return {
-      racha: { actual: estado.current_streak, mejor: estado.max_streak },
+      racha: {
+        actual: estado.current_streak,
+        mejor: estado.max_streak,
+        diasJugadosTotal: estado.days_played_total,
+      },
       xp: { total, rango: rangoDeXp(total), ganado: 0 },
     };
   } catch {
@@ -311,7 +333,7 @@ export async function registrarItem(
     if (despues !== antes) {
       escrituras.push(
         env.DB.prepare(quien.esAdulto ? SQL_UPSERT_RACHA_ADULTO : SQL_UPSERT_RACHA).bind(
-          // Doce valores para doce columnas. La segunda es la llave del dueño —
+          // Trece valores para trece columnas. La segunda es la llave del dueño —
           // `child_profile_id` o `user_id` según el SQL elegido arriba—, y la
           // otra ni siquiera aparece en la sentencia: se queda NULL sola, que es
           // lo que el `CHECK` de exactamente-un-dueño exige.
@@ -326,6 +348,7 @@ export async function registrarItem(
           despues.pause_until_local_date,
           despues.pause_uses_this_year,
           despues.pause_year,
+          despues.days_played_total,
           entrada.ahora,
         ),
       );
@@ -343,7 +366,11 @@ export async function registrarItem(
 
     const total = (filaXp?.total_xp ?? 0) + ganado;
     return {
-      racha: { actual: despues.current_streak, mejor: despues.max_streak },
+      racha: {
+        actual: despues.current_streak,
+        mejor: despues.max_streak,
+        diasJugadosTotal: despues.days_played_total,
+      },
       xp: { total, rango: rangoDeXp(total), ganado },
     };
   } catch {
@@ -367,4 +394,198 @@ export async function registrarItem(
  */
 export function textoDeXp(plantilla: string, total: number, locale: Locale): string {
   return plantilla.replace("{n}", formatear(total, locale, 0));
+}
+
+
+// ─── Pausa familiar (#204) ───────────────────────────────────────────────────
+//
+// La superficie de `declararPausa()`: el padre —nunca el niño— declara que unos
+// días no cuentan, y el adulto aprendiz (D-034) se la declara a sí mismo. La
+// validación entera (21 días, 4 por año, ventana de 5) vive en el motor; aquí
+// solo hay lectura, autorización y escritura — el mismo contrato que el resto
+// de este archivo, y por eso vive aquí y no en un módulo nuevo: `estadoDeFila`,
+// las dos lecturas y los dos upserts de `child_streak` son privados de este
+// archivo a propósito, y copiarlos sería el segundo escritor que el encabezado
+// de `SQL_UPSERT_RACHA` prohibe.
+//
+// NO hay categoría («viaje», «enfermedad», «otro»): `child_streak` no tiene
+// columna para ella — la migración 0007 la dejó fuera deliberadamente y dice
+// que si el dueño la quiere entra como enumeración cerrada en un CHECK— y este
+// trabajo no toca migraciones. Pedirla en la pantalla para no guardarla sería
+// peor que no pedirla: un dato que se recolecta y se tira es un dato que se
+// recolectó.
+
+/** Lo que contesta `declararPausaFamiliar`. El `motivo` es una clave cerrada. */
+export type ResultadoPausa =
+  | {
+      readonly ok: true;
+      readonly estado: EstadoRacha;
+      /** La pausa pedida ya estaba cubierta por una vigente: no-op, no gasta uso. */
+      readonly yaCubierta: boolean;
+    }
+  | { readonly ok: false; readonly motivo: string; readonly mensaje: string };
+
+const SQL_PERFIL_PROPIO = `
+SELECT id, alias FROM child_profiles
+WHERE id = ? AND parent_user_id = ? AND deleted_at IS NULL
+`.trim();
+
+/**
+ * El perfil de niño, solo si cuelga de ESTA cuenta. La autorización entera de
+ * la pausa es esta consulta: la línea roja #2 hace al niño una fila dentro de
+ * la cuenta del padre, así que «puede declarar la pausa» y «es su padre» son
+ * la misma pregunta. Es el patrón que F8 aplica a `screen_time_settings`:
+ * nadie toca la racha de un niño que no es suyo.
+ *
+ * Devuelve el alias porque la pantalla lo pinta y no hay nada más que leer —
+ * ni año de nacimiento, ni banda (D-013: lo que no se pinta no se pide).
+ */
+export async function perfilPropio(
+  env: Env,
+  hijoId: string,
+  userId: string,
+): Promise<{ id: string; alias: string } | null> {
+  if (!env.DB) return null;
+  try {
+    return await env.DB.prepare(SQL_PERFIL_PROPIO)
+      .bind(hijoId, userId)
+      .first<{ id: string; alias: string }>();
+  } catch {
+    // Fallar cerrado: una base que no responde no es un permiso.
+    return null;
+  }
+}
+
+/**
+ * El estado de racha tal como está en la base, sin tocar nada.
+ *
+ * Lo usa la pantalla de la pausa al cargar (¿hay una vigente? ¿cuántas van
+ * este año?). `leerProgreso` no sirve: devuelve solo lo que la pantalla del
+ * reto pinta, y las columnas de pausa no son de ese contrato.
+ */
+export async function leerEstadoRacha(env: Env, quien: Jugador): Promise<EstadoRacha | null> {
+  if (!env.DB) return null;
+  try {
+    const fila = await env.DB.prepare(quien.esAdulto ? SQL_LEER_RACHA_ADULTO : SQL_LEER_RACHA_NINO)
+      .bind(quien.id)
+      .first<FilaRacha>();
+    return estadoDeFila(fila ?? null);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Declara la pausa y la escribe. El único camino por el que
+ * `pause_until_local_date`, `pause_uses_this_year` y `pause_year` cambian
+ * fuera de `registrarItem`.
+ *
+ * @param sesionUserId el `userId` de la sesión `mc_s` — el ADULTO. Con
+ *   `hijoId` se comprueba que el perfil cuelga de él (`perfilPropio`); sin
+ *   `hijoId` la pausa es para su propia racha de aprendiz (D-034), y no hace
+ *   falta permiso de nadie más.
+ *
+ * ─── Idempotencia ──────────────────────────────────────────────────────────
+ *
+ * `declararPausa()` del motor **siempre** gasta un uso del año, aunque pida lo
+ * mismo dos veces — es puro y no sabe lo que ya está escrito. El reenvío de un
+ * formulario (doble toque, «atrás» y reenviar, un reintento de red) no puede
+ * costar dos de las cuatro pausas del año: si la pausa vigente ya cubre el
+ * final pedido, la petición es un eco de algo ya concedido y se responde con
+ * el estado actual, sin escribir y sin gastar. El atajo solo aplica a una
+ * petición que sería válida (rango bien formado, no invertido, dentro de los
+ * 21 días); cualquier otra cosa cae al motor, que es quien rechaza.
+ *
+ * @param ahora el instante, medido por quien llama. Este módulo no lee relojes.
+ */
+export async function declararPausaFamiliar(
+  env: Env,
+  sesionUserId: string,
+  entrada: {
+    hijoId: string | null;
+    desde: DiaLocal;
+    hasta: DiaLocal;
+    ahora: number;
+  },
+): Promise<ResultadoPausa> {
+  if (!env.DB) return { ok: false, motivo: "sin_bindings", mensaje: "sin base de datos" };
+
+  // ── Autorización, antes de leer nada del niño ────────────────────────────
+  let quien: Jugador;
+  if (entrada.hijoId !== null) {
+    const perfil = await perfilPropio(env, entrada.hijoId, sesionUserId);
+    if (!perfil) {
+      return {
+        ok: false,
+        motivo: "sin_permiso",
+        mensaje: "ese perfil no cuelga de esta cuenta",
+      };
+    }
+    quien = { id: entrada.hijoId, esAdulto: false };
+  } else {
+    quien = { id: sesionUserId, esAdulto: true };
+  }
+
+  // ── Las fechas, con la forma del motor ───────────────────────────────────
+  // `diasEntre` valida la forma YYYY-MM-DD de los dos extremos (viaja por
+  // `comoUTC`, que lanza RangeError). El mensaje del motor llega en español;
+  // la pantalla compone el suyo por locale, así que aquí basta la clave.
+  try {
+    diasEntre(entrada.desde, entrada.hasta);
+  } catch {
+    return { ok: false, motivo: "fecha_invalida", mensaje: "fecha con forma distinta de YYYY-MM-DD" };
+  }
+
+  try {
+    const zona = await zonaDelHogar(env, quien);
+    const hoy = diaEfectivo(entrada.ahora, zona);
+
+    const fila = await env.DB.prepare(quien.esAdulto ? SQL_LEER_RACHA_ADULTO : SQL_LEER_RACHA_NINO)
+      .bind(quien.id)
+      .first<FilaRacha>();
+    const antes = estadoDeFila(fila ?? null);
+
+    // ── El atajo idempotente (ver el encabezado) ───────────────────────────
+    const largoPedido = diasEntre(entrada.desde, entrada.hasta) + 1;
+    const vigente = antes.pause_until_local_date;
+    if (
+      vigente !== null &&
+      largoPedido >= 1 &&
+      largoPedido <= DIAS_MAXIMOS_DE_PAUSA &&
+      diasEntre(entrada.hasta, vigente) >= 0
+    ) {
+      return { ok: true, estado: antes, yaCubierta: true };
+    }
+
+    const despues = declararPausa(antes, entrada.desde, entrada.hasta, hoy);
+
+    await env.DB.prepare(quien.esAdulto ? SQL_UPSERT_RACHA_ADULTO : SQL_UPSERT_RACHA).bind(
+      // Trece valores para trece columnas, en el orden del SQL del motor — el
+      // mismo que `registrarItem` ata arriba, y por la misma razón: dos órdenes
+      // distintos para la misma sentencia es un defecto que ninguna prueba de
+      // tipos ve.
+      crypto.randomUUID(),
+      quien.id,
+      despues.current_streak,
+      despues.max_streak,
+      despues.last_completed_local_date,
+      despues.shields_available,
+      despues.shields_earned_total,
+      despues.shields_earned_this_streak,
+      despues.pause_until_local_date,
+      despues.pause_uses_this_year,
+      despues.pause_year,
+      despues.days_played_total,
+      entrada.ahora,
+    ).run();
+
+    return { ok: true, estado: despues, yaCubierta: false };
+  } catch (e) {
+    if (e instanceof PausaRechazada) {
+      return { ok: false, motivo: e.motivo, mensaje: e.message };
+    }
+    // Una escritura que falló no es una pausa rechazada: se distingue para que
+    // la pantalla no le enseñe al padre un motivo que no fue.
+    return { ok: false, motivo: "error_interno", mensaje: String((e as Error)?.message ?? e) };
+  }
 }

@@ -1597,9 +1597,19 @@ const CASOS = [
   {
     // El fallo que el hueco existe para cazar, y que ninguna reserva declara:
     // una migración que ya corrió en algún ambiente y se borró del repo.
+    //
+    // Reapuntado a 0016 el 2026-08-03: con la 0013 (sendero kinder) y la 0014
+    // (recordatorio push) ya aterrizadas, una sonda en 0016 deja la 0015 sin
+    // declarar, y ese es el hueco que tiene que cazar. El número se mueve con
+    // cada migración que aterriza, y eso es a propósito: el caso apunta al
+    // PRIMER hueco libre por delante de la última migración. Reapuntado, no
+    // borrado (un control cuyo objetivo se movió es un auditor apagado).
+    // Reapuntado otra vez a 0017 cuando la 0015 (cosméticos kinder) aterrizó:
+    // con ella presente, una sonda en 0016 queda contigua y el caso corría en
+    // verde sin degradar nada — el auditor apagado en silencio de siempre.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0014_prueba_hueco.sql",
+    archivo: "migrations/0017_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -1623,6 +1633,93 @@ const CASOS = [
     // nada, que es un auditor apagado en silencio. El arnés lo cazó al integrar.
     parche: (t) => "-- migration-safety-reserva: 0008 — reserva rancia plantada a propósito por el arnés\n" + t,
     espera: "La reserva sobra",
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // F7 · Misiones diarias — la superficie (#220, #222, #227, #229).
+  //
+  // Los cuatro casos DEGRADAN archivos REALES —el componente del resumen y los
+  // JSON de locale que este PR introduce— por la misma razón que los del
+  // motor (D-070): el auditor nació verde porque la superficie se construyó
+  // con él delante, y un archivo inventado solo probaría que sabe leer un
+  // archivo inventado.
+  //
+  // Cada degradación es una que alguien haría de buena fe: «pongamos cuántas
+  // van para que se vea el avance», «el bono merece más emoción», «el tres ya
+  // lo sabemos, escríbelo», «al alemán le sobra la meta».
+  // ─────────────────────────────────────────────────────────────────────────
+
+  {
+    // El «para que se vea el avance» del resumen. Es la degradación más
+    // natural de todas: el menú SÍ muestra «2 de 3», así que llevarlo al
+    // resumen parece consistencia — y es exactamente el «0/3» que #222
+    // prohíbe: el veredicto de lo que faltó, con la voz del contador.
+    auditor: "mision-resumen-sin-ceros",
+    que: "el resumen de fin de día recibe el progreso y puede pintar un «0 de 3»",
+    archivo: "apps/web/src/components/misiones/ResumenMisiones.astro",
+    parche: (t) =>
+      t.replace(
+        "  /** XP total del día por misiones, bono incluido. */\n  xpTotal: number;",
+        "  /** XP total del día por misiones, bono incluido. */\n  xpTotal: number;\n  progreso: number;",
+      ),
+    espera: "denominador",
+  },
+  {
+    // La emoción del bono. «Que se sienta como un premio» es como entra la
+    // metáfora siempre — y #220 la prohíbe aunque el contenido sea conocido:
+    // abrir algo SUGIERE azar (mc-43, hallazgo 5).
+    auditor: "mision-resumen-sin-ceros",
+    que: "el bono del día se presenta como un cofre que se abre",
+    archivo: "apps/web/src/i18n/misiones/en.json",
+    parche: (t) =>
+      t.replace(
+        '"misiones.resumen.bono": "All of today\'s missions done — that\'s {xp} XP more"',
+        '"misiones.resumen.bono": "Open your chest — {xp} XP inside"',
+      ),
+    espera: "cofre",
+  },
+  {
+    // El número escrito a mano. «La meta es tres, todos lo sabemos» — y el
+    // día que la meta cambie a cuatro, es-MX sigue diciendo tres mientras los
+    // demás locales preguntan al motor. #227: todo número visible pasa por
+    // `numeros.ts`, nunca se escribe a mano.
+    auditor: "mision-resumen-sin-ceros",
+    que: "una meta escrita a mano en el texto de es-MX en vez de un marcador",
+    archivo: "apps/web/src/i18n/misiones/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"mision.volumen.progreso": "{n} de {meta} ejercicios contestados"',
+        '"mision.volumen.progreso": "{n} de 3 ejercicios contestados"',
+      ),
+    espera: "dígito",
+  },
+  {
+    // El marcador que se pierde entre locales. «Al alemán le queda largo,
+    // quita lo de la meta» — y de-DE deja de mostrar la meta para siempre, en
+    // silencio, con el gate verde.
+    auditor: "mision-resumen-sin-ceros",
+    que: "de-DE pierde el marcador {meta} que los demás locales sí muestran",
+    archivo: "apps/web/src/i18n/misiones/de-DE.json",
+    parche: (t) =>
+      t.replace(
+        '"mision.volumen.progreso": "{n} von {meta} Aufgaben beantwortet"',
+        '"mision.volumen.progreso": "{n} Aufgaben beantwortet"',
+      ),
+    espera: "marcadores",
+  },
+  {
+    // Y el que vigila que el léxico de la racha también cubra los textos de
+    // misión (D-081 condición 3 extendida a misiones): la urgencia fabricada
+    // no deja de serlo porque diga «misión» en vez de «racha».
+    auditor: "racha-lexico",
+    que: "una cuenta regresiva de misión en el texto de es-MX",
+    archivo: "apps/web/src/i18n/misiones/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"misiones.titulo": "Las misiones de hoy"',
+        '"misiones.titulo": "Te quedan unas horas para tus misiones"',
+      ),
+    espera: "urgencia",
   },
   {
     // La excepción de D-106 es POR MARCADOR: sin el renglón escrito, nombrar
@@ -1651,6 +1748,220 @@ const CASOS = [
         'import type { Banda } from "../../../../packages/motor/src/puntuacion.ts";\nconst _SQL_PROHIBIDO = "UPDATE child_streak SET current_streak = 0";',
       ),
     espera: "child_streak",
+  },
+  {
+    // F7 #207, criterio #1. El caso real que este auditor existe para cazar:
+    // alguien añade la columna de niño a la tabla de suscripciones «para
+    // personalizar», y un push termina dirigido a un menor.
+    auditor: "recordatorio-sin-culpa",
+    que: "una columna child_profile_id en la migración del push",
+    archivo: "migrations/0014_push_recordatorio_padre.sql",
+    parche: (t) =>
+      t.replace(
+        "  user_id          TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,",
+        "  user_id          TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n  child_profile_id TEXT,",
+      ),
+    espera: "child_profile_id",
+  },
+  {
+    // F7 #207, criterio #2. El tope deja de llamarse por su nombre — la puerta
+    // a volverlo configurable «para el experimento». El auditor lo exige por
+    // nombre, así que renombrarlo tiene que bloquear.
+    auditor: "recordatorio-sin-culpa",
+    que: "el tope UN_PUSH_POR_HOGAR_POR_DIA renombrado en el motor",
+    archivo: "packages/motor/src/recordatorio.ts",
+    parche: (t) => t.replace("UN_PUSH_POR_HOGAR_POR_DIA = 1", "TOPE_PUSH_DIARIO = 1"),
+    espera: "UN_PUSH_POR_HOGAR_POR_DIA",
+  },
+  {
+    // F7 #207, criterio #5 y D-026. La forma escrita del nagging: una ruta que
+    // limpia el silencio. El parche convierte el upsert del silencio en su
+    // borrado, y el auditor tiene que decir que el silencio es permanente.
+    auditor: "recordatorio-sin-culpa",
+    que: "una escritura `silenciado_at = NULL` en la ruta del padre",
+    archivo: "apps/web/src/pages/api/push.ts",
+    parche: (t) => t.replace("silenciado_at = excluded.silenciado_at,", "silenciado_at = NULL,"),
+    espera: "silenciado_at",
+  },
+
+  // ─── F7 · El sendero de racha de KINDER (#205) ───────────────────────────
+  {
+    // La degradación es exactamente la que el issue prohíbe: el componente cuyo
+    // único trabajo es NO mostrar un número, mostrándolo. Se degrada el archivo
+    // REAL por lo mismo que los casos de misiones de arriba — uno inventado
+    // solo probaría que el auditor sabe leer un archivo inventado (D-070).
+    auditor: "kinder-sin-examen",
+    que: "el sendero de kinder pinta el acumulado de días como cifra",
+    archivo: "apps/web/src/components/racha/SenderoRacha.astro",
+    parche: (t) => t.replace("</ol>", "<span>{diasJugadosTotal}</span>\n</ol>"),
+    espera: "cifra de racha",
+  },
+
+
+  // ─── F7 · El catálogo de cosméticos de KINDER (#255) ─────────────────────
+  {
+    // La degradación es la que el cruce nuevo de `locales-complete` existe
+    // para cazar: alguien edita los textos de cosméticos en seis locales y se
+    // le pasa el séptimo. La clave sigue en la migración, la pantalla muestra
+    // la clave cruda, y solo en ese idioma. Se degrada el archivo REAL (D-070).
+    auditor: "locales-complete",
+    que: "una clave del catálogo de cosméticos sin texto en es-MX",
+    archivo: "apps/web/src/i18n/cosmeticos/es-MX.json",
+    parche: (t) =>
+      t.replace('  "cosmetico.av_gorra_pato.nombre": "Gorra de patito",\n', ""),
+    espera: "cosmetico.av_gorra_pato.nombre",
+  },
+  // ─── F7 · La pausa familiar (#204) ───────────────────────────────────────
+  {
+    // La degradación es el copy exacto que mc-19 rec. #8 prohíbe junto a esta
+    // pantalla: la pausa convertida en confesión, con culpa. Va en UN solo
+    // locale y sobre el archivo REAL por lo mismo que los casos de arriba
+    // (D-070): un archivo inventado probaría solo que el auditor sabe leer un
+    // archivo inventado. El auditor debe escanear `i18n/pausa` — si alguien lo
+    // quita de DIRS_TEXTOS, este caso sale en verde con la violación delante.
+    auditor: "racha-lexico",
+    que: "«no dejes que se pierda» en el copy de la pausa, en un solo locale",
+    archivo: "apps/web/src/i18n/pausa/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"pausa.cta": "Declarar la pausa"',
+        '"pausa.cta": "Declarar la pausa: no dejes que se pierda la racha"',
+      ),
+    espera: "perdida",
+  },
+  // ─── F7 · El guardarraíl de naming Rango vs Nivel (#195) ─────────────────
+  //
+  // Los cuatro degradan archivos REALES (D-070): la erosión de verdad sería
+  // una cadena editada en un locale, un ORDER BY de más en una consulta que ya
+  // existe, o una interpolación de más en una plantilla que ya se pinta.
+  {
+    // La trampa clásica: llamar «Level» al eje de XP, como hace Duolingo. Aquí
+    // «Level» ya tiene dueño — la dificultad de D-017 — y la clave no está en
+    // la lista blanca escrita a mano.
+    auditor: "rango-vs-nivel",
+    que: "el XP se etiqueta «Level», la palabra del eje de dificultad",
+    archivo: "apps/web/src/i18n/en.json",
+    parche: (t) => t.replace('"mapaXp": "Experience"', '"mapaXp": "Level"'),
+    espera: "mapaXp",
+  },
+  {
+    // Una clave PERMITIDA que gana el número: «Niveles» → «Nivel 3». La lista
+    // blanca autoriza la palabra en superficies del padre, nunca la cifra.
+    auditor: "rango-vs-nivel",
+    que: "una clave de la lista blanca escribe el número de nivel",
+    archivo: "apps/web/src/i18n/es-MX.json",
+    parche: (t) => t.replace('"navLevels": "Niveles"', '"navLevels": "Nivel 3"'),
+    espera: "#100",
+  },
+  {
+    // El Rango convertido en ranking con once caracteres. Compila, no da
+    // error, y ordena a un niño de KINDER contra un adulto SERIO por un número
+    // que no mide lo mismo (D-003).
+    auditor: "rango-vs-nivel",
+    que: "la consulta de XP ordena por total_xp",
+    archivo: "apps/web/src/lib/progreso.ts",
+    parche: (t) =>
+      t.replace(
+        "SELECT total_xp FROM xp_totals WHERE child_profile_id = ?",
+        "SELECT total_xp FROM xp_totals WHERE child_profile_id = ? ORDER BY total_xp DESC",
+      ),
+    espera: "D-003",
+  },
+  {
+    // El descuido de una línea en una plantilla: interpola `nivel` y lo pinta
+    // delante de quien no debe verlo nunca (D-017, #100).
+    auditor: "rango-vs-nivel",
+    que: "el tablero de SERIO interpola el nivel de dificultad",
+    archivo: "apps/web/src/components/mapa/Tablero.astro",
+    parche: (t) =>
+      t.replace(
+        '<span class="tablero__pericia">{textoPericia(f.pericia)}</span>',
+        '<span class="tablero__pericia">{textoPericia(f.pericia)}{(f as any).nivel}</span>',
+      ),
+    espera: "interpola",
+  },
+  // ─── F7 #257 · Larry nunca comenta avatar, alias ni cosméticos ───────────
+  //
+  // Los cuatro casos degradan archivos REALES (D-070), uno por cada mitad que
+  // el auditor vigila: el import que le daría el catálogo al tutor, la función
+  // del alias, el campo que abriría el sobre, y el texto autorado que cruzaría
+  // la frontera con la voz de Larry.
+  {
+    // La violación exacta del criterio 1 del issue: el camino en vivo del
+    // tutor importando el evaluador de cosméticos «para felicitar al niño por
+    // el marco que acaba de ganar».
+    auditor: "larry-sin-cosmeticos",
+    que: "un import de cosmeticos.ts plantado en el camino en vivo del tutor",
+    archivo: "packages/tutor/src/en-vivo.ts",
+    parche: (t) =>
+      t.replace(
+        'import { sellarSobre, type SobreParaLarry } from "../../motor/src/explicacion.ts";',
+        'import { sellarSobre, type SobreParaLarry } from "../../motor/src/explicacion.ts";\n' +
+          'import { cosmeticosQueDesbloquea } from "../../motor/src/cosmeticos.ts";',
+      ),
+    espera: "cosmeticos.ts",
+  },
+  {
+    // La otra puerta: el catálogo de alias. Quien puede nombrar `generarAlias`
+    // puede hablar del nombre público del niño.
+    auditor: "larry-sin-cosmeticos",
+    que: "un import de alias.ts plantado en el catálogo de prompts del tutor",
+    archivo: "packages/tutor/src/catalogo.ts",
+    parche: (t) =>
+      t.replace(
+        'import { LOCALES, type Locale } from "../../motor/src/convenciones.ts";',
+        'import { LOCALES, type Locale } from "../../motor/src/convenciones.ts";\n' +
+          'import { generarAlias } from "../../motor/src/alias.ts";',
+      ),
+    espera: "alias.ts",
+  },
+  {
+    // El campo que abriría el sobre. Mismo mecanismo que el caso `vars` de
+    // `larry-nunca-calcula`: un campo nuevo en la lista blanca viaja solo.
+    auditor: "larry-sin-cosmeticos",
+    que: "un campo `avatar` añadido a la lista blanca del sobre",
+    archivo: "packages/motor/src/explicacion.ts",
+    parche: (t) => t.replace('  "materia",\n', '  "materia",\n  "avatar",\n'),
+    espera: "avatar",
+  },
+  {
+    // El texto autorado cruzando la frontera. Se degrada una cadena real del
+    // i18n de Larry: si «qué bonito avatar» llega a la voz pregenerada, el
+    // auditor tiene que decirlo con la palabra.
+    auditor: "larry-sin-cosmeticos",
+    que: "un «qué bonito avatar» en el i18n de Larry, en es-MX",
+    archivo: "apps/web/src/i18n/larry/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"idiomaNombre": "español de México"',
+        '"idiomaNombre": "español de México, qué bonito avatar"',
+      ),
+    espera: "avatar",
+
+  },
+  {
+    // F7 #224. El reparto del Durable Object de misiones, degradado sobre el
+    // archivo REAL: si `idFromName` recibe un literal, todo el producto haría
+    // cola detrás de un solo hilo (mc-32 riesgo #2).
+    auditor: "do-por-entidad",
+    que: "el DO de misiones repartido con un literal global en vez de por niño",
+    archivo: "apps/web/src/lib/missions-do.ts",
+    parche: (t) => t.replace("ns.idFromName(perfilId)", 'ns.idFromName("global")'),
+    espera: "global",
+  },
+  {
+    // F7 #224. El reloj en el camino de misión, sobre el archivo REAL del DO:
+    // el día lo calcula quien llama con `diaEfectivo()`, y un `Date.now()`
+    // aquí haría que dos llamadas el mismo día vieran menús distintos.
+    auditor: "mision-recompensa-deterministica",
+    que: "un Date.now() dentro del Durable Object de misiones",
+    archivo: "apps/web/src/lib/missions-do.ts",
+    parche: (t) =>
+      t.replace(
+        "const habilidadNueva = !dia.habilidades.includes(p.habilidad);",
+        "const habilidadNueva = Date.now() > 0 && !dia.habilidades.includes(p.habilidad);",
+      ),
+    espera: "reloj",
   },
 ];
 

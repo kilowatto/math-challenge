@@ -317,9 +317,9 @@ export const POOL_FIJO: readonly TipoMision[] = Object.freeze(
 /**
  * El orden con el que se rellena un slot que quedó sin dueño.
  *
- * Los cinco tipos sin ninguna precondición. Que sean cinco y las misiones sean
- * tres es lo que hace imposible un slot vacío o repetido para cualquier banda
- * ≥ PRIMARIA.
+ * Los cinco tipos sin ninguna precondición. Que sean cinco y el máximo de
+ * `MISIONES_POR_DIA` sea 4 (D-103) es lo que hace imposible un slot vacío o
+ * repetido para cualquier banda ≥ PRIMARIA.
  */
 export const ORDEN_DE_RESPALDO: readonly TipoMision[] = Object.freeze([
   "volumen",
@@ -330,7 +330,7 @@ export const ORDEN_DE_RESPALDO: readonly TipoMision[] = Object.freeze([
 ]);
 
 /**
- * Cuántas misiones se ofrecen a la vez, de PRIMARIA en adelante.
+ * Cuántas misiones se ofrecen a la vez, por banda (D-103, 2026-08-03).
  *
  * `[criterio propio, la evidencia es débil en las dos direcciones]`. No existe
  * un estudio de HCI con la cifra para «cuántas misiones diarias tolera un niño
@@ -343,12 +343,24 @@ export const ORDEN_DE_RESPALDO: readonly TipoMision[] = Object.freeze([
  *     de trabajo **adulta**, con los niños de 7-11 todavía **subiendo** hacia ese
  *     techo, no habiéndolo alcanzado.
  *
- * Se elige 3 y queda como pregunta abierta al dueño en `docs/dudas.md`: 2 sería
- * más conservador, 3 es más simple de construir y de explicar y aprovecha el
- * precedente. **Un solo número para todas las bandas**, incluida SERIO — la
- * segunda configuración se agrega el día que el dueño la pida, no antes.
+ * Fue pregunta abierta al dueño (`docs/dudas.md` §23, misiones) y la contestó
+ * el 2026-08-03: **3 en PRIMARIA y SECUNDARIA** (el precedente, justo por debajo
+ * de un techo que a esa edad todavía no se tiene) y **4 en las bandas adultas**
+ * (la memoria de trabajo adulta sí alcanza el techo de Cowan; SERIO es la única
+ * con contenido en el MVP, D-034, y JR/PRO heredan el número de adulto). La
+ * interfaz pinta lo que `elegirMisionesDelDia()` devuelva y no conoce el número.
+ *
+ * Que el respaldo sean cinco tipos incondicionales y el máximo de esta tabla
+ * sea 4 es lo que hace imposible un slot vacío o repetido para cualquier banda
+ * ≥ PRIMARIA.
  */
-export const MISIONES_POR_DIA = 3;
+export const MISIONES_POR_DIA: Readonly<Record<BandaConMenu, number>> = Object.freeze({
+  PRIMARIA: 3,
+  SECUNDARIA: 3,
+  SERIO: 4,
+  JR: 4,
+  PRO: 4,
+});
 
 // ─── La misión que sale, y el día de KINDER ──────────────────────────────────
 
@@ -499,6 +511,7 @@ export function elegirMisionesDelDia(
   if (!tieneMenuDeMisiones(banda)) return [];
 
   const conMenu = banda as BandaConMenu;
+  const cuantas = MISIONES_POR_DIA[conMenu];
   const semilla = semillaDelDia(childProfileId, fechaLocal);
 
   const sirve = (tipo: TipoMision): boolean => {
@@ -508,7 +521,7 @@ export function elegirMisionesDelDia(
 
   const elegidas: TipoMision[] = [];
   const tomar = (tipo: TipoMision | undefined): void => {
-    if (tipo && !elegidas.includes(tipo) && elegidas.length < MISIONES_POR_DIA) elegidas.push(tipo);
+    if (tipo && !elegidas.includes(tipo) && elegidas.length < cuantas) elegidas.push(tipo);
   };
 
   // Slot 1 — el adaptativo. Cae a `volumen` sin F4 y sin nada que repasar.
@@ -520,7 +533,7 @@ export function elegirMisionesDelDia(
 
   // Slot 3 — la liga primero, y si no, la rotación desplazada un lugar más.
   if (sirve("meta_de_liga")) tomar("meta_de_liga");
-  if (elegidas.length < MISIONES_POR_DIA) {
+  if (elegidas.length < cuantas) {
     tomar(rotar(pool, semilla + 1).find((t) => !elegidas.includes(t)));
   }
 
@@ -530,13 +543,13 @@ export function elegirMisionesDelDia(
   // alguien le pone una precondición a uno de los cinco, esto revienta al
   // primer perfil y no en silencio seis meses después.
   for (const tipo of ORDEN_DE_RESPALDO) {
-    if (elegidas.length >= MISIONES_POR_DIA) break;
+    if (elegidas.length >= cuantas) break;
     if (sirve(tipo)) tomar(tipo);
   }
 
-  if (elegidas.length < MISIONES_POR_DIA) {
+  if (elegidas.length < cuantas) {
     throw new RangeError(
-      `solo se pudieron elegir ${elegidas.length} de ${MISIONES_POR_DIA} misiones para la banda ` +
+      `solo se pudieron elegir ${elegidas.length} de ${cuantas} misiones para la banda ` +
         `${banda} (${elegidas.join(", ")}). #217: ningún slot queda vacío, porque una misión que ` +
         "no se puede cumplir es peor que no tener misión — y ninguna misión es peor todavía. " +
         "Si esto se disparó, algún tipo de ORDEN_DE_RESPALDO dejó de ser incondicional.",

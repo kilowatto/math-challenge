@@ -66,6 +66,23 @@ const DIR_LEXICO = "audits/lib/racha-lexico";
 const DIRS_TEXTOS = [
   ["apps/web/src/i18n/racha", "racha"],
   ["apps/web/src/i18n/liga", "liga y duelo"],
+  // F7 #207: las plantillas del recordatorio push al padre. El criterio de
+  // aceptación #4 del issue pide que este auditor las escanee también — el
+  // destinatario es un adulto, pero la regla que se protege es la misma:
+  // «nunca con culpa», y el léxico de pérdida/urgencia/comparación es la
+  // forma escrita de esa regla.
+  ["apps/web/src/i18n/push", "recordatorio push al padre"],
+  // F7 · Misiones diarias (#222, línea roja #7): las mismas tres categorías —
+  // pérdida, urgencia, comparación — son exactamente las formas en que una
+  // misión se estropea. Un «te quedan dos horas para tu misión» es urgencia
+  // fabricada aunque no diga la palabra «racha».
+  ["apps/web/src/i18n/misiones", "misiones"],
+  // F7 · Pausa familiar (#204, mc-19 rec. #8): la pausa es un derecho de la
+  // familia, no una confesión. El destinatario es el padre, pero la regla es
+  // la misma de siempre: ni pérdida, ni urgencia, ni comparación — un «no
+  // dejes que se rompa del todo» junto al botón de reparar es confirm-shaming
+  // con buenas palabras.
+  ["apps/web/src/i18n/pausa", "pausa familiar"],
 ];
 
 const CATEGORIAS = ["perdida", "urgencia", "comparacion"];

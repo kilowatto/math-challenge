@@ -1,0 +1,173 @@
+---
+/**
+ * El menú de misiones del día — el anuncio al EMPEZAR la sesión (#211).
+ *
+ * ─── Dónde se monta, y dónde no ────────────────────────────────────────────
+ *
+ * La regla de §3.6 del diseño y de `audits/mision-silenciosa.mjs`: las misiones
+ * se anuncian al empezar la sesión y se resumen al terminarla, **nunca dentro
+ * de un reto activo**. Este componente se monta hoy en la vista «Practicar» de
+ * la casa del adulto (SERIO es la única banda ≥ PRIMARIA con contenido, D-034);
+ * KINDER no tiene menú en ninguna superficie (#213) y el punto de montaje del
+ * niño de PRIMARIA en adelante queda diferido — su única pantalla después del
+ * PIN es la del reto, donde #221 prohíbe esto.
+ *
+ * ─── Las tres decisiones que no son estéticas ──────────────────────────────
+ *
+ *  1. **El XP de cada misión se ve de antemano** (línea roja #5, D-092): el
+ *     precio es fijo y publicado, y enseñarlo es la mitad de la regla — la
+ *     otra mitad es que nunca cambie.
+ *  2. **El progreso se muestra como avance, nunca como deuda.** Aquí sí hay
+ *     números contra una meta —«2 de 3»— porque es el anuncio de lo que se
+ *     puede hacer hoy; lo que NO existe es el renglón del día pasado con lo
+ *     que faltó. Eso vive (o mejor, no vive) en `ResumenMisiones.astro` (#222).
+ *  3. **`meta_de_liga` muestra el contador COLECTIVO y nada más** (#226): la
+ *     contribución individual del niño no viaja a este componente en ningún
+ *     campo, así que no se puede pintar ni por accidente. Y si la liga no
+ *     llega a la meta, al día siguiente la misión sencillamente no está — sin
+ *     anuncio de meta fallida.
+ *
+ * ─── Lo que NO tiene ───────────────────────────────────────────────────────
+ *
+ *  · Sin rojo, sin ámbar, sin fuego, sin cuenta regresiva: mismo léxico visual
+ *    que la racha (#206, mc-17 §83). El estado «hecha» se marca con texto y un
+ *    borde de marca, no con un color de alarma ni una celebración que abra nada
+ *    — el bono del día es una suma, jamás un cofre (#220).
+ *  · Sin campos de entrada de ningún tipo (línea roja #3).
+ *  · Sin `<script>`: es una lectura al cargar la página, no un panel que se
+ *    actualiza solo — actualizarse solo sería un contador corriendo, que es
+ *    justo lo que #221 saca del campo de visión del reto.
+ */
+import { formatear } from "../../../../../packages/motor/src/numeros.ts";
+import type { Locale } from "../../i18n";
+import { TEXTOS_MISIONES, rellenar } from "./textos";
+
+/** Una misión del día, ya en datos de pantalla. Sin texto: eso va por locale. */
+export interface EntradaDeMenu {
+  readonly tipo: string;
+  /** Fijo y publicado: lo que vale completarla. */
+  readonly xp: number;
+  readonly meta: number;
+  readonly progreso: number;
+  readonly completada: boolean;
+}
+
+interface Props {
+  locale: Locale;
+  entradas: readonly EntradaDeMenu[];
+  /**
+   * El agregado de la liga entera, si hoy hay misión de liga. NUNCA la
+   * contribución individual (#226): no hay campo donde pasarla.
+   */
+  metaColectiva: { readonly objetivo: number; readonly llevan: number } | null;
+}
+
+const { locale, entradas, metaColectiva } = Astro.props;
+const t = TEXTOS_MISIONES[locale] ?? TEXTOS_MISIONES["en"];
+const num = (n: number) => formatear(n, locale, 0);
+const textoDe = (clave: string) => t[clave] ?? "";
+
+function detalleDe(e: EntradaDeMenu): string {
+  if (e.completada) return rellenar(textoDe(`mision.${e.tipo}.logro`), { xp: num(e.xp) });
+  // El contador colectivo, solo cuando hay liga y meta de verdad (#226).
+  if (e.tipo === "meta_de_liga" && metaColectiva) {
+    return rellenar(textoDe("mision.meta_de_liga.progreso"), {
+      llevan: num(metaColectiva.llevan),
+      objetivo: num(metaColectiva.objetivo),
+    });
+  }
+  return rellenar(textoDe(`mision.${e.tipo}.progreso`), {
+    n: num(e.progreso),
+    meta: num(e.meta),
+  });
+}
+---
+
+<section class="misiones" aria-labelledby="misiones-menu-titulo">
+  <h2 id="misiones-menu-titulo" class="misiones__titulo">{textoDe("misiones.titulo")}</h2>
+  <ul class="misiones__lista">
+    {entradas.map((e) => (
+      <li class={e.completada ? "mision mision--hecha" : "mision"}>
+        <p class="mision__nombre">
+          {e.completada && <span class="mision__marca" aria-hidden="true">✓</span>}
+          {textoDe(`mision.${e.tipo}.titulo`)}
+        </p>
+        <p class="mision__detalle">{detalleDe(e)}</p>
+        <p class="mision__xp">{rellenar(textoDe("misiones.xp"), { xp: num(e.xp) })}</p>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  /*
+   * Solo tokens de `tokens.css`. Un `var()` sin definir no cae a un default:
+   * invalida la declaración entera — ya rompió la pantalla del reto tres veces
+   * (`--color-borde` suena bien y NO existe; el real es `--color-border`).
+   *
+   * Y ni un color de alarma: el menú no cambia de color al acercarse la noche
+   * ni al faltar misiones. La urgencia fabricada es una categoría de la FTC,
+   * y aquí quien la leería puede tener 7 años (mc-17).
+   */
+  .misiones {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--space) * 0.75);
+  }
+
+  .misiones__titulo {
+    margin: 0;
+    font-family: var(--font-sistema);
+    font-size: var(--text-base);
+    font-weight: var(--weight-subtitle);
+    color: var(--color-text);
+  }
+
+  .misiones__lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--space) * 0.5);
+  }
+
+  .mision {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: calc(var(--space) * 0.75) var(--space);
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  /* Hecha se marca con el color de marca, no con un semáforo. */
+  .mision--hecha {
+    border-color: var(--color-text-brand);
+  }
+
+  .mision__nombre {
+    margin: 0;
+    font-family: var(--font-sistema);
+    font-weight: var(--weight-subtitle);
+    font-size: var(--text-base);
+    color: var(--color-text);
+  }
+
+  .mision__marca {
+    color: var(--color-text-brand);
+    margin-inline-end: 0.375rem;
+  }
+
+  .mision__detalle {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+
+  .mision__xp {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-brand-warm);
+  }
+</style>

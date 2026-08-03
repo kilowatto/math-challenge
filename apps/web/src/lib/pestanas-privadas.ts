@@ -52,15 +52,16 @@ export interface Pestana {
 }
 
 /**
- * Lo que está decidido y no construido: Progreso y Límite de pantalla son F8
- * (D-057). Se enseñan igual, marcadas — D-065 punto 5, el dueño prefirió el
- * hueco visible a rehacer la navegación cuando esas fases lleguen.
+ * Lo que está decidido y no construido: Progreso es F8 (D-057). Se enseña
+ * igual, marcada — D-065 punto 5, el dueño prefirió el hueco visible a rehacer
+ * la navegación cuando esa fase llegue.
  *
  * «Practicar» ya NO está aquí: `/app/practicar/` sirve retos reales (#343).
+ * «Límite» tampoco, desde F8 #269: la vista lista a los hijos y cada uno
+ * enlaza a su pantalla de límite (`app/parent/screen-time/[childId]`).
  */
 export const PROXIMAMENTE: ReadonlySet<ClavePestana> = new Set<ClavePestana>([
   "progreso",
-  "limite",
 ]);
 
 /**

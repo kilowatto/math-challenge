@@ -315,6 +315,41 @@ const ACTIVE = [
   ["limite-pantalla-motor-unico", "una sola tabla de límite, la de D-016",         "D-016, #266, #267, mc-26"],
   ["limite-no-rompe-el-dia",      "cuando el límite corta, el día se da por cumplido", "líneas rojas #1 #6 #7, D-014, D-016, #271, #272"],
   ["limite-nunca-se-levanta-pagando", "el límite de pantalla no se levanta pagando", "línea roja #4, D-021, D-057, #265"],
+  // F7 #207, D-105. El recordatorio push: al PADRE, tope de 1/día por hogar,
+  // silencio permanente de una vía, plantillas sin culpa. Es estático a
+  // propósito (D-070): no importa el motor que vigila — lee los archivos como
+  // texto y comprueba las fronteras (sin `childProfileId` en el camino de
+  // envío, `silenciado_at` de una sola vía, la constante de tope por nombre).
+  ["recordatorio-sin-culpa",    "el push es al padre, 1/día, sin culpa, silencio permanente", "issue #207, D-014, D-026, D-105, mc-19"],
+  // ─── La superficie de F7 · Misiones diarias (#220, #222, #227) ───────────
+  //
+  // Nace VERDE como los cuatro del motor: la superficie se construyó con él
+  // delante. Vigila la mitad que el motor no alcanza — que la PANTALLA no
+  // reconstruya el denominador que `cierreDelDia()` se niega a devolver, y que
+  // ningún texto de locale sugiera un cofre ni escriba un número a mano.
+  ["mision-resumen-sin-ceros", "el resumen lista solo lo logrado; el bono es una suma", "#220, #222, #227, línea roja #7"],
+  // ─── F7 · El guardarraíl de naming Rango vs Nivel (#195) ──────────────────
+  //
+  // Nace VERDE como los del mapa: las cadenas de hoy ya respetan la separación
+  // (la única etiqueta ambigua, `practicarNivel`, era una clave muerta y se
+  // borró en el mismo PR). Lo que vigila es lo que no se ve al romperse: un
+  // «Nivel» para el XP compila y se despliega perfecto, y un ORDER BY sobre
+  // total_xp no da ningún error — hasta que un niño de KINDER y un adulto
+  // SERIO aparecen ordenados por un número que no mide lo mismo (D-003).
+  ["rango-vs-nivel", "Rango y Nivel son dos ejes con dos nombres; el Rango nunca ordena", "#195, D-003, D-017, D-055"],
+  // ─── El doble guardián de #257 (F7) ──────────────────────────────────────
+  //
+  // La mitad ESTRUCTURAL de «Larry nunca comenta el avatar ni los cosméticos
+  // de un niño»; la mitad semántica es la carta adversarial `anti-humillacion`
+  // extendida por el mismo issue. Con D-080 el tutor y el compañero del mapa
+  // son LA MISMA criatura, así que la frontera entre «te explico tu error» y
+  // «qué bonito tu sombrero» tiene que existir en el código: el tutor no
+  // importa el catálogo, el sobre no tiene campo para él, y ningún texto
+  // autorado de Larry lo menciona. Nace VERDE: la frontera ya existe por
+  // construcción (lista blanca cerrada del sobre), y el auditor es la prueba
+  // de que se mantiene — sus controles negativos son DEGRADACIONES de
+  // `packages/tutor/src/en-vivo.ts`, del sobre y del i18n REALES (D-070).
+  ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -458,6 +493,62 @@ for (const prueba of [
   // seguida sin jugar archive en silencio. Lo que defiende tampoco rompe nada
   // visible: un doble cierre no da error, asciende a alguien dos veces.
   "apps/ingest/src/ciclo-liga.prueba.mjs",
+  // F7 #207, D-160. La meta por banda en la capa de datos del recordatorio:
+  // KINDER completa habiendo JUGADO hoy (la racha), las demás bandas por fila
+  // de misión. Lo que defiende tampoco rompe nada visible: un SQL mal escrito
+  // no da error — da un push diario aunque la niña haya jugado, o un niño de
+  // primaria que «completa» misiones por el solo hecho de jugar.
+  "apps/web/src/lib/push-hogares.prueba.mjs",
+  // F7 #207, D-105. El decisor del recordatorio al padre: lo que defiende
+  // tampoco rompe nada visible — un push a las 21:00, dos pushes el mismo día,
+  // o un empujón en un día ya completado no dan error 500; los ve un padre que
+  // apaga el recordatorio para siempre. 18 casos: las orillas de 07:00 y
+  // 20:00, el tope que no se reinicia a medianoche UTC, el silencio que se
+  // mira primero, y un hermano completado silenciando el día entero.
+  "packages/motor/src/recordatorio.prueba.mjs",
+
+  // F8 #269. El camino de la pantalla del padre, ejecutado de verdad: el
+  // handler POST/GET de la ruta con sesión falsa y D1 sobre node:sqlite. Lo
+  // que defiende tampoco rompe nada visible: una propiedad sin comprobar no da
+  // error 500 — da un padre mirando el límite del hijo de otro, o 600 minutos
+  // guardados con una petición directa que se saltó la interfaz. La tabla de
+  // rangos de la prueba está copiada a mano de D-016 (D-070), no importada del
+  // motor: si no, aprobaría su propia violación.
+  "apps/web/src/lib/padre-limite.prueba.mjs",
+
+
+  // F8 #270, #271, #273. El CABLE del límite de pantalla contra SQLite de
+  // verdad (`node:sqlite`): que los minutos se cobran con el reloj del
+  // servidor, que `warned_at` no avisa dos veces, que el descanso reinicia su
+  // contador sin tocar el total, y que la ventana nocturna corta con
+  // `BEDTIME` y también de madrugada. Lo que defiende tampoco rompe nada
+  // visible: un cable que no acumula, o que avisa cada vez que se reabre la
+  // app, no da error — lo ve un niño con el límite «puesto» jugando tres
+  // horas, o un padre al que le cuentan la noche de su hijo como un tope.
+  "apps/web/src/lib/limite-dia.prueba.mjs",
+
+  // F7 #204. El CAMINO de la pausa familiar, contra SQLite de verdad
+  // (`node:sqlite`) — el motor ya tiene sus pruebas puras en racha.prueba.mjs.
+  // Lo que defiende tampoco rompe nada visible: una autorización mal escrita
+  // no da error, da un desconocido tocando la racha de un niño ajeno; y una
+  // idempotencia rota no da error, da un padre que pierde una de sus cuatro
+  // pausas del año por pulsar dos veces el mismo botón. Incluye el rechazo al
+  // sexto día retroactivo llegando intacto hasta la base.
+  "apps/web/src/lib/pausa.prueba.mjs",
+
+  // F7 #224. El Durable Object de misiones diarias —uno por niño— y su cable,
+  // contra SQLite de verdad (`node:sqlite`) y con la clase del DO de verdad.
+  // Lo que defiende tampoco rompe nada visible: un reintento de red que paga
+  // el XP dos veces no da error, da una recompensa que ya no es la fija y
+  // publicada (línea roja #5); y un rollup escrito al margen del dueño no da
+  // error, da dos progresos para la misma misión y el que se lee depende del
+  // orden. 17 casos: el XP una sola vez, el bono una sola vez, el borrado en
+  // cero, y la pantalla leyendo el rollup.
+  "apps/web/src/lib/missions-do.prueba.mjs",
+
+
+
+
 ]) {
   const r = spawnSync(
     "node",

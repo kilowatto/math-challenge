@@ -88,7 +88,11 @@ export const CARTAS = [
     // Es el mismo hueco que F6 encontró con `anti-humillacion` y `mc-11`: la
     // carta veía la violación y no tenía con qué citarla, así que su veredicto
     // no bloqueaba.
-    cita: ["LR-2", "LR-3", "D-003", "D-012", "D-013", "D-027", "D-040", "D-043", "mc-25", "mc-27", "mc-30"],
+    // `D-016` y `D-051` se añaden en F8 (#274), por el mismo hueco: sin ellas
+    // la carta no puede señalar con autoridad que `screen_time_daily_usage`
+    // retiene más de lo necesario, ni si la fila de `child_consents` para
+    // `SCREEN_TIME` se escribe por el gobierno único de consentimientos.
+    cita: ["LR-2", "LR-3", "D-003", "D-012", "D-013", "D-016", "D-027", "D-040", "D-043", "D-051", "mc-25", "mc-27", "mc-30"],
     // `league_|liga|duel|tablero|cohort` porque el subsistema social vive en
     // `packages/motor/` y en `migrations/`, y el alcance heredado llegaba a los
     // dos por casualidad, no por diseño: `MOTOR` filtra por `puntua|scoring` y
@@ -121,7 +125,13 @@ export const CARTAS = [
       "persona y lo revisó otra; el texto en vivo no lo ha visto nadie cuando llega a la pantalla, así que " +
       "una instrucción del prompt que empuje a hablar DE la persona en vez de del pensamiento produce " +
       "humillación a escala y sin revisor. Mira también el tope de gasto: un aviso al niño de que se " +
-      "agotó su cuota sería monetización apuntada a un menor, y no existe ninguno.",
+      "agotó su cuota sería monetización apuntada a un menor, y no existe ninguno. " +
+      "**Y desde F7 #257 esto incluye la apariencia y la identidad del niño**: cualquier comentario de " +
+      "Larry sobre su avatar, su alias o sus cosméticos — incluso un cumplido. mc-43 §10 lo dice " +
+      "literal: un bot que «elogia» un nombre también puede juzgarlo, y con D-080 el tutor y el " +
+      "compañero que lleva puestos los accesorios son LA MISMA criatura, así que «qué bonito tu " +
+      "sombrero» y «qué feo te quedó» entran por la misma puerta. La voz de Larry se queda en la " +
+      "matemática; la frontera no es el tono del comentario, es que el comentario exista.",
     ciega_a:
       "Dificultad del contenido. Un problema difícil no es humillación. Y el léxico literal por locale, que " +
       "ya cubre `audits/larry-nunca-averguenza.mjs` con su lista de construcciones — aquí lo que se busca es " +
@@ -130,7 +140,10 @@ export const CARTAS = [
     // hallazgo de Mueller & Dweck sobre el elogio a la capacidad —92% contra
     // 33%— ni el de Kluger & DeNisi sobre las 607 mediciones, que son
     // exactamente las dos fuentes que sostienen lo que Larry no dice.
-    cita: ["LR-7", "D-003", "D-004", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-18", "mc-46"],
+    // `mc-43` se añade en F7 (#257): sin ella la carta no podía invocar la
+    // implicación 10 —«Larry never comments on the child's alias or avatar
+    // choice»— que es la fuente de la frontera de apariencia e identidad.
+    cita: ["LR-7", "D-003", "D-004", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-18", "mc-43", "mc-46"],
     // `explicacion|larry` porque el módulo de explicación vive en
     // `packages/motor/`, que ninguno de los alcances heredados alcanza: sin esta
     // línea, la carta dormía justo sobre el archivo que compone lo que un niño
@@ -139,6 +152,10 @@ export const CARTAS = [
     // `tutor|en-vivo|gasto|lexico` porque F6 #136 puso el camino en vivo, su
     // compuerta y su tope en `packages/tutor/`, que ningún alcance heredado
     // alcanzaba — y ahí el texto llega al niño SIN que nadie lo haya leído.
+    // `cosmetic|avatar|alias` porque #257 extendió la caza a la apariencia y la
+    // identidad del niño: `packages/motor/src/cosmeticos.ts`, `alias.ts` y el
+    // catálogo de #255 no tocan ningún alcance heredado, y sin esta línea la
+    // carta dormiría justo sobre el código que la frontera vigila.
     alcance: [
       ...INTERFAZ,
       ...TEXTOS,
@@ -147,6 +164,7 @@ export const CARTAS = [
       /explicacion|larry/i,
       /packages\/tutor\//,
       /en-vivo|gasto\.ts|lexico/i,
+      /cosmetic|avatar|alias/i,
     ],
   },
   {
@@ -265,7 +283,11 @@ export const CARTAS = [
       "reloj visible o presión de tiempo; puntuación que dependa del tiempo (D-024 la prohíbe: es " +
       "`valor_del_ítem · acc`, sin tiempo); instrucciones de más de un paso; tipografía de trazo delgado.",
     ciega_a: "Bandas mayores. Si el cambio no toca KINDER, no es tuyo.",
-    cita: ["LR-3", "D-017", "D-020", "D-024", "mc-06", "mc-20", "mc-38"],
+    // `D-016` se añade en F8 (#274): sin ella la carta no puede explicar por
+    // qué el aviso y la despedida del límite de pantalla en KINDER no llevan
+    // cifra ni cuenta regresiva — su `caza` la lleva exactamente ahí y no
+    // tenía con qué citarlo.
+    cita: ["LR-3", "D-016", "D-017", "D-020", "D-024", "mc-06", "mc-20", "mc-38"],
     alcance: [...INTERFAZ, ...CONTENIDO, ...MOTOR, /kinder/i],
   },
   {

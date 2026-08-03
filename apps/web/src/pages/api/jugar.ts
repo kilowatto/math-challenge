@@ -69,6 +69,8 @@ import {
   type Jugador,
   type Progreso,
 } from "../../lib/progreso";
+import { limiteAlServir, limiteAlResponder } from "../../lib/limite-dia";
+import { registrarAvanceDeHoy } from "../../lib/misiones-dia";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
 
 /*
@@ -133,6 +135,9 @@ interface Env {
   INGEST: Ingest;
   SESSION_KV: KVNamespace;
   LEARNER_DO?: DurableObjectNamespace;
+  // Las misiones del día (F7 #224): un objeto por niño, dueño del estado del
+  // día; `lib/misiones-dia.ts` lo llama en cada ítem que cuenta.
+  MISSIONS_DO?: DurableObjectNamespace;
   DB?: D1Database;
 }
 
@@ -198,7 +203,6 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     if (adulto) quien = { id: adulto.userId, esAdulto: true };
   }
   if (!quien) return json({ error: "sin_sesion" }, 401);
-  const sesion = { childProfileId: quien.id };
 
   const accion = url.searchParams.get("accion");
   let cuerpo: Record<string, unknown>;
@@ -216,7 +220,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const semilla = await nivelSemillaDe(env, quien.id, quien.esAdulto);
 
   if (accion === "siguiente") {
-    return servirSiguiente(env, sesion.childProfileId, locale, semilla, cuerpo);
+    return servirSiguiente(env, quien, locale, semilla, cuerpo);
   }
   if (accion === "responder") {
     return recibirRespuesta(env, quien, locale, semilla, cuerpo);
@@ -281,11 +285,33 @@ function estadoDe(resumen: Resumen[], skillId: string, semilla: number) {
 
 async function servirSiguiente(
   env: Env,
-  childProfileId: string,
+  quien: Jugador,
   locale: string,
   semilla: number,
   cuerpo: Record<string, unknown>,
 ): Promise<Response> {
+  const childProfileId = quien.id;
+
+  /**
+   * ─── El límite de pantalla, ANTES de servir (F8 #270, #271, #273) ────────
+   *
+   * Todavía no se sirvió nada nuevo, así que este es un punto seguro por
+   * definición — la premisa entera de `decidirAlIniciar`. Si la decisión es
+   * CERRAR (el día llegó a su tope, o la hora cayó en la ventana nocturna) NO
+   * se sirve ítem: la respuesta es la despedida de Larry y nada más. Que el
+   * estado viva en `screen_time_daily_usage` y no en la sesión es lo que hace
+   * que el corte sobreviva a cerrar y reabrir la app.
+   *
+   * Un AVISO o un DESCANSO no impiden servir: viajan JUNTO al ítem y la
+   * pantalla los muestra sin interrumpirlo.
+   */
+  const limite = await limiteAlServir(env, quien, {
+    ahora: Date.now(),
+    zona: await zonaDelHogar(env, quien),
+    locale,
+  });
+  if (limite?.tipo === "CERRAR") return json({ ok: true, corte: limite });
+
   const [catalogo, resumen] = await Promise.all([
     env.INGEST.catalogoAdaptativo(),
     leerModelo(env.LEARNER_DO, childProfileId),
@@ -355,6 +381,10 @@ async function servirSiguiente(
   return json({
     ok: true,
     item,
+    // El aviso o el descanso, si tocan: la pantalla los muestra sobre el ítem
+    // ya servido. `undefined` cuando no hay nada que decir — la ausencia ES el
+    // «siga jugando».
+    limite: limite ?? undefined,
     // Lo que el cliente necesita para devolver el intento sin que el servidor
     // tenga que volver a calcularlo. Ninguno de estos campos revela la
     // respuesta correcta.
@@ -506,7 +536,9 @@ async function recibirRespuesta(
    * intentarlo no puede subir ni bajar nada (línea roja #8, #348).
    */
   let progreso: Progreso | null = null;
+  let limite: Awaited<ReturnType<typeof limiteAlResponder>> = null;
   if (!reintento) {
+    const zona = await zonaDelHogar(env, quien);
     progreso = await registrarItem(env, quien, {
       nivel: veredicto.nivel,
       acc: veredicto.acc,
@@ -516,7 +548,44 @@ async function recibirRespuesta(
       // estados —, así que esto no es una decisión disfrazada de constante.
       motivo: { tipo: "RETO_COMPLETADO" },
       ahora: Date.now(),
-      zona: await zonaDelHogar(env, quien),
+      zona,
+    });
+
+    /*
+     * Las misiones del día (F7 · #211). Misma forma que la racha: el motor
+     * calcula el estado completo, el cable decide por referencia qué se
+     * escribe, y si algo falla se pierde un contador y no el juego — la
+     * función no lanza.
+     *
+     * Solo cuando el intento CUENTA: un reintento del mismo ítem no puede
+     * subir el progreso de una misión, por la misma línea roja #8 que lo
+     * excluye del modelo y de la racha.
+     *
+     * Qué tipos mueve un ítem confirmado —`volumen` y `variedad` hoy— está
+     * dicho en el encabezado de `lib/misiones-dia.ts`, con sus D-PENDIENTE.
+     */
+    await registrarAvanceDeHoy(env, quien, {
+      habilidad: veredicto.habilidad,
+      ahora: Date.now(),
+    });
+
+    /*
+     * El límite de pantalla (F8 #270, #271, #273). Va DESPUÉS de la racha a
+     * propósito: el día ya quedó contado en el ítem de arriba (D-091), así que
+     * cuando esta decisión sea CERRAR —hoy o cualquier día— la racha no depende
+     * de nada de lo que pase aquí. Es la línea roja #6 cumplida por orden de
+     * escrituras, no por una rama.
+     *
+     * Los minutos los mide el servidor (delta contra el sello de la fila del
+     * día, nunca un tiempo del cliente) y la decisión se toma en el punto
+     * seguro: el ítem servido acaba de contestarse en esta misma petición.
+     * Un reintento no cobra minutos ni decide — volver a intentarlo no puede
+     * costar nada (línea roja #8).
+     */
+    limite = await limiteAlResponder(env, quien, {
+      ahora: Date.now(),
+      zona,
+      locale,
     });
   }
 
@@ -570,6 +639,15 @@ async function recibirRespuesta(
     // modelo. Sin este campo la pantalla tendría que acordarse de qué mandó, y
     // «el cliente se acuerda» es como dos sistemas dejan de estar de acuerdo.
     conto: !reintento,
+    /*
+     * El aviso, el descanso o la despedida del límite de pantalla, ya con sus
+     * textos escritos en el locale de quien juega (F8). Viaja en ESTA respuesta
+     * porque el punto seguro es aquí: el niño terminó de pensar su ítem. La
+     * pantalla lo muestra DESPUÉS del veredicto — primero se despide del
+     * problema, después Larry se despide del día. `undefined` cuando no hay
+     * nada que decir.
+     */
+    limite: limite ?? undefined,
     /*
      * La racha y el XP ya escritos, para que la pantalla los pinte sin una
      * segunda petición. Números crudos y nada más: el texto lo compone quien

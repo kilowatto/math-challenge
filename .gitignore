@@ -50,3 +50,9 @@ apps/web/.astro/
 # Informes de la flota adversarial: evidencia de una corrida, no fuente.
 # El que importa se pega en el PR; el resto es ruido en el historial.
 audits/adversarial/informes/
+
+# Worktrees de agentes: los crea la herramienta, son repositorios git
+# ANIDADOS, y en el índice aparecen como gitlinks vacíos que nadie puede
+# clonar. Se colaron en `main` con un `git add -A` durante la integración de
+# F7 (cec2662) y se sacaron en el commit siguiente.
+.claude/

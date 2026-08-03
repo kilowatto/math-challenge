@@ -558,6 +558,137 @@ const CASOS = [
       ),
     espera: "imprime la CLAVE",
   },
+
+  // ─── Los tres de F7: cosméticos deterministas y la racha ─────────────────
+  //
+  // Ocho casos, y la mayoría son de DEGRADACIÓN (D-070) sobre `racha.ts` y
+  // `cosmeticos.ts` reales. Los dos motores se escribieron con sus auditores
+  // delante, así que nacieron verdes — y ése es justo el caso donde un archivo
+  // de prueba inventado no vale: probaría que el auditor sabe leer un archivo
+  // que nadie va a escribir, no que habría cazado la erosión del que sí existe.
+  //
+  // Los tres casos que SÍ plantan un archivo son los del esquema y los de una
+  // ruta, porque la tabla del catálogo (#253) y la ruta de cierre de sesión
+  // todavía no existen. Sin ellos, tres de las reglas del auditor estarían
+  // en verde sin haber mirado nunca una fila — que es exactamente lo que D-070
+  // llama una comprobación decorativa.
+
+  {
+    // El azar más probable de todos, y el más inocente de escribir: un
+    // desempate «que da igual» en el orden de salida. mc-17 §7: una sorpresa,
+    // aunque sea gratis y aunque sea cosmética, cae en el radio de las cajas
+    // de botín que Bélgica y Países Bajos declararon juego ilegal.
+    auditor: "cosmeticos-deterministas",
+    que: "un Math.random() en el camino que otorga un cosmético",
+    archivo: "packages/motor/src/cosmeticos.ts",
+    parche: (t) => t.replace("return [...ganados].sort();", "return [...ganados].sort(() => Math.random() - 0.5);"),
+    espera: "azar en el camino",
+  },
+  {
+    // El eje DINÁMICO por separado, sin una sola palabra que un grep pueda
+    // encontrar: se quita el `.sort()` y la salida pasa a depender del orden en
+    // que D1 devolvió las filas. El auditor estático no puede ver esto; el que
+    // ejecuta el módulo con las reglas barajadas, sí.
+    auditor: "cosmeticos-deterministas",
+    que: "la salida depende del orden de las reglas, sin ningún generador de azar",
+    archivo: "packages/motor/src/cosmeticos.ts",
+    parche: (t) => t.replace("return [...ganados].sort();", "return [...ganados];"),
+    espera: "NO es determinista",
+  },
+  {
+    auditor: "cosmeticos-deterministas",
+    que: "una columna de precio en la tabla del catálogo de cosméticos",
+    archivo: "migrations/9999_prueba_cosmetico_precio.sql",
+    contenido:
+      "CREATE TABLE cosmetic_catalog (\n" +
+      "  id TEXT PRIMARY KEY,\n" +
+      "  es_inicial INTEGER NOT NULL DEFAULT 0,\n" +
+      "  price_cents INTEGER NOT NULL DEFAULT 0\n" +
+      ");\n",
+    espera: "moneda comprable",
+  },
+  {
+    auditor: "cosmeticos-deterministas",
+    que: "un cosmético que no es inicial y no tiene ninguna regla de desbloqueo",
+    archivo: "migrations/9999_prueba_cosmetico_huerfano.sql",
+    contenido:
+      "INSERT INTO cosmetic_catalog (id, es_inicial) VALUES\n" +
+      "  ('melena_dorada', 0),\n" +
+      "  ('marco_sabana', 1);\n" +
+      "INSERT INTO cosmetic_unlock_rules (cosmetic_id, tipo_evento, parametro, umbral) VALUES\n" +
+      "  ('marco_sabana', 'primer_intento', NULL, NULL);\n",
+    espera: "camino de obtención",
+  },
+  {
+    auditor: "cosmeticos-deterministas",
+    que: "una regla con un tipo de evento fuera del enum cerrado",
+    archivo: "migrations/9999_prueba_cosmetico_evento.sql",
+    contenido:
+      "INSERT INTO cosmetic_catalog (id, es_inicial) VALUES ('gorro_cumple', 0);\n" +
+      "INSERT INTO cosmetic_unlock_rules (cosmetic_id, tipo_evento, parametro, umbral) VALUES\n" +
+      "  ('gorro_cumple', 'cumpleanios', NULL, NULL);\n",
+    espera: "enum cerrado",
+  },
+  {
+    // Nadie escribe `venderEscudo()`. Alguien agrega «un parámetro que hace
+    // falta», y es exactamente el patrón que mc-16 documenta en Duolingo: las
+    // vías de obtención del Streak Freeze se mezclan con gemas comprables.
+    auditor: "racha-nunca-se-vende",
+    que: "ganarEscudos gana un parámetro de pago",
+    archivo: "packages/motor/src/racha.ts",
+    parche: (t) =>
+      t.replace(
+        "export function ganarEscudos(estado: EstadoRacha): EstadoRacha {",
+        "export function ganarEscudos(estado: EstadoRacha, precioEnCentavos: number): EstadoRacha {",
+      ),
+    espera: "parámetro de pago",
+  },
+  {
+    // La otra forma, sin tocar ninguna firma: una constante de precio al lado
+    // del tope de escudos. Es cómo se ve una tienda antes de ser una tienda.
+    auditor: "racha-nunca-se-vende",
+    que: "una constante de precio junto al tope de escudos",
+    archivo: "packages/motor/src/racha.ts",
+    parche: (t) =>
+      t.replace(
+        "export const TOPE_ESCUDOS = 2;",
+        "export const TOPE_ESCUDOS = 2;\nexport const PRECIO_ESCUDO_EXTRA = 0.99;",
+      ),
+    espera: "dinero a",
+  },
+  {
+    // D-014, textual: «si el límite de pantalla corta la sesión, la racha del
+    // día se da por cumplida». Aquí se le mete al motor la rama que trata
+    // distinto al límite — y se le mete a FAVOR de romper, que es la dirección
+    // que nadie escribiría a propósito y todos escribirían por descuido.
+    auditor: "racha-limite-no-rompe",
+    que: "el motor trata distinto al límite de pantalla y le reinicia la racha",
+    archivo: "packages/motor/src/racha.ts",
+    parche: (t) =>
+      t.replace(
+        "  if (brecha === 1) {\n",
+        '  if (brecha === 1) {\n' +
+          '    if (motivo.tipo === "LIMITE_DE_PANTALLA_CORTO_LA_SESION") {\n' +
+          "      return conDia(estado, dia, 1, estado.shields_available);\n" +
+          "    }\n",
+      ),
+    espera: "ENTRA en la aritmética",
+  },
+  {
+    // El motor puede ser perfecto y la racha romperse igual, porque quien
+    // cierra la sesión decidió por su cuenta. Es el eje que el barrido del
+    // motor no puede ver.
+    auditor: "racha-limite-no-rompe",
+    que: "una ruta que reinicia la racha cuando el corte fue del límite de pantalla",
+    archivo: "apps/web/src/lib/prueba-racha-limite.ts",
+    contenido:
+      "export async function cerrarSesion(db: any, id: string, cortadaPorLimite: boolean) {\n" +
+      "  if (cortadaPorLimite === true) {\n" +
+      "    await db.prepare('UPDATE child_streak SET current_streak = 0 WHERE id = ?').bind(id).run();\n" +
+      "  }\n" +
+      "}\n",
+    espera: "reinicia la racha",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

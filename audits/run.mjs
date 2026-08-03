@@ -182,6 +182,22 @@ const ACTIVE = [
   // `apps/web/src/pages/api/` son una RUTA: `jugar 2.ts` se habría desplegado
   // a producción como `/api/jugar 2`.
   ["archivos-duplicados",     "ningún duplicado de sincronización en el código", "CLAUDE.md § Git regla 1, ae73db1"],
+
+  // ─── Los tres de F7, y por qué nacen VERDES ──────────────────────────────
+  //
+  // Mismo caso que los dos de F6: los motores de racha y de cosméticos se
+  // construyeron CON estos auditores delante, así que lo que vigilan es que no
+  // se erosione, no que se arregle. Por eso sus controles negativos son de
+  // DEGRADACIÓN (D-070) sobre los archivos reales, no archivos inventados: un
+  // caso escrito a mano probaría que el auditor sabe leer un archivo falso.
+  //
+  // Los tres son de las líneas rojas que más barato se cruzan sin querer. Una
+  // columna `price` «por si acaso» en la migración del catálogo, un desempate
+  // «que da igual» resuelto con `Math.random()`, un `if (cortadaPorLimite)` que
+  // decide no llamar al motor. Ninguna de las tres rompe nada visible.
+  ["cosmeticos-deterministas", "un cosmético se gana, no se compra ni se sortea", "línea roja #5, D-014, mc-17 §7"],
+  ["racha-nunca-se-vende",     "la protección de racha jamás se vende",           "línea roja #6, #4, D-014, mc-16"],
+  ["racha-limite-no-rompe",    "el límite de pantalla nunca rompe la racha",      "línea roja #6, D-014, D-016"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -262,6 +278,11 @@ for (const prueba of [
   // siete autorías y no una copiada seis veces (D-022).
   "packages/tutor/src/prefijo.prueba.mjs",
   "packages/tutor/src/voz.prueba.mjs",
+  // F7 #201-#204 y #254. Lo que defienden tampoco rompe nada visible: una racha
+  // que amanece en 1 no da error 500, y un cosmético que se otorga en otro
+  // orden tampoco. Se descubre semanas después, por un padre.
+  "packages/motor/src/racha.prueba.mjs",
+  "packages/motor/src/cosmeticos.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

@@ -59,3 +59,19 @@ export const rutaPerfilNuevo = (locale: Locale | string) => `/${locale}/app/perf
  */
 export const rutaLimiteHijo = (locale: Locale | string, childId: string) =>
   `/${locale}/app/parent/screen-time/${encodeURIComponent(childId)}`;
+
+/** El tablero global del propio adulto (F7 #247, D-025). */
+export const rutaTablero = (locale: Locale | string) => `/${locale}/app/tablero/`;
+
+/**
+ * La pantalla del padre para el opt-in del tablero de un hijo — y, en KINDER,
+ * el único lugar donde su tablero existe (F7 #247, D-040, D-081).
+ */
+export const rutaTableroHijo = (locale: Locale | string, childId: string) =>
+  `/${locale}/app/parent/tablero/${encodeURIComponent(childId)}`;
+
+/**
+ * El tablero visto por el NIÑO (PRIMARIA/SECUNDARIA). Ruta propia, fuera de
+ * `/app/kids/**`: ahí el tablero no puede ni nombrarse (#247, D-081).
+ */
+export const rutaTableroNino = (locale: Locale | string) => `/${locale}/app/tablero/nino/`;

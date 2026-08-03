@@ -1,0 +1,160 @@
+---
+/**
+ * `/{locale}/app/tablero/` — **el tablero global del adulto.** F7 #247, #250.
+ *
+ * ─── Qué es, y para quién ────────────────────────────────────────────────────
+ *
+ * El tablero de la banda del propio adulto aprendiz (SERIO/JR/PRO — D-034),
+ * ordenado por PUNTOS (`score_totals_adulto.total_score`, D-025), nunca por θ
+ * ni por velocidad. Las bandas adultas ven posición numérica exacta, con «tú
+ * estás aquí» incluso fuera del top 100 — eso lo decide `armarVista()` en el
+ * servidor; esta página pinta lo que recibe y nada más.
+ *
+ * ─── Quién NO entra por aquí ─────────────────────────────────────────────────
+ *
+ *  · **Un niño** (sesión `mc_k`) se desvía a `/app/tablero/nino/`, su propia
+ *    pantalla: ésta monta `Privada.astro`, que es superficie de adulto por
+ *    construcción (D-065) y lleva RUM — y D-037 permite medir solo en
+ *    superficies de adulto.
+ *  · **Un niño de KINDER** no tiene tablero en ninguna superficie suya, jamás
+ *    (#247): el suyo existe solo como widget del panel del padre, en tercios.
+ *    `audits/tablero-sin-kinder-publico.mjs` vigila las dos cosas.
+ *
+ * ─── Los números ─────────────────────────────────────────────────────────────
+ *
+ * Puntos y posiciones se formatean AQUÍ, en el servidor, con
+ * `numeros.ts::formatear` y el locale de **quien mira** — nunca el
+ * `alias_locale` del dueño de la fila (#247, `mc-34`). A la plantilla llegan
+ * cadenas; no hay una línea de JavaScript en esta página.
+ *
+ * ─── Lo que esta pantalla no tiene ───────────────────────────────────────────
+ *
+ * Ni una palabra sobre subir o bajar de posición (D-014, fila «notificaciones
+ * con culpa»: la forma de garantizarlo es que la cadena no exista), ni
+ * temporadas (el único periodo es `all_time`; `season:<id>` no está decidido),
+ * ni mezcla de niños y adultos en la misma lista (#250: dos tablas, dos
+ * consultas, jamás un UNION).
+ */
+export const prerender = false;
+
+import Privada from "../../../layouts/Privada.astro";
+import TableroGlobal from "../../../components/tablero/TableroGlobal.astro";
+import { TEXTOS_TABLERO, rellenarTablero } from "../../../components/tablero/textos";
+import { isLocale, type Locale } from "../../../i18n";
+import {
+  COOKIE_ADULTO,
+  COOKIE_NINO,
+  leerCookies,
+  leerSesionAdulto,
+  leerSesionNino,
+} from "../../../lib/sesiones";
+import { pestanasPrivadas } from "../../../lib/pestanas-privadas";
+import { rutaTableroNino } from "../../../lib/rutas-app";
+import { vistaParaAdulto } from "../../../lib/tablero-datos";
+import { ruta } from "../../../i18n/rutas";
+import { formatear } from "../../../../../../packages/motor/src/numeros.ts";
+import type { Banda } from "../../../../../../packages/motor/src/puntuacion.ts";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+
+// Un dispositivo con sesión de NIÑO activa está en manos del niño: su tablero
+// es otra pantalla, sin el layout de adulto ni su medición (D-037, D-065).
+const sesionNino = env?.SESSION_KV
+  ? await leerSesionNino(env.SESSION_KV, cookies[COOKIE_NINO])
+  : null;
+if (sesionNino) return Astro.redirect(rutaTableroNino(locale));
+
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+// `?cambiar=1` y no `/entrar/` a secas: sin eso hay un bucle infinito real
+// (ver `app/perfil.astro`, que lo documenta y lo vivió).
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+// Sin base no hay tablero que servir. A la casa, que sabe degradar.
+if (!env?.DB) return Astro.redirect(`/${locale}/app/`);
+
+const { vista } = await vistaParaAdulto(env.DB, sesion.userId);
+const textos = TEXTOS_TABLERO[locale];
+const banda = vista.banda as Banda;
+
+// La proyección a cadenas, entera en el servidor. Las bandas adultas son
+// exactas, así que `posicion` siempre trae `rank`; la rama de tercio existe
+// por completitud del tipo y no se ejercita aquí.
+const filas = vista.lista.map((e) => ({
+  alias: e.alias,
+  puntos: formatear(e.total_score, locale),
+  posicion: e.posicion.forma === "exacta" ? formatear(e.posicion.rank, locale) : "",
+  soyYo: e.soy_yo,
+}));
+
+const miPosicion =
+  vista.mi_posicion?.forma === "exacta"
+    ? rellenarTablero(textos["tablero.tuPosicion"], {
+        posicion: formatear(vista.mi_posicion.rank, locale),
+      })
+    : null;
+const misPuntos = rellenarTablero(textos["tablero.tusPuntos"], {
+  puntos: formatear(vista.mi_total, locale),
+});
+
+const titulo = `${textos["tablero.titulo"]} · ${textos[`tablero.banda.${banda}`]}`;
+// Las pestañas de una cuenta sin hijos: esta pantalla cuelga de «Practicar»,
+// como el mapa (`app/mapa.astro`), y con el mismo argumento.
+const pestanas = pestanasPrivadas(locale, false, "practicar");
+
+// La lista de una banda depende de la sesión: nunca en caché, en ningún
+// intermediario. `sw.js` ya se salta `/app/` entero por la misma razón.
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={titulo} description={textos["tablero.lead"]} pestanas={pestanas}>
+  <article class="tablero">
+    <h1>{titulo}</h1>
+    <p class="lead">{textos["tablero.lead"]}</p>
+
+    <section class="bloque propio">
+      <p class="cifra">{misPuntos}</p>
+      {miPosicion !== null && <p class="posicion">{miPosicion}</p>}
+    </section>
+
+    {vista.lista.length === 0 ? (
+      <p class="muted">{textos["tablero.vacio"]}</p>
+    ) : (
+      <section class="bloque">
+        <TableroGlobal
+          filas={filas}
+          textos={{
+            colPosicion: textos["tablero.colPosicion"],
+            colJugador: textos["tablero.colJugador"],
+            colPuntos: textos["tablero.colPuntos"],
+            tu: textos["tablero.tu"],
+          }}
+        />
+      </section>
+    )}
+  </article>
+
+  <style>
+    .tablero { max-width: 34rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .propio .cifra { font-family: var(--font-marca); font-weight: var(--weight-subtitle);
+                     font-size: var(--text-lg); margin: 0; }
+    .propio .posicion { font-family: var(--font-marca); font-size: var(--text-base);
+                        color: var(--color-text-brand); margin-block-end: 0; }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-body); }
+  </style>
+</Privada>

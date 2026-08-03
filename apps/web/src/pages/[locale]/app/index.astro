@@ -56,8 +56,9 @@ import Privada from "../../../layouts/Privada.astro";
 import RecordatorioPush from "../../../components/push/RecordatorioPush.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
-import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo } from "../../../lib/rutas-app";
+import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo } from "../../../lib/rutas-app";
 import { TEXTOS_PADRE } from "../../../components/parent/textos";
+import { TEXTOS_TABLERO } from "../../../components/tablero/textos";
 import {
   pestanasPrivadas,
   clavesDePestana,
@@ -270,6 +271,11 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
                     Una pantalla sin enlace es una pantalla que no existe.
                   */}
                   <a class="pausa" href={`/${locale}/app/pausa/?hijo=${h.id}`}>{pPausa["pausa.titulo"]}</a>
+                  {/*
+                    El opt-in del tablero, por hijo (F7 #247, D-040) — y en
+                    KINDER, el único lugar donde su tablero existe (D-081).
+                  */}
+                  <a class="pausa" href={rutaTableroHijo(locale, h.id)}>{TEXTOS_TABLERO[locale]["tablero.padre.abrir"]}</a>
                 </li>
               ))}
             </ul>
@@ -350,6 +356,12 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
           porque «Practicar» ya es donde vive todo lo del adulto que juega solo.
         */}
         <a class="boton" href={`/${locale}/app/mapa/`}>{m.casaMapaCta}</a>{/*
+          El tablero global del propio adulto (F7 #247, D-025): su banda,
+          ordenada por puntos, con «tú estás aquí» aunque quede fuera del top
+          100. Misma razón de sitio que el mapa: «Practicar» es donde vive
+          todo lo del adulto que juega solo.
+        */}
+        <a class="boton" href={rutaTablero(locale)}>{TEXTOS_TABLERO[locale]["tablero.abrir"]}</a>{/*
           Y su propia pausa (#204, banda SERIO/JR/PRO): el adulto aprendiz se la
           autodeclara, mismo mecanismo y mismo tope, sin aprobación de nadie.
         */}

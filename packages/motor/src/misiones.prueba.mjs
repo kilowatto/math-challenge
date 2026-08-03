@@ -33,6 +33,7 @@ import {
   SQL_UPSERT_MISION,
 } from "./misiones.ts";
 import { XP_POR_TIPO, xpDeTipo } from "./xp.ts";
+import { PLANTILLAS, generarBanco } from "./banco-kinder.ts";
 
 let fallos = 0;
 let corridos = 0;
@@ -499,6 +500,68 @@ caso("el módulo no exporta ni una cadena de cara al niño (#221, línea roja #3
     cierto(/^[a-z_]+$/.test(d.tipo), `"${d.tipo}" parece texto y no una clave`);
   }
 });
+
+// --- #212: los ejes de `variedad` y `descubre`, contra el banco REAL --------
+//
+// El catálogo DECLARA que `variedad` mide amplitud de TEMA y `descubre`
+// amplitud de MODO. Una declaración se puede escribir mal sin que nadie lo
+// note — es la colisión que la crítica de F5 encontró en `proposito`: dos
+// enums cerrados con el mismo nombre midiendo lo mismo. Estos tres casos lo
+// comprueban contra los ítems reales del banco, no contra la declaración.
+
+caso("`variedad` se puede cumplir con el banco real: hay más TEMAS que su meta", () => {
+  // No basta con que el catálogo diga meta=2: si el banco tuviera una sola
+  // habilidad, «practica dos temas distintos» sería una misión incumplible, y
+  // #217 dice que eso es peor que no tener misión. Se mide sobre los ítems
+  // generados, no sobre la tabla de habilidades.
+  const banco = generarBanco();
+  const temas = new Set(banco.map((i) => i.habilidad));
+  cierto(
+    temas.size >= definicionDe("variedad").meta,
+    `el banco tiene ${temas.size} temas y variedad pide ${definicionDe("variedad").meta}`,
+  );
+});
+
+caso("el eje de `descubre` existe en el banco real y NO es el eje de `variedad`", () => {
+  // El banco no guarda el modo de reto de D-018 (PRÁCTICA, FLUIDEZ, PROBLEMA…)
+  // porque el modo es del RETO, no del ítem. Lo que el ítem sí carga es el
+  // FORMATO —la otra amplitud que no es la de tema— y es lo más cercano a
+  // «modo» que el contenido real puede verificar. La regresión que esto caza:
+  // si cada habilidad tuviera exactamente un formato y cada formato exactamente
+  // una habilidad, «amplitud de modo» y «amplitud de tema» serían LA MISMA
+  // medida con dos nombres, y `descubre` sería `variedad` duplicada.
+  const formatosPorTema = new Map();
+  const temasPorFormato = new Map();
+  for (const p of PLANTILLAS) {
+    if (!formatosPorTema.has(p.habilidad)) formatosPorTema.set(p.habilidad, new Set());
+    formatosPorTema.get(p.habilidad).add(p.formato);
+    if (!temasPorFormato.has(p.formato)) temasPorFormato.set(p.formato, new Set());
+    temasPorFormato.get(p.formato).add(p.habilidad);
+  }
+  cierto(temasPorFormato.size >= 2, "el banco tiene un solo formato: no hay amplitud de modo");
+  const colapsa =
+    formatosPorTema.size === temasPorFormato.size &&
+    [...formatosPorTema.values()].every((s) => s.size === 1) &&
+    [...temasPorFormato.values()].every((s) => s.size === 1);
+  cierto(
+    !colapsa,
+    "formato y tema están en biyección: «amplitud de modo» y «amplitud de tema» " +
+      "medirían lo mismo, y `descubre` sería `variedad` con otro nombre",
+  );
+});
+
+caso("`variedad` y `descubre` no se solapan en la declaración: ejes y metas distintos", () => {
+  // La mitad que SÍ es declaración, y también se vigila: los dos tipos existen,
+  // son elegibles sin precondición (los dos entran a la rotación) y no comparten
+  // ni meta ni XP — dos tipos idénticos en todo menos el nombre serían la misma
+  // misión pagada dos veces por lo mismo.
+  const variedad = definicionDe("variedad");
+  const descubre = definicionDe("descubre");
+  cierto(variedad.meta !== descubre.meta || variedad.xp !== descubre.xp, "misma meta y mismo XP");
+  igual(variedad.elegible(SIN_F4, SIN_LIGA), true, "variedad sin precondición");
+  igual(descubre.elegible(SIN_F4, SIN_LIGA), true, "descubre sin precondición");
+});
+
 
 console.log("");
 if (fallos > 0) {

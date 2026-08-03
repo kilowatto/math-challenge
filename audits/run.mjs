@@ -506,6 +506,7 @@ for (const prueba of [
   // 20:00, el tope que no se reinicia a medianoche UTC, el silencio que se
   // mira primero, y un hermano completado silenciando el día entero.
   "packages/motor/src/recordatorio.prueba.mjs",
+
   // F8 #270, #271, #273. El CABLE del límite de pantalla contra SQLite de
   // verdad (`node:sqlite`): que los minutos se cobran con el reloj del
   // servidor, que `warned_at` no avisa dos veces, que el descanso reinicia su
@@ -515,6 +516,16 @@ for (const prueba of [
   // app, no da error — lo ve un niño con el límite «puesto» jugando tres
   // horas, o un padre al que le cuentan la noche de su hijo como un tope.
   "apps/web/src/lib/limite-dia.prueba.mjs",
+
+  // F7 #204. El CAMINO de la pausa familiar, contra SQLite de verdad
+  // (`node:sqlite`) — el motor ya tiene sus pruebas puras en racha.prueba.mjs.
+  // Lo que defiende tampoco rompe nada visible: una autorización mal escrita
+  // no da error, da un desconocido tocando la racha de un niño ajeno; y una
+  // idempotencia rota no da error, da un padre que pierde una de sus cuatro
+  // pausas del año por pulsar dos veces el mismo botón. Incluye el rechazo al
+  // sexto día retroactivo llegando intacto hasta la base.
+  "apps/web/src/lib/pausa.prueba.mjs",
+
 ]) {
   const r = spawnSync(
     "node",

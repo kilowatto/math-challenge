@@ -1604,9 +1604,12 @@ const CASOS = [
     // cada migración que aterriza, y eso es a propósito: el caso apunta al
     // PRIMER hueco libre por delante de la última migración. Reapuntado, no
     // borrado (un control cuyo objetivo se movió es un auditor apagado).
+    // Reapuntado otra vez a 0017 cuando la 0015 (cosméticos kinder) aterrizó:
+    // con ella presente, una sonda en 0016 queda contigua y el caso corría en
+    // verde sin degradar nada — el auditor apagado en silencio de siempre.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0016_prueba_hueco.sql",
+    archivo: "migrations/0017_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -1794,6 +1797,38 @@ const CASOS = [
     espera: "cifra de racha",
   },
 
+
+  // ─── F7 · El catálogo de cosméticos de KINDER (#255) ─────────────────────
+  {
+    // La degradación es la que el cruce nuevo de `locales-complete` existe
+    // para cazar: alguien edita los textos de cosméticos en seis locales y se
+    // le pasa el séptimo. La clave sigue en la migración, la pantalla muestra
+    // la clave cruda, y solo en ese idioma. Se degrada el archivo REAL (D-070).
+    auditor: "locales-complete",
+    que: "una clave del catálogo de cosméticos sin texto en es-MX",
+    archivo: "apps/web/src/i18n/cosmeticos/es-MX.json",
+    parche: (t) =>
+      t.replace('  "cosmetico.av_gorra_pato.nombre": "Gorra de patito",\n', ""),
+    espera: "cosmetico.av_gorra_pato.nombre",
+  },
+  // ─── F7 · La pausa familiar (#204) ───────────────────────────────────────
+  {
+    // La degradación es el copy exacto que mc-19 rec. #8 prohíbe junto a esta
+    // pantalla: la pausa convertida en confesión, con culpa. Va en UN solo
+    // locale y sobre el archivo REAL por lo mismo que los casos de arriba
+    // (D-070): un archivo inventado probaría solo que el auditor sabe leer un
+    // archivo inventado. El auditor debe escanear `i18n/pausa` — si alguien lo
+    // quita de DIRS_TEXTOS, este caso sale en verde con la violación delante.
+    auditor: "racha-lexico",
+    que: "«no dejes que se pierda» en el copy de la pausa, en un solo locale",
+    archivo: "apps/web/src/i18n/pausa/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"pausa.cta": "Declarar la pausa"',
+        '"pausa.cta": "Declarar la pausa: no dejes que se pierda la racha"',
+      ),
+    espera: "perdida",
+  },
   // ─── F7 · El guardarraíl de naming Rango vs Nivel (#195) ─────────────────
   //
   // Los cuatro degradan archivos REALES (D-070): la erosión de verdad sería
@@ -1902,6 +1937,7 @@ const CASOS = [
         '"idiomaNombre": "español de México, qué bonito avatar"',
       ),
     espera: "avatar",
+
   },
 ];
 

@@ -62,3 +62,7 @@ audits/adversarial/informes/
 # desaparecieron con el evento de iCloud de ese día). Mismo problema de
 # gitlinks anidados que .claude/, misma solución: ignorado siempre.
 .wt/
+
+# Salida cruda de gen-cosmeticos.mjs (WebP de 1024 de Recraft; se convierte
+# a AVIF+WebP de 512 y se borra — no es producto, es materia prima).
+.arte-crudo/

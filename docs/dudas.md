@@ -331,6 +331,73 @@ rompen», no «cumple 1.4.12».
 
 ---
 
+## F6 · El camino EN VIVO ya está construido, y descansa sobre cuatro supuestos · 2026-08-02
+
+**El hecho.** El criterio #136 está implementado: camino en vivo sobre Workers
+AI, ruteo de modelo por complejidad, tope de gasto por perfil y por día, y los
+interruptores por banda. **Está apagado**, y no por precaución retórica: sin el
+secreto `TUTOR_PD_SECRET` no se llama al modelo en absoluto, y sin él no hay
+seudónimo diario con el que contar el gasto de un perfil. Encenderlo son tres
+acciones deliberadas —crear el AI Gateway, poner el secreto, marcar el plan de
+una cuenta como `familia`— y ninguna ocurre sola.
+
+Las 23 preguntas de la entrada de abajo siguen abiertas. Lo que sigue es lo que
+**tuve que suponer para poder construir**, escrito para que cambiar la respuesta
+sea editar una constante y no rehacer una fase.
+
+**1. Seguí el PLAN y no el issue, en dónde vive el tope.** El issue #136 dice
+«vía AI Gateway» (que viene de D-015); el plan §5.1 lo mueve al Durable Object y
+lo llama enmienda, que es la pregunta **P-15**. Seguí el plan porque el Gateway
+no puede hacer lo único que este producto quiere que pase al tocar el tope:
+servir la explicación pregenerada revisada por humano. Puede devolver 429 o
+cambiar a un modelo más barato, y lo segundo es justo lo que D-035 prohíbe en la
+banda Pro. El Gateway se queda como red de seguridad en dólares. **Si la
+respuesta a P-15 es no, lo que cambia es de sitio, no de comportamiento.**
+
+**2. Los números del tope son `[estimado]` y uno no tiene de dónde derivarse.**
+El de un perfil de niño **sí** se deriva, y la cuenta está en el código:
+$8/mes (piso de D-021) ÷ 6 perfiles ÷ 30 días × 20% = **8.888 µ$ ≈ $0.0089 al
+día**. El 20% es criterio mío; el resto es D-021.
+
+El de un perfil **adulto** no se deriva de nada, porque **no hay precio de
+adulto en ninguna decisión**: D-021 fija el Plan Familia y D-034 hace del adulto
+que practica solo un caso de primera clase, pero nadie ha decidido qué paga.
+Puse **60.000 µ$ = $0.06 al día**, que sería un quinto de una suscripción
+individual de unos $9 al mes. Es más alto que el del niño porque el modelo es
+otro: `kimi-k2.6` cuesta 5.3× más por token de salida que `gpt-oss-120b`, y un
+tope idéntico dejaría la banda adulta sin ni una llamada. **La duda: ¿cuál es el
+precio del adulto?** Con ese número, este tope se deriva igual que el otro.
+
+Y el aviso que el plan §5.4 ya daba, que sigue vigente: las tres estimaciones de
+costo que circulan son incompatibles entre sí, y la que decide todo —los tokens
+de razonamiento— este repo ya la falló por **6.3×** (D-035 hallazgo 3). Por eso
+la medición de **P-18** (~$5 y una tarde) sigue siendo el primer entregable
+pendiente de verdad de esta fase.
+
+**3. Encendí PRIMARIA, SECUNDARIA y SERIO; dejé KINDER y PRO apagadas.** Es la
+recomendación (a) de **P-1** para kinder y la condición de D-035 para Pro, y las
+dos son un valor por defecto en el código que una llave de `CONFIG_KV` puede
+cambiar sin desplegar — que es exactamente lo que el encargo pedía para Pro. Si
+la respuesta a P-1 es que kinder sí tiene modelo en vivo, se enciende una llave.
+Nota que no depende de P-1: en kinder el niño **no lee, escucha**, y una línea
+generada en vivo no se puede pregrabar (§4.1), así que hoy un texto en vivo en
+kinder es un texto que nadie oiría.
+
+**4. El plan gratis es CERO llamadas en vivo**, que es lo que D-021 ya decía y la
+recomendación de **P-5**. No inventé una cuota de cortesía. Si el dueño quiere
+un gusto en el gratis, es una **enmienda a D-021**.
+
+**Lo que NO construí, y por qué.** La cuarta compuerta —el **juez**, una segunda
+llamada con la rúbrica anti-vergüenza sola— no está. Depende de P-1, P-2 y P-13,
+que están abiertas; **duplica el costo por turno**, que es justo el número que
+P-18 todavía no ha medido; y el plan §2.5 ya avisa de que comparte punto ciego
+con el tutor, porque los dos corren sobre la misma familia de modelos en la
+misma cuenta. Las tres compuertas deterministas —estructural, léxica y de forma—
+sí están, corren dentro del Worker, no cuestan nada y se midieron contra los 119
+mensajes ya autorados.
+
+---
+
 ## F6 · Larry Profe — 23 preguntas, agrupadas · 2026-08-01
 
 **El hecho.** Se consolidaron seis diseños de F6 y sus seis críticas

@@ -26,6 +26,7 @@ import { App } from "astro/app";
 import { handle } from "@astrojs/cloudflare/handler";
 import { RateLimiter } from "./lib/ratelimiter";
 import { Aprendiz } from "./lib/aprendiz";
+import { Liga } from "./lib/liga-do";
 
 export function createExports(manifest: ConstructorParameters<typeof App>[0]) {
   const app = new App(manifest);
@@ -40,5 +41,6 @@ export function createExports(manifest: ConstructorParameters<typeof App>[0]) {
     // sitios y olvidar cualquiera de los tres rompe el despliegue distinto.
     RateLimiter,
     Aprendiz,
+    Liga,
   };
 }

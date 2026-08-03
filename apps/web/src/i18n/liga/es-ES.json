@@ -1,0 +1,18 @@
+{
+  "liga.titulo": "Tu liga",
+  "liga.esta_semana": "Esta semana",
+  "liga.puntos": "{n} puntos",
+  "liga.tu_posicion": "Tu posición: {posicion}",
+  "liga.tercio.top": "Tercio de arriba",
+  "liga.tercio.mid": "Tercio del medio",
+  "liga.tercio.bottom": "Tercio de abajo",
+  "liga.grupo_sube": "Sube la semana que viene",
+  "liga.se_queda": "Se queda en esta liga",
+  "liga.sin_liga": "Todavía no estás en ninguna liga",
+  "duelo.titulo": "Duelo",
+  "duelo.invitacion": "{alias} te ha invitado a un duelo",
+  "duelo.mismo_set": "Los dos recibís las mismas preguntas",
+  "duelo.empate": "Empate",
+  "duelo.resultado": "Tú {mios} — {alias} {suyos}",
+  "duelo.terminado": "Ya habéis terminado los dos"
+}

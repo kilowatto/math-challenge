@@ -661,3 +661,59 @@ revisión escrita: se recalibran con datos reales, no antes.
 otorga siempre que el reto se cierre, incluso sin un solo acierto — es lo que
 recomienda `mc-16`. La lectura más estricta de «ganado» en D-014 diría cero XP
 sin aciertos. Implementé la de `mc-16`.
+
+---
+
+## 23. F8 · Las tres preguntas de #265 que implementé sin respuesta · 2026-08-02
+
+La issue paraguas del límite de pantalla (#265) hace tres preguntas al dueño y
+ninguna está contestada en `decisions.md`. **Las tres cambian lo que se
+construye**, así que no se podían dejar para después: se implementó la
+recomendación que el propio plan (`docs/planes/f8-limite-pantalla.md` §14)
+escribe para cada una, y aquí queda dicho cuál, dónde vive y qué costaría
+cambiarla.
+
+### 23.1 El corte nocturno TAMBIÉN impide empezar de madrugada (respuesta A)
+
+`limite-pantalla.ts::decidirAlIniciar` devuelve `CERRAR / BEDTIME` si la hora
+local cae en la ventana, así que un niño que se despierta a la una de la mañana
+no puede abrir un reto nuevo — no solo se le corta el que ya tenía abierto.
+
+Con la alternativa B, ese niño juega sin tropezar con nada, porque no había
+ninguna sesión «en curso» al momento del corte, y ése es exactamente el caso
+que motiva la única evidencia experimental de todo `mc-26` (el ECA de la
+Universidad de Bath, §5). **Costo de cambiar a B:** una línea —`decidirAlIniciar`
+deja de existir y las puertas se separan— pero entonces hay dos tablas de
+decisión y una regla nueva puede aplicarse a una y olvidarse en la otra.
+
+### 23.2 F8 construye `cerrarPorLimite`/`cerradaPorLimite`, y F7 lo lee (respuesta A)
+
+Están en `packages/motor/src/sesion.ts` y en `apps/ingest/src/sesion-do.ts`, que
+es donde F8 ya estaba tocando para el resto del mecanismo. La issue #202 de F7
+pide ese mismo campo; **se actualiza para LEERLO, no para construirlo**.
+
+`sesion.ts` no escribe ninguna racha y no la nombra: deja el hecho disponible.
+El motivo que la racha espera lo produce `limite-pantalla.ts::diaCumplidoPorCorte`,
+y `audits/limite-no-rompe-el-dia.mjs` ejecuta ese cable de punta a punta.
+
+### 23.3 El límite protege desde el día uno, sin que el padre haga nada (respuesta A)
+
+`configuracionVigente(banda, null)` devuelve el default de la banda, así que un
+perfil sin fila en `screen_time_settings` —que hoy son **todos**, porque el paso
+de onboarding que F2 diseñó nunca se construyó— ya juega con límite.
+
+La alternativa B es más fiel a «el padre decide» y deja a un perfil nuevo o
+viejo jugando sin ningún límite hasta que un adulto visite una pantalla que nada
+lo obliga a visitar. **Lo que NO se hizo por defecto:** el corte nocturno.
+`bedtime_local` nace en `NULL` y no se enciende solo, porque adivinar una hora
+de dormir a partir del año de nacimiento sería un dato que el producto no tiene
+y no debería fingir tener (D-053).
+
+### 23.4 Y dos números sin fuente, marcados como tales
+
+`FIN_DE_LA_NOCHE = "05:00"` y `TOPE_DE_CHECKPOINT_MIN = 10` son
+`[criterio propio]`, con la misma honestidad que D-016 usa para su tabla de
+minutos. El primero hace falta porque `bedtime_local` dice dónde empieza la
+noche y **ninguna decisión dice dónde termina**; el segundo recorta el
+checkpoint de un aparato que se durmió con la sesión abierta, para que cerrar la
+tapa no le cueste minutos al niño.

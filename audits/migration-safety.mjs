@@ -479,13 +479,65 @@ const ordenados = [...vistos.keys()].sort((a, b) => a - b);
 if (ordenados.length > 0 && ordenados[0] !== 1) {
   problemas.push(`la numeración empieza en ${String(ordenados[0]).padStart(4, "0")} y no en 0001`);
 }
-for (let i = 1; i < ordenados.length; i++) {
-  if (ordenados[i] !== ordenados[i - 1] + 1) {
+
+// ---------------------------------------------------------------------------
+// 2.1 El hueco DECLARADO, y por qué no es una anulación disfrazada
+// ---------------------------------------------------------------------------
+//
+// Con varias fases construyéndose en paralelo, el coordinador reparte números
+// antes de que los archivos existan: la rama de F8 se lleva la 0011 mientras
+// F7-misiones tiene la 0009 y F7-ligas la 0010, sin mergear todavía. En esa
+// rama el hueco es real y **no es el fallo que este auditor busca** — el fallo
+// es una migración que ya corrió en algún ambiente y se borró del repo, y una
+// migración borrada no deja a nadie declarándola.
+//
+// Sin esto, toda rama de una fase paralela nace roja, y una rama que nace roja
+// se commitea con `--no-verify`, que es como se muere una flota (D-032).
+//
+// Se declara en el archivo que sí existe:
+//
+//     -- migration-safety-reserva: 0009, 0010 — <razón de 20+ caracteres>
+//
+// **Y una reserva rancia BLOQUEA**, igual que la deuda declarada de
+// `lib/repo.mjs`: el día que 0009 existe de verdad, el renglón sobra y hay que
+// borrarlo. Sin esa mitad, la lista crece y el hueco deja de vigilarse.
+const reservados = new Map();
+for (const archivo of archivos) {
+  const texto = readFileSync(join(raiz, archivo), "utf8");
+  const m = texto.match(/--\s*migration-safety-reserva:\s*([\d,\s]+)—\s*(.{20,})/u);
+  if (!m) continue;
+  for (const n of m[1].split(",").map((s) => Number(s.trim())).filter(Number.isFinite)) {
+    reservados.set(n, { archivo, razon: m[2].trim().slice(0, 120) });
+  }
+}
+for (const [num, { archivo }] of reservados) {
+  if (vistos.has(num)) {
     problemas.push(
-      `hueco en la numeración: de ${String(ordenados[i - 1]).padStart(4, "0")} salta a ${String(ordenados[i]).padStart(4, "0")}. ` +
-        `Un hueco casi siempre es una migración que ya corrió en algún ambiente y se borró del repo`,
+      `${archivo} reserva el número ${String(num).padStart(4, "0")} y ese archivo YA EXISTE ` +
+        `(${vistos.get(num)}). La reserva sobra: bórrala, o el hueco deja de vigilarse para siempre.`,
     );
   }
+}
+
+for (let i = 1; i < ordenados.length; i++) {
+  const faltantes = [];
+  for (let n = ordenados[i - 1] + 1; n < ordenados[i]; n++) faltantes.push(n);
+  const sinDeclarar = faltantes.filter((n) => !reservados.has(n));
+  if (sinDeclarar.length === 0) {
+    if (faltantes.length > 0) {
+      anulaciones.push(
+        `hueco declarado ${faltantes.map((n) => String(n).padStart(4, "0")).join(", ")} — ` +
+          reservados.get(faltantes[0]).razon,
+      );
+    }
+    continue;
+  }
+  problemas.push(
+    `hueco en la numeración: de ${String(ordenados[i - 1]).padStart(4, "0")} salta a ${String(ordenados[i]).padStart(4, "0")}. ` +
+      `Un hueco casi siempre es una migración que ya corrió en algún ambiente y se borró del repo. ` +
+      `Si es un número reservado a otra rama, decláralo con ` +
+      `\`-- migration-safety-reserva: ${sinDeclarar.map((n) => String(n).padStart(4, "0")).join(", ")} — <razón>\``,
+  );
 }
 
 // ---------------------------------------------------------------------------

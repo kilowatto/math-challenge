@@ -24,10 +24,12 @@ import {
   servir,
   responder,
   puntoSeguroDeCorte,
+  cerrarPorLimite,
   progreso,
   type EstadoSesion,
   type ResultadoDeRespuesta,
 } from "../../../packages/motor/src/sesion.ts";
+import type { MotivoDeCierre } from "../../../packages/motor/src/limite-pantalla.ts";
 import type { Banda } from "../../../packages/motor/src/puntuacion.ts";
 
 interface Env {
@@ -44,6 +46,7 @@ interface EstadoSerializado {
   pendiente: EstadoSesion["pendiente"];
   puntuadas: Array<[number, ResultadoDeRespuesta]>;
   puntosTotales: number;
+  cerradaPorLimite?: boolean;
 }
 
 const aSerializado = (e: EstadoSesion): EstadoSerializado => ({
@@ -51,6 +54,7 @@ const aSerializado = (e: EstadoSesion): EstadoSerializado => ({
   pendiente: e.pendiente,
   puntuadas: [...e.puntuadas.entries()],
   puntosTotales: e.puntosTotales,
+  cerradaPorLimite: e.cerradaPorLimite,
 });
 
 const deSerializado = (s: EstadoSerializado): EstadoSesion => ({
@@ -58,6 +62,11 @@ const deSerializado = (s: EstadoSerializado): EstadoSesion => ({
   pendiente: s.pendiente,
   puntuadas: new Map(s.puntuadas),
   puntosTotales: s.puntosTotales,
+  // Opcional al leer, y no al escribir: una sesión guardada antes de que este
+  // campo existiera sigue en el almacenamiento del DO y se leería como
+  // `undefined`. `?? false` la trata como abierta, que es lo correcto — un
+  // `undefined` colándose como verdadero dejaría a un niño sin poder jugar.
+  cerradaPorLimite: s.cerradaPorLimite ?? false,
 });
 
 export class SesionReto extends DurableObject<Env> {
@@ -160,6 +169,33 @@ export class SesionReto extends DurableObject<Env> {
     const estado = await this.leer();
     if (!estado) return { seguro: true, contestadas: 0, puntos: 0 };
     return { seguro: puntoSeguroDeCorte(estado), ...progreso(estado) };
+  }
+
+  /**
+   * El límite de pantalla cierra la sesión (F8 #272, D-016).
+   *
+   * Lo llama el Worker después de que `puedeCortar()` dijo que sí, y el motor
+   * lo vuelve a comprobar: entre las dos llamadas cabe una respuesta a medio
+   * servir, y la garantía que vale es la que se verifica donde se actúa.
+   *
+   * Devuelve el progreso porque la pantalla de despedida lo necesita —«hoy
+   * completaste N retos»— y recalcularlo fuera obligaría a una segunda llamada
+   * al mismo objeto para el mismo dato.
+   *
+   * **No escribe la racha.** Deja el hecho (`cerradaPorLimite`) disponible; F7
+   * (#201/#202) lo lee y llama a `registrarDia` con el motivo que
+   * `limite-pantalla.ts::diaCumplidoPorCorte` produce, y ese motivo da
+   * exactamente el mismo estado que un reto terminado (línea roja #6).
+   */
+  async cerrarPorLimite(
+    motivo: MotivoDeCierre,
+  ): Promise<{ cerrada: boolean; contestadas: number; puntos: number; motivo: MotivoDeCierre }> {
+    const estado = await this.leer();
+    if (!estado) return { cerrada: false, contestadas: 0, puntos: 0, motivo };
+
+    const nuevo = cerrarPorLimite(estado);
+    if (nuevo !== estado) await this.guardar(nuevo);
+    return { cerrada: true, ...progreso(nuevo), motivo };
   }
 
   /** Sin ruta pública: una sesión se alcanza por RPC desde el Worker web. */

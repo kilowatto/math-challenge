@@ -1,0 +1,17 @@
+{
+  "_locale": "en",
+  "_nota": "Autorado, no traducido (D-022). KINDER nunca lleva cifra (mc-20: el niño no lee). Ninguna cadena insinúa que el tiempo jugado dañó algo — mc-26 §7, Orben & Przybylski: como máximo 0.4% de la varianza de bienestar.",
+  "limite.aviso.kinder": "One more, and then it's time to rest!",
+  "limite.aviso.lector": "Five more minutes, and then we stop for today.",
+  "limite.descanso.titulo": "Time to stretch",
+  "limite.descanso.cuerpo": "Stand up, look out the window at something far away, and have some water.",
+  "limite.descanso.afuera": "Even better: step outside for a moment.",
+  "limite.descanso.seguir": "Keep playing",
+  "limite.despedida.kinder": "That's all for today. Larry will be here tomorrow!",
+  "limite.despedida.lector": "Good work today. See you tomorrow.",
+  "limite.despedida.retos_uno": "1 challenge today",
+  "limite.despedida.retos_otros": "{n} challenges today",
+  "limite.despedida.hasta_manana": "See you tomorrow",
+  "limite.nocturno.kinder": "The savanna is going to sleep. Good night!",
+  "limite.nocturno.lector": "It's almost bedtime. Good night — see you tomorrow."
+}

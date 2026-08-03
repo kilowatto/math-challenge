@@ -1,0 +1,17 @@
+{
+  "_locale": "pt-PT",
+  "_nota": "Autorado en portugués europeo, no traducido del de Brasil (D-022): «a gente» y «te espera» de pt-BR se leen mal aquí; se usa la próclise y el «bocadinho» del registro portugués. KINDER nunca lleva cifra (mc-20).",
+  "limite.aviso.kinder": "Mais uma e depois descansamos.",
+  "limite.aviso.lector": "Mais cinco minutos e ficamos por aqui hoje.",
+  "limite.descanso.titulo": "Hora de esticar as pernas",
+  "limite.descanso.cuerpo": "Levanta-te, olha para algo ao longe pela janela e bebe um pouco de água.",
+  "limite.descanso.afuera": "Melhor ainda: vai lá fora um bocadinho.",
+  "limite.descanso.seguir": "Continuar a jogar",
+  "limite.despedida.kinder": "Por hoje é tudo. O Larry espera-te amanhã!",
+  "limite.despedida.lector": "Bom trabalho hoje. Até amanhã.",
+  "limite.despedida.retos_uno": "1 desafio hoje",
+  "limite.despedida.retos_otros": "{n} desafios hoje",
+  "limite.despedida.hasta_manana": "Até amanhã",
+  "limite.nocturno.kinder": "A savana vai dormir. Boa noite!",
+  "limite.nocturno.lector": "Está quase na hora de dormir. Boa noite, até amanhã."
+}

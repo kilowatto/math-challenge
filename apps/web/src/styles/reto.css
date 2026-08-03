@@ -15,6 +15,34 @@
  *    no se muestra y no corre hacia atrás.
  */
 
+/*
+ * ─── `hidden` es semántica, no una sugerencia (#348) ──────────────────────
+ *
+ * Encontrado mirando la pantalla en 390 px, no leyendo el código: «Siguiente»,
+ * «Volver a intentarlo» y «Ya está» se veían **antes de contestar**, con el
+ * atributo `hidden` puesto en el marcado y el script poniéndolo otra vez en
+ * cada ítem.
+ *
+ * La causa es de especificidad. El navegador esconde `[hidden]` con
+ * `display: none` desde su hoja de agente de usuario, que tiene la
+ * especificidad más baja que existe; `.opcion` declara `display: flex` y gana.
+ * El resultado es un atributo que el código pone, el DOM tiene, un lector de
+ * pantalla respeta — y que **no se ve en la pantalla**. Ningún `hidden = true`
+ * de JavaScript puede arreglarlo, porque el problema no es que no esté puesto.
+ *
+ * Es el mismo modo de fallo que D-064: un `display` que falta —o que sobra— y
+ * deja dos cosas pintadas donde debía haber una. `!important` aquí no es
+ * pereza: `hidden` tiene que ganarle a cualquier regla de maquetación futura,
+ * y ese «cualquiera» es exactamente lo que `!important` expresa.
+ *
+ * Efecto secundario que importa por sí solo: **el veredicto del ítem anterior
+ * ya no puede sobrevivir al siguiente**, ni el botón de reintentar de una
+ * respuesta que nadie ha dado todavía.
+ */
+[hidden] {
+  display: none !important;
+}
+
 .reto {
   /* El tamaño mínimo de blanco para kinder. Un número, un sitio. */
   --tap-kinder: 88px;
@@ -120,12 +148,38 @@
 
 /* --- El marco de diez ----------------------------------------------------- */
 
+/*
+ * ─── Cinco de 88 px no caben en 390 (#347) ────────────────────────────────
+ *
+ * Esta regla pedía `repeat(5, var(--tap-kinder))` — 440 px de columnas más los
+ * huecos — en un viewport de 390. **No había comportamiento definido para
+ * cuando no cabe**, y lo que salía era el marco entero apretado hasta ser
+ * ilegible: «un rectángulo gris de ~130×90 px con los bordes ondulados».
+ *
+ * El piso de 88 px de `mc-20` §201 NO se baja: sigue en `min-block-size`, que
+ * es el eje que `audits/touch-targets.mjs` mide y el que decide si el dedo de
+ * un niño de cuatro años acierta. Lo que se suelta es el ANCHO, que ninguna
+ * investigación fija y que era lo que no cabía.
+ *
+ * `minmax(0, …)` y no `minmax(auto, …)`: el mínimo implícito de una columna de
+ * rejilla es `auto`, así que la rejilla se desborda igual aunque el contenedor
+ * esté acotado. El `0` es lo que le da permiso a encoger.
+ */
 .marco {
   display: grid;
-  grid-template-columns: repeat(5, var(--tap-kinder));
+  /*
+   * `1fr` y no `minmax(0, 88px)`: una pista con máximo de LONGITUD fija no
+   * encoge cuando el espacio libre es negativo —se queda en su base, que es
+   * 0— así que acotarla con un tope en píxeles cambia el desbordamiento por
+   * un colapso, que se ve igual de mal. `1fr` reparte lo que hay, y el tope
+   * de 88 px se pone donde sí se respeta: en el ancho máximo del marco.
+   */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.5rem;
-  margin: 0 0 1.5rem;
+  margin: 0 auto 1.5rem;
   justify-content: center;
+  inline-size: 100%;
+  max-inline-size: calc(5 * var(--tap-kinder) + 4 * 0.5rem);
 }
 
 .casilla {
@@ -139,11 +193,37 @@
   background: none;
   cursor: pointer;
   font-size: 2rem;
+
+  /* La ficha vive dentro y solo se ve cuando la casilla está llena: ver la
+     regla de abajo. Sin esto la casilla llena no tiene dónde ponerla. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/*
+ * Llena contra vacía, SIN depender del color (#347, WCAG 1.4.1, mc-38).
+ *
+ * Antes la única diferencia entre una casilla llena y una vacía era el fondo.
+ * ~8% de los niños varones tiene deficiencia de visión del color, así que para
+ * uno de cada doce la pregunta «¿cuántas están llenas?» no tenía respuesta
+ * visible — y no de una forma que se pueda reportar: la pantalla se ve
+ * completa, solo que todas las casillas se ven iguales.
+ *
+ * La ficha es una FORMA dentro de la casilla. El color acompaña; no informa
+ * solo.
+ */
 .casilla[aria-pressed="true"] {
   background: var(--color-surface);
   border-color: var(--color-accent);
+}
+
+.casilla[aria-pressed="true"]::after {
+  content: "";
+  inline-size: 55%;
+  block-size: 55%;
+  border-radius: 50%;
+  background: var(--color-accent);
 }
 
 /* --- Flash: exposición, NO reloj ------------------------------------------ */
@@ -199,7 +279,13 @@
  * dispositivo en un soporte fijo.
  */
 @media (orientation: portrait) {
-  .marco { grid-template-columns: repeat(5, minmax(var(--tap-kinder), 1fr)); }
+  /*
+   * `minmax(var(--tap-kinder), 1fr)` era peor que la regla base, no mejor:
+   * cinco columnas con MÍNIMO de 88 px son 440 px + huecos, y vertical en un
+   * teléfono de 390 es el caso más común del producto. La media query pensada
+   * para el caso estrecho era la que garantizaba el desbordamiento.
+   */
+  .marco { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .reto { padding-inline: 1rem; }
 }
 
@@ -209,11 +295,222 @@
 
 /* Split View de iPad: el tercio son ~320 px y nada puede exigir más. */
 @media (max-width: 400px) {
-  .marco { grid-template-columns: repeat(5, 1fr); }
+  /* `1fr` a secas tiene mínimo implícito `auto`, así que una casilla con
+     contenido ancho vuelve a desbordar. El `0` es lo que lo impide. */
+  .marco { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .marco .casilla { min-inline-size: 0; }
 }
 
 /* Quien pidió menos movimiento, menos movimiento. */
 @media (prefers-reduced-motion: reduce) {
   .opcion { transition: none; }
+}
+
+/* ==========================================================================
+ * La escena del reto — y por qué vive AQUÍ y no en el componente
+ * ==========================================================================
+ *
+ * Todo lo de abajo estaba en el `<style>` de `components/reto/Pantalla.astro`,
+ * y **más de la mitad no se aplicaba nunca**. Astro le pone alcance a los
+ * estilos de un componente con un atributo —`.punto[data-astro-cid-met4ekfr]`—
+ * que solo llevan los elementos de la PLANTILLA. Los de la escena los crea el
+ * script con `document.createElement`, así que no lo llevan.
+ *
+ * Compila, se sirve, y no hace nada. Ese es el modo de fallo: no hay error, no
+ * hay aviso, y la única forma de verlo es mirar el CSS construido o la pantalla
+ * en un teléfono — que es como se encontró.
+ *
+ * Lo que costó, dicho de frente porque son tres issues distintos con una sola
+ * causa: los puntos del destello no se dibujaban (#345), el marco de diez salía
+ * como un amontonamiento (#347), y el fondo de marca del `<body>` no estaba.
+ *
+ * Global tiene su precio —estos nombres son ahora del producto entero— y se
+ * paga a cambio de que las reglas alcancen lo que estilizan. `.opcion`,
+ * `.casilla` y `.contable` ya estaban aquí desde F3, y son exactamente las tres
+ * que sí funcionaban.
+ */
+/*
+  Sin `Base.astro` a propósito, igual que la rejilla de caras: la barra de
+  navegación de adulto no aparece en una superficie de niño.
+*/
+.jugar-body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-surface);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+/*
+  Sin `overflow: hidden`: `clip-path` ya lo esconde, y la pareja
+  alto-fijo + overflow es justo la forma que `audits/espaciado-tolerante.mjs`
+  prohíbe —el texto se corta en vez de crecer cuando alguien sube el
+  espaciado (WCAG 1.4.12)—. El auditor lo marcó aquí y tenía razón aunque
+  el destino de este texto sea no verse: un lector de pantalla sí lo lee.
+*/
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.enunciado {
+  font-family: var(--font-marca);
+  font-size: clamp(1.35rem, 5vw, 2rem);
+  line-height: 1.4;
+  text-align: center;
+  margin: 0 0 1.25rem;
+  color: var(--color-text);
+}
+.escena {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-block-end: 1.5rem;
+  /* Reserva el sitio del dibujo ANTES de que llegue: sin esto, el enunciado y
+     las opciones saltan cuando aparece la escena, y ese salto es CLS. */
+  min-block-size: 96px;
+}
+
+/* Hay formatos donde el dibujo SON las opciones —«cuál sobra», «de qué lado
+   hay más»— y ahí la escena queda vacía a propósito. Reservarle 96 px a algo
+   que no va a llegar deja un hueco que parece un fallo de carga. */
+.escena:empty {
+  min-block-size: 0;
+  margin-block-end: 0;
+}
+/*
+  88px es el piso de mc-20 §201 y `audits/touch-targets.mjs` lo mide contra
+  el marcador `@banda KINDER` de este archivo. No se baja aquí ni «solo
+  para que quepan cuatro opciones»: si no caben, caben menos opciones.
+*/
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-block-start: 1.75rem;
+}
+.accion {
+  min-height: 88px;
+  min-width: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 1.5rem;
+  text-decoration: none;
+}
+/* Qué se está practicando y cuánto se lleva. Voz del sistema y discreto:
+   es una nota del producto, no parte del reto, y NUNCA un número de nivel
+   (D-002, D-017, mc-10). Ver la propiedad `mostrarContexto`. */
+.contexto,
+.pista {
+  font-family: var(--font-sistema);
+  font-size: var(--text-xs, 0.85rem);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0 0 0.75rem;
+}
+.pista { margin: 0.75rem 0 0; }
+.mando { display: flex; justify-content: center; margin-block-end: 1.25rem; }
+.mando:empty { display: none; }
+.grupo { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; align-items: center; }
+.separador { font-size: 2rem; color: var(--color-text-muted); }
+.cosa.chica { font-size: 2rem; }
+.figura { font-size: 2.4rem; line-height: 1; }
+.figura.hueco { color: var(--color-text-muted); }
+.recta { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: center; }
+
+/* --- El marco de diez, que tiene que CABER (#347) ---------------------
+ *
+ * Lo que se pintaba era «un rectángulo gris de ~130×90 px con los bordes
+ * ondulados»: las diez celdas apretadas hasta ser ilegibles. Dos causas,
+ * y las dos importan por separado.
+ *
+ *  1. **Nada acotaba el ancho.** `.casilla` de `reto.css` pide 88 px de
+ *     blanco táctil —correcto para un botón— y estas celdas no son
+ *     botones: son el DIBUJO. Cinco de 88 px son 440, en una pantalla de
+ *     390. Se les da clase propia, `.celda`, para que el piso táctil de
+ *     kinder siga valiendo donde de verdad se toca.
+ *  2. **Llena y vacía no se distinguían más que por el fondo.** WCAG 1.4.1
+ *     y `mc-38`: ~8% de los niños varones tiene deficiencia de visión del
+ *     color. Ahora la llena lleva una FICHA dentro —una forma— y la vacía
+ *     el borde discontinuo. El color acompaña; no informa solo.
+ */
+.marco-diez {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  inline-size: min(100%, 22rem);
+  margin-inline: auto;
+}
+.celda {
+  aspect-ratio: 1;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sistema);
+  font-size: clamp(0.8rem, 3.5vw, 1.1rem);
+  color: var(--color-text);
+}
+.celda.llena { background: var(--color-surface); border-color: var(--color-accent); }
+/* La ficha: la forma que hace que «llena» se vea sin depender del color. */
+.celda.llena::after {
+  content: "";
+  inline-size: 62%;
+  block-size: 62%;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+.celda.hueco { border-style: dashed; color: var(--color-text-muted); }
+/* Las celdas de la recta numérica llevan cifra, así que no son cuadradas y
+   tienen que poder LEERSE: once celdas apretadas en 390 px salen ilegibles,
+   que es el mismo defecto del marco de diez en otra habilidad. */
+.recta .celda {
+  aspect-ratio: auto;
+  min-inline-size: 2.1rem;
+  min-block-size: 2.75rem;
+  padding-inline: 0.25rem;
+  font-size: 1.15rem;
+}
+/* El hueco es la pregunta: se ve de lejos o el ítem no se entiende. */
+.recta .celda.hueco { font-size: 1.5rem; font-weight: 700; color: var(--color-text); }
+
+/* Las cuatro disposiciones del destello (K01/K02). */
+.escena[data-disposicion="dado"] { display: grid; grid-template-columns: repeat(3, 44px); justify-content: center; }
+.escena[data-disposicion="linea"] { flex-wrap: nowrap; }
+.escena[data-disposicion="par"] { display: grid; grid-template-columns: repeat(2, 44px); justify-content: center; }
+.punto {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+.cosa {
+  font-size: 3rem;
+  line-height: 1;
+  user-select: none;
+}
+/* `.contable` NO se repite aquí: ya está arriba, y desde F3. Los objetos que
+   se cuentan sí se tocan ahora —el enunciado siempre dijo «toca cada uno para
+   contarlos» y no se podía tocar ninguno— y esa clase es la que ya existía
+   para el mismo gesto en `Formatos.astro`. */
+
+/* Una opción que es un DIBUJO y no una cifra: la figura de «cuál sobra», el
+   montón de «de qué lado hay más», la pieza que sigue el patrón.
+   Grande de verdad: la figura tiene que leerse desde el otro lado de la mesa,
+   que es donde suele estar el padre que acompaña. */
+.opcion.dibujada { font-size: 3.2rem; line-height: 1.1; flex-wrap: wrap; gap: 0.15rem; padding: 0.5rem; }
+/* El tamaño es CONTENIDO en K13: «sobra ésa porque es la más grande» es una
+   segunda respuesta autorada (D-048), y si no se ve, no se puede dar. */
+.opcion.dibujada[data-grande="1"] { font-size: 5rem; }
+.opcion.dibujada.monton { font-size: 1.6rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .escena > * { animation: aparece 220ms ease-out both; }
+  @keyframes aparece { from { opacity: 0; transform: scale(0.85); } }
 }

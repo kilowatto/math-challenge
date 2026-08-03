@@ -49,6 +49,53 @@ export interface Enunciado {
   vars: Record<string, number | string>;
 }
 
+/**
+ * Cómo se DIBUJA una opción que no es un número.
+ *
+ * ─── Por qué esto existe, con la fecha ─────────────────────────────────────
+ *
+ * El 2026-08-02 el dueño jugó «¿Cuál no va con los demás?» en su teléfono y la
+ * pantalla le ofreció tres botones que decían `casilla3`, `casilla0` y
+ * `casilla1` (#349). No era un fallo de traducción: eran los identificadores
+ * internos de las posiciones, servidos como texto de botón a alguien de cuatro
+ * a seis años que **no sabe leer**.
+ *
+ * La causa no estaba en la pantalla. Estaba aquí: un ítem podía tener una
+ * respuesta con valor de cadena y **ninguna manera de decir cómo se ve**. Quien
+ * pintara ese ítem no tenía más remedio que imprimir el valor, y el valor es un
+ * identificador.
+ *
+ * `dibujos` cierra ese hueco: **si la opción no es un número, el ítem tiene que
+ * decir qué se dibuja y cómo se llama**. `validarItem` lo exige, así que un ítem
+ * con opciones-identificador ya no entra al banco.
+ *
+ * La regla de fondo, que vale más allá de kinder: **la opción es la cosa, no su
+ * identificador.** En «cuál sobra» lo que se toca es la figura; en «de qué lado
+ * hay más» lo que se toca es el montón.
+ */
+export interface OpcionDibujada {
+  /**
+   * CLAVE de mensaje para el nombre accesible. Nunca una frase.
+   *
+   * No es el rótulo visible del botón —quien juega ve la figura, no la
+   * palabra— pero un lector de pantalla necesita decir algo, y «botón» cuatro
+   * veces seguidas no es decir algo.
+   */
+  clave: string;
+  /** El glifo que se dibuja. Se repite `cuantos` veces. */
+  glifo: string;
+  /** Cuántas veces se repite el glifo. Por omisión 1. */
+  cuantos?: number;
+  /**
+   * Se dibuja más grande que las demás.
+   *
+   * En K13 el tamaño no es adorno: es la segunda respuesta defendible de D-048
+   * —«sobra ésa porque es la más grande»— y si no se dibuja, esa respuesta no
+   * se puede dar.
+   */
+  grande?: boolean;
+}
+
 export interface Item {
   id: string;
   /** La habilidad de la escalera: K01…K14 en kinder (plan §9). */
@@ -75,6 +122,13 @@ export interface Item {
    * contra una sola respuesta enseña a adivinar lo que el autor pensaba.
    */
   tambienCorrectas?: Array<{ valor: number | string; razon: string }>;
+  /**
+   * Cómo se dibuja cada opción, indexado por su valor **como cadena**.
+   *
+   * Obligatorio para toda opción cuyo valor no sea un número: ver
+   * `OpcionDibujada` y la comprobación de `validarItem`.
+   */
+  dibujos?: Record<string, OpcionDibujada>;
   /**
    * El propósito, y son **los cinco de Swan** (`mc-36`), no texto libre.
    *
@@ -244,7 +298,54 @@ export function validarItem(item: Item): string[] {
     }
   }
 
+  // ── Ninguna opción se presenta como su identificador (#349) ───────────────
+  //
+  // Un valor numérico se escribe con la convención del locale y se lee: un `7`
+  // es un 7 en los siete. Un valor de CADENA no: `casilla3` es la clave interna
+  // de una posición, y servida como rótulo de botón le pide leer —y descifrar—
+  // a quien no sabe leer.
+  //
+  // Por eso la regla no es «no uses cadenas»: las cadenas son la forma correcta
+  // de decir «se toca la tercera figura». La regla es que el ítem diga **qué se
+  // dibuja** en su lugar. Sin `dibujos`, el único rótulo posible es el
+  // identificador, y eso ya pasó en producción.
+  for (const v of opcionesDeItem(item)) {
+    if (typeof v === "number") continue;
+    const dib = item.dibujos?.[String(v)];
+    if (!dib || !dib.glifo || !dib.clave) {
+      p.push(
+        `la opción "${v}" no es un número y no tiene \`dibujos["${v}"]\` con glifo y clave. ` +
+          "Una opción de cadena sin dibujo solo se puede pintar como su identificador, y eso " +
+          "es lo que le sirvió `casilla3` a un niño de cuatro años (#349). La opción es la " +
+          "COSA, no su clave.",
+      );
+      continue;
+    }
+    if (/\s/.test(dib.clave)) {
+      p.push(
+        `dibujos["${v}"].clave = "${dib.clave}" no parece una clave de mensaje. El nombre ` +
+          "accesible se autora en los siete locales, no se escribe aquí (D-022).",
+      );
+    }
+  }
+
   return p;
+}
+
+/**
+ * Todos los valores que pueden acabar siendo un botón: la correcta, las
+ * alternas de D-048 y los distractores con causa.
+ *
+ * Existe como función y no en línea porque `presentarItem` arma exactamente
+ * esta misma lista, y dos listas se separan. Que la validación mire justo lo
+ * que la pantalla va a pintar es la mitad de que la validación sirva.
+ */
+export function opcionesDeItem(item: Item): Array<number | string> {
+  return [
+    item.respuesta.valor,
+    ...(item.errores ?? []).map((e) => e.valor),
+    ...(item.tambienCorrectas ?? []).map((c) => c.valor),
+  ];
 }
 
 /**

@@ -215,6 +215,68 @@ caso("pasado el último intervalo se sigue repasando, no se abandona", () => {
   es(tocaRepasar(0, 0), false, "el mismo día no");
 });
 
+// --- #349: una opción es la COSA, no su identificador -----------------------
+//
+// El caso real: `cual_sobra` servía `casilla3`, `casilla0` y `casilla1` como
+// texto de botón a un niño de cuatro a seis años que no sabe leer. Ni siquiera
+// estaba traducido — «casilla» es la palabra española del código, y en alemán
+// salía igual.
+//
+// `validarItem` no lo bloqueaba porque no tenía nada que mirar: el ítem no
+// podía declarar cómo se dibuja una opción. Los casos de abajo fallan sobre el
+// `item.ts` anterior, donde la regla no existe.
+const SOBRA = {
+  id: "k13-x", habilidad: "K13", nivel: 1, formato: "cual_sobra",
+  enunciado: { clave: "k.formas.cual_sobra", vars: { familia: 0, intruso: 1 } },
+  respuesta: { valor: "casilla2", tol: 0 },
+  errores: [{ valor: "casilla0", causa: "error.eligio_al_azar" }],
+  proposito: "clasificar",
+  variacion: null,
+};
+
+caso("#349 · una opción de cadena SIN dibujo se bloquea: solo se podría pintar su clave", () => {
+  const p = validarItem(SOBRA);
+  if (p.length === 0) {
+    throw new Error(
+      "validarItem aceptó un ítem cuya única presentación posible es `casilla2` — que es " +
+        "literalmente lo que salió en producción (#349)",
+    );
+  }
+  if (!p.some((x) => x.includes("casilla2"))) {
+    throw new Error(`bloqueó, pero no por la opción sin dibujo: ${p.join(" | ")}`);
+  }
+});
+
+caso("#349 · con el dibujo declarado, el mismo ítem pasa", () => {
+  const p = validarItem({
+    ...SOBRA,
+    dibujos: {
+      casilla0: { clave: "forma.circulo", glifo: "●" },
+      casilla2: { clave: "forma.cuadrado", glifo: "■" },
+    },
+  });
+  if (p.length) throw new Error(p.join(" | "));
+});
+
+caso("#349 · un dibujo con FRASE en vez de clave de mensaje se bloquea (D-022)", () => {
+  const p = validarItem({
+    ...SOBRA,
+    dibujos: {
+      casilla0: { clave: "forma.circulo", glifo: "●" },
+      // Escribir el nombre aquí es autorar interfaz dentro del banco: saldría en
+      // español en los siete locales, que es la otra mitad de #349.
+      casilla2: { clave: "el cuadrado", glifo: "■" },
+    },
+  });
+  if (!p.some((x) => x.includes("clave de mensaje"))) {
+    throw new Error(`no bloqueó la frase: ${JSON.stringify(p)}`);
+  }
+});
+
+caso("#349 · un número NO necesita dibujo — se escribe con la convención del locale", () => {
+  es(validarItem(ITEM).length, 0, "el ítem de suma, que responde con cifras, sigue siendo válido");
+});
+
 console.log("");
 if (fallos > 0) {
   console.error(`✗ ítem y serie — ${fallos} de ${corridos} caso(s) fallaron\n`);

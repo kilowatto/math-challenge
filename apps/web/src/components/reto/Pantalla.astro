@@ -59,12 +59,52 @@ interface Props {
   rotulos: Record<string, string>;
   /** A dónde lleva «terminar»: la reja de caras, o la casa. */
   salirA: string;
+  /**
+   * El nombre de cada habilidad, por `skillId`, en el locale de la página.
+   *
+   * Viaja ya resuelto y no como catálogo: un `catalogo[clave]` en el cliente
+   * significa mandar los siete locales a un teléfono de gama baja, que es el
+   * dispositivo de referencia (`mc-47` §5).
+   */
+  habilidades?: Record<string, string>;
+  /**
+   * Si se dice **qué se está practicando y cuánto se lleva** (#361).
+   *
+   * ─── Por qué es una propiedad y no siempre ─────────────────────────────
+   *
+   * El dueño, jugando: «solo puedo comenzar a participar, caigo en algo pero
+   * no sé qué nivel es». El servidor ya mandaba `skillId`, `dificultad`,
+   * `habilidadAntes` y `ubicando` en cada ítem, y la pantalla los tiraba: el
+   * motor adaptativo entero era invisible, y un producto cuyo trabajo no se ve
+   * es indistinguible de uno que sirve ítems al azar.
+   *
+   * Y aun así **no se enciende en la pantalla del niño**. D-060 y el criterio
+   * #100: la primera sesión ES la ubicación y el niño no debe enterarse; «llevas
+   * 3» es «ítem 3 de 15» con otro nombre, que es un examen con otro nombre.
+   * Para un adulto que practica, en cambio, no saber dónde está es el fallo.
+   *
+   * Lo que NO se enseña en ninguno de los dos casos es el **número de nivel**.
+   * D-002 separa edad de dificultad y D-017 evita nombrar los niveles con
+   * grados escolares precisamente para que no se lean como calificación;
+   * `mc-10` documenta que la presión de rendimiento empeora el desempeño en
+   * matemáticas. «Estás practicando: contar del 1 al 10» dice más que «Nivel 3»
+   * y no se puede leer como una nota.
+   */
+  mostrarContexto?: boolean;
 }
-const { locale, rotulos, salirA } = Astro.props as Props;
+const {
+  locale,
+  rotulos,
+  salirA,
+  habilidades = {},
+  mostrarContexto = false,
+} = Astro.props as Props;
 ---
 
   <main class="reto" data-locale={locale}>
     <h1 class="visualmente-oculto">{rotulos.mirar}</h1>
+
+    {mostrarContexto && <p id="contexto" class="contexto" hidden></p>}
 
     {/*
       `aria-live="polite"` y no `assertive`: un lector de pantalla debe
@@ -76,129 +116,122 @@ const { locale, rotulos, salirA } = Astro.props as Props;
 
     <div id="escena" class="escena"></div>
 
+    {/* Donde vive el botón del destello. Vacío en los otros cuatro formatos. */}
+    <div id="mando" class="mando"></div>
+
     <div id="opciones" class="opciones" role="group" aria-labelledby="enunciado"></div>
+
+    {mostrarContexto && <p id="pista" class="pista" hidden>{rotulos.elige}</p>}
 
     <p id="veredicto" class="veredicto" hidden></p>
 
     <div class="acciones">
+      <button type="button" id="confirmar" class="opcion accion" hidden>{rotulos.confirmar}</button>
+      <button type="button" id="reintentar" class="opcion accion" hidden>{rotulos.reintentar}</button>
       <button type="button" id="siguiente" class="opcion accion" hidden>{rotulos.siguiente}</button>
       <a href={salirA} class="opcion accion salir">{rotulos.salir}</a>
     </div>
   </main>
 
-  <style>
-    /*
-      Sin `Base.astro` a propósito, igual que la rejilla de caras: la barra de
-      navegación de adulto no aparece en una superficie de niño.
-    */
-    .jugar-body {
-      margin: 0;
-      min-height: 100dvh;
-      background: var(--color-surface);
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
-        env(safe-area-inset-left);
-    }
-    /*
-      Sin `overflow: hidden`: `clip-path` ya lo esconde, y la pareja
-      alto-fijo + overflow es justo la forma que `audits/espaciado-tolerante.mjs`
-      prohíbe —el texto se corta en vez de crecer cuando alguien sube el
-      espaciado (WCAG 1.4.12)—. El auditor lo marcó aquí y tenía razón aunque
-      el destino de este texto sea no verse: un lector de pantalla sí lo lee.
-    */
-    .visualmente-oculto {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      clip-path: inset(50%);
-      white-space: nowrap;
-    }
-    .enunciado {
-      font-family: var(--font-marca);
-      font-size: clamp(1.35rem, 5vw, 2rem);
-      line-height: 1.4;
-      text-align: center;
-      margin: 0 0 1.25rem;
-      color: var(--color-text);
-    }
-    .escena {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.75rem;
-      margin-block-end: 1.5rem;
-      min-height: 96px;
-    }
-    /*
-      88px es el piso de mc-20 §201 y `audits/touch-targets.mjs` lo mide contra
-      el marcador `@banda KINDER` de este archivo. No se baja aquí ni «solo
-      para que quepan cuatro opciones»: si no caben, caben menos opciones.
-    */
-    .acciones {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      justify-content: center;
-      margin-block-start: 1.75rem;
-    }
-    .accion {
-      min-height: 88px;
-      min-width: 88px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding-inline: 1.5rem;
-      text-decoration: none;
-    }
-    .grupo { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; align-items: center; }
-    .separador { font-size: 2rem; color: var(--color-text-muted); }
-    .pato.chico { font-size: 2rem; }
-    .figura { font-size: 2.4rem; line-height: 1; }
-    .figura.hueco { color: var(--color-text-muted); }
-    .marco-diez { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.3rem; }
-    .recta { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: center; }
-    .casilla { width: 40px; height: 40px; border: 2px solid var(--color-border);
-               border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
-               font-family: var(--font-sistema); font-size: 1rem; color: var(--color-text); }
-    .casilla.llena { background: var(--color-accent); border-color: transparent; }
-    .casilla.hueco { border-style: dashed; color: var(--color-text-muted); }
-    /* Las cuatro disposiciones del destello (K01/K02). */
-    .escena[data-disposicion="dado"] { display: grid; grid-template-columns: repeat(3, 44px); justify-content: center; }
-    .escena[data-disposicion="linea"] { flex-wrap: nowrap; }
-    .escena[data-disposicion="par"] { display: grid; grid-template-columns: repeat(2, 44px); justify-content: center; }
-    .punto {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--color-accent);
-    }
-    .pato {
-      font-size: 3rem;
-      line-height: 1;
-      /* Decorativo: el enunciado ya dice cuántos hay y qué se pregunta. */
-      user-select: none;
-    }
-    @media (prefers-reduced-motion: no-preference) {
-      .escena > * { animation: aparece 220ms ease-out both; }
-      @keyframes aparece { from { opacity: 0; transform: scale(0.85); } }
-    }
-  </style>
+  {/*
+    ─── Aquí NO va ni una regla de estilo, y esta nota es la razón ──────────
 
-  <script define:vars={{ locale, rotulos, salirA }}>
+    Este componente tenía un bloque `<style>` de 170 líneas, y **más de la
+    mitad no se aplicaba nunca**. Astro escribe los estilos de un componente
+    con un atributo de alcance —`.punto[data-astro-cid-met4ekfr]`— y se lo
+    pone a los elementos que están en la PLANTILLA. Los de la escena no están
+    en la plantilla: los crea el script con `document.createElement`, así que
+    no llevan ese atributo y **ninguna de esas reglas los alcanza**.
+
+    Medido sobre el HTML construido, no deducido:
+
+        .punto[data-astro-cid-met4ekfr]{width:44px;height:44px;…}
+        .marco-diez[data-astro-cid-met4ekfr]{display:grid;…}
+        .jugar-body[data-astro-cid-met4ekfr]{background:…}
+
+    Eso explica tres cosas que el dueño reportó por separado y que resultaron
+    ser la MISMA:
+
+     · **«No vi nada» en el destello (#345).** Los puntos son `<span>` vacíos
+       cuyo tamaño y color venían de `.punto`. Sin la regla no eran invisibles
+       por rápidos: **eran invisibles siempre**, porque un span vacío sin
+       tamaño no dibuja nada. La exposición de 900 ms era una explicación
+       plausible de un defecto que no era de tiempo.
+     · **El marco de diez «un borrón gris» (#347).** `.marco-diez` no aplicaba,
+       así que no había rejilla; lo que sí aplicaba era `.casilla` de
+       `reto.css`, que es global. De ahí un amontonamiento con bordes.
+     · **`.jugar-body` tampoco aplicaba**: la clase va en el `<body>` de la
+       PÁGINA, no en este componente. El fondo de marca y el `safe-area` de la
+       pantalla del reto nunca estuvieron.
+
+    Un `<style>` de componente que estiliza lo que el componente no escribe
+    falla en silencio: compila, se sirve, y no hace nada. Por eso todo esto
+    vive ahora en `styles/reto.css`, que es global y que ya era donde estaban
+    `.opcion`, `.casilla` y `.contable` — las tres reglas de la escena que sí
+    funcionaban, precisamente por estar allí.
+  */}
+
+
+  <script define:vars={{ locale, rotulos, salirA, habilidades, mostrarContexto }}>
     /**
-     * El bucle. Pide, pinta, manda, repite.
+     * El bucle. Pide, pinta, ELIGE, confirma, repite.
      *
      * No hay estado del modelo aquí: el servidor lo tiene. Lo único que este
-     * script recuerda es qué ítem está en pantalla, y eso solo para poder
-     * decir a qué se está respondiendo.
+     * script recuerda es qué ítem está en pantalla, qué se tocó todavía sin
+     * mandar, y cuántos van en la sesión.
+     *
+     * ─── El paso que faltaba: elegir no es responder (#348, línea roja #8) ──
+     *
+     * Antes un toque mandaba el intento. Un toque, y el ítem estaba juzgado:
+     * la pantalla solo ofrecía «Siguiente» y «Ya terminé». La pregunta literal
+     * del dueño jugando fue **«¿y puedo volverlo a hacer?»**, y la respuesta
+     * era no.
+     *
+     * La línea roja #8 dice que nunca se penaliza corregir, porque `mc-30`
+     * midió que cambiar una respuesta la MEJORA el 79% de las veces. Hoy no es
+     * que corregir se penalizara: es que corregir no existía. Un blanco táctil
+     * de 88 px con un niño de cuatro años detrás **se toca sin querer**, y ese
+     * toque valía como respuesta final.
+     *
+     * Ahora se elige, se cambia de opinión las veces que haga falta, y se
+     * confirma. Nada viaja al servidor hasta la confirmación, y por eso no hay
+     * nada que penalizar: no existe el dato de cuántas veces se cambió.
      */
+    const $contexto = document.getElementById("contexto");
     const $enunciado = document.getElementById("enunciado");
     const $escena = document.getElementById("escena");
+    const $mando = document.getElementById("mando");
     const $opciones = document.getElementById("opciones");
+    const $pista = document.getElementById("pista");
     const $veredicto = document.getElementById("veredicto");
+    const $confirmar = document.getElementById("confirmar");
+    const $reintentar = document.getElementById("reintentar");
     const $siguiente = document.getElementById("siguiente");
 
+    /**
+     * Cuánto se ve el destello.
+     *
+     * **No es un reloj** (D-024): no cuenta hacia atrás, no se muestra y no
+     * entra en el puntaje. Es la exposición que define subitizar — reconocer
+     * cuántos hay sin contarlos.
+     *
+     * El número no se revisó contra la investigación en este cambio y sigue
+     * siendo el que estaba. Lo que sí cambió es cuándo empieza: ver el
+     * encabezado de `prepararDestello`.
+     */
+    const EXPOSICION_MS = 900;
+
     let actual = null;
-    let respondiendo = false;
+    /** El valor tocado y todavía NO mandado. `null` = no se ha elegido nada. */
+    let elegido = null;
+    /** ¿Ya hay veredicto en pantalla para el ítem actual? */
+    let juzgado = false;
+    /** ¿Este envío es un segundo intento del MISMO ítem? */
+    let esReintento = false;
+    /** Un envío en vuelo. Sin esto, dos toques mandan dos intentos. */
+    let mandando = false;
+    /** Cuántos ítems se han contestado en esta sesión. Solo para decirlo. */
+    let hechos = 0;
     /*
       El último ítem contestado. Viaja al servidor como PISTA para no repetirlo
       seguido; la garantía de no repetir en toda la sesión es del servidor y
@@ -223,23 +256,6 @@ const { locale, rotulos, salirA } = Astro.props as Props;
       return r.ok ? r.json() : null;
     };
 
-    /** Dibuja la escena de cada formato. Todo decorativo: el texto ya lo dice. */
-    /**
-     * Dibuja lo que el enunciado pregunta.
-     *
-     * ─── Por qué esto no es decoración ─────────────────────────────────
-     *
-     * La primera versión solo dibujaba `flash` y `toca_para_contar`, y con el
-     * banco de F5 completo eso dejó **ítems incontestables**: «¿de qué lado
-     * hay más?» sin ver los dos lados, «¿cuántas casillas están llenas?» sin
-     * ver el marco, «¿cuál no va con los demás?» sin ver las figuras. Un niño
-     * de cuatro años no puede decir que la pantalla está incompleta: toca al
-     * azar y el motor registra un fallo que no cometió.
-     *
-     * Se descubrió jugando 30 ítems seguidos contra producción y leyendo lo
-     * que salía, no revisando el código — el código estaba bien, le faltaba la
-     * mitad del banco.
-     */
     const cajita = (clase, texto) => {
       const e = document.createElement("span");
       e.className = clase;
@@ -255,81 +271,179 @@ const { locale, rotulos, salirA } = Astro.props as Props;
       return g;
     }
 
-    const FIGURAS = ["●", "▲", "■", "★"];
+    /**
+     * El glifo que el ÍTEM manda, nunca uno inventado aquí (#347).
+     *
+     * Esta pantalla tenía `"🦆"` escrito en cinco sitios, así que «Toca cada
+     * piedrita para contarlas» dibujaba patos. La cosa que se cuenta viaja en
+     * las variables del enunciado, igual que la disposición del destello.
+     */
+    const glifoDe = (v, clave) => {
+      const g = v[clave ?? "glifo"];
+      return typeof g === "string" && g !== "" ? g : null;
+    };
 
+    // ---------------------------------------------------------------------
+    // El destello
+    // ---------------------------------------------------------------------
+    /**
+     * **«No vi nada.»** El dueño, en su teléfono, en su primer reto. Dos veces
+     * (#345).
+     *
+     * El destello empezaba **solo**, en cuanto llegaba el ítem. Si en ese medio
+     * segundo la página seguía pintando, la fuente aún no había cargado o
+     * simplemente parpadeaste, te lo perdías — y no había forma de repetirlo.
+     * Lo que quedaba era «¿Cuántos puntos viste?» sobre un hueco en blanco.
+     * Adivinar era la única salida, y adivinar mal en el primer reto es
+     * exactamente la experiencia que `mc-10` dice que hay que evitar.
+     *
+     * Dos cambios, y el primero importa más que el segundo:
+     *
+     *  1. **Empieza cuando la persona lo dice.** Nada destella hasta que se
+     *     toca «Cuando quieras». Eso quita de un golpe todo el modo de fallo
+     *     de «la página todavía estaba pintando»: la página ya está pintada,
+     *     porque hubo un toque.
+     *  2. **Se puede repetir, sin límite.** La objeción es real —el destello
+     *     mide subitizar, y repetirlo a voluntad lo convierte en contar— y aun
+     *     así repetir gana: un ítem que no se puede ver no mide nada. Lo que
+     *     falta para cerrarlo bien es que el número de repeticiones llegue al
+     *     modelo, y hoy el modelo no tiene ese campo. Queda dicho como residuo,
+     *     no como olvido.
+     */
+    function prepararDestello(item) {
+      const v = item.vars ?? {};
+      const n = Number(v.n ?? 0);
+      const glifo = glifoDe(v);
+      const boton = document.createElement("button");
+      boton.type = "button";
+      boton.className = "opcion accion";
+      boton.textContent = rotulos.verlo;
+
+      let visto = false;
+      boton.addEventListener("click", () => {
+        $escena.replaceChildren();
+        $escena.dataset.disposicion = String(v.disposicion ?? "linea");
+        for (let i = 0; i < n; i++) {
+          $escena.append(glifo ? cajita("cosa", glifo) : cajita("punto"));
+        }
+        boton.disabled = true;
+        window.setTimeout(() => {
+          $escena.replaceChildren();
+          boton.disabled = false;
+          if (!visto) {
+            visto = true;
+            boton.textContent = rotulos.otraVez;
+          }
+        }, EXPOSICION_MS);
+      });
+      $mando.append(boton);
+    }
+
+    // ---------------------------------------------------------------------
+    // La escena
+    // ---------------------------------------------------------------------
+    /**
+     * Dibuja lo que el enunciado pregunta.
+     *
+     * ─── Por qué esto no es decoración ─────────────────────────────────
+     *
+     * La primera versión solo dibujaba `flash` y `toca_para_contar`, y con el
+     * banco de F5 completo eso dejó **ítems incontestables**: «¿de qué lado
+     * hay más?» sin ver los dos lados, «¿cuántas casillas están llenas?» sin
+     * ver el marco, «¿cuál no va con los demás?» sin ver las figuras.
+     *
+     * Y hay formatos en los que la escena está VACÍA a propósito, porque el
+     * dibujo son las opciones: en «cuál sobra» lo que se toca es la figura, y
+     * en «de qué lado hay más» lo que se toca es el montón. Dibujarlos aquí
+     * además sería enseñar dos veces la misma cosa y dejar que la de arriba no
+     * se pueda tocar.
+     *
+     * Devuelve `true` si la escena quedó con algo que se puede tocar — un
+     * `aria-hidden` con un botón dentro es `aria-hidden-focus` en axe, y para
+     * quien usa lector es un botón que existe y no se puede alcanzar.
+     */
     function pintarEscena(item) {
       $escena.replaceChildren();
+      $escena.removeAttribute("data-disposicion");
+      $escena.removeAttribute("aria-hidden");
       const v = item.vars ?? {};
       const num = (k) => Number(v[k] ?? 0);
+      let tocable = false;
 
       switch (item.formato) {
-        case "flash": {
-          const n = num("n");
-          /*
-            La DISPOSICIÓN es el eje de esta habilidad: cuatro puntos en patrón
-            de dado se reconocen de un vistazo y los mismos cuatro dispersos
-            obligan a contar. Si todas se dibujaran igual, el banco tendría
-            cuatro veces el mismo ítem con cuatro ids distintos.
-          */
-          $escena.dataset.disposicion = String(v.disposicion ?? "linea");
-          for (let i = 0; i < n; i++) $escena.append(cajita("punto"));
-          // Se ve y se esconde. NO es un cronómetro: no cuenta hacia atrás, no
-          // se muestra y no penaliza. Es la exposición breve que define
-          // subitizar.
-          setTimeout(() => { $escena.replaceChildren(); }, 900);
+        case "flash":
+          // La escena la llena el botón del destello, no esta función.
           break;
-        }
+
         case "toca_para_contar": {
+          // Se toca cada uno para contarlo — que es literalmente lo que pide
+          // el enunciado y lo que hasta hoy no se podía hacer. Marcar el ya
+          // contado es la correspondencia uno a uno hecha gesto: sin ella, un
+          // niño de cuatro años cuenta dos veces el mismo.
+          const glifo = glifoDe(v) ?? "●";
           const n = num("n");
-          for (let i = 0; i < n; i++) $escena.append(cajita("pato", "🦆"));
+          for (let i = 0; i < n; i++) {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "contable";
+            b.setAttribute("aria-pressed", "false");
+            // Con nombre y POSICIÓN (#334): sin esto un lector anuncia el mismo
+            // nombre N veces y quien cuenta con lector no sabe cuál ya tocó.
+            b.setAttribute("aria-label", `${rotulos.mirar}: ${i + 1}`);
+            b.textContent = glifo;
+            b.addEventListener("click", () => {
+              b.setAttribute(
+                "aria-pressed",
+                b.getAttribute("aria-pressed") === "true" ? "false" : "true",
+              );
+            });
+            $escena.append(b);
+          }
+          tocable = n > 0;
           break;
         }
+
         case "arma_el_numero": {
-          // El marco de diez (K09) y la descomposición (K10). Diez casillas,
-          // las llenas marcadas. Se lee de un vistazo —una fila y dos más— y
-          // esa lectura es lo que enseña el diez como referencia.
+          // El marco de diez (K09) y la descomposición (K10). Las llenas van
+          // con FICHA dentro, no solo con fondo de color: ver `.celda` arriba.
           const llenas = v.llenas !== undefined ? num("llenas") : num("parte");
           const total = v.llenas !== undefined ? 10 : num("total");
           const marco = document.createElement("div");
           marco.className = "marco-diez";
           for (let i = 0; i < total; i++) {
-            marco.append(cajita(i < llenas ? "casilla llena" : "casilla"));
+            marco.append(cajita(i < llenas ? "celda llena" : "celda"));
           }
           $escena.append(marco);
           break;
         }
-        case "cual_sobra": {
-          // K13: tres de una familia y un intruso. El intruso NO va siempre
-          // al final — con la posición fija se acierta sin mirar.
-          const fam = FIGURAS[num("familia") % FIGURAS.length];
-          const intruso = FIGURAS[num("intruso") % FIGURAS.length];
-          const donde = (num("familia") + num("intruso")) % 4;
-          for (let i = 0; i < 4; i++) {
-            $escena.append(cajita("figura", i === donde ? intruso : fam));
-          }
+
+        case "cual_sobra":
+          // Las cuatro figuras SON las cuatro opciones (#349). Ver el
+          // encabezado de esta función.
           break;
-        }
+
         default: {
           // `toca_la_respuesta` cubre varias habilidades y cada una necesita
           // ver algo distinto.
           if (v.izq !== undefined) {
-            // K07: dos montones. El enunciado pregunta de qué lado hay más, y
-            // sin los montones la pregunta no existe.
-            $escena.append(grupo(num("izq"), "🦆", "pato chico"));
-            $escena.append(cajita("separador", "·"));
-            $escena.append(grupo(num("der"), "🦆", "pato chico"));
+            // K07: los dos montones son las dos opciones. Aquí no se dibuja
+            // nada, o habría cuatro montones en pantalla y solo dos tocables.
           } else if (v.patos !== undefined) {
-            // K05: patos arriba, gorros abajo, para poder emparejar de vista.
-            $escena.append(grupo(num("patos"), "🦆", "pato chico"));
-            $escena.append(grupo(num("gorros"), "🎩", "pato chico"));
+            // K05: los objetos arriba, los gorros abajo, para emparejar de
+            // vista sin contar.
+            $escena.append(grupo(num("patos"), glifoDe(v) ?? "●", "cosa chica"));
+            $escena.append(grupo(num("gorros"), glifoDe(v, "glifoB") ?? "●", "cosa chica"));
           } else if (v.largo !== undefined) {
-            // K14: el patrón, con el hueco al final.
-            const ciclo = num("ciclo") || 2;
+            // K14: el patrón, con el hueco al final. Las figuras vienen del
+            // ítem, en su orden; esta pantalla tenía su propia lista y en otro
+            // orden que el banco, así que un ítem de cuadrados salía con
+            // triángulos.
+            const ciclo = [...String(v.figuras ?? "")];
             const primero = num("primero");
             const fila = document.createElement("div");
             fila.className = "grupo";
             for (let i = 0; i < num("largo"); i++) {
-              fila.append(cajita("figura", FIGURAS[(primero + i) % ciclo]));
+              fila.append(cajita("figura", ciclo[(primero + i) % (ciclo.length || 1)] ?? "●"));
             }
             fila.append(cajita("figura hueco", "?"));
             $escena.append(fila);
@@ -339,7 +453,7 @@ const { locale, rotulos, salirA } = Astro.props as Props;
             const recta = document.createElement("div");
             recta.className = "recta";
             for (let i = 0; i <= 10; i++) {
-              recta.append(cajita(i === falta ? "casilla hueco" : "casilla numero",
+              recta.append(cajita(i === falta ? "celda hueco" : "celda numero",
                                   i === falta ? "?" : String(i)));
             }
             $escena.append(recta);
@@ -347,29 +461,115 @@ const { locale, rotulos, salirA } = Astro.props as Props;
           break;
         }
       }
-      // Decorativo: el enunciado ya dice qué se pregunta, y un lector de
-      // pantalla que enumere veinte casillas no ayuda a nadie.
-      $escena.setAttribute("aria-hidden", "true");
+
+      // Decorativo mientras no haya nada que tocar: el enunciado ya dice qué
+      // se pregunta, y un lector que enumere veinte celdas no ayuda a nadie.
+      if (!tocable) $escena.setAttribute("aria-hidden", "true");
     }
 
+    // ---------------------------------------------------------------------
+    // Las opciones
+    // ---------------------------------------------------------------------
+    /**
+     * Una opción es LA COSA, no su identificador (#349).
+     *
+     * El servidor manda `dibujo` cuando la opción no es un número: el glifo,
+     * cuántas veces se repite y si va más grande. Sin ese campo, lo único que
+     * la pantalla podía imprimir era el valor — y el valor era `casilla3`.
+     *
+     * `texto` sigue viniendo y sigue haciendo falta: es el NOMBRE ACCESIBLE,
+     * autorado en los siete locales. Lo lee un lector de pantalla; no lo ve
+     * quien no lo necesita.
+     */
     function pintarOpciones(item) {
       $opciones.replaceChildren();
       for (const o of item.opciones) {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "opcion";
-        b.textContent = o.texto;
-        b.addEventListener("click", () => responder(o.valor));
+        b.setAttribute("aria-pressed", "false");
+        if (o.dibujo) {
+          b.classList.add("dibujada");
+          if (o.dibujo.cuantos > 1) b.classList.add("monton");
+          b.dataset.grande = o.dibujo.grande ? "1" : "0";
+          b.textContent = o.dibujo.glifo.repeat(Math.max(1, o.dibujo.cuantos || 1));
+          b.setAttribute("aria-label", o.texto);
+        } else {
+          b.textContent = o.texto;
+        }
+        b.addEventListener("click", () => elegir(o.valor, b));
         $opciones.append(b);
       }
+      if ($pista) $pista.hidden = item.opciones.length === 0;
     }
 
-    async function siguiente() {
-      respondiendo = false;
+    /**
+     * Se toca una opción. **No se manda nada** (línea roja #8).
+     *
+     * Elegir es reversible: cambia el marcado, se puede volver a tocar otra, y
+     * si ya había un veredicto en pantalla se limpia — porque el veredicto de
+     * lo anterior no describe lo que se acaba de elegir.
+     */
+    function elegir(valor, boton) {
+      if (mandando || juzgado || !actual) return;
+      for (const otro of $opciones.querySelectorAll("button")) {
+        otro.setAttribute("aria-pressed", "false");
+      }
+      boton.setAttribute("aria-pressed", "true");
+      elegido = valor;
+      limpiarVeredicto();
+      $confirmar.hidden = false;
+    }
+
+    /**
+     * Vacía el área del veredicto. **Del todo.**
+     *
+     * En la captura de las 4:03 se veía «Esta vez no. Míralo otra vez.» **antes
+     * de contestar** el ítem nuevo (#348). Ocultar el párrafo no basta: el
+     * texto y el `data-acierto` seguían dentro, y cualquier camino que volviera
+     * a mostrarlo —o un lector de pantalla recorriendo la página— encontraba el
+     * veredicto de un ítem que ya no estaba.
+     */
+    function limpiarVeredicto() {
       $veredicto.hidden = true;
+      $veredicto.textContent = "";
+      delete $veredicto.dataset.acierto;
+    }
+
+    // ---------------------------------------------------------------------
+    // Qué se está practicando (#361)
+    // ---------------------------------------------------------------------
+    function pintarContexto(ctx) {
+      if (!mostrarContexto || !$contexto) return;
+      const partes = [];
+      const nombre = ctx && habilidades[ctx.skillId];
+      if (nombre) partes.push(rotulos.practicando.replace("{habilidad}", nombre));
+      if (hechos > 0) partes.push(rotulos.llevas.replace("{n}", String(hechos)));
+      // Que el motor esté ubicando se DICE mientras ocurre. Es honesto y
+      // explica por qué la dificultad salta; callarlo deja la impresión de que
+      // los ítems salen al azar, que es exactamente lo que se reportó.
+      if (ctx && ctx.ubicando) partes.push(rotulos.ubicando);
+      $contexto.textContent = partes.join(" · ");
+      $contexto.hidden = partes.length === 0;
+    }
+
+    // ---------------------------------------------------------------------
+    // El bucle
+    // ---------------------------------------------------------------------
+    async function siguiente() {
+      elegido = null;
+      juzgado = false;
+      esReintento = false;
+      mandando = false;
+      limpiarVeredicto();
+      $confirmar.hidden = true;
+      $reintentar.hidden = true;
       $siguiente.hidden = true;
+      if ($pista) $pista.hidden = true;
       $enunciado.textContent = rotulos.cargando;
       $escena.replaceChildren();
+      $escena.removeAttribute("data-disposicion");
+      $mando.replaceChildren();
       $opciones.replaceChildren();
 
       const r = await pedir("siguiente", { ultimoItemId });
@@ -380,19 +580,32 @@ const { locale, rotulos, salirA } = Astro.props as Props;
       actual = r.item;
       $enunciado.textContent = actual.enunciado;
       pintarEscena(actual);
+      if (actual.formato === "flash") prepararDestello(actual);
       pintarOpciones(actual);
+      pintarContexto(r.contexto);
     }
 
-    async function responder(valor) {
-      // Un toque doble no manda dos intentos. Sin esto, el servidor recibe
-      // dos respuestas y el modelo cuenta dos veces lo mismo.
-      if (respondiendo || !actual) return;
-      respondiendo = true;
+    /** Se confirma lo elegido. **Este** es el momento en que algo viaja. */
+    async function confirmar() {
+      if (mandando || juzgado || elegido === null || !actual) return;
+      mandando = true;
+      $confirmar.hidden = true;
       for (const b of $opciones.querySelectorAll("button")) b.disabled = true;
 
-      const r = await pedir("responder", { itemId: actual.id, eleccion: valor });
-      if (!r) { respondiendo = false; return; }
+      const r = await pedir("responder", {
+        itemId: actual.id,
+        eleccion: elegido,
+        reintento: esReintento,
+      });
+      mandando = false;
+      if (!r) {
+        for (const b of $opciones.querySelectorAll("button")) b.disabled = false;
+        $confirmar.hidden = false;
+        return;
+      }
+      juzgado = true;
       ultimoItemId = actual.id;
+      if (r.conto) hechos++;
 
       /*
        * Lo que se dice, y lo que NO.
@@ -400,16 +613,43 @@ const { locale, rotulos, salirA } = Astro.props as Props;
        * `r.causa` trae el error con nombre y aquí no se pinta: es material de
        * Larry (F6). Decirle a un niño de cuatro «contaste uno dos veces» sin
        * la voz y el dibujo que lo acompañan es señalarle el error y ya
-       * (línea roja #7). Tampoco se pinta `r.nivel` ni `r.etapa`: el niño no
-       * ve en qué escalón está (criterio #100).
+       * (línea roja #7). Tampoco se pinta `r.nivel` ni `r.etapa`: el número de
+       * escalón no se enseña a nadie (criterio #100, D-017).
        */
       $veredicto.textContent = r.correcto ? rotulos.bien : rotulos.otra;
       $veredicto.dataset.acierto = r.correcto ? "1" : "0";
       $veredicto.hidden = false;
+      // Volver a intentarlo solo se ofrece cuando hay algo que corregir.
+      $reintentar.hidden = r.correcto === true;
       $siguiente.hidden = false;
       $siguiente.focus();
     }
 
+    /**
+     * Volver al mismo ítem tras un veredicto.
+     *
+     * El segundo intento **no vuelve a contar en el modelo** —el servidor lo ve
+     * en `reintento` y no registra nada—, así que corregir no puede bajar el
+     * resultado. Lo que sí puede subirlo es cambiar de opinión antes de
+     * confirmar, que es donde `mc-30` mide su 79%.
+     */
+    function reintentar() {
+      if (!actual) return;
+      juzgado = false;
+      esReintento = true;
+      elegido = null;
+      limpiarVeredicto();
+      $reintentar.hidden = true;
+      $siguiente.hidden = true;
+      for (const b of $opciones.querySelectorAll("button")) {
+        b.disabled = false;
+        b.setAttribute("aria-pressed", "false");
+      }
+      $opciones.querySelector("button")?.focus();
+    }
+
+    $confirmar.addEventListener("click", confirmar);
+    $reintentar.addEventListener("click", reintentar);
     $siguiente.addEventListener("click", siguiente);
     siguiente();
   </script>

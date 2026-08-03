@@ -66,7 +66,12 @@ interface Ingest {
   presentarItem(itemId: string, locale: string): Promise<null | {
     id: string; habilidad: string; nivel: number; formato: string;
     enunciado: string; vars: Record<string, string>;
-    opciones: Array<{ valor: number | string; texto: string }>;
+    opciones: Array<{
+      valor: number | string;
+      texto: string;
+      /** Cómo se DIBUJA la opción cuando no es un número (#349). */
+      dibujo?: { glifo: string; cuantos: number; grande: boolean };
+    }>;
   }>;
   calificarContraBanco(itemId: string, eleccion: number | string): Promise<{
     acc: 0 | 1; causa: string | null; razonAlterna: string | null;
@@ -333,6 +338,38 @@ async function recibirRespuesta(
     return json({ error: "eleccion_larga" }, 400);
   }
 
+  /**
+   * ─── El segundo intento sobre el MISMO ítem (línea roja #8, #348) ────────
+   *
+   * Hasta hoy, un toque y el ítem quedaba juzgado: la pantalla solo ofrecía
+   * «Siguiente» y «Ya terminé». La pregunta literal del dueño jugando fue «¿y
+   * puedo volverlo a hacer?», y la respuesta era no. No es que se penalizara
+   * corregir — es que corregir no existía.
+   *
+   * Se arregla en dos sitios distintos, y conviene no confundirlos:
+   *
+   *  1. **Antes de confirmar.** La pantalla ya no manda al tocar: se elige, se
+   *     cambia de opinión las veces que haga falta y se confirma. Eso es la
+   *     línea roja #8 literal —`mc-30`: cambiar una respuesta mejora la
+   *     calificación el 79% de las veces— y **no toca este archivo**, porque
+   *     lo que nunca se mandó no se puede penalizar. Es la razón de que el
+   *     Durable Object no tenga campo donde escribir cuántas veces alguien
+   *     cambió de opinión.
+   *
+   *  2. **Después de un veredicto.** Volver a intentar el mismo ítem llega
+   *     aquí con `reintento: true`. Se califica y se devuelve la
+   *     retroalimentación —que es de lo que se aprende— y **no se vuelve a
+   *     registrar en el modelo ni en la telemetría**.
+   *
+   * Por qué el reintento no cuenta, dicho de frente porque es discutible: la
+   * medida es el primer intento, y sumar el segundo mediría cuántas veces se
+   * puede repetir hasta acertar, no la habilidad. Lo que esta asimetría
+   * garantiza es lo que la línea roja pide de verdad: **volver a intentarlo no
+   * puede bajar el resultado**, porque no lo toca. Lo que compra el camino 1 es
+   * que sí pueda subirlo.
+   */
+  const reintento = cuerpo.reintento === true;
+
   // ─── El servidor califica. Siempre. ──────────────────────────────────────
   const veredicto = await env.INGEST.calificarContraBanco(itemId, eleccion);
 
@@ -349,23 +386,30 @@ async function recibirRespuesta(
   // El DO recibe la respuesta FINAL y nada más. No hay campo donde escribir
   // cuántas veces el niño cambió de opinión, y esa imposibilidad es la línea
   // roja #8 (`mc-30`: corregir mejora la calificación el 79% de las veces).
-  const modelo = await registrarEnModelo(env.LEARNER_DO, childProfileId, {
-    skillId: veredicto.habilidad,
-    dificultad,
-    nivel: veredicto.nivel,
-    correcto,
-    ahora: Date.now(),
-    banda: "KINDER",
-    nivelSemilla: semilla,
-  });
+  const modelo = reintento
+    ? null
+    : await registrarEnModelo(env.LEARNER_DO, childProfileId, {
+        skillId: veredicto.habilidad,
+        dificultad,
+        nivel: veredicto.nivel,
+        correcto,
+        ahora: Date.now(),
+        banda: "KINDER",
+        nivelSemilla: semilla,
+      });
 
   // ─── La telemetría, con los campos de arranque en frío (criterio #101) ───
   //
   // Se manda sin esperar: si Analytics Engine tarda, el niño no debe ver una
   // pantalla quieta. Lo que se pierde si falla es una fila de recalibración, no
   // el juego.
+  //
+  // Y un reintento tampoco escribe aquí. Una fila de recalibración por cada
+  // vez que alguien vuelve a mirar el mismo ítem haría que el Elo del ítem
+  // bajara por ser el ítem que invita a reintentar, que es lo contrario de lo
+  // que ese número mide.
   try {
-    await env.INGEST.recordAttempt({
+    if (!reintento) await env.INGEST.recordAttempt({
       childProfileId,
       itemId,
       skillId: veredicto.habilidad,
@@ -403,5 +447,9 @@ async function recibirRespuesta(
     // La del niño no los pinta: enterarse de que hay una ubicación en curso la
     // convertiría en un examen (D-060, criterio #100).
     etapa: modelo?.etapa ?? "practicando",
+    // Lo dice el servidor y no lo supone el cliente: este intento NO movió el
+    // modelo. Sin este campo la pantalla tendría que acordarse de qué mandó, y
+    // «el cliente se acuerda» es como dos sistemas dejan de estar de acuerdo.
+    conto: !reintento,
   });
 };

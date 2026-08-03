@@ -93,12 +93,38 @@ const texto = (clave: string, respaldo: string) =>
 // que aquí devuelve a la casa y no a la reja de caras.
 const rotulos = {
   bien: texto("juego.bien", "That's it!"),
-  otra: texto("juego.otra", "Not this time. Look again."),
+  otra: texto("juego.otra", "Not this time. Have another go."),
   siguiente: texto("juego.siguiente", "Next"),
   salir: texto("juego.salir", "Done for now"),
   cargando: texto("juego.cargando", "Here it comes…"),
   mirar: texto("juego.mirar", "Look!"),
+  // Los del destello y los del ciclo de respuesta (#345, #348).
+  verlo: texto("juego.verlo", "I'm ready"),
+  otraVez: texto("juego.otraVez", "See it again"),
+  confirmar: texto("juego.confirmar", "Ready!"),
+  reintentar: texto("juego.reintentar", "Try it again"),
+  elige: texto("juego.elige", "Tap one, then Ready."),
+  // Los tres de «dónde estoy» (#361).
+  practicando: texto("juego.practicando", "You're practising: {habilidad}"),
+  llevas: texto("juego.llevas", "{n} so far"),
+  ubicando: texto("juego.ubicando", "Still working out where to start you."),
 };
+
+/**
+ * El nombre de cada habilidad, resuelto en el SERVIDOR.
+ *
+ * Los identificadores son los del banco (`K01`…`K14`) y **no se enseñan**: lo
+ * que se pinta es «Estás practicando: contar del 1 al 10». La lista se arma
+ * desde el catálogo del locale, así que una habilidad nueva sin nombre autorado
+ * sencillamente no se anuncia — mejor callar que enseñar `K15`, que sería el
+ * mismo defecto de #349 en otra superficie.
+ */
+const habilidades: Record<string, string> = {};
+for (const clave of Object.keys(c)) {
+  if (clave.startsWith("habilidad.") && typeof c[clave] === "string") {
+    habilidades[clave.slice("habilidad.".length)] = c[clave] as string;
+  }
+}
 ---
 
 <!doctype html>
@@ -113,7 +139,17 @@ const rotulos = {
   </head>
   <body class="jugar-body">
     <p class="aviso-banco">{m.practicarAviso}</p>
-    <Pantalla locale={locale} rotulos={rotulos} salirA={rutaCasa(locale)} />
+    {/* `mostrarContexto` SOLO aquí, nunca en la pantalla del niño: ver la
+       propiedad en `Pantalla.astro`. Un adulto que practica y no sabe dónde
+       está no puede juzgar si el producto le sirve; un niño que lee «llevas 3»
+       está haciendo un examen (D-060, criterio #100). */}
+    <Pantalla
+      locale={locale}
+      rotulos={rotulos}
+      salirA={rutaCasa(locale)}
+      habilidades={habilidades}
+      mostrarContexto={true}
+    />
 
     <style>
       /* Va arriba y en voz del sistema: es una nota del producto, no parte del

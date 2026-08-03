@@ -106,6 +106,139 @@ caso("todos los ítems de kinder están en los niveles N1-N3 de D-017", () => {
   if (fuera.length) throw new Error(`${fuera.length} fuera de N1-N3; el primero ${fuera[0].id} en N${fuera[0].nivel}`);
 });
 
+// ===========================================================================
+// #349 — ninguna opción se sirve como identificador del código
+// ===========================================================================
+//
+// El dueño jugó «¿Cuál no va con los demás?» y la pantalla le ofreció tres
+// botones que decían `casilla3`, `casilla0` y `casilla1`. `validarItem` no
+// podía verlo porque no había nada que mirar: el ítem no tenía dónde declarar
+// cómo se dibuja una opción.
+//
+// Estos tres casos fallan sobre el banco anterior. El primero por 200 ítems.
+
+caso("#349 · ninguna opción de cadena llega sin dibujo — `casilla3` no es un rótulo", () => {
+  const malos = [];
+  for (const i of banco) {
+    const valores = [
+      i.respuesta.valor,
+      ...i.errores.map((e) => e.valor),
+      ...(i.tambienCorrectas ?? []).map((c) => c.valor),
+    ];
+    for (const v of valores) {
+      if (typeof v === "number") continue;
+      const d = i.dibujos?.[String(v)];
+      if (!d?.glifo || !d?.clave) malos.push(`${i.id}:${v}`);
+    }
+  }
+  if (malos.length) {
+    throw new Error(
+      `${malos.length} opción(es) sin dibujo, así que solo se pueden pintar como su ` +
+        `identificador. Las primeras: ${malos.slice(0, 4).join(", ")}`,
+    );
+  }
+});
+
+caso("#349 · toda clave de dibujo es una clave de mensaje, no una frase", () => {
+  for (const i of banco) {
+    for (const [v, d] of Object.entries(i.dibujos ?? {})) {
+      if (/\s/.test(d.clave)) throw new Error(`${i.id}:${v} → "${d.clave}" es una frase`);
+    }
+  }
+});
+
+caso("#349 · en «cuál sobra» las CUATRO figuras son tocables, no tres de cuatro", () => {
+  const sobra = banco.filter((i) => i.formato === "cual_sobra");
+  if (sobra.length === 0) throw new Error("no hay ítems de cual_sobra que comprobar");
+  for (const i of sobra) {
+    const valores = new Set([
+      String(i.respuesta.valor),
+      ...i.errores.map((e) => String(e.valor)),
+      ...(i.tambienCorrectas ?? []).map((c) => String(c.valor)),
+    ]);
+    if (valores.size !== 4) {
+      throw new Error(
+        `${i.id}: ${valores.size} opciones para 4 figuras dibujadas. Con una figura sin ` +
+          "opción, la que falta o es siempre la buena o nunca lo es — el ítem filtra su " +
+          `propia respuesta. Son: ${[...valores].join(", ")}`,
+      );
+    }
+  }
+  console.log(`      ${sobra.length} ítems de «cuál sobra», los cuatro tocables en todos`);
+});
+
+// ===========================================================================
+// #349 (segunda parte) — la posición no puede predecir la respuesta
+// ===========================================================================
+//
+// K07 ya cometió este fallo una vez —el montón mayor caía siempre a la
+// derecha— y lo dejó escrito en su encabezado como advertencia. K13 lo estaba
+// cometiendo igual y nadie lo vio, porque el otro defecto lo tapaba: las
+// opciones eran ilegibles, así que «toca siempre la última» no era una
+// estrategia que alguien pudiera descubrir. Al hacer tocables las cuatro
+// figuras, habría acertado el 100% sin mirar la pantalla.
+caso("#349 · en «cuál sobra» el intruso NO está siempre en la misma casilla", () => {
+  const donde = new Set(
+    banco.filter((i) => i.formato === "cual_sobra").map((i) => String(i.respuesta.valor)),
+  );
+  if (donde.size < 4) {
+    throw new Error(
+      `el intruso solo cae en ${donde.size} de 4 casillas (${[...donde].sort().join(", ")}). ` +
+        "Tocar siempre la misma acierta sin mirar, que es lo que K07 dejó escrito que no " +
+        "se repita.",
+    );
+  }
+});
+
+// El patrón tenía el mismo defecto con otra cara: la respuesta era `0` o `1`,
+// el índice de la figura, y se pintaba tal cual. Peor que ilegible — parece
+// contestable, porque el resto del banco sí pregunta números.
+caso("#349 · lo que sigue en un patrón es una FIGURA, no su índice", () => {
+  const patrones = banco.filter((i) => i.enunciado.clave.startsWith("k.patron."));
+  if (patrones.length === 0) throw new Error("no hay ítems de patrón que comprobar");
+  for (const i of patrones) {
+    if (typeof i.respuesta.valor === "number") {
+      throw new Error(
+        `${i.id}: la respuesta es el número ${i.respuesta.valor}, que es el índice de una ` +
+          "figura. Se pinta como «0» y nada en la pantalla dice qué figura era el 0.",
+      );
+    }
+    if (!i.dibujos?.[String(i.respuesta.valor)]?.glifo) {
+      throw new Error(`${i.id}: la respuesta "${i.respuesta.valor}" no tiene figura que dibujar`);
+    }
+  }
+  console.log(`      ${patrones.length} ítems de patrón, todos con sus figuras`);
+});
+
+// ===========================================================================
+// #347 — la cosa que se cuenta viaja con el ítem
+// ===========================================================================
+//
+// La pantalla tenía `"🦆"` escrito en cinco sitios y el banco elige entre tres
+// objetos: dos de cada tres ítems de contar pedían una cosa y enseñaban otra.
+caso("#347 · todo ítem de contar dice QUÉ se cuenta", () => {
+  const contar = banco.filter((i) => i.formato === "toca_para_contar");
+  if (contar.length === 0) throw new Error("no hay ítems de contar que comprobar");
+  const sinGlifo = contar.filter((i) => !i.enunciado.vars.glifo);
+  if (sinGlifo.length) {
+    throw new Error(
+      `${sinGlifo.length} de ${contar.length} ítems de contar no traen glifo, así que la ` +
+        `pantalla tiene que inventarlo. El primero: ${sinGlifo[0].id} ` +
+        `(${sinGlifo[0].enunciado.clave})`,
+    );
+  }
+});
+
+caso("#347 · los tres objetos de contar salen de verdad, no solo el pato", () => {
+  const glifos = new Set(
+    banco.filter((i) => i.formato === "toca_para_contar").map((i) => i.enunciado.vars.glifo),
+  );
+  if (glifos.size < 3) {
+    throw new Error(`solo ${glifos.size} objeto(s) distintos: ${[...glifos].join(" ")}`);
+  }
+  console.log(`      ${[...glifos].join(" ")} — tres objetos, tres claves de enunciado`);
+});
+
 console.log("");
 if (fallos > 0) { console.error(`✗ banco — ${fallos} de ${corridos} fallaron\n`); process.exit(1); }
 console.log(`✓ banco de kinder — ${corridos} casos\n`);

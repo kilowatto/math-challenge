@@ -1,0 +1,19 @@
+{
+  "_locale": "en",
+  "_nota": "Autorado, no traducido (D-022). La nota de honestidad es D-016 hecha copy: los rangos son criterio propio, no recomendación médica. Nada aquí insinúa que el tiempo de pantalla dañó algo (mc-26 §7). Los números llegan como marcadores y los resuelve formatear().",
+  "padre.limite.titulo": "Screen time",
+  "padre.limite.lead": "The daily limit and bedtime cutoff for {alias}.",
+  "padre.limite.hoy": "Today {alias} has played {jugados} of {limite} minutes.",
+  "padre.limite.diarios": "Minutes per day",
+  "padre.limite.rango": "You can choose between {min} and {max} minutes.",
+  "padre.limite.honestidad": "These ranges are our own design criteria, not a medical recommendation: no authority publishes a daily figure for this age.",
+  "padre.limite.nocturno": "Bedtime cutoff",
+  "padre.limite.nocturnoAyuda": "When it's on, the game stops {antes} minutes before bedtime and rests until morning.",
+  "padre.limite.horaDormir": "Bedtime",
+  "padre.limite.guardar": "Save",
+  "padre.limite.guardado": "Saved.",
+  "padre.limite.errRango": "Choose a whole number between {min} and {max} minutes.",
+  "padre.limite.errHora": "That time doesn't look right.",
+  "padre.limite.errGenerico": "Something went wrong. Please try again.",
+  "padre.limite.abrir": "Set up"
+}

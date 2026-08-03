@@ -484,6 +484,14 @@ for (const prueba of [
   // 20:00, el tope que no se reinicia a medianoche UTC, el silencio que se
   // mira primero, y un hermano completado silenciando el día entero.
   "packages/motor/src/recordatorio.prueba.mjs",
+  // F8 #269. El camino de la pantalla del padre, ejecutado de verdad: el
+  // handler POST/GET de la ruta con sesión falsa y D1 sobre node:sqlite. Lo
+  // que defiende tampoco rompe nada visible: una propiedad sin comprobar no da
+  // error 500 — da un padre mirando el límite del hijo de otro, o 600 minutos
+  // guardados con una petición directa que se saltó la interfaz. La tabla de
+  // rangos de la prueba está copiada a mano de D-016 (D-070), no importada del
+  // motor: si no, aprobaría su propia violación.
+  "apps/web/src/lib/padre-limite.prueba.mjs",
 ]) {
   const r = spawnSync(
     "node",

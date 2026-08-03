@@ -62,6 +62,13 @@ import {
   sellarSobre,
   explicarEnLocale,
 } from "../../../../../packages/motor/src/explicacion.ts";
+import {
+  registrarItem,
+  textoDeXp,
+  zonaDelHogar,
+  type Jugador,
+  type Progreso,
+} from "../../lib/progreso";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
 
 /*
@@ -212,7 +219,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     return servirSiguiente(env, sesion.childProfileId, locale, semilla, cuerpo);
   }
   if (accion === "responder") {
-    return recibirRespuesta(env, sesion.childProfileId, locale, semilla, cuerpo);
+    return recibirRespuesta(env, quien, locale, semilla, cuerpo);
   }
   return json({ error: "accion_desconocida" }, 400);
 };
@@ -363,11 +370,12 @@ async function servirSiguiente(
 
 async function recibirRespuesta(
   env: Env,
-  childProfileId: string,
+  quien: Jugador,
   locale: string,
   semilla: number,
   cuerpo: Record<string, unknown>,
 ): Promise<Response> {
+  const childProfileId = quien.id;
   const itemId = typeof cuerpo.itemId === "string" ? cuerpo.itemId : null;
   const eleccion = cuerpo.eleccion;
   if (!itemId) return json({ error: "falta_itemId" }, 400);
@@ -476,6 +484,42 @@ async function recibirRespuesta(
     // Silencio a propósito: la telemetría nunca interrumpe a un niño.
   }
 
+  /*
+   * ─── La racha y el XP (F7 #201, #192, #206, #219) ────────────────────────
+   *
+   * Los dos motores existían, estaban probados, tenían cuatro auditores
+   * vigilándolos y **no los llamaba nadie**. Ésta es la llamada.
+   *
+   * Va DESPUÉS de la telemetría y ANTES del veredicto por dos razones que no son
+   * de estilo: se espera —a diferencia de la telemetría— porque el número viaja
+   * en esta misma respuesta y una segunda petición para pintar la racha sería
+   * una petición de red por ítem en un teléfono de gama baja (`mc-47` §5); y no
+   * puede fallar hacia afuera, porque `registrarItem` devuelve `null` en vez de
+   * lanzar y el reto continúa sin contador.
+   *
+   * **La línea roja #6, dicha donde ocurre:** el día se cuenta AQUÍ, en el
+   * primer ítem contestado, no al cerrar el reto. Cuando el límite de pantalla
+   * corte una sesión (F8), el día llevará minutos cumplido — no hay camino por
+   * el que el límite rompa la racha, así que tampoco hay rama que escribir mal.
+   *
+   * Un reintento del mismo ítem no pasa por aquí: ya contó una vez, y volver a
+   * intentarlo no puede subir ni bajar nada (línea roja #8, #348).
+   */
+  let progreso: Progreso | null = null;
+  if (!reintento) {
+    progreso = await registrarItem(env, quien, {
+      nivel: veredicto.nivel,
+      acc: veredicto.acc,
+      // F8 es quien produce el otro motivo (`docs/planes/f8-limite-pantalla.md`
+      // §8). No cambia el estado que sale del motor — `registrarDia` lo
+      // garantiza y `audits/racha-limite-no-rompe.mjs` lo mide sobre 1 620
+      // estados —, así que esto no es una decisión disfrazada de constante.
+      motivo: { tipo: "RETO_COMPLETADO" },
+      ahora: Date.now(),
+      zona: await zonaDelHogar(env, quien),
+    });
+  }
+
   /**
    * ─── La explicación pregenerada (D-004 punto 1, F6 #132/#137) ────────────
    *
@@ -526,5 +570,33 @@ async function recibirRespuesta(
     // modelo. Sin este campo la pantalla tendría que acordarse de qué mandó, y
     // «el cliente se acuerda» es como dos sistemas dejan de estar de acuerdo.
     conto: !reintento,
+    /*
+     * La racha y el XP ya escritos, para que la pantalla los pinte sin una
+     * segunda petición. Números crudos y nada más: el texto lo compone quien
+     * pinta, y **qué se enseña y a quién no se decide aquí** — la pantalla del
+     * niño no pinta ninguno de los dos (D-060, criterio #100, #206), y esta
+     * ruta la sirven las dos pantallas.
+     *
+     * `null` cuando no hubo base de datos o cuando la escritura falló. Nunca se
+     * le niega el juego a nadie por un contador.
+     *
+     * `xp.texto` viaja YA ESCRITO, igual que la explicación de Larry y por la
+     * misma razón: el separador de millares no es el mismo en `de-DE` que en
+     * `fr-FR` (mc-34), y la única función que lo sabe es `formatear()`. Mandarla
+     * al navegador sería una segunda copia de la que se desincroniza.
+     */
+    progreso: progreso
+      ? {
+          racha: progreso.racha,
+          xp: {
+            ...progreso.xp,
+            texto: textoDeXp(
+              (RETO[locSeguro]?.["juego.xp"] as string) ?? "{n} XP",
+              progreso.xp.total,
+              locSeguro,
+            ),
+          },
+        }
+      : null,
   });
 };

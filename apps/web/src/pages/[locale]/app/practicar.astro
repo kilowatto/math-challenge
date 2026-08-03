@@ -47,6 +47,7 @@ import { LOCALES, isLocale, t, type Locale } from "../../../i18n";
 import { ruta } from "../../../i18n/rutas";
 import { rutaCasa } from "../../../lib/rutas-app";
 import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../../lib/sesiones";
+import { leerProgreso, textoDeXp } from "../../../lib/progreso";
 import Pantalla from "../../../components/reto/Pantalla.astro";
 import { ETIQUETA_DE_VOZ } from "../../../../../../packages/tutor/src/voz.ts";
 import "../../../styles/reto.css";
@@ -133,6 +134,36 @@ for (const clave of Object.keys(c)) {
     habilidades[clave.slice("habilidad.".length)] = c[clave] as string;
   }
 }
+
+/**
+ * La racha y el XP de este adulto, leídos en el SERVIDOR (#201, #192, #206).
+ *
+ * Esta pantalla es del modo SOLO: quien juega aquí es una persona adulta con su
+ * propia cuenta, y su racha vive en `child_streak` por `user_id` — la tabla es
+ * polimórfica desde la migración 0007 precisamente porque D-034 dice que el
+ * adulto aprendiz es un caso de primera clase y no un niño sin padre.
+ *
+ * Se pasa a `Pantalla` y **no se pasa en `/app/kids/jugar/`**: ahí el jugador es
+ * de KINDER, donde #206 y #205 piden el camino de Larry en la Sabana sin ningún
+ * número, y D-060 más el criterio #100 prohíben que el niño vea una cuenta
+ * corriendo. La pregunta —si en KINDER se enseña la racha con número mientras
+ * ese camino no exista— está en `docs/dudas.md` §23.1 y se contesta que NO
+ * hasta que el dueño diga otra cosa.
+ *
+ * Si no hay base de datos o la lectura falla, `leerProgreso` devuelve `null` y
+ * la pantalla sencillamente no pinta el bloque. Nunca se le niega el juego a
+ * nadie por un contador.
+ */
+const progresoLeido = env?.DB
+  ? await leerProgreso(env, { id: sesion.userId, esAdulto: true })
+  : null;
+const progreso = progresoLeido
+  ? {
+      rachaActual: progresoLeido.racha.actual,
+      rachaMaxima: progresoLeido.racha.mejor,
+      xpTexto: textoDeXp(texto("juego.xp", "{n} XP earned"), progresoLeido.xp.total, locale),
+    }
+  : null;
 ---
 
 <!doctype html>
@@ -158,6 +189,7 @@ for (const clave of Object.keys(c)) {
       habilidades={habilidades}
       mostrarContexto={true}
       etiquetaVoz={ETIQUETA_DE_VOZ[locale]}
+      progreso={progreso}
     />
 
     <style>

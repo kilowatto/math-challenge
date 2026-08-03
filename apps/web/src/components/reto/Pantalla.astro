@@ -52,6 +52,8 @@
 import "../../styles/fonts.css";
 import "../../styles/tokens.css";
 import "../../styles/reto.css";
+import Racha from "../racha/Racha.astro";
+import type { Locale } from "../../i18n";
 
 interface Props {
   locale: string;
@@ -105,6 +107,48 @@ interface Props {
    * nadie la revirtiera.
    */
   etiquetaVoz?: string;
+  /**
+   * La racha y el XP de quien juega, **ya leídos de D1 por la página** (#201,
+   * #192, #206).
+   *
+   * ─── Por qué es una propiedad, y por qué llega apagada por defecto ──────
+   *
+   * Es la misma frontera que `mostrarContexto`, y por las mismas dos decisiones.
+   * D-060 y el criterio #100: la primera sesión ES la ubicación y el niño no
+   * debe enterarse de que hay una cuenta corriendo. #206 dice cuándo la racha se
+   * ve —de PRIMARIA en adelante— y que en KINDER la racha es el camino de Larry
+   * en la Sabana, **sin número** (#205), un componente que todavía no existe.
+   *
+   * Así que la pantalla del niño de kinder no recibe esto, y la del adulto que
+   * practica sí. La decisión vive en la página, no aquí: este componente pinta
+   * lo que le den y no consulta la banda de nadie.
+   *
+   * ─── Lo que NO ocurre cuando el número cambia ───────────────────────────
+   *
+   * Nada. La racha se pinta al cargar y no se vuelve a tocar en toda la sesión,
+   * aunque el ítem que se acaba de contestar sea el que estrena el día. Es
+   * literal de #206: *ningún cambio de racha produce un push ni un modal; se ve
+   * el número nuevo la próxima vez que se abre la pantalla, sin evento que lo
+   * señale*. Por eso `Racha.astro` no lleva ni una línea de script, y por eso
+   * éste no le pone una por fuera.
+   *
+   * (Y la etiqueta de apertura de un script NO se escribe en ningún comentario
+   * de este archivo, ni entre comillas: `opciones-contestables` localiza el
+   * script de cliente buscando esa cadena sobre el archivo CRUDO, así que
+   * nombrarla en el frontmatter le hace auditar el comentario en vez del
+   * código. Bloqueó de verdad, dos veces, al escribir esta propiedad.)
+   *
+   * El XP sí se actualiza en cada respuesta, y la diferencia no es un descuido:
+   * el XP es el eje de progreso personal que sube con cada ítem (D-055), y un
+   * eje de progreso que no se mueve es un eje invisible. No lleva celebración,
+   * ni sonido, ni animación — cambia el número y ya.
+   */
+  progreso?: {
+    rachaActual: number;
+    rachaMaxima: number;
+    /** Ya compuesto por `textoDeXp()` en el servidor. Nunca se arma aquí. */
+    xpTexto: string;
+  } | null;
 }
 const {
   locale,
@@ -113,11 +157,34 @@ const {
   habilidades = {},
   mostrarContexto = false,
   etiquetaVoz = "",
+  progreso = null,
 } = Astro.props as Props;
 ---
 
   <main class="reto" data-locale={locale}>
     <h1 class="visualmente-oculto">{rotulos.mirar}</h1>
+
+    {/*
+      La racha y el XP, arriba y discretos. Los dos números llevan etiqueta
+      distinta y ninguno se deriva del otro: D-055 exige que jamás se muestren
+      dos números de progreso en la misma pantalla sin una etiqueta que los
+      distinga, y aquí ni siquiera comparten familia — la racha cuenta DÍAS y el
+      XP cuenta esfuerzo acumulado.
+
+      Los puntos del tablero (`score_totals`, D-025) no aparecen: son la tercera
+      moneda, la única que puede bajar, y no tiene sitio en la pantalla donde se
+      contesta.
+    */}
+    {progreso && (
+      <div class="progreso">
+        <Racha
+          locale={locale as Locale}
+          rachaActual={progreso.rachaActual}
+          rachaMaxima={progreso.rachaMaxima}
+        />
+        <p id="xp" class="progreso__xp">{progreso.xpTexto}</p>
+      </div>
+    )}
 
     {mostrarContexto && <p id="contexto" class="contexto" hidden></p>}
 
@@ -262,6 +329,17 @@ const {
     const $confirmar = document.getElementById("confirmar");
     const $reintentar = document.getElementById("reintentar");
     const $siguiente = document.getElementById("siguiente");
+    /*
+      El XP. `null` en la pantalla del niño, donde el bloque entero no se pinta
+      (D-060, criterio #100, #206).
+
+      **No hay `$racha` a propósito.** El número de días no se toca en toda la
+      sesión: #206 pide que un cambio de racha no produzca ningún evento que lo
+      señale, y `Racha.astro` no tiene ni un script justamente por eso. Poner
+      aquí el que le falta por fuera sería deshacer esa decisión desde el otro
+      lado del archivo.
+    */
+    const $xp = document.getElementById("xp");
 
     /**
      * Cuánto se ve el destello.
@@ -852,6 +930,24 @@ const {
       juzgado = true;
       ultimoItemId = actual.id;
       if (r.conto) hechos++;
+
+      /*
+       * El XP, ya escrito por el servidor (#192, #219).
+       *
+       * Se sustituye el texto y nada más: ni animación, ni sonido, ni «+10»
+       * flotando. `mc-17` §11 mide que la recompensa **informativa** —la que
+       * confirma competencia— no daña la motivación intrínseca y la
+       * **controladora** sí, con efecto más severo en niños que en
+       * universitarios. Un número que sube es lo primero; una celebración que
+       * interrumpe es lo segundo.
+       *
+       * Si `progreso` viene `null` —sin base, o escritura fallida— el número
+       * anterior se queda como estaba. Un contador que parpadea a cero porque
+       * D1 tardó es peor que uno que no se mueve.
+       */
+      if ($xp && r.progreso && r.progreso.xp && r.progreso.xp.texto) {
+        $xp.textContent = r.progreso.xp.texto;
+      }
 
       /*
        * Lo que se dice, y lo que NO.

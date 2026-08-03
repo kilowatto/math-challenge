@@ -34,7 +34,7 @@
 // grafo de rutas y no cabe en una expresión regular — lo que sí cabe es esta
 // diferencia entre «existe» y «nadie la usa», que es donde estuvo el fallo.
 
-import { archivos, leer, informar, SOLO_PRODUCTO } from "./lib/repo.mjs";
+import { archivos, leer, informar, sinComentarios, SOLO_PRODUCTO } from "./lib/repo.mjs";
 
 /**
  * Las puertas. Cada una con el porqué de estar en la lista, porque una lista de
@@ -53,6 +53,21 @@ const PUERTAS = [
   ["abrirSesionAdulto", "sin ella nadie queda autenticado tras registrarse o entrar"],
   ["cerrarSesionAdulto", "sin ella no se puede salir, y la sesión dura 30 días (D-052)"],
 
+  // ─── Los tres motores de F7, añadidos el 2026-08-02 ───────────────────────
+  //
+  // El mismo bug de #311, otra vez y en otro subsistema. `racha.ts` y `xp.ts`
+  // se escribieron completos, con sus pruebas, sus dos migraciones y CUATRO
+  // auditores vigilándolos —`racha-nunca-se-vende`, `racha-limite-no-rompe`,
+  // `racha-lexico`, `motor-xp`—, y **ninguno de ellos podía ver que no los
+  // llamaba nadie**: los cuatro miran el motor, y el motor estaba perfecto.
+  //
+  // Un jugador podía contestar mil ítems sin que su racha existiera. No hay
+  // error, no hay pantalla rota, no hay auditor rojo: hay una tabla vacía. Es
+  // exactamente el modo de falla que este archivo existe para cazar, así que
+  // las tres entran a la lista en vez de confiar en que se note.
+  ["registrarDia", "sin ella ningún día se cuenta jamás y `child_streak` se queda vacía (#201, D-014)"],
+  ["ganarEscudos", "sin ella la red de protección de la racha no se otorga nunca (#203, D-079)"],
+  ["xpDeItem", "sin ella `xp_totals` no se mueve y el Rango no avanza para nadie (#192, D-055)"],
 ];
 
 const problemas = [];
@@ -64,8 +79,23 @@ const fuentes = archivos(/\.(ts|tsx|astro|js|mjs)$/).filter(
   (f) => SOLO_PRODUCTO.test(f) && !/\.prueba\.mjs$/.test(f) && !/\/audits\//.test(f),
 );
 
+/*
+ * Sin comentarios, y esto lo arregla una omisión que hacía fallar ABIERTO al
+ * auditor entero.
+ *
+ * `racha.ts` documenta su propia firma con la frase «`registrarDia(estado, dia)`
+ * —sin el tercer argumento— seguiría compilando». Eso es un `registrarDia(` más
+ * en el archivo que la declara, así que la cuenta `usos − propias` daba 1 y el
+ * MOTOR se contaba a sí mismo como su llamador. Con esa línea presente,
+ * `registrarDia` podía quedarse sin un solo llamador de verdad —que es
+ * exactamente el bug de #311 que este archivo existe para cazar— y el auditor
+ * salía en verde.
+ *
+ * Se descubrió escribiendo el control negativo, no leyendo el código: el caso
+ * degradaba `lib/progreso.ts` quitándole la llamada, y el auditor no bloqueó.
+ */
 const textos = new Map();
-for (const f of fuentes) textos.set(f, leer(f) ?? "");
+for (const f of fuentes) textos.set(f, sinComentarios(leer(f) ?? ""));
 
 for (const [nombre, porQue] of PUERTAS) {
   // La declaración no cuenta como llamada. Se busca `nombre(` en archivos que

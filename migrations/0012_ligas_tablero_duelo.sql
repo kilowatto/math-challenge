@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 0011 — Ligas de ~30, tablero global del adulto, y duelo asíncrono
+-- 0012 — Ligas de ~30, tablero global del adulto, y duelo asíncrono
 -- ---------------------------------------------------------------------------
 --
 -- ─── Por qué 0011 y no 0010, con dos números reservados en medio ───────────
@@ -15,8 +15,16 @@
 -- mapa nunca correría. Los dos marcadores de abajo declaran esos números como
 -- ajenos y bloquean en cuanto sus archivos existan sin estar en su rama.
 --
--- migration-safety-reserva: 0009 — misiones diarias, rama de otro frente de F7
--- migration-safety-reserva: 0010 — mapa de progreso, rama de otro frente de F7
+-- La reserva de numeración que vivía aquí SE BORRÓ al integrar, y la exigió el
+-- propio auditor: las 0009 (misiones) y 0010 (mapa) ya aterrizaron en `main`,
+-- así que no queda hueco que declarar. Una reserva sobre archivos que ya
+-- existen deja de vigilar el hueco para siempre — que es exactamente cómo una
+-- excepción temporal se vuelve permanente sin que nadie lo decida.
+-- La reserva de numeración que vivía aquí SE BORRÓ al integrar, y la exigió el
+-- propio auditor: las 0009 (misiones) y 0010 (mapa) ya aterrizaron en `main`,
+-- así que no queda hueco que declarar. Una reserva sobre archivos que ya
+-- existen deja de vigilar el hueco para siempre — que es exactamente cómo una
+-- excepción temporal se vuelve permanente sin que nadie lo decida.
 --
 -- Hace cumplir: D-003, D-010, D-025, D-034, D-040, D-043, D-053, D-055, D-056,
 -- D-081, líneas rojas #2, #3 y #5, e issues #237, #238, #239, #244, #250.

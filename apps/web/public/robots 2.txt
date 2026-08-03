@@ -1,0 +1,12 @@
+# math.kilowatto.com — robots.txt propio, no el genérico (#330)
+#
+# Se permite todo el sitio público. Lo que NO debe indexarse lleva `noindex` en
+# su propio HTML —que es lo que Google respeta— en vez de estar aquí: una ruta
+# listada en robots.txt es una ruta que se publica en un archivo que cualquiera
+# lee. `/app/` no se esconde con `Disallow`; se protege con sesión.
+
+User-agent: *
+Allow: /
+
+# El sitemap es lo único que este archivo tiene que decir de verdad.
+Sitemap: https://math.kilowatto.com/sitemap.xml

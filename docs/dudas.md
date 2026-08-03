@@ -745,3 +745,203 @@ perder.
 
 **El precio, dicho:** una cohorte donde casi nadie juega apenas mueve a nadie, y
 sus dos o tres activos se quedan compitiendo entre ellos.
+---
+
+## 23 · Cablear la racha y el XP a una pantalla de verdad (F7 frente A, 2026-08-02)
+
+### 23.1 ¿Se le enseña la racha con número a un niño de KINDER?
+
+**Asumí que no, y hace falta que el dueño lo confirme o lo revierta.**
+
+#206 dice que la racha visible es «de PRIMARIA en adelante», y #205 dice que en
+KINDER la racha es el camino de Larry en la Sabana, **sin número**. Ese
+componente no existe todavía. Así que hoy hay tres salidas y elegí la tercera:
+
+1. Enseñar `Racha.astro` también en kinder — contradice #205 y #206, y mete un
+   número que contar en la pantalla donde D-060 y el criterio #100 piden que no
+   haya ninguno.
+2. Construir el camino de la Sabana en este mismo trabajo — es una pieza de
+   producto entera, con su arte, y este trabajo es de cableado.
+3. **No enseñar nada de racha en kinder, y escribirlo.** La racha del niño **sí
+   se registra y se escribe en D1** desde el primer ítem: lo único que falta es
+   la superficie donde se ve. El día que exista el camino de la Sabana, el dato
+   ya lleva semanas acumulándose.
+
+Lo que cuesta la tercera: un niño de kinder practica cinco días seguidos y el
+producto no se lo dice de ninguna forma. Es real, y es menos malo que las otras
+dos.
+
+### 23.2 El bono de finalización de reto no se otorga todavía
+
+`XP_POR_TIPO.reto_completado` existe, vale `valorDelItem(1)` y **nadie lo
+llama**. La razón no es una decisión de diseño: es que **nadie observa el final
+de un reto**. «Ya terminé» es un `<a href>` que navega, y no hay ninguna
+petición que el servidor pueda contar como cierre.
+
+El XP por ítem sí se otorga en cada respuesta, así que el eje se mueve. Lo que
+falta es el bono plano que `mc-16` (implicación 7) recomienda «para que
+cualquier sesión terminada se sienta como progreso». **Lo que asumí:** dejarlo
+sin otorgar y decirlo, en vez de inventar un cierre que el cliente pueda mentir.
+
+### 23.3 El registro de migraciones de `math-challenge-db` no dice la verdad
+
+`d1_migrations` tenía dos renglones —0001 y 0002— y la base tenía aplicadas
+**también 0003, 0004, 0005 y 0006**: comprobado objeto por objeto contra
+`sqlite_master` (columnas `users.country/timezone/data_region/signup_intent`,
+tablas `consent_type_catalog`, `child_consents`, `household_devices`,
+`contextual_marks`, `screen_time_settings.bedtime_local`, el rename a
+`group_owner_identity` con sus tres columnas, y `child_profiles` ya sin
+`birth_month`). Alguien las aplicó a mano con `d1 execute` y el registro se
+quedó atrás.
+
+Consecuencia: `wrangler d1 migrations apply` intenta 0003 y muere con
+`duplicate column name: country`, así que **0007 y 0008 no pueden entrar por la
+vía normal** hasta que el registro se sincronice. **Lo que asumí:** que el
+arreglo es insertar los cuatro renglones que faltan y volver a correr `apply`.
+No pude ejecutarlo yo: el clasificador de permisos de esta sesión bloquea toda
+escritura remota a D1. Los dos comandos están en el PR, listos para copiar.
+## 23. F7 · Misiones diarias — cuatro preguntas del dueño y cinco supuestos míos · 2026-08-03
+
+El código de #211 está construido y no depende de ninguna de estas respuestas:
+todas cambian un número o una fila de analítica, ninguna cambia la forma del
+módulo. Se anotan aquí en vez de detenerse (memoria: «dudas a un md, sin
+detenerse»). La decisión implementada está en **D-092**.
+
+### 23.1 ¿Tres misiones simultáneas para PRIMARIA en adelante, o dos?
+
+**Implementé 3** (`MISIONES_POR_DIA` en `packages/motor/src/misiones.ts`).
+
+La evidencia es débil en las dos direcciones y por eso es una pregunta real:
+
+- **Duolingo usa 3** (bronce/plata/oro), corroborado en varias fuentes
+  secundarias pero **sin un post oficial** que lo confirme como cifra primaria —
+  mismo nivel de confianza que `mc-16` ya le da a otras cifras suyas.
+- **Cowan (2010), «The Magical Mystery Four»** fija ~4±1 como techo de memoria de
+  trabajo **adulta**, y los niños de 7-11 todavía están **subiendo** hacia ese
+  techo, no habiéndolo alcanzado. O sea: 3 casi roza un techo que a esa edad
+  todavía no se tiene.
+
+**2** sería más conservador; **3** es más simple de construir y de explicar.
+Cambiarlo es una constante.
+
+### 23.2 ¿SERIO usa el mismo tope que PRIMARIA, o uno mayor?
+
+**Implementé un solo número para todas las bandas.** La memoria de trabajo adulta
+sí alcanza el techo de Cowan, así que un tope mayor para SERIO —la única banda
+≥7 con contenido en el MVP (D-034)— aprovecharía mejor su capacidad real. El
+costo es que F7 tendría dos configuraciones en vez de una. Cambiarlo es pasar de
+una constante a una tabla por banda.
+
+### 23.3 ¿El avance en la Sabana de KINDER cuenta como «misión completada» en el panel del padre?
+
+**Hoy no cuenta**: KINDER no escribe ninguna fila en `mission_daily_summary`,
+porque `elegirMisionesDelDia()` le devuelve una lista vacía (D-092 §5).
+
+Las dos opciones tienen un defecto real. Contarlo **infla** una tasa de «misiones
+completadas» que en KINDER es indistinguible de «jugó hoy». No contarlo deja a
+KINDER **sin ninguna fila** en esa métrica del panel. Con kinder aplazado (D-073)
+la pregunta no corre prisa, pero decide si `MISION_DE_KINDER` acaba siendo una
+fila o solo una etiqueta.
+
+### 23.4 ¿Notificaciones push de recordatorio de misión en v1?
+
+**Fuera de alcance**, y ni siquiera hay superficie donde ponerlas. `mc-19` exige
+que vayan **al padre**, máximo 1/día y sin culpa. La pregunta es si este
+subsistema tiene que coordinarse con Web Push (D-030) ahora o al diseñar
+F8 · Padres.
+
+---
+
+### Los cinco supuestos que tomé sin que estuvieran escritos
+
+**23.5 — `duelo` exige `dueloOptIn` Y `enLiga`.** El diseño de
+`docs/planes/f7-juego.md` §3 solo pedía el opt-in. Un duelo sin liga es contra
+nadie, y #217 dice que una misión incumplible es peor que no tener misión.
+**Desviación consciente**, escrita en el catálogo y en D-092 §4a.
+
+**23.6 — El XP se otorga en la TRANSICIÓN a completada, una sola vez.**
+`avanzarMision()` devuelve **el mismo objeto** si la misión ya estaba completa,
+igual que `registrarDia()` en `racha.ts`: quien llama compara por referencia para
+saber si hay algo que escribir, y el reintento de una cola offline no paga dos
+veces. El issue no dice qué pasa con un reintento.
+
+**23.7 — No hay `completed_at`.** Un sello de tiempo obligaría al módulo a leer
+el reloj, y el reloj es la puerta que la cabecera cierra. `completed` es 0 o 1 y
+el `updated_at` de la fila lo pone quien escribe. El precio: no se puede saber a
+qué hora se completó una misión, solo qué día.
+
+**23.8 — El cierre del día no devuelve ningún denominador.** `cierreDelDia()`
+lista **solo lo logrado**, y no hay campo con el total. Un renglón «0/3 misiones»
+es un veredicto negativo aunque el copy no lo diga (`mc-17` §5: el
+*confirm-shaming* y la urgencia son categorías nombradas por la FTC). Quien quiera
+pintar un progreso tiene `Mision.meta` y el estado, que son datos; lo que no hay
+es un «te faltaron dos». La prueba comprueba que ningún campo del cierre se llame
+`total`, `faltan`, `pendientes` ni `restantes`.
+
+**23.9 — `EstadoDeMision` usa los nombres de columna de D1, no camelCase.**
+Rompe el estilo del resto de `packages/motor/`, igual que `EstadoRacha` (§22.4) y
+por la misma razón: los auditores vigilan el grafo de lo que toca `xp_awarded`, y
+una capa de traducción entre `xp_awarded` y `xpOtorgado` es exactamente el punto
+donde el auditor deja de ver.
+
+---
+
+> **§22.5 queda superada por D-092.** Esa sección dice que la tabla de XP fija
+> `mision_diaria: 20` y `mision_semanal: 100` sin fuente. `mision_diaria` **ya no
+> existe**: lo sustituyen once claves `mision_<tipo>` más `mision_dia_completo`,
+> porque un solo número daba dos respuestas a «¿cuánto vale una misión diaria?» y
+> ese par iba a divergir sin que nadie lo tocara a propósito. Los once siguen
+> siendo `[criterio propio]`. `mision_semanal` se queda publicado y sin usar.
+## 23. F8 · Las tres preguntas de #265 que implementé sin respuesta · 2026-08-02
+
+La issue paraguas del límite de pantalla (#265) hace tres preguntas al dueño y
+ninguna está contestada en `decisions.md`. **Las tres cambian lo que se
+construye**, así que no se podían dejar para después: se implementó la
+recomendación que el propio plan (`docs/planes/f8-limite-pantalla.md` §14)
+escribe para cada una, y aquí queda dicho cuál, dónde vive y qué costaría
+cambiarla.
+
+### 23.1 El corte nocturno TAMBIÉN impide empezar de madrugada (respuesta A)
+
+`limite-pantalla.ts::decidirAlIniciar` devuelve `CERRAR / BEDTIME` si la hora
+local cae en la ventana, así que un niño que se despierta a la una de la mañana
+no puede abrir un reto nuevo — no solo se le corta el que ya tenía abierto.
+
+Con la alternativa B, ese niño juega sin tropezar con nada, porque no había
+ninguna sesión «en curso» al momento del corte, y ése es exactamente el caso
+que motiva la única evidencia experimental de todo `mc-26` (el ECA de la
+Universidad de Bath, §5). **Costo de cambiar a B:** una línea —`decidirAlIniciar`
+deja de existir y las puertas se separan— pero entonces hay dos tablas de
+decisión y una regla nueva puede aplicarse a una y olvidarse en la otra.
+
+### 23.2 F8 construye `cerrarPorLimite`/`cerradaPorLimite`, y F7 lo lee (respuesta A)
+
+Están en `packages/motor/src/sesion.ts` y en `apps/ingest/src/sesion-do.ts`, que
+es donde F8 ya estaba tocando para el resto del mecanismo. La issue #202 de F7
+pide ese mismo campo; **se actualiza para LEERLO, no para construirlo**.
+
+`sesion.ts` no escribe ninguna racha y no la nombra: deja el hecho disponible.
+El motivo que la racha espera lo produce `limite-pantalla.ts::diaCumplidoPorCorte`,
+y `audits/limite-no-rompe-el-dia.mjs` ejecuta ese cable de punta a punta.
+
+### 23.3 El límite protege desde el día uno, sin que el padre haga nada (respuesta A)
+
+`configuracionVigente(banda, null)` devuelve el default de la banda, así que un
+perfil sin fila en `screen_time_settings` —que hoy son **todos**, porque el paso
+de onboarding que F2 diseñó nunca se construyó— ya juega con límite.
+
+La alternativa B es más fiel a «el padre decide» y deja a un perfil nuevo o
+viejo jugando sin ningún límite hasta que un adulto visite una pantalla que nada
+lo obliga a visitar. **Lo que NO se hizo por defecto:** el corte nocturno.
+`bedtime_local` nace en `NULL` y no se enciende solo, porque adivinar una hora
+de dormir a partir del año de nacimiento sería un dato que el producto no tiene
+y no debería fingir tener (D-053).
+
+### 23.4 Y dos números sin fuente, marcados como tales
+
+`FIN_DE_LA_NOCHE = "05:00"` y `TOPE_DE_CHECKPOINT_MIN = 10` son
+`[criterio propio]`, con la misma honestidad que D-016 usa para su tabla de
+minutos. El primero hace falta porque `bedtime_local` dice dónde empieza la
+noche y **ninguna decisión dice dónde termina**; el segundo recorta el
+checkpoint de un aparato que se durmió con la sesión abierta, para que cerrar la
+tapa no le cueste minutos al niño.

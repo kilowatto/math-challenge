@@ -44,7 +44,7 @@
 //    es el directorio de textos de racha, no una pantalla concreta.
 
 import { readFileSync, existsSync } from "node:fs";
-import { informar, RAIZ, archivos, leer, sinComentarios, patronUnicode } from "./lib/repo.mjs";
+import { informar, RAIZ, archivos, leer, sinComentarios, conFronteraUnicode } from "./lib/repo.mjs";
 
 const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"];
 const DIR_LEXICO = "audits/lib/racha-lexico";
@@ -114,7 +114,13 @@ for (const loc of LOCALES) {
   // en siete archivos de léxico — siete oportunidades de equivocarse.
   lexico[loc] = (datos.construcciones ?? []).map((c) => ({
     ...c,
-    re: patronUnicode(c.patron),
+    // `conFronteraUnicode` y no `new RegExp(c.patron, "iu")` a secas: `\\b` de
+    // JavaScript solo conoce ASCII, así que «Se acabó la racha» y «Se rompió la
+    // racha» —las dos formas más naturales de decirlo en español— pasaban de
+    // largo, y solo se cazaban las variantes sin acento, que nadie escribe. Se
+    // midió construyendo el auditor del límite de pantalla (F8). Ver la
+    // explicación completa en `lib/repo.mjs`.
+    re: new RegExp(conFronteraUnicode(c.patron), "iu"),
   }));
 }
 

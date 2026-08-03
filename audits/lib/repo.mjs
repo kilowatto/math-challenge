@@ -74,49 +74,68 @@ export function palabra(...alternativas) {
 }
 
 /**
- * Frontera de palabra que entiende ACENTOS. La hermana de `palabra()` para
- * texto de cara al usuario, no para identificadores de código.
+ * El mismo patrón, con `\b` reparado para que entienda acentos.
  *
- * ─── El fallo que costó un locale entero ───────────────────────────────────
+ * ─── El fallo que esto arregla, medido y no supuesto ──────────────────────
  *
- * `\b` de JavaScript solo conoce ASCII. Para el motor de expresiones regulares,
- * `ó` **no es un carácter de palabra**, así que entre `ó` y un espacio no hay
- * frontera:
+ * **`\b` de JavaScript solo conoce ASCII.** `\w` es `[A-Za-z0-9_]` incluso con
+ * la bandera `u`, así que una `ó` es, para el motor de expresiones regulares,
+ * un carácter que NO es de palabra. Consecuencia directa:
  *
  *     /\bse acab[oó]\b/iu.test("Se acabó la racha")   →  false
+ *     /\bse rompi[oó]\b/iu.test("Se rompió la racha") →  false
+ *     /\bse acab[oó]\b/iu.test("Se acabo la racha")   →  true
  *
- * Es decir: la construcción escrita con acento —que es como se escribe de
- * verdad— pasaba de largo, y el auditor informaba verde. La bandera `u` no
- * arregla nada; hace falta pedir la clase Unicode a mano.
+ * La `\b` final exige un cambio entre carácter de palabra y no-palabra; después
+ * de la `ó` hay un espacio, y los dos cuentan como no-palabra, así que no hay
+ * frontera y el patrón entero falla. **Las dos formas más naturales de decirlo
+ * en español pasaban de largo, y las variantes sin acento —que nadie escribe—
+ * eran las únicas que se cazaban.** Se encontró construyendo el auditor del
+ * límite de pantalla (F8), reusando el léxico de racha de F7 sobre una
+ * despedida degradada a propósito: el control negativo salió en verde con
+ * «Se acabó la racha» delante.
  *
- * La alternancia de las dos direcciones sirve para las dos posiciones a la vez:
- * al principio de un token la mirada hacia adelante falla sola (el siguiente
- * carácter es una letra del propio token) y manda la mirada hacia atrás, y al
- * final ocurre al revés. Así una misma cadena sustituye a `\b` esté donde esté.
+ * Es la misma clase de fallo que ya obligó a escribir `palabra()` en este mismo
+ * archivo —allí era el guion bajo, aquí es el acento— y por eso vive al lado.
  *
- *   conFronteraUnicode("se acab[oó]", "racha")
- *     → /(?<![\p{L}\p{N}_])(?:se acab[oó]|racha)(?![\p{L}\p{N}])/iu
+ * ─── Cómo lo repara ───────────────────────────────────────────────────────
+ *
+ * Sustituye cada `\b` por la definición de frontera de palabra generalizada a
+ * Unicode, escrita con las dos direcciones para que sirva igual al principio
+ * que al final de un patrón: o bien se sale de una letra hacia algo que no lo
+ * es, o bien se entra desde algo que no lo es hacia una letra.
+ *
+ * Exige la bandera `u` al compilar, porque usa `\p{L}` y `\p{N}`.
+ *
+ * @param {string} patron patrón crudo, tal cual viene del JSON del léxico
+ * @returns {string} el mismo patrón con las fronteras reparadas
  */
-export function conFronteraUnicode(...alternativas) {
-  return new RegExp(
-    `(?<![\\p{L}\\p{N}_])(?:${alternativas.join("|")})(?![\\p{L}\\p{N}])`,
-    "iu",
-  );
+export function conFronteraUnicode(patron) {
+  const FRONTERA =
+    "(?:(?<=[\\p{L}\\p{N}_])(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])(?=[\\p{L}\\p{N}_]))";
+  // `\\b` (una barra escapada seguida de b) es un literal, no una frontera. Se
+  // respeta: sustituir dentro de él rompería el patrón de quien lo escribió.
+  return String(patron).replace(/(\\\\)|\\b/g, (todo, escapada) => (escapada ? todo : FRONTERA));
 }
 
 /**
- * Reescribe los `\b` de un patrón ya escrito para que entiendan acentos.
+ * El patrón del léxico, ya compilado, con las fronteras reparadas.
  *
- * Existe para los léxicos que viven en JSON —`audits/lib/racha-lexico/`— donde
- * las construcciones ya están autoradas con `\b` y reescribirlas a mano en los
- * siete locales sería siete oportunidades de equivocarse. Se arregla al
- * compilar, en un solo sitio.
+ * Azúcar sobre `conFronteraUnicode()` para los léxicos que viven en JSON
+ * —`audits/lib/racha-lexico/`—, donde las construcciones ya están autoradas con
+ * `\\b` y reescribirlas a mano en los siete locales serían siete oportunidades
+ * de equivocarse. Se arregla al compilar, en un solo sitio.
+ *
+ * Dos ramas paralelas escribieron este arreglo la misma noche, sin verse: F8
+ * construyendo el auditor del límite de pantalla y F7 el de ligas. Al integrar
+ * se conservó la de F8 —respeta el literal `\\\\b`, que la otra habría roto— y
+ * de la de F7 se quedó este envoltorio, que era lo que de verdad añadía.
+ *
+ * @param {string} patron patrón crudo, tal cual viene del JSON del léxico
+ * @returns {RegExp} compilado con la bandera `u`, que `\\p{L}` exige
  */
 export function patronUnicode(patron) {
-  return new RegExp(
-    String(patron).replace(/\\b/g, "(?:(?<![\\p{L}\\p{N}_])|(?![\\p{L}\\p{N}_]))"),
-    "iu",
-  );
+  return new RegExp(conFronteraUnicode(patron), "iu");
 }
 
 /** Lee un archivo del repo, o `null` si no se puede. */

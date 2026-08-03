@@ -197,6 +197,69 @@ multipliquen por siete.
 
 ---
 
+## El mapa de progreso — tres formas, y no son un skin (D-017, mc-43 §8)
+
+Esta sección existe porque las tres formas son **el tipo de cosa que alguien
+colapsa en una sola dentro de seis meses**, con un argumento razonable: «es el
+mismo dato, ¿por qué tres pantallas?». Porque no es el mismo lector.
+
+| Banda | Forma | Qué se ve | Qué NUNCA se ve |
+|---|---|---|---|
+| KINDER | **Sendero** — el camino de la Sabana (D-019) | Círculos grandes (`--tap-kinder`, 88 px), llenos o vacíos, y Larry caminando | **Ni un número.** Ni porcentaje, ni cifra, ni contador |
+| PRIMARIA · SECUNDARIA | **Árbol** de habilidades por temas nombrados | Nodos agrupados, con barra de relleno y la pericia dicha en palabra | **Ni una arista de prerrequisito**: flecha, línea o candado «desbloqueado por X» |
+| SERIO · JR · PRO | **Tablero** de cifras planas | XP, días seguidos y dominio por tema, formateados por locale | Mapa espacial, y el compañero **apagado por defecto** |
+
+Las tres reglas que las sostienen, y por qué cada una:
+
+1. **El número de nivel no se le enseña a nadie**, en ninguna banda (D-017,
+   criterio #100). «Estás practicando: contar del 1 al 10», nunca «Nivel 3».
+   `mc-10` mide que la presión de rendimiento **empeora el desempeño en
+   matemáticas** — no el ánimo, el desempeño —, y un número de nivel es una nota
+   escolar con otro nombre: se compara con el hermano y con el del salón.
+
+   No es disciplina: el modelo de vista **no trae el nivel**. `construirArbol()`
+   agrupa por nivel y devuelve un `orden` correlativo, así que un alumno con
+   habilidades de N5 y N7 ve grupos 1 y 2 — y ese 1 y ese 2 tampoco se pintan.
+
+2. **KINDER no lleva cifras porque el usuario no lee** (D-019). El modelo del
+   sendero no tiene un solo campo numérico, así que no hay porcentaje que una
+   plantilla pueda pintar por descuido. Lo que distingue un lugar de otro es
+   relleno y borde; el nombre accesible va en `aria-label` para el lector de
+   pantalla y para el adulto que mira por encima del hombro.
+
+3. **Nada se tacha y nada regresa.** Perder una racha no borra ni retrocede
+   visualmente el mapa (`mc-43` implicación 7): un lugar por visitar es un
+   círculo vacío, no un fracaso. Es la misma regla que la línea roja #6, movida
+   del contador al dibujo.
+
+### El compañero es Larry, y su arte se pide, no se genera (D-080)
+
+Larry camina en KINDER, aparece en cada nodo alcanzado en PRIMARIA/SECUNDARIA y
+está **bajo petición de SERIO en adelante** (`mc-43` §9). Los cosméticos son
+accesorios suyos, no de un personaje nuevo — la continuidad de Recraft ya está
+pagada y una mascota aparte abriría canon, voz y revisión de marca en siete
+locales.
+
+**Sin vida, sin hambre, sin decaimiento**, y no por regla: su estado tiene dos
+campos y ninguna función del módulo acepta un instante. Sin reloj, el
+Tamagotchi que `mc-43` §6 documenta no está prohibido — es que no se puede
+implementar.
+
+Mientras el arte no exista, el sitio se pinta como **hueco marcado**:
+`data-hueco-de-arte="larry"`, borde punteado en naranja, del tamaño final. Un
+hueco que se ve es un hueco que se llena; un `<div>` vacío se queda diez meses.
+
+Y la frontera de #257, que con D-080 importa más y no menos: **Larry nunca
+comenta el avatar, el alias ni los cosméticos de un niño.** Un bot que felicita
+tu sombrero es el mismo que puede juzgarlo, y un niño no distingue las dos
+cosas — distingue que lo están mirando.
+
+Lo hacen cumplir `audits/mapa-sin-numero-de-nivel.mjs` y
+`audits/companero-sin-decaimiento.mjs`, los dos con control negativo por
+degradación del archivo real.
+
+---
+
 ## Lo que hace cumplir el auditor
 
 `audits/brand-image.mjs`, en cada commit:

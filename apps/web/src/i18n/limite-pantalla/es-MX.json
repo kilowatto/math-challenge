@@ -1,0 +1,17 @@
+{
+  "_locale": "es-MX",
+  "_nota": "Autorado en español de México, no traducido del inglés (D-022). Tuteo, registro cálido y corto. KINDER nunca lleva cifra (mc-20). Ninguna cadena reprocha el tiempo jugado (mc-26 §7).",
+  "limite.aviso.kinder": "Una más y ya descansamos.",
+  "limite.aviso.lector": "Cinco minutos más y lo dejamos por hoy.",
+  "limite.descanso.titulo": "A estirarse",
+  "limite.descanso.cuerpo": "Párate, mira algo lejos por la ventana y toma agua.",
+  "limite.descanso.afuera": "Mejor todavía: sal un ratito.",
+  "limite.descanso.seguir": "Seguir jugando",
+  "limite.despedida.kinder": "Ya estuvo por hoy. Larry te espera mañana.",
+  "limite.despedida.lector": "Buen trabajo hoy. Nos vemos mañana.",
+  "limite.despedida.retos_uno": "1 reto hoy",
+  "limite.despedida.retos_otros": "{n} retos hoy",
+  "limite.despedida.hasta_manana": "Hasta mañana",
+  "limite.nocturno.kinder": "La sabana se va a dormir. ¡Buenas noches!",
+  "limite.nocturno.lector": "Ya casi es hora de dormir. Buenas noches, nos vemos mañana."
+}

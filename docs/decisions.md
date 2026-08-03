@@ -2763,3 +2763,674 @@ mida algo distinto se pueda volver aquí y ver qué se sabía.
 3. **Sin lenguaje de pérdida en ninguna banda.** Es la misma regla que la racha
    (D-014) y le toca a `racha-lexico` extendido, no a la buena voluntad de quien
    escriba el texto.
+
+---
+
+## D-091 — El día de racha se cuenta en el PRIMER ítem contestado, no al cerrar el reto · 2026-08-03
+
+**Decisión tomada al cablear F7** (#201, #206, #192), y es la que hace que la
+línea roja #6 no dependa de que nadie escriba mal una rama.
+
+D-014 dice, textual: «si el límite de pantalla corta la sesión, **la racha del
+día se da por cumplida**». La lectura obvia es que quien cierre el reto llame a
+`registrarDia` con el motivo del corte, y que haya dos caminos. Dos caminos es
+justo lo que se puede escribir mal, y `audits/racha-limite-no-rompe.mjs` ya
+avisaba de su propio hueco: *«que la ruta de cierre llame a `registrarDia`
+SIEMPRE… aquí se caza el reinicio explícito, no la omisión silenciosa»*.
+
+**Lo que se decide:** `/api/jugar?accion=responder` registra el día en **cada
+respuesta que cuenta**, no al final. `registrarDia` ya es idempotente —devuelve
+el mismo objeto si el día está registrado— así que diez ítems en una tarde son
+una escritura, no diez.
+
+La consecuencia es la que importa: cuando F8 construya el corte por límite de
+pantalla, **el día llevará minutos cumplido**. No hay camino por el que el
+límite rompa la racha, así que tampoco hay rama que auditar. El `motivo` sigue
+viajando como parámetro para que F8 se enchufe sin tocar el cable, y sigue sin
+entrar en la aritmética.
+
+### Y la racha NO se repinta en vivo; el XP sí
+
+En la pantalla del reto, el número de días se pinta al cargar y no se vuelve a
+tocar, aunque el ítem recién contestado sea el que estrena el día. Es literal de
+#206: *ningún cambio de racha produce un push ni un modal — se ve el número
+nuevo la próxima vez que se abre la pantalla, sin evento que lo señale*. Por eso
+`Racha.astro` no lleva ni una línea de script, y por eso la pantalla del reto no
+le pone una por fuera.
+
+El XP sí se actualiza en cada respuesta, sin animación, sin sonido y sin «+10»
+flotando. La diferencia no es un descuido: el XP es el eje de progreso personal
+que sube con cada ítem (D-055), y un eje que no se mueve es un eje invisible.
+`mc-17` §11 mide que la recompensa **informativa** no daña la motivación
+intrínseca y la **controladora** sí, con efecto más severo en niños que en
+universitarios: un número que sube es lo primero, una celebración que interrumpe
+es lo segundo.
+
+### Lo que esto NO decide
+
+- **Si en KINDER se enseña la racha.** Hoy no se enseña —se registra en D1 y no
+  se pinta—, y la pregunta está abierta en `docs/dudas.md` §23.1 con las tres
+  salidas escritas. #205 pide el camino de Larry en la Sabana, sin número, y ese
+  componente no existe.
+- **El bono de finalización de reto.** `XP_POR_TIPO.reto_completado` sigue sin
+  otorgarse porque **nadie observa el final de un reto**: «Ya terminé» es un
+  enlace que navega. `docs/dudas.md` §23.2.
+
+**Investigación relacionada:** `mc-17` §83 y §11, `mc-16`.
+## D-092 — El precio de una misión se publica POR TIPO, y ninguna misión se sortea ni se cobra · 2026-08-03
+
+**Decisión:** las misiones diarias salen con un catálogo cerrado de diez tipos,
+un precio en XP **por tipo** publicado en un solo sitio, y selección
+**determinista desde `(perfil, día)`**. Implementa #211 (#212, #213, #214, #215,
+#216, #217, #218, #219, #221, #228) en `packages/motor/src/misiones.ts`, un
+módulo puro con el mismo contrato que `racha.ts`.
+
+### 1. La tabla de XP es por TIPO, y `mision_diaria` se retira
+
+`XP_POR_TIPO` en `packages/motor/src/xp.ts` tenía un solo renglón,
+`mision_diaria: 20`, escrito cuando F7 todavía no tenía catálogo. Ahora lo tiene,
+y los diez tipos no valen lo mismo: `dominio` —tres correctas seguidas en algo
+que casi se domina— no cuesta lo que `descubre` —jugar un modo que no jugaste
+esta semana—.
+
+Con un solo número había **dos respuestas posibles** a «¿cuánto vale una misión
+diaria?»: la genérica y la del tipo. Eso es exactamente lo que la línea roja #5
+no admite —el jugador tiene que poder saber **de antemano** cuánto vale cada
+cosa— y, sobre todo, es un par de números que va a divergir: nadie los mantiene
+sincronizados porque nadie sabe que son el mismo hecho escrito dos veces.
+
+| Tipo | XP `[criterio propio]` | Eje que mide |
+|---|---|---|
+| `volumen` | 15 | cantidad (el único sin precondición que no rota) |
+| `variedad` | 15 | amplitud de **tema** |
+| `repaso` | 20 | adaptativo (vencimiento, no debilidad) |
+| `dominio` | 25 | adaptativo |
+| `problema` | 20 | modo PROBLEMA (D-018, sin reloj) |
+| `fluidez` | 15 | modo FLUIDEZ (D-018, solo temas dominados) |
+| `precision` | 15 | calidad |
+| `descubre` | 10 | amplitud de **modo** |
+| `duelo` | 20 | liga, individual |
+| `meta_de_liga` | 10 | liga, cooperativo |
+| bono por las tres | +15 | suma directa, jamás un cofre |
+
+La tabla vive **solo** en `xp.ts`. `misiones.ts` la **deriva** con
+`xpDeTipo(claveDeXp(tipo))` en vez de escribir los números otra vez, y
+`audits/mision-recompensa-deterministica.mjs` cruza los dos archivos en las dos
+direcciones: cada tipo del catálogo tiene su clave publicada, y ninguna clave
+`mision_*` sobra.
+
+**`docs/dudas.md` §22.5 queda superada por esta entrada.** Esa sección documenta
+`mision_diaria: 20` y `mision_semanal: 100` como los dos números sin fuente de la
+tabla de XP; el primero ya no existe. Los once que lo sustituyen siguen siendo
+`[criterio propio]` con la misma honestidad que D-016 usa para su tabla de
+minutos — lo que sí sostiene `mc-16` (implicación de diseño 7) es la FORMA, no
+las cifras. `mision_semanal` se queda publicado y sin usar: las misiones
+semanales están diferidas a propósito, porque complicarían la lógica de «día» con
+dos horizontes a la vez y D-014 solo nombra las **diarias**.
+
+### 2. Ninguna recompensa de misión es aleatoria — ni de pago ni gratis
+
+**Es más estricto que la letra de D-014, y se documenta así en vez de fingir que
+D-014 ya lo decía.** La columna «No» de D-014 dice literalmente *«recompensas
+aleatorias de **pago**»*. Tres cosas cierran esa rendija:
+
+1. La columna «Sí» exige **cosméticos ganados, deterministas** — no dice
+   «deterministas si se cobran».
+2. `mc-17` (implicación de diseño 3) y `mc-43` (hallazgo 5) son explícitos en que
+   el mecanismo dañino —el refuerzo de razón variable— **no necesita dinero para
+   funcionar sobre un niño**.
+3. Bélgica y Países Bajos declararon juego ilegal a las cajas de botín en 2018
+   por ser **aleatorias**, no por ser de pago.
+
+Y la otra mitad la cierra la línea roja #4: **nunca se cobra por dejar que un
+niño practique**, así que ninguna misión puede estar detrás de un pago. La
+migración `0009_misiones_diarias.sql` no tiene columna de precio, moneda, cupón,
+plan, probabilidad ni rareza — no es que estén vacías: no existen.
+
+### 3. Selección determinista, nunca `Math.random()`
+
+`semillaDelDia()` es un FNV-1a de 32 bits sobre `(childProfileId, fechaLocal)`.
+No es preferencia de estilo:
+
+- Es **reproducible**: se puede contestar «¿por qué le tocó esta misión a mi
+  hijo?» sin guardar una semilla aparte.
+- `Math.random()` y `Date.now()` **no existen** en varios de nuestros entornos de
+  prueba.
+- El día es un día **local del hogar** y llega ya calculado por
+  `racha.ts::diaEfectivo()`, que sigue siendo la única puerta entre un instante y
+  un día. Un reloj dentro de este módulo sería entropía con otro nombre.
+
+### 4. Tres desviaciones conscientes del diseño de `docs/planes/f7-juego.md`
+
+**a. `duelo` exige `dueloOptIn` Y `enLiga`.** El diseño solo pedía el opt-in
+(D-018: opcional, 8+). Se añade la liga porque **un duelo sin liga es contra
+nadie**, y #217 dice que una misión que no se puede cumplir es peor que no tener
+misión. Un perfil sin opt-in no la ve de ninguna forma —tampoco «bloqueada,
+actívala para intentarlo» (#218)—: enseñarla bloqueada es un empujón hacia una
+función que D-018 ya decidió opcional, y roza el *nagging* que `mc-17` nombra por
+su nombre.
+
+**b. `MISIONES_POR_DIA = 3`, un solo número para todas las bandas, SERIO
+incluida.** `[criterio propio, la evidencia es débil en las dos direcciones]`. No
+existe un estudio de HCI con la cifra. Duolingo usa 3, corroborado en fuentes
+secundarias pero sin post oficial. Cowan (2010) fija ~4±1 como techo de memoria
+de trabajo **adulta**, con los niños de 7-11 todavía **subiendo** hacia ese techo.
+Queda como pregunta abierta al dueño en `docs/dudas.md`.
+
+**c. `EstadoDeMision` no tiene `completed_at`.** Un sello de tiempo obligaría a
+este módulo a leer el reloj. `completed` es 0 o 1, y el `updated_at` de la fila lo
+pone quien escribe, que sí sabe qué hora es.
+
+### 5. KINDER no recibe nada, y eso es la decisión
+
+En KINDER «misión diaria» no es una función nueva: es una etiqueta interna sobre
+el reto HISTORIA del día en la Sabana (D-019), que F5/F6 construyen de todas
+formas. `elegirMisionesDelDia()` devuelve una lista **vacía** y
+`tieneMenuDeMisiones()` existe para que nadie lo deduzca de un arreglo vacío. **No
+cuesta ni una cadena de audio nueva**, y kinder sigue aplazado (D-073), así que
+esto es la forma del hueco y no una promesa de pantalla.
+
+### 6. Los cuatro auditores, y el que se cazó a sí mismo
+
+- `mision-recompensa-deterministica` — sin azar, sin reloj, sin precio, sin
+  metáfora de cofre; cruza el catálogo del módulo contra el `CHECK` del esquema y
+  contra la tabla publicada de `xp.ts`; y **ejecuta** el motor 360 tuplas × 64
+  repeticiones.
+- `mision-slot-nunca-vacio` — 10 080 estados de aprendiz: siempre tres misiones,
+  siempre distintas, siempre cumplibles.
+- `misiones-sin-do-ajeno` — el contrato con F4 y con la liga es de solo lectura y
+  las dos listas blancas no crecen.
+- `mision-silenciosa` — ninguna superficie de reto activo importa ni nombra el
+  motor de misiones (#221, `mc-42` §3).
+
+**Y una lección que esta entrada existe para dejar escrita:
+`mision-slot-nunca-vacio` aprobaba su propia violación.** Juzgaba la salida con
+`definicionDe(t).elegible` —la MISMA función que el motor usa para elegir—, así
+que ablandar una precondición ablandaba a la vez la regla y su guardián: el caso
+«`fluidez` se asigna a un niño que no domina nada» pasaba **en verde**. Se
+descubrió **escribiendo el control negativo, no leyendo el código**, que es
+exactamente por qué D-070 existe. El arreglo es que el auditor lleva la tabla de
+precondiciones de §3 del diseño **reescrita a mano**: dos fuentes independientes,
+como `cosmeticos-deterministas` cruza el enum del módulo contra el CHECK del
+esquema.
+
+### Lo que esta decisión NO decide
+
+No hay **ninguna interfaz** de misión: ni pantalla, ni componente, ni texto en
+los siete locales (#220, ~210 cadenas, autoradas por locale y diferidas). No hay
+Durable Object de misiones —el módulo es puro y `mission_daily_summary` basta— y
+por tanto **cero recursos nuevos de Cloudflare**. No hay ninguna ruta que llame
+al motor todavía. Y no decide nada del mecanismo interno de ligas ni de DUELO:
+F7 · Misiones solo **lee** su estado por `ResumenDeLigaParaMisiones`.
+## D-082 — El registro es uno solo: siempre aterriza en modo solo; familia y escuela se activan después, nunca se eligen en la puerta · 2026-08-02
+
+**Decisión del dueño**, corrigiendo una queja repetida más de una vez: *"Sigues
+insistiendo en el tema de padres e hijos… ¿por qué no puedo hacerlo sin hijos,
+como adulto?"* — y la respuesta encontrada al auditar los documentos es que
+**hoy sí puede**, pero el diseño lo trata como una de tres opciones simétricas
+en la puerta de entrada, no como el estado natural de cualquier cuenta nueva.
+Eso es lo que se corrige aquí.
+
+**Enmienda explícita a D-026.** D-026 fijó *"las tres puertas de entrada —
+adulto, papá, maestro— se registran con correo y contraseña. Nada más."* Esa
+mitad no cambia: el registro sigue siendo exactamente 2 campos, sin carrusel,
+sin fricción añadida (`mc-45`). Lo que cambia es que **deja de haber tres
+puertas simétricas**. Hay una sola alta, y lo que hoy son "Puerta B" (papá) y
+"Puerta C" (maestro) pasan de ser una elección en `/app/join?as=` a ser
+**acciones que el propio adulto toma después, desde dentro de la app**.
+
+### El modelo nuevo
+
+1. **Toda cuenta nueva nace con `is_learner = 1`.** No se pregunta "¿para
+   quién es esto?" en el registro — se pregunta implícitamente al aterrizar en
+   `/app/home`: la pantalla del aprendiz solo (`Puerta A` original) es ahora
+   **la pantalla de aterrizaje de cualquiera**, con dos acciones visibles y
+   opcionales: "Agregar un hijo" y "Crear un salón".
+2. **"Agregar un hijo" activa `esFamilia`** (D-065 ya define esto como
+   `tiene ≥1 hijo`, no como un tipo de cuenta) — dispara el flujo
+   `setup/child` **sin ningún cambio interno**: mismo formulario de año/mes,
+   mismos defaults saltables, misma marca contextual. Lo único que cambia es
+   *cuándo* se ofrece: después de la cuenta, no en la puerta.
+3. **"Crear un salón" activa la verificación de identidad** (`owner/identity`)
+   **sin ningún cambio interno** — y de hecho ya seguía este principio para el
+   maestro: `f2-cuentas-onboarding.md` §3.3 ya decía *"la fricción de identidad
+   va antes de crear un salón, no antes de registrarse"* (D-011, `mc-45`
+   implicación 7). Esta decisión **extiende el mismo principio al papá**: la
+   fricción de "agregar un hijo" también va después de la cuenta, no en la
+   puerta — es la misma lógica aplicada a la otra mitad del producto.
+4. **No son excluyentes, y eso ya estaba escrito.** D-065 ya documentó que
+   `esFamilia` y `esSolo` "no son excluyentes — la migración ya documentaba
+   que una persona puede ser las dos cosas (cita al propio dueño como
+   ejemplo)". Esta decisión no inventa esa regla, la usa: por eso "agregar un
+   hijo" es una activación, no una migración de un modo a otro.
+5. **`signup_intent` deja de ser una bifurcación de producto y pasa a ser
+   dato de embudo.** La columna (migración `0003`, `CHECK IN ('learner',
+   'parent', 'teacher')`) ya llevaba el comentario correcto desde que se
+   escribió: *"NO ES UN ROL... esto solo sirve para aterrizar al usuario y
+   para leer el embudo"* — hoy decide a qué UI aterriza; con esta decisión dejará de decidir nada, y sirve solo para saber por qué CTA de marketing entró alguien (útil para medir qué mensaje convierte, D-037).
+
+### Qué implica en código — no solo en documentos
+
+Verificado que esto **no es un cambio de documentación únicamente**:
+`apps/web/src/components/paginas/Registro.astro`,
+`apps/web/src/pages/api/registro.ts`, `apps/web/src/components/app/DoorPicker.astro`
+y la ruta `join.astro` implementan hoy el modelo de tres puertas simétricas en
+código real, ya desplegado. Esta decisión fija el **destino**, no la
+implementación: el trabajo de ingeniería (retirar el `DoorPicker` de la
+primera pantalla, mover "agregar hijo"/"crear salón" a acciones de
+`/app/home`, dejar `signup_intent` como campo de solo lectura para analítica)
+es una issue de F2 pendiente de abrirse, no algo que esta entrada de
+`decisions.md` ejecute por sí sola. **Ejecutada por la issue de F2 #390.**
+
+### Qué NO cambia
+
+- El registro sigue siendo 2 campos, sin excepción (D-026).
+- `child_profile` sigue sin pedir nombre real, correo, foto ni fecha exacta
+  (D-013) — "agregar un hijo" es la misma pantalla de siempre, solo se
+  alcanza distinto.
+- La verificación de identidad del maestro/papá-que-abre-club (D-011, D-027)
+  sigue exactamente igual — ya vivía después del registro.
+
+**Investigación relacionada:** `mc-45` (fricción de registro, activación
+diferida), `mc-27` (cuentas familiares). Cierra la lectura de la queja del
+dueño documentada en `[[dos-modos-familia-y-solo]]` (memoria de esta sesión).
+
+---
+
+## D-083 — Racha y XP del adulto solo viven en sus propias tablas, nunca en las del niño · 2026-08-02
+
+> **SUPERADA el 2026-08-03 — el código real ya resolvió esto distinto, y
+> mejor.** Esta decisión se escribió mirando `migrations/` en un momento en
+> que solo llegaba a `0006` (sin ninguna tabla de F7 todavía) y nunca se
+> volvió a verificar después. `migrations/0007_racha_y_xp.sql`, ya real y
+> committeada, construyó `child_streak`/`xp_totals` con **`child_profile_id`
+> y `user_id` como columnas alternativas en la misma tabla**, protegidas por
+> `CHECK ((child_profile_id IS NOT NULL) <> (user_id IS NOT NULL))` — exactamente
+> un dueño por fila, nunca los dos, nunca ninguno. Es la solución polimórfica
+> que esta decisión rechazó por el argumento de modo de falla de D-027 — pero
+> ese argumento asumía una columna polimórfica **sin** el `CHECK` de
+> exclusividad mutua que el esquema real sí tiene, que es precisamente lo que
+> cierra el riesgo de que una fila de niño y una de adulto se confundan.
+> Construir `learner_streak`/`learner_xp_totals` ahora sería una segunda
+> fuente de verdad para el mismo hecho — el error exacto que D-025/`mc-32`
+> ya advierten en otras partes del proyecto. **No se construyen las tablas
+> nuevas de esta decisión.** El resto de esta entrada (el recordatorio
+> retargeteado al propio adulto, el tono de misiones pendiente de autorar)
+> sigue vigente — solo el esquema cambia: donde dice `learner_streak`/
+> `learner_xp_totals`, léase `child_streak`/`xp_totals` con `user_id` en vez
+> de `child_profile_id`.
+
+**Decisión del dueño**, cerrando un hueco que el propio proyecto ya se había
+encontrado y nunca resuelto. `docs/planes/f7-juego.md`, en su autocrítica
+cruzada, ya lo dejó escrito sin resolver: *"El diseño entero asume que solo
+existen niños con un padre detrás… `child_streak` es literalmente 'una fila
+por niño'… un adulto aprendiz no tiene dónde acumular el XP que la propia
+fórmula dice que gana."* Verificado contra `migrations/`: las tablas de F7
+(`child_streak`/`xp_totals`) son de niño exclusivamente.
+
+**Decisión:** dos tablas nuevas, paralelas a las del niño, nunca compartidas:
+
+```sql
+-- learner_streak — mismo mecanismo que child_streak (F7), sujeto = users.id
+-- donde is_learner = 1. Los escudos y la pausa siguen la misma lógica pura
+-- de racha.ts — se reusa la función, no se reescribe.
+CREATE TABLE learner_streak (
+  user_id             TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  current_streak      INTEGER NOT NULL DEFAULT 0,
+  max_streak          INTEGER NOT NULL DEFAULT 0,
+  shields_available   INTEGER NOT NULL DEFAULT 0,
+  pause_until_local_date TEXT,   -- autodeclarada por el propio adulto — no hay
+                                 -- "padre" que la declare por él
+  updated_at          INTEGER NOT NULL
+);
+
+-- learner_xp_totals — mismo mecanismo que xp_totals (F7), sujeto = users.id.
+-- rangoDeXp() se reusa tal cual: es una función pura de un número, nunca
+-- dependió de child_profile_id.
+CREATE TABLE learner_xp_totals (
+  user_id     TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  total_xp    INTEGER NOT NULL DEFAULT 0,
+  updated_at  INTEGER NOT NULL
+);
+```
+
+**Por qué tablas separadas y no una columna polimórfica
+(`child_profile_id | user_id`) en las tablas existentes.** Mismo argumento de
+modo de falla que D-027 ya usó para separar `grupo_infantil` de `club_adulto`:
+*"no es modelado, es modo de falla. Con una sola tabla, el día que alguien
+agregue algo pensado solo para adultos, eso aterriza por defecto también
+sobre los niños."* Aquí es al revés — el riesgo es que una consulta pensada
+para el adulto (sin restricciones) toque por accidente una fila de niño — pero
+el argumento es idéntico: dos tablas hacen que ese error **no pueda pasar**
+aunque nadie lo recuerde, en vez de depender de un `WHERE` correcto en cada
+consulta.
+
+**El recordatorio de racha, retargeteado, no suavizado.** F7 documentó *"va al
+padre, nunca al niño"* — regla que no tiene sentido para un adulto sin hijos.
+Para `learner_streak`, el recordatorio va **al propio adulto**, a toda la
+frecuencia que D-084 autoriza — nunca moderado por la lógica de "no le eches
+la culpa a un padre por su hijo", porque aquí no hay niño de por medio.
+
+**Misiones y liga:** reusan el catálogo existente sin tabla nueva. Lo que sí
+queda pendiente, ya señalado por la propia autocrítica de F7: el tono de copy
+para SERIO/JR/PRO todavía no se autoró distinto al de PRIMARIA — D-084 fija
+que ese tono, cuando se autore, es de **enganche competitivo pleno**, no la
+voz suave que protege a un niño.
+
+**Investigación relacionada:** `f7-juego.md` (autocrítica cruzada), D-027
+(precedente del argumento de modo de falla).
+
+---
+
+## D-084 — El adulto solo no tiene supervisión: el techo es la ley, no la protección de menor · 2026-08-02
+
+**Decisión del dueño**, tras plantearle el conflicto directo: pidió que el
+enganche del adulto solo sea *"tan adictivo como Candy Crush o Angry Birds"*.
+Se le señaló que dos de las ocho líneas rojas de `CLAUDE.md` no están escritas
+como protección de menor sino como regla de **todo el producto** — línea roja
+#5 (sin moneda comprable, sin recompensas aleatorias de pago — cajas de botín
+ilegales en Bélgica/Países Bajos, para cualquier edad) y línea roja #6
+(protección de racha jamás se vende) — y eligió, con esa información delante,
+**enganche no monetizado, al máximo legal, sin tocar esas dos líneas.**
+
+### Qué se apaga para el adulto solo — todo lo que hoy suaviza algo por ser protección de MENOR, y solo por eso
+
+| Mecanismo | Para el niño (se queda igual) | Para el adulto solo (`users.is_learner=1`) |
+|---|---|---|
+| Límite de pantalla | D-016, corte suave por edad | **No aplica — ya estaba así** (D-016: "adulto: sin límite"), se reafirma aquí para que quede citable junto al resto |
+| Anti-trampa | Tier 0 (kinder, nada punitivo, D-020) | Tier 3-5 según banda (SERIO/JR/PRO, D-010/`mc-29`) — **no es una relajación, nunca estuvo en tier 0** |
+| Ayuda a Larry visible al padre | P-17: nunca por hijo, nunca sugiere "practica más" (`f6-larry-profe.md`) | **No aplica** — esa restricción es sobre un padre viendo datos de SU HIJO; un adulto viendo sus propias estadísticas no cruza esa lógica en absoluto |
+| Frecuencia de recordatorio/notificación | mc-19: cadencia moderada, nunca con culpa, dirigido al padre sobre el hijo | **Frecuencia completa**, dirigida al propio adulto sobre sí mismo — sigue pasando por la carta `patrones-oscuros` (no manipulador), pero sin el freno adicional que existía para no involucrar a un niño |
+| Ranking/posición de liga | Tercios en KINDER (nunca número exacto, D-003/`mc-18`), número exacto desde PRIMARIA | El adulto solo ya recibía número exacto (SERIO no es KINDER) — se reafirma, no cambia |
+| Racha — intensidad | Roja con red, lenguaje sin pérdida (D-014) | Misma mecánica (con red — Duolingo demuestra que la red retiene, no que suaviza), pero el copy puede ser de presión competitiva real, no del tono protector que existe para no generar ansiedad matemática en un menor (`mc-10`) |
+| Clubs / retos entre pares | No aplica — ningún menor entra a un club de adulto (D-028) | Ya sin restricción (`club_adulto`, D-027/D-028) — se reafirma |
+
+### El techo que NO se mueve, para nadie, de ninguna edad
+
+**Líneas rojas #5 y #6 de `CLAUDE.md` son producto-completo, no
+menor-específicas, y esta decisión no las toca:**
+
+- **Sin moneda comprable. Sin recompensas aleatorias de pago** (cajas de
+  botín) — la base legal (Bélgica, Países Bajos) no depende de la edad del
+  jugador, y D-028 ya hizo el mismo análisis para las prendas de adulto: *"el
+  día que la plataforma retenga valor real, aparece la consideración y el
+  análisis de juego se invierte."*
+- **La protección de racha jamás se vende** — a nadie, ninguna banda.
+- **Sin patrones oscuros** — la carta `patrones-oscuros` ya tiene
+  `alcance: [...INTERFAZ, ...TEXTOS, /pago|precio|suscrip|notific|push/i]`,
+  que cubre cualquier superficie del producto, no solo las de niño. "Adictivo
+  al máximo legal" pasa por esa carta igual que cualquier otra pantalla.
+- **Larry nunca humilla a nadie** (`anti-humillacion`, `canon-larry`) — no es
+  una regla de supervisión infantil, es dignidad básica, aplica al adulto
+  igual que al niño.
+
+**Si algún día se quiere cruzar la línea 5/6 para el adulto** (mecánica de
+gasto real, protección de racha vendible) — el dueño ya decidió que **no** es
+esta decisión: exigiría enmendar CLAUDE.md explícitamente, con revisión legal
+previa (mismo estándar que D-028 ya fija para cualquier mecánica con dinero
+real), y quedaría escrito como su propia decisión, no como parte de esta.
+
+**Investigación relacionada:** D-014 (lista negra de gamificación), D-028
+(análisis de los tres elementos del juego ilegal), `mc-16`, `mc-17`, `mc-19`.
+
+---
+
+## D-085 — Todo el producto es gratis para cualquier tipo de cuenta, sin excepción · 2026-08-02
+
+**Decisión del dueño**, ampliando D-057 más allá de F8. D-057 pospuso el cobro
+solo para panel/reportes/límite de pantalla, del lado del padre. **Esta
+decisión lo extiende a todo el producto y a todo tipo de cuenta**, dicho
+así, textual: *"Todo siempre es gratis, no importa si es escuela, profesor,
+alumno o lo que sea. Usuario."*
+
+**Enmienda explícita a D-021.** D-021 seguía describiendo un Plan Familia de
+pago (~$8-10 USD/mes) con panel, Larry en vivo, offline y reportes detrás de
+una suscripción. Esa tabla queda **retirada como plan activo**: hoy no existe
+ningún camino de código, ninguna issue y ninguna fase que dependa de que
+exista un plan de pago. `master-plan.md` §12 se reescribe para no listar un
+"Plan Familia" de pago junto al gratuito — se deja una sola columna.
+
+**Lo que esto NO decide:** que el proyecto nunca vaya a cobrar nada, jamás. Es
+la misma distinción que D-057 ya hizo para F8: se pospone el cobro, no se
+renuncia a la posibilidad. El día que exista una decisión de negocio real
+sobre monetización, esta entrada se enmienda (mismo patrón que D-035 enmendó
+D-015, y que D-057 ya preveía para sí misma) — hasta entonces, **ninguna
+issue, ninguna pantalla y ningún documento presenta un plan de pago como
+parte del producto actual.**
+
+**Consecuencia directa para el tope de perfiles.** El tope de 6 perfiles
+gratis con bandera en `CONFIG_KV` (issue #120, F2) seguía existiendo "hasta
+que haya Plan Familia que lo reemplace" — con esta decisión, esa condición ya
+no aplica: el tope se revisita como una decisión de producto (¿cuántos
+perfiles tiene sentido permitir por hogar, sin relación a ningún cobro?), no
+como una espera a monetización.
+
+**Investigación relacionada:** D-057 (el precedente directo, ya escrito para
+F8). `mc-41` (precios de la competencia) pasa de ser referencia para fijar un
+precio propio a ser solo contexto de mercado — no se borra, deja de ser
+accionable mientras esta decisión esté vigente.
+
+---
+
+## D-086 — El maestro se verifica a través de su escuela: escuela verificada crea maestros · 2026-08-02
+
+**Decisión del dueño**, al abrir F9, cerrando la pregunta 1 de `mc-28` de una
+forma que ninguna de las dos alternativas que ese documento planteaba
+resolvía del todo: *"lanzar solo afiliado a escuela"* vs. *"abierto a
+cualquier adulto"*. La respuesta real es una tercera forma — **se verifica la
+escuela una vez, como institución, y la escuela es quien autoriza a sus
+maestros** — que además es la única que `mc-28` identifica como capaz de
+invocar limpiamente la excepción de "school official" de FERPA (34 CFR
+99.31(a)(1)): esa excepción exige que **una institución real** determine el
+interés educativo legítimo y mantenga *"control directo"* sobre el uso de los
+datos — algo que un maestro suelto, sin escuela detrás, no puede ofrecer,
+pero que una escuela verificada sí.
+
+### El modelo
+
+1. **Entidad nueva: `school`** (o `escuela_verificada`) — `id`, `nombre`,
+   `país`/`locale`, `estado_verificacion` (`pendiente`/`verificada`/
+   `rechazada`), `metodo_verificacion` (`dominio_institucional`/
+   `documento_revisado`), `verificado_por` (quién de revisión humana la
+   aprobó), `verificado_en`.
+2. **Verificación de la escuela, no del maestro individual.** Dos vías,
+   combinadas:
+   - **Atajo automático por dominio institucional conocido** — si el correo
+     de quien registra la escuela pertenece a un dominio que el producto ya
+     reconoce como institucional, se verifica sin intervención humana.
+   - **Documento + revisión humana** — para toda escuela sin dominio
+     reconocido (la mayoría en varios de los 7 mercados, donde escuelas
+     privadas pequeñas usan correo genérico): sube un documento (constancia,
+     RFC/CCT en México, equivalente por país) y una persona del equipo lo
+     revisa. **Esto exige staffear una cola de revisión** — la misma
+     pregunta que `mc-28` (pregunta abierta 4) ya dejó sin dueño; se resuelve
+     aquí operativamente: la cola existe desde el lanzamiento de F9, no
+     después.
+3. **Una vez verificada, la escuela invita/autoriza maestros**, sin que cada
+   uno pase individualmente por T-5 — el maestro hereda el estatus de
+   "afiliado a [Escuela X], verificada" mientras la escuela pueda revocarlo.
+   Esto es lo que sostiene el argumento de "control directo" de FERPA: la
+   institución, no el producto, decide quién es maestro bajo su nombre, y
+   puede quitarle ese estatus.
+4. **`salón`/`grupo_infantil` gana un `school_id` opcional.** Con escuela
+   detrás, el salón es "afiliado, vía FERPA/COPPA school-official" (sujeto a
+   revisión legal, master-plan §14 punto 2, antes de presentarlo como tal en
+   cualquier mercado real). Sin escuela (`school_id IS NULL`), sigue el
+   modelo ya construido por D-011: consentimiento parental directo,
+   verificación declarada (correo + teléfono), insignia de "sin verificar".
+5. **El club de papás nunca pasa por este modelo** (ver D-088) — no hay
+   institución que verificar en un grupo de familias.
+
+### Lo que esto NO resuelve
+
+- **T-5 sigue sin cerrar del todo.** Se resuelve para el maestro afiliado a
+  escuela verificada (la institución vale como control); para el maestro sin
+  escuela y para quien abre club de papás, la barra sigue siendo correo +
+  teléfono (D-044), y sigue siendo consentimiento parental directo, no
+  atajo institucional.
+- **Quién staffea la cola de revisión de documentos de escuela** — resuelto
+  por D-089: el dueño, manual, mientras el volumen lo permita.
+- **El estándar de documento aceptado varía por país** — resuelto por D-090:
+  un estándar laxo y universal, no un registro por país.
+
+**Investigación relacionada:** `mc-28` (hallazgo central de FERPA/COPPA,
+preguntas 1, 2, 4, 6), D-011 (verificación declarada del maestro sin
+escuela), D-044 (por qué no hay SMS).
+
+> **Corrección (2026-08-03).** El esquema de `school`/`school_teacher` de
+> este documento se propuso sin haber leído `migrations/0005_group_owner_identity.sql`,
+> que ya reservaba exactamente este nivel de confianza como un cuarto valor
+> pendiente de `assurance` (`declared`/`school_domain`/`human_reviewed`,
+> con el comentario propio de esa migración: *"el valor está para que el
+> día que exista no haga falta otra migración"*). `school`/`school_teacher`
+> no crean una segunda fuente de verdad sobre qué tan confiable es un dueño
+> de grupo — alimentan el campo que ya existe, agregando `school_verified`
+> al `CHECK` de `assurance`. Detalle completo en
+> `docs/planes/f9-grupos-infantiles.md` §3 y en las issues #380-382.
+
+---
+
+## D-087 — F9: tamaño de grupo, ranking siempre opt-in, y lanzamiento acotado por mercado · 2026-08-02
+
+**Decisión del dueño**, tres piezas cerradas juntas por venir del mismo
+paraguas de preguntas.
+
+**1. Tope de tamaño y creación.** Salón: **30-35 niños**, mismo rango que
+`master-plan.md` ya citaba para el maestro. Club de papás: tope menor (ya
+exigido por D-027, sin cambiar). Límite de creación de grupos por cuenta,
+para que la creación masiva —la palanca que `mc-28` nombra como el principal
+recurso de un abusador sin verificación real— tenga un techo.
+
+**2. El ranking dentro de un salón/club es opt-in, apagado por default —
+en TODA banda, no solo kinder.** Investigación externa dirigida (agosto
+2026) confirma esto más allá de Domínguez et al. 2013 (ya citado por
+`mc-28`): Li et al. 2024 (revisión sistemática, 29 intervenciones) encuentra
+efectividad muy dependiente del diseño; un estudio de 2025 en *Journal of
+Computing in Higher Education* encuentra que las tablas de posición
+**reducen el compromiso social**, no solo el académico, en estudiantes que no
+valoran la competencia por sí mismos, independientemente de su nivel; la
+literatura 2024-2025 se inclina por **opt-out por default con un toggle fácil
+y sin estigma** antes que un ranking siempre encendido. Un aula real
+concentra el daño de participación de forma distinta a un tablero anónimo
+global (donde D-025/D-003 ya permiten default encendido fuera de kinder) —
+la diferencia es que aquí los compañeros de clase se conocen entre sí, así
+que el mismo argumento de F7 no traslada limpio. Un niño puede practicar
+dentro de un salón sin aparecer nunca en ninguna vista de ranking de ese
+salón.
+
+**3. Lanzamiento geográfico acotado.** F9 se documenta y se construye para
+los 7 locales, pero **se activa primero solo en `en`, `es-MX`, `es-ES` y
+`pt-BR`** — los mercados donde `mc-25`/`mc-28` no dejaron ningún requisito
+legal marcado `[unverified]`. `fr-FR`, `pt-PT`, `de-DE` (GDPR Art. 8, el
+Children's Code británico) esperan revisión legal real antes de activarse —
+`ico.org.uk` bloqueó el fetch automatizado durante la investigación, así que
+el estándar exacto no está confirmado, y no se construye sobre una cifra sin
+confirmar.
+
+**Investigación relacionada:** `mc-28` (preguntas 3, 5, 7), `mc-18`, y la
+literatura de leaderboard 2024-2025 citada arriba (Li et al. 2024; estudio
+2025 de compromiso social en JCHE) — marcada como investigación externa
+dirigida, no parte del corpus original de 47 documentos.
+
+---
+
+## D-088 — Club de papás: se une con el código, cualquiera, pero nunca se comparte contacto · 2026-08-02
+
+**Decisión del dueño**, cerrando la pregunta que `mc-46` dejó abierta ("¿se
+permite mezclar familias que no se conocen entre sí?"). **Sí se permite** —
+cualquier familia con el código puede unirse, sin exigir un vínculo previo
+verificable. La mitigación no es restringir quién se une: **es que ningún
+dato de contacto se comparte jamás entre miembros**, sin importar cuánto se
+conozcan o no fuera del producto.
+
+**Lo que esto confirma, no lo que agrega:** D-027 ya fijaba que el dueño de
+un `grupo_infantil` ve *"solo alias, puntos y racha. Ni nombre real, ni edad
+exacta, ni otros grupos del niño."* Esta decisión hace explícito que esa
+regla es la mitigación completa para el riesgo de familias-extrañas, no una
+capa adicional sobre un requisito de vínculo previo que `mc-46` sugería como
+alternativa. **No hay ninguna pantalla, en ningún punto de F9, donde un
+miembro del club vea el correo, teléfono o nombre real de otro miembro** —
+ese aislamiento es lo que hace seguro un club abierto por código.
+
+**Investigación relacionada:** `mc-46` (pregunta abierta, numerada 6 en el
+documento), D-027 (la regla de minimización que esta decisión confirma como
+suficiente).
+
+---
+
+## D-089 — Las colas de revisión de F9 las atiende el dueño, manual, hasta que exista alguien más · 2026-08-03
+
+**Decisión del dueño**, cerrando la pregunta operativa que `mc-28` (pregunta
+abierta 4) dejó sin dueño y que D-086/`#385` heredaron sin resolver.
+
+**Quién atiende:** el propio dueño del proyecto, a mano, sin equipo dedicado
+todavía — ni la cola de verificación de escuela (D-086) ni la de reportes de
+grupo (issue #385) tienen un revisor asignado más allá de él. **Esto no es
+una decisión de diseño, es una restricción real de recursos**, y se
+documenta como tal para que nadie construya sobre el supuesto de que existe
+un equipo de confianza y seguridad.
+
+**Consecuencia directa, dicha de frente:** `mc-28` advierte que un mecanismo
+de seguridad sin quien lo opere "no protege a nadie" — el botón de reporte y
+la verificación de escuela son, mientras esto sea cierto, tan fuertes como
+la disponibilidad de una sola persona. Si el volumen de escuelas o reportes
+supera lo que el dueño puede atender en un tiempo razonable, la mitigación
+real se degrada silenciosamente, sin que ningún auditor lo detecte (no hay
+forma de que un auditor estático mida "tiempo de respuesta humano").
+
+**Lo que esto exige de las issues #381 y #385, agregado como criterio:**
+
+- [ ] Ninguna de las dos colas se construye asumiendo un equipo — la interfaz
+  de revisión es de una sola persona operando, sin flujo de asignación entre
+  revisores
+- [ ] Se registra `created_at` de cada solicitud/reporte pendiente, para que
+  el propio dueño pueda medir su tiempo de respuesta real y decidir cuándo
+  esto deja de ser sostenible manualmente
+- [ ] La activación de F9 (`CONFIG_KV.f9_enabled_<locale>`, issue #387) no
+  depende de tener un equipo — depende de que el dueño acepte operar las dos
+  colas él mismo mientras dure esta decisión
+
+**Condición de revisión:** cuando el volumen lo exija, esta decisión se
+enmienda con quién se contrata/asigna — no antes, y no se construye
+infraestructura de equipo (roles, turnos, asignación) especulativamente
+hoy.
+
+**Investigación relacionada:** `mc-28` (pregunta abierta 4, "is a
+human-review queue staffable, and who owns it?").
+
+---
+
+## D-090 — Verificación de escuela: un estándar laxo y universal, no un registro por país · 2026-08-03
+
+**Decisión del dueño**, cerrando la segunda mitad de la pregunta que D-086
+dejó explícitamente sin resolver ("el estándar de documento aceptado varía
+por país... trabajo de la fase, no de esta decisión").
+
+**El estándar, para los 4 mercados de lanzamiento de D-087 (`en`, `es-MX`,
+`es-ES`, `pt-BR`) y sin distinción entre ellos:** cualquier documento con
+membrete oficial de la escuela, el nombre de la institución y una dirección
+— revisado a ojo por quien atiende la cola (D-089). **No se valida contra
+ningún registro oficial** (la clave CCT de México ante la SEP, el registro
+autonómico español, el código INEP brasileño, o el hecho de que EE.UU./UK
+no tienen un registro central único) — construir esa validación exigiría
+investigar y mantener cuatro integraciones distintas, cada una con su
+propio riesgo de bloqueo de acceso automatizado (mismo problema que ya
+sufrió `mc-28` con `ico.org.uk`, 403 en cada intento).
+
+**Lo que esto compra:** la issue #381 se puede construir sin bloquear en
+investigación adicional por país.
+
+**Lo que esto cuesta, dicho de frente:** un documento con membrete es
+falsificable con herramientas comunes de edición de imagen. La barrera real
+contra un abuso sistemático no es este documento — es D-089 (una persona
+revisando) más el tope de tamaño y la tasa de creación (D-087) más el hecho
+de que el padre sigue aprobando la entrada de cada niño individualmente
+(D-011). Este estándar de documento es la primera capa, no la única.
+
+**Condición de revisión:** si se detecta abuso real del atajo de documento,
+esta decisión se enmienda con validación contra un registro oficial — por
+país, empezando por el mercado donde se detecte el problema, no los cuatro
+a la vez.
+
+**Investigación relacionada:** D-086 (el modelo de escuela verificada que
+esta decisión completa), `mc-28`.

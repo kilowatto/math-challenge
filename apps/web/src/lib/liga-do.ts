@@ -36,9 +36,13 @@
  *  · **No sabe el nombre de nadie.** Recibe alias generados
  *    (`packages/motor/src/alias.ts`) y no tiene ningún campo donde quepa un
  *    nombre real. Línea roja #2.
- *  · **No sabe de rachas, XP ni escudos.** Condición 1 de D-081: la liga no
+ *  · **No ESCRIBE rachas, XP ni escudos.** Condición 1 de D-081: la liga no
  *    puede quitar nada, y la forma más barata de que no pueda es que no tenga
- *    delante ningún contador de aprendizaje.
+ *    delante ningún contador de aprendizaje que pueda modificar. Desde D-106
+ *    (2026-08-03) sí DIFUNDE `current_streak` entre pares —el dueño enmendó
+ *    #243—, como un número más de la fila pública: llega con cada `/sumar` ya
+ *    calculado, se muestra, y aquí jamás se escribe. `max_streak`, escudos y
+ *    pausas siguen fuera, por la misma #208 que los excluye de salones y clubs.
  *  · **No calcula puntos.** Los calcula `calificar()` en el servidor (F3, D-010)
  *    y aquí solo se suman.
  */
@@ -73,6 +77,18 @@ interface FilaDeMiembro {
   avatar_parts: string;
   points_this_week: number;
   active_days: number;
+  /**
+   * La racha en curso del miembro, tal como llega con cada `/sumar`.
+   *
+   * liga-no-quita-difusion: current_streak — D-106 (2026-08-03): el dueño
+   * enmendó #243 y la racha SÍ se muestra entre pares de liga. Se difunde
+   * como dato de solo lectura —este objeto la recibe ya calculada y jamás la
+   * escribe en `child_streak`— y el marcador de arriba es lo que le dice a
+   * `audits/liga-no-quita.mjs` que ESTA mención está autorizada por escrito.
+   * Sin el marcador, el auditor bloquea el nombre como cualquier otro
+   * contador de aprendizaje.
+   */
+  current_streak: number;
   /** El último día local ya contado, `YYYY-MM-DD`. Evita contar dos veces. */
   ultimo_dia: string | null;
   joined_at: number;
@@ -90,6 +106,8 @@ export interface FilaDifundida {
   alias: string;
   avatar_parts: string;
   points_this_week: number;
+  /** La racha en curso, de solo lectura (D-106, que enmienda #243). */
+  current_streak: number;
   /** Tercio en KINDER, número exacto de PRIMARIA en adelante (D-081). */
   posicion: ReturnType<typeof posicionVisible>;
 }
@@ -138,6 +156,7 @@ export class Liga {
           membership_id: string;
           puntos: number;
           dia_local: string;
+          racha?: number;
         };
         return Response.json(await this.sumar(p));
       }
@@ -165,7 +184,7 @@ export class Liga {
     /* sin canal de entrada, a propósito */
   }
 
-  private async unir(f: Omit<FilaDeMiembro, "points_this_week" | "active_days" | "ultimo_dia">) {
+  private async unir(f: Omit<FilaDeMiembro, "points_this_week" | "active_days" | "current_streak" | "ultimo_dia">) {
     const llave = PREFIJO + f.membership_id;
     const previa = await this.state.storage.get<FilaDeMiembro>(llave);
     if (previa) return { ok: true, nuevo: false };
@@ -176,6 +195,7 @@ export class Liga {
       avatar_parts: f.avatar_parts,
       points_this_week: 0,
       active_days: 0,
+      current_streak: 0,
       ultimo_dia: null,
       joined_at: f.joined_at,
     };
@@ -197,7 +217,7 @@ export class Liga {
    * la tabla de la liga sería lenguaje de pérdida escrito con un número, que es
    * lo que la condición 3 de D-081 prohíbe.
    */
-  private async sumar(p: { membership_id: string; puntos: number; dia_local: string }) {
+  private async sumar(p: { membership_id: string; puntos: number; dia_local: string; racha?: number }) {
     const llave = PREFIJO + p.membership_id;
     const fila = await this.state.storage.get<FilaDeMiembro>(llave);
     if (!fila) return { ok: false, motivo: "sin_membresia" };
@@ -207,6 +227,9 @@ export class Liga {
       points_this_week: Math.max(0, fila.points_this_week + p.puntos),
       active_days:
         fila.ultimo_dia === p.dia_local ? fila.active_days : Math.min(7, fila.active_days + 1),
+      // La racha llega ya calculada con el reto (D-106): se copia, nunca se
+      // deriva aquí. Quien la mide es `racha.ts`, no este objeto.
+      current_streak: typeof p.racha === "number" && Number.isFinite(p.racha) ? Math.max(0, Math.floor(p.racha)) : fila.current_streak,
       ultimo_dia: p.dia_local,
     };
 
@@ -243,6 +266,7 @@ export class Liga {
         alias: f.alias,
         avatar_parts: f.avatar_parts,
         points_this_week: f.points_this_week,
+        current_streak: f.current_streak,
         posicion: posicionVisible(banda, i + 1, orden.length),
       };
     });
@@ -299,7 +323,7 @@ function objetoDe(ns: DurableObjectNamespace, cohortId: string) {
 export async function sumarEnLiga(
   ns: DurableObjectNamespace | undefined,
   cohortId: string,
-  entrada: { membership_id: string; puntos: number; dia_local: string },
+  entrada: { membership_id: string; puntos: number; dia_local: string; racha?: number },
 ): Promise<boolean> {
   if (!ns) return false;
   try {

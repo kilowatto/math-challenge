@@ -1614,6 +1614,34 @@ const CASOS = [
     parche: (t) => "-- migration-safety-reserva: 0008 — reserva rancia plantada a propósito por el arnés\n" + t,
     espera: "La reserva sobra",
   },
+  {
+    // La excepción de D-106 es POR MARCADOR: sin el renglón escrito, nombrar
+    // `current_streak` en el DO de liga vuelve a ser exactamente lo que la
+    // condición 1 de D-081 prohíbe. El parche borra el marcador y deja el campo.
+    auditor: "liga-no-quita",
+    que: "la difusión de la racha pierde su marcador de D-106",
+    archivo: "apps/web/src/lib/liga-do.ts",
+    parche: (t) =>
+      t.replace(
+        "liga-no-quita-difusion: current_streak — D-106 (2026-08-03)",
+        "difusion sin decision escrita",
+      ),
+    espera: "current_streak",
+  },
+  {
+    // Y con el marcador intacto, la excepción es ESTRECHA: autoriza NOMBRAR la
+    // racha para difundirla, nunca escribirla. Un UPDATE a la tabla de la racha
+    // desde el subsistema social bloquea igual, marcador o no.
+    auditor: "liga-no-quita",
+    que: "un UPDATE a child_streak dentro del DO de liga, con el marcador puesto",
+    archivo: "apps/web/src/lib/liga-do.ts",
+    parche: (t) =>
+      t.replace(
+        'import type { Banda } from "../../../../packages/motor/src/puntuacion.ts";',
+        'import type { Banda } from "../../../../packages/motor/src/puntuacion.ts";\nconst _SQL_PROHIBIDO = "UPDATE child_streak SET current_streak = 0";',
+      ),
+    espera: "child_streak",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

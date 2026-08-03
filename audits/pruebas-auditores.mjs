@@ -1669,7 +1669,7 @@ const CASOS = [
     archivo: "apps/web/src/i18n/misiones/en.json",
     parche: (t) =>
       t.replace(
-        '"misiones.resumen.bono": "All three done — that\'s {xp} XP more"',
+        '"misiones.resumen.bono": "All of today\'s missions done — that\'s {xp} XP more"',
         '"misiones.resumen.bono": "Open your chest — {xp} XP inside"',
       ),
     espera: "cofre",

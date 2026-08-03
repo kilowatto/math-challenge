@@ -17,7 +17,7 @@
  *
  * ─── El bono es una suma, jamás un cofre (#220) ────────────────────────────
  *
- * Completar las tres misiones del día suma XP directo y se muestra como una
+ * Completar TODAS las misiones del día suma XP directo y se muestra como una
  * línea de suma: «…— son {xp} XP más». Nada se «abre», se «desenvuelve» ni se
  * «descubre»: aunque el contenido sea conocido de antemano, la metáfora del
  * cofre sugiere sorpresa, y `mc-43` (hallazgo 5) documenta que el mecanismo del
@@ -50,7 +50,7 @@ interface Props {
   /** XP total del día por misiones, bono incluido. */
   xpTotal: number;
   diaCompleto: boolean;
-  /** El bono fijo por las tres. Se muestra como una suma (#220). */
+  /** El bono fijo por completar todas las del día. Se muestra como una suma (#220). */
   xpBono: number;
 }
 

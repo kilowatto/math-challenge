@@ -2,7 +2,7 @@
   "misiones.titulo": "Today's missions",
   "misiones.xp": "{xp} XP",
   "misiones.resumen.titulo": "What you finished today",
-  "misiones.resumen.bono": "All three done — that's {xp} XP more",
+  "misiones.resumen.bono": "All of today's missions done — that's {xp} XP more",
   "misiones.resumen.total": "Today you earned {xp} XP",
   "mision.volumen.titulo": "Warm-up round",
   "mision.volumen.progreso": "{n} of {meta} exercises answered",

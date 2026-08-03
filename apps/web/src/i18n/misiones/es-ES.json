@@ -2,7 +2,7 @@
   "misiones.titulo": "Las misiones de hoy",
   "misiones.xp": "{xp} XP",
   "misiones.resumen.titulo": "Lo que has logrado hoy",
-  "misiones.resumen.bono": "Has logrado las tres — son {xp} XP más",
+  "misiones.resumen.bono": "Has logrado todas las de hoy — son {xp} XP más",
   "misiones.resumen.total": "Hoy has ganado {xp} XP",
   "mision.volumen.titulo": "Ronda de calentamiento",
   "mision.volumen.progreso": "{n} de {meta} ejercicios contestados",

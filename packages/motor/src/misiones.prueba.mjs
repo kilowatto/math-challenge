@@ -139,7 +139,7 @@ caso("`volumen` es el único tipo sin precondición que NO entra a la rotación"
   for (const tipo of ORDEN_DE_RESPALDO) {
     igual(definicionDe(tipo).elegible(SIN_F4, SIN_LIGA), true, `${tipo} sin precondición`);
   }
-  cierto(ORDEN_DE_RESPALDO.length > MISIONES_POR_DIA, "más respaldos que slots");
+  cierto(ORDEN_DE_RESPALDO.length > Math.max(...Object.values(MISIONES_POR_DIA)), "más respaldos que slots");
 });
 
 // --- La recompensa: fija, publicada, sin una sola tirada (#219, línea roja #5)
@@ -247,9 +247,9 @@ caso("dos niños distintos el mismo día no reciben forzosamente lo mismo", () =
 
 // --- Ningún slot vacío, ninguno repetido (#217) -----------------------------
 
-caso("SIEMPRE tres misiones, siempre distintas, en toda la matriz de entradas", () => {
+caso("SIEMPRE las misiones de su banda (3 menor, 4 adulta — D-103), siempre distintas, en toda la matriz de entradas", () => {
   const n = porTodaLaMatriz((misiones, ctx) => {
-    igual(misiones.length, MISIONES_POR_DIA, `cuántas para ${ctx.perfil}/${ctx.dia}/${ctx.banda}`);
+    igual(misiones.length, MISIONES_POR_DIA[ctx.banda], `cuántas para ${ctx.perfil}/${ctx.dia}/${ctx.banda}`);
     const tipos = misiones.map((m) => m.tipo);
     igual(new Set(tipos).size, tipos.length, `repetida en ${ctx.banda}: ${tipos.join(",")}`);
     for (const m of misiones) {
@@ -273,6 +273,26 @@ caso("un niño NUEVO —sin liga, sin nada dominado, sin F4— recibe igual sus 
   }
 });
 
+caso("D-103: 3 en PRIMARIA y SECUNDARIA, 4 en las bandas adultas — y las 4 salen sin F4 ni liga", () => {
+  // La decisión del dueño (2026-08-03): la memoria de trabajo adulta sí alcanza
+  // el techo de Cowan (~4±1); la de un niño de 7-11 todavía no. La tabla por
+  // banda es la decisión; este caso es su guardián.
+  igual(MISIONES_POR_DIA.PRIMARIA, 3, "PRIMARIA");
+  igual(MISIONES_POR_DIA.SECUNDARIA, 3, "SECUNDARIA");
+  igual(MISIONES_POR_DIA.SERIO, 4, "SERIO");
+  igual(MISIONES_POR_DIA.JR, 4, "JR");
+  igual(MISIONES_POR_DIA.PRO, 4, "PRO");
+  // Y no es solo la tabla: con el peor estado posible (sin F4, sin liga, sin
+  // nada dominado) las cuatro salen y son cumplibles — hay cinco respaldos
+  // incondicionales justamente para esto.
+  const m = elegirMisionesDelDia("adulto-nuevo", "2026-08-02", "SERIO", SIN_F4, SIN_LIGA);
+  igual(m.length, 4, "cuatro misiones en SERIO");
+  igual(new Set(m.map((x) => x.tipo)).size, 4, "las cuatro distintas");
+  for (const x of m) {
+    cierto(definicionDe(x.tipo).elegible(SIN_F4, SIN_LIGA), `${x.tipo} no era cumplible`);
+  }
+});
+
 caso("las misiones que salen son SIEMPRE cumplibles con los insumos de ese día", () => {
   porTodaLaMatriz((misiones, ctx) => {
     for (const m of misiones) {
@@ -291,7 +311,7 @@ caso("sin F4 el slot adaptativo cae a `volumen`, y no bloquea nada", () => {
     for (const liga of RESUMENES_LIGA) {
       const m = elegirMisionesDelDia("p-01", "2026-08-02", banda, SIN_F4, liga);
       igual(m[0].tipo, "volumen", `slot 1 en ${banda}`);
-      igual(m.length, 3, `siguen siendo tres en ${banda}`);
+      igual(m.length, MISIONES_POR_DIA[banda], `siguen siendo las de su banda en ${banda}`);
     }
   }
 });

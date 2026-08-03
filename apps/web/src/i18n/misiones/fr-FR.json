@@ -2,7 +2,7 @@
   "misiones.titulo": "Les missions du jour",
   "misiones.xp": "{xp} XP",
   "misiones.resumen.titulo": "Ce que tu as réussi aujourd’hui",
-  "misiones.resumen.bono": "Les trois sont faites — {xp} XP en plus",
+  "misiones.resumen.bono": "Toutes celles du jour sont faites — {xp} XP en plus",
   "misiones.resumen.total": "Tu as gagné {xp} XP aujourd’hui",
   "mision.volumen.titulo": "Tour d’échauffement",
   "mision.volumen.progreso": "{n} exercices sur {meta}",

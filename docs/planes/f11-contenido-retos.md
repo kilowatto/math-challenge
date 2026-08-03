@@ -394,16 +394,18 @@ colores, `comparo_subconjuntos_en_vez_de_parte_a_total`; `1/2`; `4`).
   "enunciado": { "clave": "n10.derivada.polinomio_en_punto", "vars": { "a": 3, "b": 2, "x": 2 } },
   "respuesta": { "valor": 14, "tol": 0 },
   "errores": [
-    { "valor": 12, "causa": "sustituye_sin_derivar" },
-    { "valor": 6,  "causa": "derivo_solo_el_termino_cuadratico" },
-    { "valor": 16, "causa": "error_al_evaluar_la_derivada" }
+    { "valor": 16, "causa": "sustituye_sin_derivar" },
+    { "valor": 12, "causa": "derivo_solo_el_termino_cuadratico" },
+    { "valor": 10, "causa": "error_al_evaluar_la_derivada" }
   ],
   "proposito": "interpretar", "variacion": null
 }
 ```
 
 (f'(x) = 6x + 2; en x = 2: 14. El primer distractor es el valor de la
-función sin derivar — la confusión central del inicio del cálculo.)
+función sin derivar —f(2) = 16— la confusión central del inicio del
+cálculo; el segundo es olvidar el término lineal al derivar —6x en
+x = 2—.)
 
 **FIJO n10-est-f2** · dificultad_experta 52 · proposito `clasificar`
 

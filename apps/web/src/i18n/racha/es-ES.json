@@ -1,0 +1,8 @@
+{
+  "racha.titulo": "Días seguidos",
+  "racha.dia_uno": "1 día",
+  "racha.dias_otros": "{n} días",
+  "racha.mejor": "Tu récord: {mejor}",
+  "racha.ninguno": "Aún no hay días contados",
+  "racha.hoy_cuenta": "Hoy ya cuenta"
+}

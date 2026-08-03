@@ -559,6 +559,214 @@ const CASOS = [
     espera: "imprime la CLAVE",
   },
 
+  // ─── Los tres de F7: cosméticos deterministas y la racha ─────────────────
+  //
+  // Ocho casos, y la mayoría son de DEGRADACIÓN (D-070) sobre `racha.ts` y
+  // `cosmeticos.ts` reales. Los dos motores se escribieron con sus auditores
+  // delante, así que nacieron verdes — y ése es justo el caso donde un archivo
+  // de prueba inventado no vale: probaría que el auditor sabe leer un archivo
+  // que nadie va a escribir, no que habría cazado la erosión del que sí existe.
+  //
+  // Los tres casos que SÍ plantan un archivo son los del esquema y los de una
+  // ruta, porque la tabla del catálogo (#253) y la ruta de cierre de sesión
+  // todavía no existen. Sin ellos, tres de las reglas del auditor estarían
+  // en verde sin haber mirado nunca una fila — que es exactamente lo que D-070
+  // llama una comprobación decorativa.
+
+  {
+    // El azar más probable de todos, y el más inocente de escribir: un
+    // desempate «que da igual» en el orden de salida. mc-17 §7: una sorpresa,
+    // aunque sea gratis y aunque sea cosmética, cae en el radio de las cajas
+    // de botín que Bélgica y Países Bajos declararon juego ilegal.
+    auditor: "cosmeticos-deterministas",
+    que: "un Math.random() en el camino que otorga un cosmético",
+    archivo: "packages/motor/src/cosmeticos.ts",
+    parche: (t) => t.replace("return [...ganados].sort();", "return [...ganados].sort(() => Math.random() - 0.5);"),
+    espera: "azar en el camino",
+  },
+  {
+    // El eje DINÁMICO por separado, sin una sola palabra que un grep pueda
+    // encontrar: se quita el `.sort()` y la salida pasa a depender del orden en
+    // que D1 devolvió las filas. El auditor estático no puede ver esto; el que
+    // ejecuta el módulo con las reglas barajadas, sí.
+    auditor: "cosmeticos-deterministas",
+    que: "la salida depende del orden de las reglas, sin ningún generador de azar",
+    archivo: "packages/motor/src/cosmeticos.ts",
+    parche: (t) => t.replace("return [...ganados].sort();", "return [...ganados];"),
+    espera: "NO es determinista",
+  },
+  {
+    auditor: "cosmeticos-deterministas",
+    que: "una columna de precio en la tabla del catálogo de cosméticos",
+    archivo: "migrations/9999_prueba_cosmetico_precio.sql",
+    contenido:
+      "CREATE TABLE cosmetic_catalog (\n" +
+      "  id TEXT PRIMARY KEY,\n" +
+      "  es_inicial INTEGER NOT NULL DEFAULT 0,\n" +
+      "  price_cents INTEGER NOT NULL DEFAULT 0\n" +
+      ");\n",
+    espera: "moneda comprable",
+  },
+  {
+    auditor: "cosmeticos-deterministas",
+    que: "un cosmético que no es inicial y no tiene ninguna regla de desbloqueo",
+    archivo: "migrations/9999_prueba_cosmetico_huerfano.sql",
+    contenido:
+      "INSERT INTO cosmetic_catalog (id, es_inicial) VALUES\n" +
+      "  ('melena_dorada', 0),\n" +
+      "  ('marco_sabana', 1);\n" +
+      "INSERT INTO cosmetic_unlock_rules (cosmetic_id, tipo_evento, parametro, umbral) VALUES\n" +
+      "  ('marco_sabana', 'primer_intento', NULL, NULL);\n",
+    espera: "camino de obtención",
+  },
+  {
+    auditor: "cosmeticos-deterministas",
+    que: "una regla con un tipo de evento fuera del enum cerrado",
+    archivo: "migrations/9999_prueba_cosmetico_evento.sql",
+    contenido:
+      "INSERT INTO cosmetic_catalog (id, es_inicial) VALUES ('gorro_cumple', 0);\n" +
+      "INSERT INTO cosmetic_unlock_rules (cosmetic_id, tipo_evento, parametro, umbral) VALUES\n" +
+      "  ('gorro_cumple', 'cumpleanios', NULL, NULL);\n",
+    espera: "enum cerrado",
+  },
+  {
+    // Nadie escribe `venderEscudo()`. Alguien agrega «un parámetro que hace
+    // falta», y es exactamente el patrón que mc-16 documenta en Duolingo: las
+    // vías de obtención del Streak Freeze se mezclan con gemas comprables.
+    auditor: "racha-nunca-se-vende",
+    que: "ganarEscudos gana un parámetro de pago",
+    archivo: "packages/motor/src/racha.ts",
+    parche: (t) =>
+      t.replace(
+        "export function ganarEscudos(estado: EstadoRacha): EstadoRacha {",
+        "export function ganarEscudos(estado: EstadoRacha, precioEnCentavos: number): EstadoRacha {",
+      ),
+    espera: "parámetro de pago",
+  },
+  {
+    // La otra forma, sin tocar ninguna firma: una constante de precio al lado
+    // del tope de escudos. Es cómo se ve una tienda antes de ser una tienda.
+    auditor: "racha-nunca-se-vende",
+    que: "una constante de precio junto al tope de escudos",
+    archivo: "packages/motor/src/racha.ts",
+    parche: (t) =>
+      t.replace(
+        "export const TOPE_ESCUDOS = 2;",
+        "export const TOPE_ESCUDOS = 2;\nexport const PRECIO_ESCUDO_EXTRA = 0.99;",
+      ),
+    espera: "dinero a",
+  },
+  {
+    // D-014, textual: «si el límite de pantalla corta la sesión, la racha del
+    // día se da por cumplida». Aquí se le mete al motor la rama que trata
+    // distinto al límite — y se le mete a FAVOR de romper, que es la dirección
+    // que nadie escribiría a propósito y todos escribirían por descuido.
+    auditor: "racha-limite-no-rompe",
+    que: "el motor trata distinto al límite de pantalla y le reinicia la racha",
+    archivo: "packages/motor/src/racha.ts",
+    parche: (t) =>
+      t.replace(
+        "  if (brecha === 1) {\n",
+        '  if (brecha === 1) {\n' +
+          '    if (motivo.tipo === "LIMITE_DE_PANTALLA_CORTO_LA_SESION") {\n' +
+          "      return conDia(estado, dia, 1, estado.shields_available);\n" +
+          "    }\n",
+      ),
+    espera: "ENTRA en la aritmética",
+  },
+  {
+    // El motor puede ser perfecto y la racha romperse igual, porque quien
+    // cierra la sesión decidió por su cuenta. Es el eje que el barrido del
+    // motor no puede ver.
+    auditor: "racha-limite-no-rompe",
+    que: "una ruta que reinicia la racha cuando el corte fue del límite de pantalla",
+    archivo: "apps/web/src/lib/prueba-racha-limite.ts",
+    contenido:
+      "export async function cerrarSesion(db: any, id: string, cortadaPorLimite: boolean) {\n" +
+      "  if (cortadaPorLimite === true) {\n" +
+      "    await db.prepare('UPDATE child_streak SET current_streak = 0 WHERE id = ?').bind(id).run();\n" +
+      "  }\n" +
+      "}\n",
+    espera: "reinicia la racha",
+  },
+
+  // ─── Los dos de la segunda tanda: XP y el léxico de la racha ────────────
+  //
+  // Seis casos más, cinco de ellos degradando los archivos REALES. `xp.ts` y
+  // los siete JSON de racha se escribieron con sus auditores delante, así que
+  // nacieron verdes: un caso inventado probaría que el auditor sabe leer un
+  // archivo falso, no que habría cazado la erosión del verdadero.
+
+  {
+    // La mezcla que D-055 existe para impedir, y que ya se intentó una vez en
+    // este repo: alguien afirma que «XP es el mismo número que los puntos». En
+    // KINDER coinciden por construcción, así que nada se rompe a la vista.
+    auditor: "motor-xp",
+    que: "una expresión que suma el XP con los puntos del tablero",
+    archivo: "apps/web/src/lib/prueba-xp-mezcla.ts",
+    contenido:
+      "export function totalDelNino(fila: any) {\n" +
+      "  return fila.total_xp + fila.total_score;\n" +
+      "}\n",
+    espera: "dos monedas",
+  },
+  {
+    // El reloj entrando al XP. D-055: el XP no ve el tiempo en NINGUNA banda,
+    // ni siquiera en PRO donde el puntaje sí lo usa.
+    auditor: "motor-xp",
+    que: "el tiempo de respuesta entra en la fórmula de XP",
+    archivo: "packages/motor/src/xp.ts",
+    parche: (t) =>
+      t.replace(
+        "export function xpDeItem(nivel: number, acc: 0 | 1): number {",
+        "export function xpDeItem(nivel: number, acc: 0 | 1, rtMs: number): number {",
+      ),
+    espera: "no depende del reloj",
+  },
+  {
+    // La tabla publicada dejando de coincidir con la fórmula. Una tabla que
+    // miente sobre el umbral es una caja sorpresa con otro nombre.
+    auditor: "motor-xp",
+    que: "la tabla publicada de rangos deja de salir de la fórmula",
+    archivo: "packages/motor/src/xp.ts",
+    parche: (t) =>
+      t.replace(
+        "      xpParaEntrar,\n",
+        "      xpParaEntrar: xpParaEntrar + 1,\n",
+      ),
+    espera: "tabla publicada",
+  },
+  {
+    // Azar en el otorgamiento de XP. mc-17 (implicación 3) y mc-43 (hallazgo
+    // 5): el refuerzo de razón variable no necesita dinero para dañar a un niño.
+    auditor: "motor-xp",
+    que: "la recompensa de XP varía entre llamadas",
+    archivo: "packages/motor/src/xp.ts",
+    parche: (t) =>
+      t.replace(
+        "export function xpDeTipo(tipo: string): number {\n  const v = XP_POR_TIPO[tipo];",
+        "export function xpDeTipo(tipo: string): number {\n  const v = XP_POR_TIPO[tipo] + Math.floor(Math.random() * 5);",
+      ),
+    espera: "azar",
+  },
+  {
+    // El copy exacto que mc-17 §83 manda sustituir, en un solo locale.
+    auditor: "racha-lexico",
+    que: "«no pierdas tu racha» en es-MX y solo ahí",
+    archivo: "apps/web/src/i18n/racha/es-MX.json",
+    parche: (t) => t.replace('"Hoy ya cuenta"', '"No pierdas tu racha: hoy todavía cuenta"'),
+    espera: "perdida",
+  },
+  {
+    // La otra categoría nombrada por la FTC, en otro locale, para que el caso
+    // demuestre que las siete listas están vivas y no solo la española.
+    auditor: "racha-lexico",
+    que: "una cuenta regresiva en el texto de de-DE",
+    archivo: "apps/web/src/i18n/racha/de-DE.json",
+    parche: (t) => t.replace('"Heute zählt"', '"Nur noch 3 Stunden, dann läuft ab"'),
+    espera: "urgencia",
+  },
+
   // ─── La voz (#135, D-078) ────────────────────────────────────────────────
   //
   // Cinco casos, y los cinco son degradaciones del archivo REAL. La razón está

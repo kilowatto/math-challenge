@@ -1,0 +1,44 @@
+{
+  "locale": "fr-FR",
+  "nota": "Français (fr-FR) — léxico prohibido para CUALQUIER texto de racha (pantalla o push).",
+  "porQue": "Lo que se prohíbe es una CONSTRUCCIÓN, no una palabra, y por eso la lista se autora por locale en vez de traducirse. Mismo criterio que audits/lib/lexico-verguenza/, que F6 ya estableció por la misma razón: prohibir un verbo suelto marca texto ya aprobado.",
+  "fuente": "mc-17 §83 (tabla de líneas rojas): «Streak framed as a personal-best counter with no penalty language; missing a day simply doesn't advance the counter, no shame copy». La FTC nombra por su nombre las dos categorías: confirm-shaming y urgencia fabricada.",
+  "limite": "Es un cable trampa, no un juez. «Solo te quedan unas horas de tu mejor marca» no contiene ninguna de estas construcciones y es urgencia pura. Ese hueco lo cubren la revisión humana por locale (D-022) y la flota adversarial, no una lista.",
+  "construcciones": [
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:perds|perdre|perdu[es]?|cass(?:e|er|[eé]e?)|brise[rs]?|s'?[eé]teint|disparu|fini[es]?)\\b[^.!?]{0,24}\\b(?:s[eé]rie|jours d'affil[eé]e)\\b",
+      "porque": "verbe de perte accolé à la série"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\b(?:s[eé]rie|jours d'affil[eé]e)\\b[^.!?]{0,24}\\b(?:perdue|cass[eé]e|bris[eé]e|termin[eé]e|[àa] z[eé]ro|fini)\\b",
+      "porque": "la même chose, série en premier"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\bretour [àa] (?:z[eé]ro|0)\\b",
+      "porque": "la remise à zéro racontée comme une chute"
+    },
+    {
+      "categoria": "perdida",
+      "patron": "\\bne (?:perds|casse|laisse) pas\\b",
+      "porque": "l'impératif négatif : confirm-shaming"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:d[eé]p[eê]che|vite|derni[eè]re chance|il ne (?:te )?reste|avant minuit|expire|se termine (?:ce soir|dans))\\b",
+      "porque": "urgence fabriquée — catégorie nommée par la FTC"
+    },
+    {
+      "categoria": "urgencia",
+      "patron": "\\b(?:plus que|il reste) \\w+ (?:heures?|minutes?)\\b",
+      "porque": "un compte à rebours sur l'écran d'un enfant"
+    },
+    {
+      "categoria": "comparacion",
+      "patron": "\\b(?:les autres enfants|tout le monde|la moyenne|enfants de ton [âa]ge|que toi|en retard sur)\\b",
+      "porque": "retour normatif (mc-17 §84)"
+    }
+  ]
+}

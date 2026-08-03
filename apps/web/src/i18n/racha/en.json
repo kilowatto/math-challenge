@@ -1,0 +1,8 @@
+{
+  "racha.titulo": "Days in a row",
+  "racha.dia_uno": "1 day",
+  "racha.dias_otros": "{n} days",
+  "racha.mejor": "Your best so far: {mejor}",
+  "racha.ninguno": "No days counted yet",
+  "racha.hoy_cuenta": "Today counts"
+}

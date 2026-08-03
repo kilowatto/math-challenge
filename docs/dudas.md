@@ -601,3 +601,63 @@ del personaje de marca no debería salir de un modelo genérico.
 **Esta duda no bloquea nada de lo que está construido hoy** — el bucle de juego
 funciona sin voz, con el enunciado escrito. Bloquea a kinder de verdad, que es
 donde el niño no lee.
+
+---
+
+## 22. F7 · Cinco decisiones que tomé sin que estuvieran escritas · 2026-08-02
+
+Salieron de construir los motores de racha, cosméticos y XP (#192, #194, #201,
+#203, #206, #219, #225, #254). **Ninguna bloquea nada de lo que está
+construido** — las cinco están implementadas y probadas. Lo que hace falta es
+que el dueño confirme o cambie, y que la respuesta entre a `docs/decisions.md`.
+
+### 22.1 El banco de escudos se REPONE al crecer la racha
+
+`ganarEscudos` es `min(2, floor(current_streak / 7))`, que es literalmente la
+fórmula de #203 y da los tres vectores que el issue escribe (13→1, 14→2, 21 con
+banco lleno→2). La consecuencia que el issue no menciona: un niño que gasta un
+escudo con racha 15 vuelve a tener 2 al llegar a 21. **Pasado el día 14,
+saltarse un día de cada siete no cuesta prácticamente nada.**
+
+La alternativa —contar los escudos ganados *dentro de la racha actual*— necesita
+una columna que `child_streak` no tiene. **Lo que asumí:** la fórmula literal
+del issue, documentada en el comentario de la función. Cambiarla es una columna
+nueva y tres líneas.
+
+### 22.2 Los escudos NO se gastan cuando no alcanzan a salvar la racha
+
+Tres días perdidos con 2 escudos: la racha vuelve a 1 y **los dos escudos se
+quedan**. El issue no dice qué pasa aquí. Gastarlos sería pérdida sobre pérdida
+por nada, y `mc-17` §5 pide lo contrario: que un día saltado sencillamente no
+avance el contador, sin castigo añadido. **Lo que asumí:** se consumen solo
+cuando de verdad salvan.
+
+### 22.3 Un día que llega FUERA DE ORDEN es un no-op
+
+Una cola offline (#209) puede entregar el martes después del miércoles.
+`registrarDia` ignora cualquier día anterior o igual al último cumplido: la
+racha nunca retrocede, y el precio es que ese día viejo no se recupera.
+Recuperarlo exige guardar el conjunto de días cumplidos, no solo el último —
+otra columna, y una de tamaño no acotado. **Lo que asumí:** no-op documentado.
+
+### 22.4 `EstadoRacha` usa los nombres de columna de D1, no camelCase
+
+`current_streak`, no `rachaActual`. Rompe el estilo del resto de
+`packages/motor/`. La razón: `racha-nunca-se-vende.mjs` vigila el grafo de lo
+que toca `shields_available`, y una capa de traducción entre los dos nombres es
+exactamente el punto donde el auditor deja de ver. **Lo que asumí:** los nombres
+de la tabla, con la razón escrita en la cabecera del módulo.
+
+### 22.5 Dos números de la tabla de XP no tienen fuente
+
+`XP_POR_TIPO` fija `mision_diaria: 20` y `mision_semanal: 100`. **No hay fuente
+para esos dos números** — están marcados `[criterio propio]` en el código, misma
+honestidad que D-016 usa para su tabla de minutos. Lo que sí está sostenido por
+`mc-16` (implicación de diseño 7) es la FORMA: un bono plano por sesión
+terminada. Y `RANGO_ESCALA = 25` y los 300 XP/día llevan su condición de
+revisión escrita: se recalibran con datos reales, no antes.
+
+**Además, la pregunta P4 de #192 sigue abierta:** el bono de finalización se
+otorga siempre que el reto se cierre, incluso sin un solo acierto — es lo que
+recomienda `mc-16`. La lectura más estricta de «ganado» en D-014 diría cero XP
+sin aciertos. Implementé la de `mc-16`.

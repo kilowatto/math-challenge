@@ -78,7 +78,10 @@ plataformas — **y el piso de contenido: 6 retos por nivel en N4-N12**
 
 ### 2.1 La tabla de niveles
 
-9 niveles × 6 retos = **54 retos**. Contenido por nivel, con los
+9 niveles × 6 retos = **54 retos**, autorados ya en el catálogo
+[`f11-contenido-retos.md`](f11-contenido-retos.md) (2 fijos con JSON
+completo + 4 plantillas con instancia verificada por nivel, en **20
+ramas**). Contenido por nivel, con los
 formatos que son auto-calificables de verdad (mc-12, mc-36) — la unidad
 de diseño es la serie (D-018), y cada plantilla lleva su bloque
 `variacion.{varia, constante, por_que}` completo (esquema de ítem §10):

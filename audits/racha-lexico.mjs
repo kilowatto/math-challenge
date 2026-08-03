@@ -77,6 +77,12 @@ const DIRS_TEXTOS = [
   // misión se estropea. Un «te quedan dos horas para tu misión» es urgencia
   // fabricada aunque no diga la palabra «racha».
   ["apps/web/src/i18n/misiones", "misiones"],
+  // F7 · Pausa familiar (#204, mc-19 rec. #8): la pausa es un derecho de la
+  // familia, no una confesión. El destinatario es el padre, pero la regla es
+  // la misma de siempre: ni pérdida, ni urgencia, ni comparación — un «no
+  // dejes que se rompa del todo» junto al botón de reparar es confirm-shaming
+  // con buenas palabras.
+  ["apps/web/src/i18n/pausa", "pausa familiar"],
 ];
 
 const CATEGORIAS = ["perdida", "urgencia", "comparacion"];

@@ -68,10 +68,31 @@ import MenuMisiones from "../../../components/misiones/MenuMisiones.astro";
 import ResumenMisiones from "../../../components/misiones/ResumenMisiones.astro";
 import { leerMisionesDeHoy, cierreDeHoy, BONO_DIA_COMPLETO } from "../../../lib/misiones-dia";
 
+// El enlace a la pausa familiar (#204). El título vive en su propio catálogo,
+// como el de la racha: el copy del subsistema no se reparte entre archivos.
+import enPausa from "../../../i18n/pausa/en.json";
+import esMXPausa from "../../../i18n/pausa/es-MX.json";
+import esESPausa from "../../../i18n/pausa/es-ES.json";
+import esFRPausa from "../../../i18n/pausa/fr-FR.json";
+import ptBRPausa from "../../../i18n/pausa/pt-BR.json";
+import ptPTPausa from "../../../i18n/pausa/pt-PT.json";
+import deDEPausa from "../../../i18n/pausa/de-DE.json";
+
+const TEXTOS_PAUSA: Record<string, typeof enPausa> = {
+  "en": enPausa,
+  "es-MX": esMXPausa,
+  "es-ES": esESPausa,
+  "fr-FR": esFRPausa,
+  "pt-BR": ptBRPausa,
+  "pt-PT": ptPTPausa,
+  "de-DE": deDEPausa,
+};
+
 const { locale: raw } = Astro.params;
 if (!isLocale(raw)) return Astro.redirect("/en/");
 const locale: Locale = raw;
 const m = t(locale);
+const pPausa = TEXTOS_PAUSA[locale] ?? enPausa;
 
 const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
   .runtime?.env;
@@ -244,6 +265,11 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
                 <li class="hijo">
                   <span class="alias">{h.alias}</span>
                   <span class="banda">{h.theme_band}</span>
+                  {/*
+                    La pausa familiar (#204) se declara por hijo, desde la casa.
+                    Una pantalla sin enlace es una pantalla que no existe.
+                  */}
+                  <a class="pausa" href={`/${locale}/app/pausa/?hijo=${h.id}`}>{pPausa["pausa.titulo"]}</a>
                 </li>
               ))}
             </ul>
@@ -323,7 +349,11 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
           Va aquí porque una página sin enlace es una página que no existe, y
           porque «Practicar» ya es donde vive todo lo del adulto que juega solo.
         */}
-        <a class="boton" href={`/${locale}/app/mapa/`}>{m.casaMapaCta}</a>
+        <a class="boton" href={`/${locale}/app/mapa/`}>{m.casaMapaCta}</a>{/*
+          Y su propia pausa (#204, banda SERIO/JR/PRO): el adulto aprendiz se la
+          autodeclara, mismo mecanismo y mismo tope, sin aprobación de nadie.
+        */}
+        <a class="boton" href={`/${locale}/app/pausa/`}>{pPausa["pausa.titulo"]}</a>
       </section>
     )}
 
@@ -398,6 +428,8 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
             padding: 0.6rem 0.8rem; border: 1px solid var(--color-border); border-radius: var(--radius); }
     .alias { font-family: var(--font-sistema); font-weight: var(--weight-subtitle); }
     .banda { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .pausa { display: inline-flex; align-items: center; min-block-size: 24px;
+             font-size: var(--text-xs); color: var(--color-text-muted); }
     /* 44px, la vara del ADULTO. Los 88 de kinder son para las superficies de niño. */
     .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
              padding-inline: 1rem; margin-inline-end: 0.5rem; border-radius: var(--radius);

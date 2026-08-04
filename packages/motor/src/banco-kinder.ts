@@ -25,6 +25,7 @@
  */
 
 import type { Item, Formato, Proposito, Variacion, OpcionDibujada } from "./item.ts";
+import { validarItem } from "./item.ts";
 
 /**
  * ─── Los glifos viajan con el ítem, y por qué eso no es un detalle ─────────
@@ -1243,9 +1244,29 @@ export const SIN_PLANTILLA: HabilidadKinder[] = [];
  * Determinista: los mismos parámetros dan los mismos ítems con los mismos ids,
  * corrida tras corrida. Sin eso, un ítem cambiaría de identidad entre despliegues
  * y el historial de intentos de un niño apuntaría a nada.
+ *
+ * VALIDA cada ítem antes de devolverlo (issue #366). `validarItem` existía,
+ * estaba bien escrita y su comentario prometía que ningún ítem mal formado se
+ * sirve — pero su único llamador era su propia prueba, con ítems sintéticos:
+ * la garantía no se ejecutaba nunca sobre el banco real. Esta función es la
+ * puerta por la que todo ítem sale al mundo (la siembra de `item_bank` y el
+ * mapa en memoria de `apps/ingest`), así que la validación vive AQUÍ y no en
+ * cada consumidor: un ítem mal formado revienta la construcción del banco
+ * entero, en el build y en el arranque de ingest, nunca en la pantalla de un
+ * niño.
  */
 export function generarBanco(): Item[] {
-  return PLANTILLAS.flatMap((p) =>
+  const banco = PLANTILLAS.flatMap((p) =>
     p.parametros().map(({ params, variacion }) => p.generar(params, variacion)),
   );
+  const malos = banco.flatMap((item) =>
+    validarItem(item).map((problema) => `${item.id}: ${problema}`),
+  );
+  if (malos.length > 0) {
+    throw new Error(
+      `generarBanco(): ${malos.length} ítem(s) mal formados — el banco NO se construye:\n  · ` +
+        malos.join("\n  · "),
+    );
+  }
+  return banco;
 }

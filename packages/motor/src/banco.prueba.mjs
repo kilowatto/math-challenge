@@ -22,6 +22,33 @@ caso("TODOS los ítems generados son válidos", () => {
   if (malos.length) throw new Error(`${malos.length} inválidos; el primero (${malos[0].i.id}): ${malos[0].p.join(" | ")}`);
 });
 
+caso("un ítem mal formado REVIENTA la construcción del banco (#366)", () => {
+  // El control negativo de la garantía: antes de #366, `validarItem` solo la
+  // corría esta prueba sobre el banco ya construido — `generarBanco()` no
+  // validaba nada y un generador degradado pasaba de largo en producción.
+  // Ahora la validación vive en la puerta, y este caso lo demuestra metiendo
+  // una plantilla corrupta de verdad (un ítem sin errores nombrados) y
+  // exigiendo que el banco entero NO se construya.
+  const corrupta = {
+    parametros: () => [{ params: {}, variacion: null }],
+    generar: () => ({ ...banco[0], id: "prueba-corrupta-366", errores: [] }),
+  };
+  PLANTILLAS.push(corrupta);
+  try {
+    let revento = false;
+    try {
+      generarBanco();
+    } catch (e) {
+      revento = e.message.includes("prueba-corrupta-366");
+    }
+    if (!revento) {
+      throw new Error("generarBanco() construyó el banco con un ítem mal formado dentro");
+    }
+  } finally {
+    PLANTILLAS.pop();
+  }
+});
+
 caso("ningún id se repite — un ítem duplicado rompe el historial de un niño", () => {
   const ids = new Set(banco.map((i) => i.id));
   es(ids.size, banco.length);

@@ -43,6 +43,7 @@
  */
 
 import type { Item, Proposito, Variacion, ErrorNombrado } from "./item.ts";
+import { validarItem } from "./item.ts";
 
 /** Las cuatro habilidades de la primera tanda de PRIMARIA (plan de F5c). */
 export const HABILIDADES_PRIMARIA = {
@@ -626,9 +627,24 @@ export const PLANTILLAS_PRIMARIA: PlantillaPrimaria[] = [P01, P02, P03, P04];
  * mismos ítems con los mismos ids, corrida tras corrida. En producción el
  * banco se LEE de `item_bank` (D-072); esta función es la fuente de la siembra
  * y de los auditores, no del camino en vivo.
+ *
+ * VALIDA cada ítem antes de devolverlo, igual que `generarBanco()` (issue
+ * #366): si la siembra produce un ítem mal formado, revienta AQUÍ —en el
+ * script que siembra— y no como una fila rota en `item_bank` que un niño
+ * reciba semanas después.
  */
 export function generarBancoPrimaria(): Item[] {
-  return PLANTILLAS_PRIMARIA.flatMap((p) =>
+  const banco = PLANTILLAS_PRIMARIA.flatMap((p) =>
     p.parametros().map(({ params, variacion }) => p.generar(params, variacion)),
   );
+  const malos = banco.flatMap((item) =>
+    validarItem(item).map((problema) => `${item.id}: ${problema}`),
+  );
+  if (malos.length > 0) {
+    throw new Error(
+      `generarBancoPrimaria(): ${malos.length} ítem(s) mal formados — la siembra NO se construye:\n  · ` +
+        malos.join("\n  · "),
+    );
+  }
+  return banco;
 }

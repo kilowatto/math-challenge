@@ -9,9 +9,9 @@
  * D-019 y `mc-43` recomendación 8: «KINDER — a physical journey path with the
  * mascot walking forward, no numbers». Es la misma metáfora visual que D-019 ya
  * define para el mapa de progreso, reusada aquí en vez de inventar una segunda:
- * mismos círculos de `--tap-kinder`, mismo Larry (`Companero.astro`, D-080),
- * misma hoja (`styles/mapa.css`). Cero arte nuevo: el hueco marcado
- * `data-hueco-de-arte="larry"` es el de siempre, y la Sabana no habla — este
+ * mismos círculos de `--tap-kinder`, mismo Larry (`Companero.astro`, D-080 —
+ * la pieza `larry_caminando` del manifiesto `arte-larry.json`),
+ * misma hoja (`styles/mapa.css`). Y la Sabana no habla — este
  * componente no pinta ni una palabra ni una cifra, en ninguno de los siete
  * locales. El nombre accesible (`aria-label`) es para el lector de pantalla y
  * para el adulto que mira por encima del hombro, y reusa las claves i18n que el
@@ -103,7 +103,7 @@ const pasos: Paso[] =
         data-aqui={p.aqui ? "si" : "no"}
         aria-hidden={p.aqui ? undefined : "true"}
       >
-        {p.aqui && <Companero locale={locale} visible={true} />}
+        {p.aqui && <Companero locale={locale} visible={true} forma="caminando" />}
       </li>
     ))
   }

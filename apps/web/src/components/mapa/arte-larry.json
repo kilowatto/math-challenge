@@ -1,0 +1,26 @@
+{
+  "larry_caminando": {
+    "anclajes": {
+      "cabeza": {
+        "x": 0.7,
+        "y": 0.12
+      },
+      "cuello": {
+        "x": 0.62,
+        "y": 0.45
+      }
+    }
+  },
+  "larry_busto": {
+    "anclajes": {
+      "cabeza": {
+        "x": 0.48,
+        "y": 0.14
+      },
+      "cuello": {
+        "x": 0.42,
+        "y": 0.82
+      }
+    }
+  }
+}

@@ -38,6 +38,17 @@ const llave = () => process.env.RECRAFT_API_KEY;
 // muestrario de color en la esquina de la mitad de las piezas, y «Ignia» salía
 // escrito como marca de agua inventada. Las otras prohibiciones salen de la
 // misma primera corrida: sin personaje, sin texto, sin números, sin logotipos.
+//
+// Segunda lección, medida en la pasada de las 6 piezas que faltaban (K05, K06,
+// K08, K09, K13, K14): **las negaciones extra dentro del prompt de la pieza
+// jalaban exactamente lo que prohibían**. «No color swatches, no decorative
+// dots» produjo TRES muestrarios seguidos en el chaleco, y «no gems, no stars»
+// produjo estrellas y gemas en el cinturón. La salida fue la de las 15
+// originales: prompt corto y positivo («a small orange explorer vest with many
+// little square pockets and blue trim»), dejando TODAS las prohibiciones en
+// ESTILO. El conteo exacto tampoco se obedece —el chaleco aceptado tiene ocho
+// bolsillos, no diez—: la identidad de la pieza es la prenda, no la cuenta
+// (mismo nit declarado que la jardinera de K09 en el mapa).
 const ESTILO =
   "cute flat vector cartoon illustration for a children's math app, " +
   "drawn in warm orange (#F36B1C) with blue (#0B6AB0) accents, " +
@@ -61,6 +72,18 @@ const PIEZAS = [
   ["av_pin_rompecabezas", "a single round pin badge with two interlocking puzzle pieces, orange and blue"],
   ["av_estrella_suma", "a smiling orange five-pointed star pin badge"],
   ["av_cometa_viento", "a small orange diamond kite with a blue ribbon tail"],
+  // Las seis que quedaban SIN arte (#255, migración 0015: arte NULL porque F5
+  // no había cerrado la habilidad; las correcciones de F5 ya están en main).
+  // Mismas prohibiciones medidas en la primera corrida, y una más: la medalla
+  // y la bufanda nombran números en la HABILIDAD (cardinalidad, recta
+  // numérica) pero la pieza no puede llevar NI UN dígito — el collar de
+  // cuentas salió con números gibberish en la primera pasada por menos.
+  ["av_orejeras_par", "a pair of fluffy orange earmuffs joined by a soft blue headband, exactly two matching round ear covers"],
+  ["av_medalla_ultimo", "a single plain round golden medal on a short orange and blue ribbon, worn as an avatar accessory, smooth blank face, isolated on empty white space, nothing surrounding it, no confetti, no stars, no sparkles, no dots"],
+  ["av_bufanda_recta", "a cozy knitted orange scarf with a single blue dotted line running along its length, evenly spaced plain dots, no numbers, no numerals, the scarf alone filling the whole frame, no color swatches, no decorative dots, no scattered circles anywhere"],
+  ["av_chaleco_bolsillos", "a small orange explorer vest with many little square pockets and blue trim"],
+  ["av_cinturon_formas", "an orange belt with a blue buckle, decorated with four plain flat shape studs: a circle, a square, a triangle and a rectangle, like wooden toy blocks"],
+  ["av_collar_patron", "a necklace of plain round beads in a strict alternating orange and blue repeating pattern, smooth unmarked beads without any numbers or symbols"],
   // Los tres marcos iniciales: borde circular para la foto de perfil.
   ["marco_acacia", "a circular profile-picture frame border decorated with flat-top acacia tree silhouettes, savanna style, empty white circle in the middle"],
   ["marco_atardecer", "a circular profile-picture frame border with a warm savanna sunset gradient, orange and deep orange, empty white circle in the middle"],

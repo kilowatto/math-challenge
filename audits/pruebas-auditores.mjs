@@ -1122,8 +1122,16 @@ const CASOS = [
     auditor: "funcion-sin-llamar",
     que: "el motor de racha vuelve a quedarse sin ningún llamador",
     archivo: "apps/web/src/lib/progreso.ts",
+    // REAPUNTADO por segunda vez el 2026-08-03: #404 le dio a `ganarEscudos`
+    // un SEGUNDO llamador en el mismo archivo (`registrarDiaPorLimite`, que
+    // repite la misma línea de `registrarItem`), así que el parche con
+    // `replace` degradaba una llamada y la otra seguía viva — el caso corría
+    // en verde sin degradar nada, otra vez. Ahora degrada LAS DOS con
+    // `replaceAll`: la clase de bug vigilada (motor perfecto y sin llamador,
+    // #311) es la misma; lo que cambia es cuántas llamadas hay que quitar
+    // para dejarla en cero.
     parche: (t) =>
-      t.replace(
+      t.replaceAll(
         "    const despues = conDia === antes ? antes : ganarEscudos(conDia);",
         "    const despues = conDia;",
       ),

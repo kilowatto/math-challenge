@@ -546,6 +546,17 @@ for (const prueba of [
   // cero, y la pantalla leyendo el rollup.
   "apps/web/src/lib/missions-do.prueba.mjs",
 
+  // F8 #404, la frontera de D-091. El motivo del corte
+  // (`LIMITE_DE_PANTALLA_CORTO_LA_SESION`) llegando a `registrarDia` a través
+  // del cable real, contra SQLite de verdad (`node:sqlite`). Lo que defiende
+  // tampoco rompe nada visible: es la omisión silenciosa que
+  // `limite-no-rompe-el-dia` declara como su punto ciego — nadie reinicia la
+  // racha, sencillamente nadie la registra, y el día del niño no ocurrió. 6
+  // casos: el día sin contar que se registra, los dos motivos de cierre
+  // produciendo el MISMO estado, la idempotencia cuando D-091 ya contó el día
+  // en el ítem, y el corte que no suma XP.
+  "apps/web/src/lib/limite-corte-racha.prueba.mjs",
+
 
 
 

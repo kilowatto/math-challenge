@@ -79,6 +79,7 @@ import {
 import { limiteAlServir, limiteAlResponder } from "../../lib/limite-dia";
 import { registrarAvanceDeHoy } from "../../lib/misiones-dia";
 import { bancoPrimariaD1 } from "../../lib/banco-primaria";
+import { bancoAdultoD1 } from "../../lib/banco-adulto";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
 
 /*
@@ -136,7 +137,7 @@ interface Ingest {
     acc: 0 | 1; causa: string | null; razonAlterna: string | null;
     inesperada: boolean; nivel: number; habilidad: string;
     /** La banda del ítem calificado. La ingesta no la manda: es KINDER. */
-    banda?: "KINDER" | "PRIMARIA";
+    banda?: "KINDER" | "PRIMARIA" | "SERIO";
   }>;
   recordAttempt(input: Record<string, unknown>): Promise<{ puntos: number }>;
   /**
@@ -244,17 +245,20 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   if (!quien) return json({ error: "sin_sesion" }, 401);
 
   /**
-   * ─── El origen de los ítems (F5c #356, D-072) ────────────────────────────
+   * ─── El origen de los ítems (F5c #356, D-072; F5b #159, D-034) ───────────
    *
    * Un NIÑO juega KINDER, servido por la ingesta desde `banco-kinder.ts`, como
-   * hasta hoy — ese comportamiento no cambia. Un ADULTO que practica juega
-   * PRIMARIA desde `item_bank` en D1, que es donde D-072 manda que viva ese
-   * banco. Sin `DB` —o con la tabla todavía vacía, ver `servirSiguiente`— el
-   * adulto cae al banco de kinder: nunca se le niega el juego a nadie por
-   * infraestructura.
+   * hasta hoy — ese comportamiento no cambia. Un ADULTO que practica juega la
+   * franja SERIO (N8–N10) desde `item_bank` en D1, que es donde D-072 manda
+   * que viva ese banco y la razón de ser de F5b. El motor es el MISMO para
+   * todos (D-034: sin ubicación adaptativa propia — la franja no trae uno
+   * «para adultos»). Si la siembra SERIO de este ambiente no corre todavía,
+   * `bancoAdultoD1` cae a PRIMARIA; sin `DB` —o con las dos siembras vacías,
+   * ver `servirSiguiente`— el adulto cae al banco de kinder: nunca se le
+   * niega el juego a nadie por infraestructura.
    */
   const origen: OrigenDeItems =
-    quien.esAdulto && env.DB ? bancoPrimariaD1(env.DB, RETO) : env.INGEST;
+    quien.esAdulto && env.DB ? bancoAdultoD1(env.DB, RETO) : env.INGEST;
 
   const accion = url.searchParams.get("accion");
   let cuerpo: Record<string, unknown>;
@@ -472,11 +476,12 @@ async function servirSiguiente(
   let catalogo = catalogoCrudo;
 
   /**
-   * El respaldo del adulto: si el banco de primaria de ESTE ambiente está
-   * vacío — la migración 0016 está aplicada pero la siembra no corre todavía
-   * — el adulto juega kinder como venía haciendo, en vez de encontrarse un
-   * `banco_vacio`. Un ítem por debajo de su nivel es infinitamente mejor que
-   * ningún ítem (línea roja #4 en espíritu).
+   * El respaldo del adulto: si los bancos de D1 de ESTE ambiente están vacíos
+   * — la migración 0016 está aplicada pero ni la siembra SERIO ni la de
+   * primaria corrieron todavía (`bancoAdultoD1` ya cayó a primaria y ésta
+   * también devolvió cero) — el adulto juega kinder como venía haciendo, en
+   * vez de encontrarse un `banco_vacio`. Un ítem por debajo de su nivel es
+   * infinitamente mejor que ningún ítem (línea roja #4 en espíritu).
    */
   if (catalogo.length === 0 && origen !== env.INGEST) {
     origen = env.INGEST;

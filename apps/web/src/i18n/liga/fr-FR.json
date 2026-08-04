@@ -19,5 +19,10 @@
   "duelo.mismo_set": "Vous recevez les mêmes questions tous les deux",
   "duelo.empate": "Égalité",
   "duelo.resultado": "Toi {mios} — {alias} {suyos}",
-  "duelo.terminado": "Vous avez fini tous les deux"
+  "duelo.terminado": "Vous avez fini tous les deux",
+  "duelo.retar": "Défier",
+  "duelo.te_toca": "À toi de jouer ta partie",
+  "duelo.esperando": "Tu as joué ta partie",
+  "duelo.jugar": "Jouer",
+  "duelo.con_quien": "Choisis qui défier dans ta ligue"
 }

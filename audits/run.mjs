@@ -350,6 +350,18 @@ const ACTIVE = [
   // de que se mantiene — sus controles negativos son DEGRADACIONES de
   // `packages/tutor/src/en-vivo.ts`, del sobre y del i18n REALES (D-070).
   ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
+  // ─── El de #451, y por qué nace VERDE ────────────────────────────────────
+  //
+  // El dueño, jugando un reto, hizo swipe de izquierda a derecha y el
+  // navegador lo sacó de la sesión — la misma lección que #341: lo encontró
+  // una persona con el pulgar, no un auditor. La corrección (CSS de
+  // overscroll + guardia de borde para el bug 240183 de WebKit) se construyó
+  // CON este auditor delante, así que lo que vigila es que no se erosione y,
+  // sobre todo, que la quinta pantalla de reto no nazca sin la protección:
+  // una página nueva con «jugar-body» que no monte <Pantalla> bloquea. Sus
+  // controles negativos son DEGRADACIONES del reto.css y de la Pantalla.astro
+  // REALES (D-070), nunca archivos inventados.
+  ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

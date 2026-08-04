@@ -1963,6 +1963,27 @@ const CASOS = [
       ),
     espera: "reloj",
   },
+  {
+    // #451. La protección de gestos, sobre el reto.css REAL: sin la
+    // declaración de overscroll-behavior-x el swipe-back vuelve a sacar al
+    // jugador del reto en Chrome/Firefox/Edge, y nada visible se rompe — la
+    // página se ve perfecta y el gesto sigue siendo del navegador.
+    auditor: "gestos-reto",
+    que: "reto.css sin overscroll-behavior-x: none",
+    archivo: "apps/web/src/styles/reto.css",
+    parche: (t) => t.replace("  overscroll-behavior-x: none;\n", ""),
+    espera: "overscroll-behavior-x",
+  },
+  {
+    // #451. La otra mitad, sobre la Pantalla.astro REAL: sin el listener de
+    // touchstart no hay guardia de borde, y en Safari de iOS el CSS no basta
+    // (WebKit bug 240183) — el bug entero vuelve solo en ese navegador.
+    auditor: "gestos-reto",
+    que: "Pantalla.astro sin la guardia de borde para iOS",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) => t.replace('"touchstart"', '"tocado"'),
+    espera: "touchstart",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

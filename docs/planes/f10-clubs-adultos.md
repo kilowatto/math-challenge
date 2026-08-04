@@ -113,10 +113,10 @@ viceversa» `[leído: docs/planes/f7-juego.md §7.0]`), ni la cohorte de
 liga, ni el opt-in de duelo (aquí el club entero es opt-in por
 definición).
 
-## 3. Modelo de datos — migración `0016_clubs_adultos.sql`
+## 3. Modelo de datos — migración `0019_clubs_adultos.sql`
 
-**Numeración: `0016`.** Reparto confirmado por el dueño (dudas §24.5):
-`0013` = F8 panel, `0014` = F8 reportes, `0015` = F9 grupos, `0016` =
+**Numeración: `0019`.** Reparto confirmado por el dueño (dudas §24.5):
+`0013` = F8 panel, `0014` = F8 reportes, `0015` = F9 grupos, `0019` =
 F10 (ésta). Solo AGREGA.
 
 ```sql
@@ -426,7 +426,7 @@ listas autoradas por idioma — mc-43 implicación 1).
 
 | Objeto | Estado | Nota |
 |---|---|---|
-| `math-challenge-db` · migración `0016_clubs_adultos.sql` | Nueva | bitácora en el PR |
+| `math-challenge-db` · migración `0019_clubs_adultos.sql` | Nueva | bitácora en el PR |
 | `math-challenge-config-kv` | Sin objeto nuevo | `f10_prendas_enabled` |
 | **Sin DO nuevo** | Decisión documentada | El reto del club es asíncrono con ventana de 72 h: la tabla se lee de D1; no hay nada que difundir en vivo. Si el paso 2 quisiera «la prenda en vivo», se revisa entonces — no antes |
 | Workers AI | Reuso | la llamada de moderación (D-035), tope del DO de gasto igual que el tutor |
@@ -497,7 +497,7 @@ COMMIT;
 
 1. **[PARAGUAS]** F10 · Clubs de adultos
 2. F10 · Esquema: `adult_club`, membresía polimórfica, `club_challenge`,
-   resultados (migración `0016`)
+   resultados (migración `0019`)
 3. F10 · Crear/unirse al club — código, tope 20, tasa compartida con F9
 4. F10 · Membresía de adolescente con aprobación del padre (D-120)
 5. F10 · Retos con ventana de 72 h — set congelado, tabla del club,
@@ -513,7 +513,7 @@ COMMIT;
 ## 14. Ejecución en paralelo (swarm) — territorios, y quién no toca qué
 
 Mismas reglas que F9 (AGENTS.md §1): territorio por agente, registros
-compartidos solo al final, migración `0016` ya repartida — ningún
+compartidos solo al final, migración `0019` ya repartida — ningún
 frente toca otro número. Y F10 puede correr en paralelo con F9: rutas
 distintas (`/app/clubes/` vs `/app/grupos/`), y su único punto
 compartido —la tasa de creación de D-114— lo implementa cada fase
@@ -524,7 +524,7 @@ sobre su tabla y quien aterrice segundo añade la del otro al conteo
 
 | Frente | Issues | Archivos SUYOS | NO toca |
 |---|---|---|---|
-| **A · Esquema** | #2 de §13 | `migrations/0016_clubs_adultos.sql` (nuevo) | rutas, i18n, endpoints |
+| **A · Esquema** | #2 de §13 | `migrations/0019_clubs_adultos.sql` (nuevo) | rutas, i18n, endpoints |
 | **B · Club y miembros** | #3, #4 de §13 | `pages/[locale]/app/clubes/*.astro`, `pages/api/clubes/*.ts`, `components/clubes/*` | la migración (espera a A), el endpoint de moderación (C), i18n (E) |
 | **C · Retos y moderación** | #5, #6, #8 de §13 | `pages/api/clubes/retos/*.ts`, `pages/api/larry/moderar.ts`, el runbook de apelaciones en el PR | las pantallas de B, las prendas UI (D) |
 | **D · Prendas (paso 2)** | #7 de §13 | `components/clubes/prenda/*`, la bandera `CONFIG_KV.f10_prendas_enabled` | todo lo del paso 1; su código nace tras la bandera y muere sin ella |
@@ -533,7 +533,7 @@ sobre su tabla y quien aterrice segundo añade la del otro al conteo
 **A va primero, solo.** B+C en paralelo después; D puede construirse en
 paralelo con todo (su código no se enciende sin la bandera); E en
 paralelo con todos, con controles negativos sobre archivos reales ya
-aterrizados (la `0016` cuando exista, el endpoint de C cuando exista).
+aterrizados (la `0019` cuando exista, el endpoint de C cuando exista).
 
 ### Los archivos que NO se paralelizan en esta fase
 

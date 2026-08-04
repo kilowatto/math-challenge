@@ -350,6 +350,20 @@ const ACTIVE = [
   // de que se mantiene — sus controles negativos son DEGRADACIONES de
   // `packages/tutor/src/en-vivo.ts`, del sobre y del i18n REALES (D-070).
   ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
+
+
+  // ─── Los dos de F5c (#358, #359), y por qué nacen VERDES ──────────────────
+  //
+  // El banco de primaria se construyó CON ellos delante, así que lo que
+  // vigilan es que no se erosione: una opción servida como su identificador
+  // (#349 generalizado al banco de D1), una clave que falta en el séptimo
+  // locale, el cable del apagado por nivel de Kalyuga desconectado en una de
+  // sus tres piezas, o un «niños» en el copy de una banda que mc-21 mide como
+  // rechazo. Sus controles negativos son DEGRADACIONES de archivos REALES
+  // (D-070): los catálogos, el guion de siembra y la plantilla.
+  ["banco-primaria-i18n",    "primaria no sirve nada que no esté en i18n",      "#358, #349, #354, D-022, D-070"],
+  ["primaria-sin-ninos",     "ni «niños» ni «Kids» en el texto de PRIMARIA",     "#359, mc-21, D-022"],
+
   // ─── El tablero global (F7 #247) ─────────────────────────────────────────
   //
   // La mitad de la ESCRITURA del opt-in y de su cumplimiento: nadie borra
@@ -376,6 +390,7 @@ const ACTIVE = [
   // controles negativos son DEGRADACIONES del reto.css y de la Pantalla.astro
   // REALES (D-070), nunca archivos inventados.
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
+
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -561,6 +576,17 @@ for (const prueba of [
   // pausas del año por pulsar dos veces el mismo botón. Incluye el rechazo al
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
+
+  // F5c #352–#356. El banco de PRIMARIA: las cuatro plantillas, el presentador
+  // y el cable D1 completo (migración 0016 + siembra + lectura, contra SQLite
+  // de verdad). Lo que defienden tampoco rompe nada visible: un distractor que
+  // no corresponde a ningún error real sigue siendo un número tocable, y un
+  // separador de millares equivocado se lee como OTRO número solo en el locale
+  // que no habla quien escribió el código (mc-34). Lo primero se descubre
+  // cuando Larry le explica a alguien un error que no cometió.
+  "packages/motor/src/banco-primaria.prueba.mjs",
+  "packages/motor/src/presentar.prueba.mjs",
+  "apps/web/src/lib/banco-primaria.prueba.mjs",
 
 
 

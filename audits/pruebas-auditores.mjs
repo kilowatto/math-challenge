@@ -2187,6 +2187,45 @@ const CASOS = [
 
 
   },
+  // ─── F7 #208 · El roster del dueño del grupo, degradado sobre el archivo REAL ─
+  //
+  // Los tres casos DEGRADAN `grupo-roster.ts` (D-070): la columna de presencia
+  // que viaja en silencio, el filtro de revocación quitado, y la racha
+  // ordenando. Un archivo inventado solo probaría que el auditor sabe leer un
+  // archivo inventado.
+  {
+    // La columna de más. `max_streak` está en la misma fila de la base, así que
+    // añadirla al SELECT es una línea — y la mejor marca personal del niño
+    // viaja a 35 familias sin que nada falle (#208 la prohíbe por nombre).
+    auditor: "racha-salones-minima",
+    que: "el SELECT del roster devuelve también max_streak",
+    archivo: "apps/web/src/lib/grupo-roster.ts",
+    parche: (t) =>
+      t.replace(
+        '"COALESCE(r.current_streak, 0) AS current_streak " +',
+        '"COALESCE(r.current_streak, 0) AS current_streak, r.max_streak AS max_streak " +',
+      ),
+    espera: "max_streak",
+  },
+  {
+    // El filtro de status quitado. Es la mitad de un WHERE, y el síntoma es
+    // invisible: un niño REMOVIDO sigue exponiendo su racha al grupo — la
+    // revocación que #208 exige inmediata deja de cortar.
+    auditor: "racha-salones-minima",
+    que: "la consulta del roster deja de filtrar status = 'approved'",
+    archivo: "apps/web/src/lib/grupo-roster.ts",
+    parche: (t) => t.replace(" AND m.status IN ('approved')", ""),
+    espera: "approved",
+  },
+  {
+    // La racha ordenando. Un ORDER BY por racha convierte la lista informativa
+    // en un ranking de constancia — D-025 lo prohíbe y #208 lo repite.
+    auditor: "racha-salones-minima",
+    que: "el roster ordenado por racha en vez de por alias",
+    archivo: "apps/web/src/lib/grupo-roster.ts",
+    parche: (t) => t.replace("ORDER BY p.alias ASC, p.id ASC", "ORDER BY r.current_streak DESC"),
+    espera: "ORDER BY",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

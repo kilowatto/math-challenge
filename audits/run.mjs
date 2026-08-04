@@ -408,6 +408,18 @@ const ACTIVE = [
   // REALES (D-070), nunca archivos inventados.
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
 
+  // ─── El de #208 (F7), y por qué nace VERDE ───────────────────────────────
+  //
+  // El roster del dueño de un salón o club de papás es la consulta que más
+  // datos de menores pone delante de un adulto sin verificar, y se construyó
+  // CON este auditor delante: de `child_streak` sale EXACTAMENTE
+  // `current_streak` (ni `max_streak`, ni escudos, ni pausas — la misma regla
+  // que D-106 aplicó a la liga), la revocación de la membresía corta en el
+  // WHERE, y la racha no ordena nada (D-025). Sus controles negativos son
+  // DEGRADACIONES del `grupo-roster.ts` REAL (D-070): la columna de más, el
+  // filtro de status quitado y el ORDER BY por racha.
+  ["racha-salones-minima",    "el grupo ve alias, puntos y current_streak — y nada más", "#208, D-025, D-044, D-106, mc-46 §6"],
+
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -671,10 +683,18 @@ for (const prueba of [
   // en el ítem, y el corte que no suma XP.
   "apps/web/src/lib/limite-corte-racha.prueba.mjs",
 
-
-
-
-
+  // F7 #208. El ROSTER de solo lectura del dueño de un salón o club de papás,
+  // contra SQLite de verdad (`node:sqlite`) con las migraciones REALES. Lo que
+  // defiende tampoco rompe nada visible: una columna de más en el SELECT no da
+  // error, da la mejor marca personal —o la pausa— de un niño viajando a 35
+  // familias; y un filtro de `status` olvidado no da error, da un niño
+  // removido que sigue exponiendo su racha. 12 casos: la lista cerrada EXACTA
+  // escrita a mano (D-070), `max_streak`/escudos/pausas sembrados en la base
+  // y ausentes de la respuesta, el orden por alias contra una siembra donde
+  // racha y puntos ordenarían al revés (D-025), la revocación cortando en la
+  // primera lectura, el null sin oráculo para el grupo ajeno, y el club de
+  // papás con la misma lista cerrada que el salón.
+  "apps/web/src/lib/grupo-roster.prueba.mjs",
 
 ]) {
   const r = spawnSync(

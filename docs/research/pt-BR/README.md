@@ -60,6 +60,10 @@
 | 23 | [Adulto / universidad / experto](2026-07-31-mc-23-ui-adult-expert.md) | ⭐ KaTeX vs MathJax vs MathLive com licenças e acessibilidade; entrada de matemática por dispositivo |
 | 38 | [Accesibilidad y diferencias de aprendizaje](2026-07-31-mc-38-accessibility-learning-differences.md) | ⭐ Como um jogo cronometrado pode cumprir WCAG 2.2 (a exceção textual); modo discalcúlia |
 | 34 | [i18n de la notación matemática](2026-07-31-mc-34-i18n-math-notation.md) | ⭐⭐ México usa **ponto** decimal e o resto do mundo hispano **vírgula**; a divisão longa é desenhada de 4 formas distintas |
+| 49 | [Padrões de navegação PWA](2026-08-01-mc-49-navigation-patterns-pwa-mobile-desktop.md) | Uma única navegação primária por vez; a barra inferior só instalada |
+| 50 | [Navegação da área privada](2026-08-02-mc-50-private-app-navigation.md) | A área autenticada nunca herda o layout público; abas derivadas da conta real |
+| 51 | [Classificação dos ramos e seus pré-requisitos](2026-08-03-mc-51-clasificacion-ramas-matematicas.md) | ⭐⭐ MSC 2020 (63 áreas), arXiv e ICM; a espinha escolar universal e as cadeias universitárias verificadas em 10 instituições; o mapa de 26 ramos com portas |
+| 52 | [Lógica para crianças: booleana, tabelas-verdade e enigmas](2026-08-03-mc-52-logica-para-ninos.md) | ⭐ Bebras e suas faixas por idade verificadas; Smullyan como ponte à demonstração (MAA); a escada LOGI N4-N12: atributos → enigmas → tabelas → predicados |
 
 ## Plataforma, segurança e negócios
 

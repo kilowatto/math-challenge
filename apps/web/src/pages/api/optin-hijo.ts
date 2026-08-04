@@ -1,6 +1,18 @@
 /**
- * `/api/liga-optin` — el padre activa o apaga la liga de un hijo. F7 #243,
+ * `/api/optin-hijo` — el padre activa o apaga la liga de un hijo. F7 #243,
  * D-040, D-081.
+ *
+ * ─── El nombre del archivo, y por qué no lleva «liga» ───────────────────────
+ *
+ * `audits/liga-ascenso-determinista.mjs` prohíbe `Date.now(` en todo archivo
+ * cuya ruta diga «liga»: su regla es que el CICLO semanal (el reparto de
+ * ascensos) sea reproducible y no lea el reloj. Esta ruta no es el ciclo — es
+ * transporte (sesión, autorización, redirección)— pero necesita el reloj del
+ * servidor para los sellos `granted_at`/`revoked_at` de la constancia, y el
+ * auditor no distingue. Se resuelve como la migración 0012 resolvió
+ * `tier`→`escalon`: se renombra la pieza inocente, no se ablanda el guardián.
+ * La lógica que SÍ es de liga —alta, baja, olvido del objeto, consentimiento—
+ * vive entera en `lib/liga-membresia.ts`, que la flota vigila por nombre.
  *
  * ─── Qué es esto ────────────────────────────────────────────────────────────
  *

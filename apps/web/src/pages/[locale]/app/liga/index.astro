@@ -34,26 +34,25 @@
  */
 export const prerender = false;
 
-import Privada from "../../../layouts/Privada.astro";
-import Tabla from "../../../components/liga/Tabla.astro";
-import { t, isLocale, type Locale } from "../../../i18n";
+import Privada from "../../../../layouts/Privada.astro";
+import Tabla from "../../../../components/liga/Tabla.astro";
+import { isLocale, type Locale } from "../../../../i18n";
 import {
   COOKIE_ADULTO,
   COOKIE_NINO,
   leerCookies,
   leerSesionAdulto,
   leerSesionNino,
-} from "../../../lib/sesiones";
-import { pestanasPrivadas } from "../../../lib/pestanas-privadas";
-import { cargarTablaDe } from "../../../lib/liga-membresia";
-import { rutaLigaJugador } from "../../../lib/rutas-app";
-import { ruta } from "../../../i18n/rutas";
-import { TEXTOS_LIGA } from "../../../components/liga/textos";
+} from "../../../../lib/sesiones";
+import { pestanasPrivadas } from "../../../../lib/pestanas-privadas";
+import { cargarTablaDe } from "../../../../lib/liga-membresia";
+import { rutaLigaJugador } from "../../../../lib/rutas-app";
+import { ruta } from "../../../../i18n/rutas";
+import { TEXTOS_LIGA } from "../../../../components/liga/textos";
 
 const { locale: raw } = Astro.params;
 if (!isLocale(raw)) return Astro.redirect("/en/");
 const locale: Locale = raw;
-const m = t(locale);
 const tl = TEXTOS_LIGA[locale] ?? TEXTOS_LIGA["en"];
 
 const env = (

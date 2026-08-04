@@ -488,8 +488,8 @@ async function recibirRespuesta(
   // bajara por ser el ítem que invita a reintentar, que es lo contrario de lo
   // que ese número mide.
   //
-  // Los `puntos` que devuelve —ya calculados por `calificar()` en la ingesta
-  // (F3, D-010)— se capturan para la liga (F7): son los puntos del tablero, y
+  // Los `puntos` que devuelve —ya calculados en la ingesta con la fórmula de
+  // D-010 (F3)— se capturan para la liga (F7): son los puntos del tablero, y
   // hasta hoy se descartaban.
   let puntosCalificados: number | null = null;
   try {
@@ -581,8 +581,8 @@ async function recibirRespuesta(
     });
 
     /*
-     * La liga (F7 · #237, #242). Los puntos son los que ya calculó
-     * `calificar()` en la ingesta —capturados arriba de la respuesta de
+     * La liga (F7 · #237, #242). Los puntos son los que la ingesta ya calculó
+     * con la fórmula de D-010 (F3) —capturados arriba de la respuesta de
      * telemetría, que era quien los recibía y los descartaba—; el día local y
      * si es día nuevo salen del registro de arriba (D-091), y la racha viaja
      * ya calculada, de solo lectura (D-106). **Falla abierto**: si la liga no

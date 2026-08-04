@@ -1,0 +1,137 @@
+---
+/**
+ * `/{locale}/app/grupos/` — la entrada del área de grupos (F9 · #383, #387;
+ * D-093/D-094 del reparto: área propia del adulto, no una sexta pestaña).
+ *
+ * Lista los grupos que ESTE adulto dirige y ofrece las tres puertas del
+ * subsistema: crear (con el gate `OwnerProof` delante), unirse con un código
+ * (el flujo del padre, #382) y registrar una escuela (#381).
+ *
+ * ─── La bandera de mercado (#387) ────────────────────────────────────────────
+ *
+ * Todo el área se comprueba contra `CONFIG_KV.f9_enabled_<locale>` ANTES de
+ * mostrar nada. Apagada, la página no da un error roto: muestra el patrón de
+ * «próximamente» que D-065 ya usa para lo decidido y no activado — el copy
+ * existe en los siete locales aunque la superficie solo se encienda en cuatro.
+ *
+ * ─── Autorización ────────────────────────────────────────────────────────────
+ *
+ * Superficie de ADULTO (línea roja #2 en su forma de grupo: el dueño ve SUS
+ * grupos). SSR con sesión `mc_s`, como el resto del área privada. Sin base,
+ * la lista se muestra vacía en vez de dar un 500 — pero las acciones que
+ * escriben fallan cerradas en su propio endpoint.
+ */
+export const prerender = false;
+
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { ruta } from "../../../../i18n/rutas";
+import { f9Habilitado } from "../../../../lib/grupo-flag";
+import { gruposDelDuenio } from "../../../../lib/grupo-duenio";
+import { TEXTOS_GRUPOS, rellenarGrupo } from "../../../../components/grupos/textos";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const g = TEXTOS_GRUPOS[locale];
+
+const env = (
+  Astro.locals as {
+    runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace; CONFIG_KV?: KVNamespace } };
+  }
+).runtime?.env;
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+// La bandera de mercado, antes de cualquier consulta de grupos (#387).
+const habilitado = await f9Habilitado(env?.CONFIG_KV, locale);
+
+const grupos = habilitado && env?.DB ? await gruposDelDuenio(env.DB, sesion.userId) : [];
+
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={g["grupo.indice.titulo"]} description={g["grupo.indice.lead"]}>
+  <article class="grupos">
+    {
+      !habilitado ? (
+        // El mercado apagado no ve un error: ve el «próximamente» de D-065,
+        // con el copy autorado de su propio locale (#387).
+        <section class="bloque proximamente">
+          <h1>{g["grupo.proximamente.titulo"]}</h1>
+          <p class="muted">{g["grupo.proximamente.cuerpo"]}</p>
+        </section>
+      ) : (
+        <Fragment>
+          <h1>{g["grupo.indice.titulo"]}</h1>
+          <p class="lead">{g["grupo.indice.lead"]}</p>
+
+          <section class="bloque">
+            {grupos.length === 0 ? (
+              <p class="muted">{g["grupo.indice.vacio"]}</p>
+            ) : (
+              <ul class="lista">
+                {grupos.map((gr) => (
+                  <li class="fila">
+                    <span class="tipo">
+                      {gr.origen_tipo === "salon"
+                        ? gr.escuela
+                          ? rellenarGrupo(g["grupo.tipo.salon"], { escuela: gr.escuela })
+                          : g["grupo.tipo.salonSinEscuela"]
+                        : g["grupo.tipo.club"]}
+                    </span>
+                    <a class="boton" href={`/${locale}/app/grupos/${gr.id}/`}>
+                      {g["grupo.grupo.roster"]}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section class="bloque acciones">
+            <a class="boton primario" href={`/${locale}/app/grupos/nuevo/`}>
+              {g["grupo.indice.crear"]}
+            </a>
+            <a class="boton" href={`/${locale}/app/grupos/unirse/`}>
+              {g["grupo.indice.unirse"]}
+            </a>
+            <a class="boton" href={`/${locale}/app/grupos/escuela/`}>
+              {g["grupo.indice.escuela"]}
+            </a>
+          </section>
+        </Fragment>
+      )
+    }
+  </article>
+
+  <style>
+    .grupos { max-width: 34rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .bloque.proximamente { color: var(--color-text-muted); }
+    .lista { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    .fila { display: flex; justify-content: space-between; align-items: center; gap: var(--space);
+            padding: 0.6rem 0.8rem; border: 1px solid var(--color-border); border-radius: var(--radius); }
+    .tipo { font-family: var(--font-sistema); font-weight: var(--weight-subtitle); }
+    .acciones { display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; }
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             background: transparent; color: var(--color-text); font-family: var(--font-sistema);
+             font-size: var(--text-base); text-decoration: none; cursor: pointer; }
+    .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
+    .boton:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-body); }
+  </style>
+</Privada>

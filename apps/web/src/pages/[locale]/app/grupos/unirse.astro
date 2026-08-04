@@ -1,0 +1,242 @@
+---
+/**
+ * `/{locale}/app/grupos/unirse` — el flujo del padre con un código (F9 ·
+ * #382, D-011, D-096 del reparto).
+ *
+ * ─── El flujo, en tres pasos y sin escritura hasta el botón ──────────────────
+ *
+ *  1. El padre captura el código de seis caracteres (superficie de ADULTO —
+ *     la línea roja #3 prohíbe el texto libre de un niño, no un campo de
+ *     código en la cuenta del padre).
+ *  2. La página muestra la TARJETA DE IDENTIDAD del dueño (el componente
+ *     `TarjetaIdentidad`): quién dice ser, con qué insignia de confianza, y
+ *     qué verá del niño. **Ver la tarjeta no escribe nada** — cerrar la
+ *     pantalla sin decidir no crea fila (F9 §5.2 paso 5).
+ *  3. El padre elige qué hijo (los que no tienen solicitud viva), decide el
+ *     toggle de ranking (D-087/D-101: apagado por default, lo enciende el
+ *     padre aquí) y tiene TRES salidas explícitas: aprobar, rechazar, decidir
+ *     después. Las tres pasan por `padre-grupo.ts`, el único módulo
+ *     autorizado a escribir la decisión.
+ *
+ * Código desconocido y código apagado producen el MISMO mensaje neutro:
+ * distinguirlos le diría a quien prueba códigos ajenos cuáles existen.
+ */
+export const prerender = false;
+
+import Privada from "../../../../layouts/Privada.astro";
+import TarjetaIdentidad from "../../../../components/grupos/TarjetaIdentidad.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { ruta } from "../../../../i18n/rutas";
+import { f9Habilitado } from "../../../../lib/grupo-flag";
+import { grupoPorCodigo, tarjetaParaPadre, hijosParaUnir } from "../../../../lib/padre-grupo";
+import { codigoDeUnionEsValido, normalizarCodigoDeUnion } from "../../../../../../../packages/motor/src/grupo.ts";
+import { TEXTOS_GRUPOS } from "../../../../components/grupos/textos";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const g = TEXTOS_GRUPOS[locale];
+
+const env = (
+  Astro.locals as {
+    runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace; CONFIG_KV?: KVNamespace } };
+  }
+).runtime?.env;
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+if (!(await f9Habilitado(env?.CONFIG_KV, locale))) {
+  return Astro.redirect(`/${locale}/app/grupos/`);
+}
+
+// ─── El resultado de una decisión ya tomada (vuelve del endpoint) ────────────
+const hecho = Astro.url.searchParams.get("hecho");
+const textoHecho =
+  hecho === "aprobada"
+    ? g["grupo.hecho.aprobada"]
+    : hecho === "rechazada"
+      ? g["grupo.hecho.rechazada"]
+      : hecho === "pendiente"
+        ? g["grupo.hecho.pendiente"]
+        : null;
+
+// ─── La tarjeta, si hay código en la URL (GET, sin escribir nada) ────────────
+const codigoCrudo = Astro.url.searchParams.get("codigo") ?? "";
+const codigo = normalizarCodigoDeUnion(codigoCrudo);
+const codigoConForma = codigo.length > 0 && codigoDeUnionEsValido(codigo);
+
+const grupo = env?.DB && codigoConForma ? await grupoPorCodigo(env.DB, codigo) : null;
+const tarjeta = grupo && env?.DB ? await tarjetaParaPadre(env.DB, grupo.id) : null;
+const hijos = grupo && env?.DB ? await hijosParaUnir(env.DB, sesion.userId, grupo.id) : [];
+
+// El código inválido, el desconocido y el apagado: el mismo mensaje neutro.
+const codigoInactivo = textoHecho === null && codigoCrudo.length > 0 && !grupo;
+
+const e = Astro.url.searchParams.get("e");
+const errorEnPantalla =
+  e === "grupo_lleno"
+    ? g["grupo.err.grupoLleno"]
+    : e === "solicitud_viva"
+      ? g["grupo.err.solicitudViva"]
+      : e === "codigo_inactivo"
+        ? g["grupo.unirse.codigoInactivo"]
+        : e !== null
+          ? g["grupo.err.generico"]
+          : null;
+
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={g["grupo.unirse.titulo"]} description={g["grupo.unirse.lead"]}>
+  <article class="unirse">
+    <h1>{g["grupo.unirse.titulo"]}</h1>
+
+    {
+      textoHecho !== null ? (
+        // La decisión ya se escribió. En el rechazo, el texto NO explica nada
+        // al dueño: el niño simplemente no aparece (issue #382).
+        <section class="bloque">
+          <p class="ok">{textoHecho}</p>
+          <a class="boton" href={`/${locale}/app/`}>
+            {g["grupo.volverCasa"]}
+          </a>
+        </section>
+      ) : (
+        <Fragment>
+          {errorEnPantalla !== null && <p class="mal" role="alert">{errorEnPantalla}</p>}
+
+          {/* ── Paso 1: el código. GET: buscar no escribe nada. ─────────── */}
+          <form method="get" action={`/${locale}/app/grupos/unirse/`} class="bloque">
+            <p class="lead">{g["grupo.unirse.lead"]}</p>
+            <div class="campo">
+              <label for="codigo">{g["grupo.unirse.campoCodigo"]}</label>
+              <input
+                type="text"
+                id="codigo"
+                name="codigo"
+                required
+                minlength="6"
+                maxlength="6"
+                autocomplete="off"
+                inputmode="text"
+                autocapitalize="characters"
+                class="codigo"
+                value={codigo}
+              />
+            </div>
+            <button type="submit" class="boton primario">{g["grupo.unirse.enviar"]}</button>
+          </form>
+
+          {codigoInactivo && (
+            <p class="mal" role="alert">{g["grupo.unirse.codigoInactivo"]}</p>
+          )}
+
+          {/* ── Paso 2 y 3: la tarjeta de identidad y la decisión ────────── */}
+          {
+            grupo && tarjeta && (
+              <Fragment>
+                <TarjetaIdentidad tarjeta={tarjeta} textos={g} />
+
+                {hijos.length === 0 ? (
+                  <p class="muted">{g["grupo.tarjeta.sinHijos"]}</p>
+                ) : (
+                  <form method="post" action="/api/grupos/decidir" class="bloque">
+                    <input type="hidden" name="locale" value={locale} />
+                    <input type="hidden" name="codigo" value={codigo} />
+
+                    <fieldset class="campo">
+                      <legend>{g["grupo.tarjeta.elegirHijo"]}</legend>
+                      {hijos.map((h, i) => (
+                        <label class="opcion">
+                          <input
+                            type="radio"
+                            name="hijo"
+                            value={h.id}
+                            checked={i === 0}
+                          />
+                          {h.alias}
+                        </label>
+                      ))}
+                    </fieldset>
+
+                    {/*
+                      El toggle de ranking vive AQUÍ, en la aprobación (D-101
+                      del reparto): apagado por default, lo enciende el padre
+                      — nunca el dueño del grupo por el niño.
+                    */}
+                    <div class="campo interruptor">
+                      <input type="checkbox" id="optin" name="opt_in" />
+                      <label for="optin">{g["grupo.tarjeta.toggle"]}</label>
+                    </div>
+
+                    <div class="decisiones">
+                      {/* Tres botones, tres salidas explícitas: aprobar (con
+                          el toggle ya decidido), rechazar, decidir después.
+                          Las tres van al mismo endpoint; la escritura vive en
+                          `padre-grupo.ts`, el único módulo autorizado. */}
+                      <button type="submit" name="decision" value="approved" class="boton primario">
+                        {g["grupo.tarjeta.aprobar"]}
+                      </button>
+                      <button type="submit" name="decision" value="rejected" class="boton">
+                        {g["grupo.tarjeta.rechazar"]}
+                      </button>
+                      <button type="submit" name="decision" value="pending" class="boton">
+                        {g["grupo.tarjeta.despues"]}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </Fragment>
+            )
+          }
+        </Fragment>
+      )
+    }
+  </article>
+
+  <style>
+    .unirse { max-width: 34rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: var(--space); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space);
+             border: none; padding: 0; }
+    legend, label { font-family: var(--font-sistema); font-size: var(--text-base); }
+    input[type="text"] { font-family: var(--font-sistema); font-size: var(--text-base);
+                         min-height: 44px; padding-inline: 0.75rem; color: var(--color-text);
+                         background: var(--color-surface); border: 1px solid var(--color-border);
+                         border-radius: var(--radius); }
+    input.codigo { text-transform: uppercase; letter-spacing: 0.15em; inline-size: 10rem;
+                   font-weight: var(--weight-subtitle); }
+    .opcion { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; }
+    .opcion input[type="radio"] { inline-size: 1.25rem; block-size: 1.25rem; accent-color: var(--color-accent); }
+    .interruptor { display: grid; grid-template-columns: auto 1fr; column-gap: 0.5rem; align-items: center; }
+    .interruptor input[type="checkbox"] { inline-size: 1.5rem; block-size: 1.5rem;
+                                          accent-color: var(--color-accent); }
+    /* Los tres botones: Aprobar/Rechazar ≥44px, una columna en teléfono, en
+       fila donde quepan (issue #382, criterio de teléfono). */
+    .decisiones { display: flex; flex-direction: column; gap: 0.5rem; }
+    @media (min-width: 480px) {
+      .decisiones { flex-direction: row; flex-wrap: wrap; }
+    }
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             background: transparent; color: var(--color-text); font-family: var(--font-sistema);
+             font-size: var(--text-base); cursor: pointer; text-decoration: none; }
+    .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
+    input:focus-visible, button:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    .ok { color: var(--color-text-brand); font-size: var(--text-sm); }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-end: var(--space); }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-body); }
+  </style>
+</Privada>

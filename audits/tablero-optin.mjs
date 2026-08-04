@@ -67,7 +67,18 @@ for (const archivo of fuentes) {
 for (const archivo of fuentes) {
   const texto = sinComentarios(leer(archivo) ?? "");
   // Cada sentencia que inserta el consentimiento LEADERBOARD, examinada entera.
-  for (const m of texto.matchAll(/INSERT[\s\S]{0,600}?LEADERBOARD[\s\S]{0,600}?(?:;|`|"\s*\)|'\s*\))/gi)) {
+  //
+  // Acotado a `INSERT ... child_consents` desde el 2026-08-04: el patrón
+  // original (`INSERT` + `LEADERBOARD` a menos de 600 caracteres, con /i)
+  // también cazaba `INSERT INTO child_group_membership (... leaderboard_opt_in
+  // ...)` de F9 — la membresía de un grupo, que ES su propio consentimiento
+  // (D-096 del reparto del orquestador: no se duplica en `child_consents`
+  // porque dos registros del mismo hecho son dos verdades, D-051). El
+  // consentimiento que ESTE auditor gobierna es el del tablero global (D-040,
+  // #247) y vive solo en `child_consents`: estrechar el patrón a esa tabla no
+  // apaga ningún caso real — el control negativo del arnés degrada un INSERT
+  // de `child_consents` y sigue atrapado.
+  for (const m of texto.matchAll(/INSERT[\s\S]{0,600}?child_consents[\s\S]{0,600}?LEADERBOARD[\s\S]{0,600}?(?:;|`|"\s*\)|'\s*\))/gi)) {
     comprobaciones++;
     const sentencia = m[0];
     if (!/granted_by/.test(sentencia) || !/consent_version/.test(sentencia)) {

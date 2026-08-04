@@ -1,0 +1,169 @@
+---
+/**
+ * `/{locale}/app/grupos/nuevo` — crear un salón o club (F9 · #381/#383, D-086,
+ * D-087/D-100 del reparto).
+ *
+ * El flujo: identidad declarada (si falta, se redirige a `identidad/`) →
+ * `assertCanOwnChildGroup` fabrica el `OwnerProof` — el primer llamador real
+ * del gate en todo el repo (issue #402) — → origen y tamaño validados por el
+ * motor, topes por cuenta y por día, y escuela afiliada solo si está
+ * `verified` y el maestro sigue activo. La pantalla de éxito es la del grupo
+ * (`[id]?creado=1`), con el código en grande.
+ *
+ * La interfaz nunca ofrece un valor que el servidor rechaza: el tope del
+ * `<input type="number">` sale de `topePorOrigen()` del motor, y el servidor
+ * revalida con `maxSizeEsValido()` — la misma tabla en los dos extremos.
+ */
+export const prerender = false;
+
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { ruta } from "../../../../i18n/rutas";
+import { f9Habilitado } from "../../../../lib/grupo-flag";
+import { identidadDe, escuelasVerificadasDelMaestro } from "../../../../lib/grupo-duenio";
+import { assertCanOwnChildGroup } from "../../../../lib/owner-proof";
+import { TEXTOS_GRUPOS, rellenarGrupo } from "../../../../components/grupos/textos";
+import { topePorOrigen } from "../../../../../../../packages/motor/src/grupo.ts";
+import { formatear } from "../../../../../../../packages/motor/src/numeros.ts";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const g = TEXTOS_GRUPOS[locale];
+
+const env = (
+  Astro.locals as {
+    runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace; CONFIG_KV?: KVNamespace } };
+  }
+).runtime?.env;
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+if (!(await f9Habilitado(env?.CONFIG_KV, locale))) {
+  return Astro.redirect(`/${locale}/app/grupos/`);
+}
+// Sin base no se puede comprobar la identidad, y lo que no se puede
+// comprobar se niega — falla cerrado, como el resto del área privada.
+if (!env?.DB) return Astro.redirect(`/${locale}/app/grupos/`);
+
+// ─── El gate: sin identidad declarada no hay OwnerProof ──────────────────────
+const fila = await identidadDe(env.DB, sesion.userId);
+const proof = assertCanOwnChildGroup(fila);
+if (!proof) return Astro.redirect(`/${locale}/app/grupos/identidad/`);
+
+const escuelas = await escuelasVerificadasDelMaestro(env.DB, sesion.userId);
+
+const e = Astro.url.searchParams.get("e");
+const errorEnPantalla =
+  e === "tope_grupos"
+    ? g["grupo.err.tope"]
+    : e === "uno_por_dia"
+      ? g["grupo.err.unoPorDia"]
+      : e === "tamano_invalido"
+        ? g["grupo.err.tamano"]
+        : e === "escuela_no_verificada"
+          ? g["grupo.err.escuelaNoVerificada"]
+          : e !== null
+            ? g["grupo.err.generico"]
+            : null;
+
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={g["grupo.nuevo.titulo"]} description={g["grupo.nuevo.lead"]}>
+  <article class="nuevo">
+    <h1>{g["grupo.nuevo.titulo"]}</h1>
+    <p class="lead">{g["grupo.nuevo.lead"]}</p>
+
+    <form method="post" action="/api/grupos/crear" class="bloque">
+      <input type="hidden" name="locale" value={locale} />
+      {errorEnPantalla !== null && <p class="mal" role="alert">{errorEnPantalla}</p>}
+
+      <fieldset class="campo">
+        <legend>{g["grupo.nuevo.origen"]}</legend>
+        <label class="opcion">
+          <input type="radio" name="origen" value="salon" checked />
+          {g["grupo.nuevo.origenSalon"]}
+        </label>
+        <label class="opcion">
+          <input type="radio" name="origen" value="club_papas" />
+          {g["grupo.nuevo.origenClub"]}
+        </label>
+      </fieldset>
+
+      <div class="campo">
+        <label for="tamano">{g["grupo.nuevo.tamano"]}</label>
+        {/*
+          El tope del control es el del salón (el mayor de los dos orígenes);
+          el servidor revalida contra el origen elegido con la MISMA función
+          del motor — un club con el tope del salón se rechaza, no se recorta.
+        */}
+        <input
+          type="number"
+          id="tamano"
+          name="max_size"
+          min="1"
+          max={topePorOrigen("salon")}
+          value={topePorOrigen("salon")}
+          required
+        />
+        <p class="pista">
+          {rellenarGrupo(g["grupo.nuevo.tamanoPista"], {
+            max: formatear(topePorOrigen("salon"), locale),
+          })}
+        </p>
+      </div>
+
+      {
+        escuelas.length > 0 && (
+          <div class="campo">
+            <label for="escuela">{g["grupo.nuevo.escuela"]}</label>
+            <select id="escuela" name="school_id">
+              <option value="">{g["grupo.nuevo.sinEscuela"]}</option>
+              {escuelas.map((esc) => <option value={esc.id}>{esc.name}</option>)}
+            </select>
+          </div>
+        )
+      }
+      {escuelas.length === 0 && <p class="pista">{g["grupo.nuevo.sinEscuela"]}</p>}
+
+      <button type="submit" class="boton primario">{g["grupo.nuevo.enviar"]}</button>
+    </form>
+  </article>
+
+  <style>
+    .nuevo { max-width: 34rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space);
+             border: none; padding: 0; }
+    legend, label { font-family: var(--font-sistema); font-size: var(--text-base); }
+    .opcion { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; }
+    .opcion input[type="radio"] { inline-size: 1.25rem; block-size: 1.25rem; accent-color: var(--color-accent); }
+    input[type="number"], select { font-family: var(--font-sistema); font-size: var(--text-base);
+                         min-height: 44px; padding-inline: 0.75rem; color: var(--color-text);
+                         background: var(--color-surface); border: 1px solid var(--color-border);
+                         border-radius: var(--radius); }
+    input[type="number"] { inline-size: 8rem; }
+    .pista { font-size: var(--text-xs); color: var(--color-text-muted);
+             line-height: var(--leading-body); margin: 0 0 var(--space); }
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             background: transparent; color: var(--color-text); font-family: var(--font-sistema);
+             font-size: var(--text-base); cursor: pointer; text-decoration: none; }
+    .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
+    input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-end: var(--space); }
+  </style>
+</Privada>

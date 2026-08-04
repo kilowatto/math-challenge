@@ -425,7 +425,7 @@ puertas, `VCOM` y `EDOS` dos cada una.
 | 7 | ¿`FUNC` explícita? | Sí — es la puerta de todo el cálculo y debe ser auditable | D-134 |
 | 8 | ¿Dónde vive el grafo? | Módulo puro `packages/motor/src/ramas.ts` | D-135 |
 
-## Fuentes
+## Sources
 
 1. **MSC 2020, PDF oficial completo** — zbMATH/Mathematical Reviews —
    https://zbmath.org/static/msc2020.pdf — descargado; fuente de las 63

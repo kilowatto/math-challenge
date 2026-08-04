@@ -78,6 +78,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     ahora: Math.floor(Date.now() / 1000),
   });
 
-  if (!resultado.ok) return terminarMal(request, volverA, resultado.motivo);
+  if (resultado.ok === false) return terminarMal(request, volverA, resultado.motivo);
   return terminarBien(request, `${volverA}?hecho=${resultado.via}`, [], { ok: true });
 };

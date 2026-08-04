@@ -86,7 +86,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     ahora: Math.floor(Date.now() / 1000),
   });
 
-  if (!resultado.ok) return terminarMal(request, volverA, resultado.motivo);
+  if (resultado.ok === false) return terminarMal(request, volverA, resultado.motivo);
 
   const hecho =
     decision === "approved" ? "aprobada" : decision === "rejected" ? "rechazada" : "pendiente";

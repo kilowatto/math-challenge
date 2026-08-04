@@ -16,7 +16,7 @@ import { terminarBien, terminarMal } from "../../../lib/respuesta-de-formulario.
 import { f9Habilitado } from "../../../lib/grupo-flag.ts";
 import { crearGrupo, identidadDe } from "../../../lib/grupo-duenio.ts";
 import { assertCanOwnChildGroup } from "../../../lib/owner-proof.ts";
-import type { OrigenDeGrupo } from "../../../../../packages/motor/src/grupo.ts";
+import type { OrigenDeGrupo } from "../../../../../../packages/motor/src/grupo.ts";
 
 export const prerender = false;
 
@@ -83,7 +83,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     ahora: Math.floor(Date.now() / 1000),
   });
 
-  if (!resultado.ok) return terminarMal(request, volverA, resultado.motivo);
+  if (resultado.ok === false) return terminarMal(request, volverA, resultado.motivo);
 
   return terminarBien(
     request,

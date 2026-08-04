@@ -67,6 +67,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
           ? await cambiarCodigoActivo(env.DB, sesion.userId, groupId, true, ahora)
           : { ok: false as const, motivo: "accion_invalida" };
 
-  if (!resultado.ok) return terminarMal(request, volverA, resultado.motivo);
+  if (resultado.ok === false) return terminarMal(request, volverA, resultado.motivo);
   return terminarBien(request, volverA, [], { ok: true });
 };

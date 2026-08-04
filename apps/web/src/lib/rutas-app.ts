@@ -59,3 +59,14 @@ export const rutaPerfilNuevo = (locale: Locale | string) => `/${locale}/app/perf
  */
 export const rutaLimiteHijo = (locale: Locale | string, childId: string) =>
   `/${locale}/app/parent/screen-time/${encodeURIComponent(childId)}`;
+
+/**
+ * La liga del adulto aprendiz (F7 #237). La del perfil de niño es otra URL —
+ * `rutaLigaJugador`— porque su documento es desnudo (sin RUM ni navegación de
+ * adulto, D-037/D-065) y el `<!doctype>` no puede vivir en una rama de
+ * plantilla. Cada una redirige a la otra si la sesión no es la suya.
+ */
+export const rutaLiga = (locale: Locale | string) => `/${locale}/app/liga/`;
+
+/** La liga del perfil de niño (sesión `mc_k`). */
+export const rutaLigaJugador = (locale: Locale | string) => `/${locale}/app/liga/jugador/`;

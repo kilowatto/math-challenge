@@ -533,7 +533,7 @@ export function parseIndex(readme: string): Map<string, IndexEntry> {
       current = CATEGORY_BY_HEADING[currentHeading] ?? null;
       continue;
     }
-    const row = /^\|\s*(\d+)\s*\|\s*\[(.+?)\]\((2026-07-31-mc-[a-z0-9-]+\.md)\)\s*\|(.*)\|\s*$/.exec(line);
+    const row = /^\|\s*(\d+)\s*\|\s*\[(.+?)\]\((2\d{3}-\d{2}-\d{2}-mc-[a-z0-9-]+\.md)\)\s*\|(.*)\|\s*$/.exec(line);
     if (!row) continue;
     if (!current) {
       throw new Error(
@@ -567,7 +567,7 @@ export function parseIndex(readme: string): Map<string, IndexEntry> {
  * re-ejecutar los mismos parsers sobre los mismos archivos.
  */
 export function loadCorpus(): ResearchDoc[] {
-  const raws = import.meta.glob("../../../../docs/research/2026-07-31-mc-*.md", {
+  const raws = import.meta.glob("../../../../docs/research/2*-mc-*.md", {
     query: "?raw",
     import: "default",
     eager: true,
@@ -606,7 +606,7 @@ export function loadCorpus(): ResearchDoc[] {
  * Ahora hay uno. Un glob que no puede divergir de sí mismo.
  */
 export function loadRaw(): Record<string, string> {
-  const raws = import.meta.glob("../../../../docs/research/2026-07-31-mc-*.md", {
+  const raws = import.meta.glob("../../../../docs/research/2*-mc-*.md", {
     query: "?raw",
     import: "default",
     eager: true,
@@ -647,7 +647,7 @@ export function countMdFiles(): number {
  * salen ya resueltos, y `apps/web/package.json` no crece.
  */
 export function loadBodies(): Record<string, () => Promise<{ compiledContent: () => string | Promise<string> }>> {
-  const mods = import.meta.glob("../../../../docs/research/2026-07-31-mc-*.md");
+  const mods = import.meta.glob("../../../../docs/research/2*-mc-*.md");
   const out: Record<string, any> = {};
   for (const [path, loader] of Object.entries(mods)) {
     out[path.slice(path.lastIndexOf("/") + 1)] = loader;

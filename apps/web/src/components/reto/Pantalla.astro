@@ -426,6 +426,46 @@ const {
     let ultimoItemId = null;
 
     // ---------------------------------------------------------------------
+    // La guardia de borde para iOS (#451, WebKit bug 240183)
+    // ---------------------------------------------------------------------
+    /*
+      El CSS ya declarado (`overscroll-behavior-x: none` en `reto.css`) basta
+      en Chrome, Firefox y Edge, pero NO en Safari: WebKit bug 240183, abierto
+      hoy, así que en iOS el swipe de borde sigue disparando «atrás» y sacando
+      al jugador del reto a media sesión.
+
+      La vía que sí funciona (iOS 13.4+, diseño en `docs/planes/pwa-gestos.md`
+      §2-§3): un listener de `touchstart` que hace `preventDefault()` SOLO si
+      el toque nace a 20 px o menos del borde. Aplicado a toda la pantalla
+      impediría el scroll — por eso la condición sobre la coordenada, y por
+      eso `{ passive: false }`: en un listener pasivo el `preventDefault()` se
+      ignora y la guardia no existe.
+
+      El ancho se mide contra `window.innerWidth` EN EL EVENTO, nunca contra
+      una constante de aparato: Split View de iPad cambia el ancho real, y un
+      «borde derecho» calculado con una tabla de anchos apuntaría al centro de
+      la pantalla.
+
+      Vive en el script de ESTA pantalla y en ningún sitio global: el sitio
+      público conserva su swipe-back, que ahí es comportamiento esperado. Y
+      JavaScript válido, sin tipos: `define:vars` implica `is:inline`, y un
+      script inline con TypeScript viaja crudo al navegador y mata el script
+      entero sin fallar en ningún sitio (D-032).
+    */
+    const BORDE_GESTO_PX = 20;
+    document.addEventListener(
+      "touchstart",
+      (evento) => {
+        const toque = evento.touches && evento.touches[0];
+        if (!toque) return;
+        if (toque.pageX <= BORDE_GESTO_PX || toque.pageX >= window.innerWidth - BORDE_GESTO_PX) {
+          evento.preventDefault();
+        }
+      },
+      { passive: false },
+    );
+
+    // ---------------------------------------------------------------------
     // El límite de pantalla (F8 #270, #271, #273)
     // ---------------------------------------------------------------------
     /*

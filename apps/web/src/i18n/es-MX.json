@@ -200,5 +200,11 @@
   "mapaLugarEnCurso": "Lugar en curso",
   "mapaLugarPorVisitar": "Lugar por visitar",
   "mapaAqui": "Aquí está Larry",
-  "casaMapaCta": "Tu mapa"
+  "casaMapaCta": "Tu mapa",
+  "casaLigaCta": "Tu liga",
+  "casaLigaActiva": "Liga: activada",
+  "casaLigaApagada": "Liga: apagada",
+  "casaLigaActivar": "Activar",
+  "casaLigaQuitar": "Apagar",
+  "casaLigaNota": "En la liga juega con un alias generado, nunca con su nombre."
 }

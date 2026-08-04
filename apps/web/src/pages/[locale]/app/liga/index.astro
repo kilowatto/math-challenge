@@ -1,0 +1,113 @@
+---
+/**
+ * `/{locale}/app/liga` — **la liga del adulto aprendiz.** F7, #237, #242, #243.
+ *
+ * ─── Dos pantallas, una tabla ───────────────────────────────────────────────
+ *
+ * La superficie de liga son DOS páginas delgadas sobre el mismo componente:
+ *
+ *   · ésta, para el adulto con sesión `mc_s` — layout `Privada`, con su franja
+ *     de pestañas;
+ *   · `liga/jugador.astro`, para el perfil de niño con sesión `mc_k` — un
+ *     documento desnudo, sin RUM ni navegación de adulto (D-037, D-065).
+ *
+ * No es una página con dos ramas porque el `<!doctype>` no puede vivir dentro
+ * de una expresión de plantilla, y sin él el navegador cae en quirks mode. Si
+ * la sesión es de niño, se redirige a la suya.
+ *
+ * ─── Qué se lee, y de dónde ─────────────────────────────────────────────────
+ *
+ * La tabla sale del Durable Object (`leerTablaDeLiga`), que es la única copia
+ * que lleva la racha difundida de D-106. La membresía —quién está en qué
+ * cohorte— se lee de D1, que es la verdad. Esta página **no escribe nada**:
+ * una pantalla que crea membresías al abrirse llenaría las ligas de filas de
+ * gente que solo miró; el alta ocurre al primer ítem que cuenta de la semana
+ * (plan §3.2), en `lib/liga-membresia.ts`.
+ *
+ * ─── Sin WebSocket, a propósito ─────────────────────────────────────────────
+ *
+ * El DO difunde la tabla en vivo por WebSocket y esta página no lo abre. No es
+ * que falte: es que una tabla que se mueve sola delante de quien juega es la
+ * mitad de una presencia —«algo acaba de pasar, alguien está ahí»— y la
+ * condición 2 de D-081 va de que nadie se quede esperando a que el otro
+ * aparezca. La tabla se lee al cargar; quien quiera ver cómo va, recarga.
+ */
+export const prerender = false;
+
+import Privada from "../../../../layouts/Privada.astro";
+import Tabla from "../../../../components/liga/Tabla.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import {
+  COOKIE_ADULTO,
+  COOKIE_NINO,
+  leerCookies,
+  leerSesionAdulto,
+  leerSesionNino,
+} from "../../../../lib/sesiones";
+import { pestanasPrivadas } from "../../../../lib/pestanas-privadas";
+import { cargarTablaDe } from "../../../../lib/liga-membresia";
+import { rutaLigaJugador } from "../../../../lib/rutas-app";
+import { ruta } from "../../../../i18n/rutas";
+import { TEXTOS_LIGA } from "../../../../components/liga/textos";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const tl = TEXTOS_LIGA[locale] ?? TEXTOS_LIGA["en"];
+
+const env = (
+  Astro.locals as {
+    runtime?: { env?: { DB?: D1Database; SESSION_KV?: KVNamespace; LEAGUE_DO?: DurableObjectNamespace } };
+  }
+).runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+
+// Una sesión de NIÑO tiene su propia pantalla de liga, sin navegación de
+// adulto ni medición (ver el encabezado).
+if (env?.SESSION_KV) {
+  const nino = await leerSesionNino(env.SESSION_KV, cookies[COOKIE_NINO]);
+  if (nino) return Astro.redirect(rutaLigaJugador(locale));
+}
+
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+// `?cambiar=1` por el mismo bucle que documenta `app/perfil.astro`.
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+const tabla = await cargarTablaDe(env ?? {}, { id: sesion.userId, esAdulto: true }, Date.now());
+
+/*
+ * La franja de pestañas. `tieneHijos = false` a propósito, igual que
+ * `app/mapa.astro`: esta pantalla es la del adulto sobre SÍ MISMO, y quien no
+ * tiene hijos no lee una sola palabra sobre familia en su navegación (D-065
+ * punto 3, issue #346). La pestaña activa es «Practicar», que es de donde se
+ * llega.
+ */
+const pestanas = pestanasPrivadas(locale, false, "practicar");
+---
+
+<Privada locale={locale} title={tl["liga.titulo"]} description={tl["liga.esta_semana"]} pestanas={pestanas}>
+  <article>
+    <h1>{tl["liga.titulo"]}</h1>
+
+    {tabla.estado === "sin_liga" && <p class="aviso">{tl["liga.sin_liga"]}</p>}
+    {tabla.estado === "sin_datos" && <p class="aviso">{tl["liga.sin_datos"]}</p>}
+    {tabla.estado === "ok" && (
+      <Tabla
+        locale={locale}
+        filas={tabla.filas}
+        aliasPropio={tabla.aliasPropio}
+        pintaRacha={true}
+      />
+    )}
+  </article>
+</Privada>
+
+<style>
+  .aviso {
+    font-family: var(--font-sistema);
+    font-size: var(--text-sm, var(--text-xs));
+    color: var(--color-text-muted);
+  }
+</style>

@@ -64,11 +64,13 @@ import {
 } from "../../../../../packages/motor/src/explicacion.ts";
 import {
   registrarItem,
+  registrarDiaPorLimite,
   textoDeXp,
   zonaDelHogar,
   type Jugador,
   type Progreso,
 } from "../../lib/progreso";
+import { sumarPuntosDeLiga } from "../../lib/liga-membresia";
 import { limiteAlServir, limiteAlResponder } from "../../lib/limite-dia";
 import { registrarAvanceDeHoy } from "../../lib/misiones-dia";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
@@ -128,13 +130,25 @@ interface Ingest {
     acc: 0 | 1; causa: string | null; razonAlterna: string | null;
     inesperada: boolean; nivel: number; habilidad: string;
   }>;
-  recordAttempt(input: Record<string, unknown>): Promise<unknown>;
+  recordAttempt(input: Record<string, unknown>): Promise<{ puntos: number }>;
+  /**
+   * El corte del límite de pantalla llega a la sesión de reto (F8 #404):
+   * `puedeCortar()` → `cerrarPorLimite(motivo)` sobre el Durable Object. Ver
+   * el comentario de `avisarCorteALaSesion` abajo — hoy `/api/jugar` no abre
+   * ese DO, así que la llamada es el sitio donde el corte tocará la sesión
+   * cuando el cableado de F3 aterrice aquí.
+   */
+  cerrarRetoPorLimite(perfilId: string, motivo: string): Promise<unknown>;
 }
 
 interface Env {
   INGEST: Ingest;
   SESSION_KV: KVNamespace;
   LEARNER_DO?: DurableObjectNamespace;
+  LEAGUE_DO?: DurableObjectNamespace;
+  // Las misiones del día (F7 #224): un objeto por niño, dueño del estado del
+  // día; `lib/misiones-dia.ts` lo llama en cada ítem que cuenta.
+  MISSIONS_DO?: DurableObjectNamespace;
   DB?: D1Database;
 }
 
@@ -280,6 +294,38 @@ function estadoDe(resumen: Resumen[], skillId: string, semilla: number) {
   };
 }
 
+/**
+ * El corte, dicho también a la sesión de reto de F3 (F8 #404).
+ *
+ * El corte real se enforcea con el estado de `screen_time_daily_usage` — vive
+ * en D1, así que sobrevive a cerrar y reabrir la app (`lib/limite-dia.ts`).
+ * Esta llamada es el OTRO extremo del diseño del plan (§8.1): el RPC
+ * `puedeCortar()` → `cerrarPorLimite(motivo)` del Durable Object de sesión
+ * tenía cero llamadores, que es el patrón «código correcto que ninguna ruta
+ * alcanza» para el que existe `audits/funcion-sin-llamar.mjs`.
+ *
+ * Honestidad de alcance, dicha aquí y en el PR: **hoy `/api/jugar` no abre
+ * ese DO** (residuo declarado desde F4: servir/responder viven en esta ruta,
+ * no en la sesión), así que el DO no tiene estado que cerrar y el RPC
+ * contesta `cerrada: false`. La llamada se hace igual, por dos razones: el
+ * patrón de corte queda cableado en la ruta de verdad —el día que esta ruta
+ * abra la sesión de F3 bajo el mismo nombre (`idFromName(childProfileId)`),
+ * el corte la cerrará sin tocar este archivo—, y el RPC deja de ser código
+ * inalcanzable. Lo que NO se hace: abrir la sesión aquí solo para cerrarla,
+ * que duplicaría servir/responder enteros.
+ *
+ * Best effort, como la telemetría: si el RPC falla, el corte ya viaja en la
+ * respuesta y está escrito en D1. Nunca se le niega la despedida a un niño
+ * por un Durable Object.
+ */
+async function avisarCorteALaSesion(env: Env, quien: Jugador, motivo: string): Promise<void> {
+  try {
+    await env.INGEST.cerrarRetoPorLimite(quien.id, motivo);
+  } catch {
+    // Silencio a propósito: el corte no depende de esta llamada.
+  }
+}
+
 async function servirSiguiente(
   env: Env,
   quien: Jugador,
@@ -307,7 +353,18 @@ async function servirSiguiente(
     zona: await zonaDelHogar(env, quien),
     locale,
   });
-  if (limite?.tipo === "CERRAR") return json({ ok: true, corte: limite });
+  if (limite?.tipo === "CERRAR") {
+    await avisarCorteALaSesion(env, quien, limite.motivo ?? "DAILY_LIMIT");
+    /*
+     * Aquí NO se llama a `registrarDiaPorLimite`, a propósito: el día se
+     * cuenta en el PRIMER ítem contestado (D-091) y un corte al servir llega
+     * antes de cualquier ítem — registrarlo convertiría «abrió la app a la
+     * 1 a.m. y lo despidieron» en un día de racha, que es justo lo que D-091
+     * vino a impedir. Si el niño ya jugó hoy, el día ya está contado de
+     * todas formas y la racha no depende de nada de lo que pase aquí.
+     */
+    return json({ ok: true, corte: limite });
+  }
 
   const [catalogo, resumen] = await Promise.all([
     env.INGEST.catalogoAdaptativo(),
@@ -506,32 +563,43 @@ async function recibirRespuesta(
   // vez que alguien vuelve a mirar el mismo ítem haría que el Elo del ítem
   // bajara por ser el ítem que invita a reintentar, que es lo contrario de lo
   // que ese número mide.
+  //
+  // Los `puntos` que devuelve —ya calculados en la ingesta con la fórmula de
+  // D-010 (F3)— se capturan para la liga (F7): son los puntos del tablero, y
+  // hasta hoy se descartaban.
+  let puntosCalificados: number | null = null;
   try {
-    if (!reintento) await env.INGEST.recordAttempt({
-      childProfileId,
-      itemId,
-      skillId: veredicto.habilidad,
-      correct: veredicto.acc,
-      level: veredicto.nivel,
-      // KINDER no se cronometra (D-024): se manda 0 y el motor de puntuación
-      // ni siquiera recibe el campo. Poner aquí un tiempo del cliente sería
-      // exactamente lo que F3 prohíbe.
-      responseTimeMs: 0,
-      themeBand: "KINDER",
-      locale,
-      authoredDifficulty: undefined,
-      itemEloBefore: dificultad,
-      itemEloAfter: dificultad,
-      learnerBefore: estado.habilidad,
-      learnerAfter: despues.habilidad,
-      kUsed: kUsado,
-      indexInSession: undefined,
-      // «mapa» cuando el ítem viene del rejuego de un lugar (D-152): el id que
-      // manda la pantalla coincide con la habilidad real del ítem calificado.
-      // Sin la etiqueta, una serie por lugar se contaría como selección
-      // adaptativa y ensuciaría la recalibración del selector.
-      selectionMode: cuerpo.habilidad === veredicto.habilidad ? "mapa" : "adaptativo",
-    });
+    if (!reintento) {
+      const telemetria = await env.INGEST.recordAttempt({
+        childProfileId,
+        itemId,
+        skillId: veredicto.habilidad,
+        correct: veredicto.acc,
+        level: veredicto.nivel,
+        // KINDER no se cronometra (D-024): se manda 0 y el motor de puntuación
+        // ni siquiera recibe el campo. Poner aquí un tiempo del cliente sería
+        // exactamente lo que F3 prohíbe.
+        responseTimeMs: 0,
+        themeBand: "KINDER",
+        locale,
+        authoredDifficulty: undefined,
+        itemEloBefore: dificultad,
+        itemEloAfter: dificultad,
+        learnerBefore: estado.habilidad,
+        learnerAfter: despues.habilidad,
+        kUsed: kUsado,
+        indexInSession: undefined,
+        // «mapa» cuando el ítem viene del rejuego de un lugar (D-152): el id que
+        // manda la pantalla coincide con la habilidad real del ítem calificado.
+        // Sin la etiqueta, una serie por lugar se contaría como selección
+        // adaptativa y ensuciaría la recalibración del selector.
+        selectionMode: cuerpo.habilidad === veredicto.habilidad ? "mapa" : "adaptativo",
+      });
+      puntosCalificados =
+        typeof telemetria?.puntos === "number" && Number.isFinite(telemetria.puntos)
+          ? telemetria.puntos
+          : null;
+    }
   } catch {
     // Silencio a propósito: la telemetría nunca interrumpe a un niño.
   }
@@ -561,17 +629,19 @@ async function recibirRespuesta(
   let limite: Awaited<ReturnType<typeof limiteAlResponder>> = null;
   if (!reintento) {
     const zona = await zonaDelHogar(env, quien);
-    progreso = await registrarItem(env, quien, {
+    const registro = await registrarItem(env, quien, {
       nivel: veredicto.nivel,
       acc: veredicto.acc,
-      // F8 es quien produce el otro motivo (`docs/planes/f8-limite-pantalla.md`
-      // §8). No cambia el estado que sale del motor — `registrarDia` lo
-      // garantiza y `audits/racha-limite-no-rompe.mjs` lo mide sobre 1 620
-      // estados —, así que esto no es una decisión disfrazada de constante.
+      // El otro motivo (`LIMITE_DE_PANTALLA_CORTO_LA_SESION`) lo produce el
+      // corte de F8 y entra por `registrarDiaPorLimite`, abajo — el día ya
+      // está contado para entonces (D-091). Ninguno cambia el estado que sale
+      // del motor: `registrarDia` lo garantiza y
+      // `audits/racha-limite-no-rompe.mjs` lo mide sobre 1 620 estados.
       motivo: { tipo: "RETO_COMPLETADO" },
       ahora: Date.now(),
       zona,
     });
+    progreso = registro?.progreso ?? null;
 
     /*
      * Las misiones del día (F7 · #211). Misma forma que la racha: el motor
@@ -592,6 +662,26 @@ async function recibirRespuesta(
     });
 
     /*
+     * La liga (F7 · #237, #242). Los puntos son los que la ingesta ya calculó
+     * con la fórmula de D-010 (F3) —capturados arriba de la respuesta de
+     * telemetría, que era quien los recibía y los descartaba—; el día local y
+     * si es día nuevo salen del registro de arriba (D-091), y la racha viaja
+     * ya calculada, de solo lectura (D-106). **Falla abierto**: si la liga no
+     * responde, se pierde la posición de la semana, nunca el juego. Solo
+     * cuando el intento CUENTA y hay registro: un reintento no suma, por la
+     * misma línea roja #8.
+     */
+    if (registro && puntosCalificados !== null) {
+      await sumarPuntosDeLiga(env, quien, {
+        puntos: puntosCalificados,
+        diaLocal: registro.diaLocal,
+        diaNuevo: registro.diaNuevo,
+        racha: registro.progreso.racha.actual,
+        ahora: Date.now(),
+      });
+    }
+
+    /*
      * El límite de pantalla (F8 #270, #271, #273). Va DESPUÉS de la racha a
      * propósito: el día ya quedó contado en el ítem de arriba (D-091), así que
      * cuando esta decisión sea CERRAR —hoy o cualquier día— la racha no depende
@@ -609,6 +699,26 @@ async function recibirRespuesta(
       zona,
       locale,
     });
+
+    /*
+     * El corte ocurrió: el motivo del límite llega a la racha (F8 #404).
+     *
+     * El día ya se contó arriba con `RETO_COMPLETADO` (D-091), así que esta
+     * llamada es idempotente por construcción — `registrarDia` devuelve el
+     * mismo objeto y no se escribe nada. Lo que cambia es que el camino del
+     * corte NOMBRA su motivo: `LIMITE_DE_PANTALLA_CORTO_LA_SESION` entra en
+     * `registrarDia` de verdad, que es la omisión silenciosa que
+     * `audits/limite-no-rompe-el-dia.mjs` declara como su punto ciego y el
+     * KPI de #202 (sesiones cortadas donde la racha no avanzó = 0).
+     */
+    if (limite?.tipo === "CERRAR" && limite.motivo) {
+      await registrarDiaPorLimite(env, quien, {
+        motivo: limite.motivo,
+        ahora: Date.now(),
+        zona,
+      });
+      await avisarCorteALaSesion(env, quien, limite.motivo);
+    }
   }
 
   /**

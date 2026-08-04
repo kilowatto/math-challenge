@@ -240,7 +240,7 @@ niño ya hizo** con atributos y acertijos — nunca el punto de partida.
 
 Los retos quedaron autorados como anexo de `docs/planes/f11-contenido-retos.md`.
 
-## Fuentes
+## Sources
 
 1. **USA Bebras Computing Challenge** — https://bebraschallenge.org/ —
    la competencia y su formato.

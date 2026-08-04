@@ -1,0 +1,207 @@
+---
+/**
+ * `/{locale}/app/parent/reportes` — la preferencia del reporte por correo
+ * (F8 #290). Superficie del ADULTO, detrás de `mc_s`.
+ *
+ * ─── Lo que el padre hace aquí ─────────────────────────────────────────────
+ *
+ * Ve y cambia la cadencia del correo: cada semana (el default del dueño,
+ * 2026-08-02), cada mes, o apagado. El selector es LO PRIMERO de la pantalla
+ * — el dueño lo pidió explícito: prominente y fácil de encontrar, no un
+ * ajuste enterrado tras otros toggles (#290, resolución de la pregunta 1).
+ *
+ * ─── Y lo que NO hay aquí ──────────────────────────────────────────────────
+ *
+ * Ninguna trampa: apagar es tan fácil como encender (D-014: «cancelación más
+ * difícil que la suscripción» es patrón oscuro prohibido por nombre). La
+ * opción «No recibirlo» está a la vista, al mismo nivel que las otras dos —
+ * no escondida en un enlace pequeño al final. Y reactivar tras una baja pasa
+ * por aquí y solo por aquí: una acción explícita con sesión, nunca un efecto
+ * lateral de abrir un correo.
+ *
+ * Un niño no llega aquí: no tiene sesión de adulto y esta página se la niega
+ * (línea roja #2).
+ */
+export const prerender = false;
+
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { pestanasPrivadas } from "../../../../lib/pestanas-privadas";
+import { ruta } from "../../../../i18n/rutas";
+
+import repEn from "../../../../i18n/reportes/en.json";
+import repEsMX from "../../../../i18n/reportes/es-MX.json";
+import repEsES from "../../../../i18n/reportes/es-ES.json";
+import repFrFR from "../../../../i18n/reportes/fr-FR.json";
+import repPtBR from "../../../../i18n/reportes/pt-BR.json";
+import repPtPT from "../../../../i18n/reportes/pt-PT.json";
+import repDeDE from "../../../../i18n/reportes/de-DE.json";
+
+const TEXTOS: Record<string, Record<string, string>> = {
+  en: repEn,
+  "es-MX": repEsMX,
+  "es-ES": repEsES,
+  "fr-FR": repFrFR,
+  "pt-BR": repPtBR,
+  "pt-PT": repPtPT,
+  "de-DE": repDeDE,
+};
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const t = TEXTOS[locale] ?? TEXTOS.en;
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+// `?cambiar=1` por el bucle documentado en `app/perfil.astro`: sin esa cadena,
+// `/entrar/` devuelve a la casa y el navegador gira entre las dos.
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+// Las pestañas son las mismas de siempre (`lib/pestanas-privadas.ts`, un solo
+// sitio): la navegación no cambia de forma al entrar a esta pantalla. Vive
+// bajo la pestaña «Cuenta» — es una preferencia de la cuenta del adulto.
+let numHijos = 0;
+if (env?.DB) {
+  try {
+    const r = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM child_profiles WHERE parent_user_id = ? AND deleted_at IS NULL",
+    )
+      .bind(sesion.userId)
+      .first<{ n: number }>();
+    numHijos = r?.n ?? 0;
+  } catch {
+    // Sin base la pantalla se enseña igual: el cambio de cadencia lo confirma
+    // la API, no esta lectura. `numHijos` en 0 es el fallo seguro.
+  }
+}
+const pestanas = pestanasPrivadas(locale, numHijos > 0, "cuenta");
+---
+
+<Privada locale={locale} title={t["pref.titulo"]} description={t["pref.texto"]} pestanas={pestanas}>
+  <article class="reportes-pref" id="reportes-pref">
+    <h1>{t["pref.titulo"]}</h1>
+    <p class="lead">{t["pref.texto"]}</p>
+
+    {/* El selector de cadencia es LO PRIMERO: el dueño lo pidió prominente,
+        no enterrado (#290, resolución 2026-08-02). */}
+    <section class="bloque">
+      <h2>{t["pref.cadencia"]}</h2>
+      <div role="radiogroup" aria-label={t["pref.cadencia"]} id="cadencia-grupo">
+        <label class="opcion">
+          <input type="radio" name="cadencia" value="WEEKLY" />
+          <span>{t["pref.semanal"]}</span>
+        </label>
+        <label class="opcion">
+          <input type="radio" name="cadencia" value="MONTHLY" />
+          <span>{t["pref.mensual"]}</span>
+        </label>
+        <label class="opcion">
+          <input type="radio" name="cadencia" value="OFF" />
+          <span>{t["pref.apagado"]}</span>
+        </label>
+      </div>
+      <p class="acciones">
+        <button type="button" class="boton primario" id="cadencia-guardar" disabled>
+          {t["pref.guardar"]}
+        </button>
+      </p>
+      <p class="muted" role="status" id="cadencia-estado"></p>
+      <p class="muted error" role="alert" id="cadencia-error" hidden>{t["pref.error"]}</p>
+    </section>
+  </article>
+
+  <style>
+    /* Los mismos tokens que el resto del área privada: esta pantalla vive en
+       la pestaña «Cuenta» y no debe parecer de otro producto. */
+    .reportes-pref .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+                             padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .reportes-pref h2 { font-family: var(--font-sistema); font-size: var(--text-base);
+                        font-weight: var(--weight-subtitle); margin: 0 0 calc(var(--space) * 0.5); }
+    .reportes-pref .muted { color: var(--color-text-muted); font-size: var(--text-sm); }
+    .reportes-pref .error { color: var(--color-text); }
+    /* Cada opción es una fila entera de al menos 44px — la vara del ADULTO
+       (los 88 de kinder son para las superficies de niño). */
+    .reportes-pref .opcion { display: flex; align-items: center; gap: 0.75rem; min-height: 44px;
+                             padding: 0.5rem 0.75rem; border: 1px solid var(--color-border);
+                             border-radius: var(--radius); margin-block-end: 0.5rem;
+                             font-size: var(--text-base); cursor: pointer; }
+    .reportes-pref .opcion:has(input:checked) { border-color: var(--color-accent); }
+    .reportes-pref .opcion input { width: 1.25rem; height: 1.25rem; }
+    .reportes-pref .boton { display: inline-flex; align-items: center; justify-content: center;
+                            min-height: 44px; padding-inline: 1rem; border-radius: var(--radius);
+                            border: 1px solid var(--color-border); background: transparent;
+                            color: var(--color-text); font-family: var(--font-sistema);
+                            font-size: var(--text-base); cursor: pointer; }
+    .reportes-pref .boton.primario { background: var(--color-accent); color: var(--color-on-accent);
+                                     border-color: transparent; }
+    .reportes-pref .boton:disabled { opacity: 0.5; cursor: default; }
+    .reportes-pref .boton:focus-visible, .reportes-pref .opcion:focus-within {
+      outline: 3px solid var(--color-text); outline-offset: 2px; }
+  </style>
+
+  <script is:inline>
+    // `is:inline` — Astro NO compila esto: JS PURO, sin anotaciones de tipo
+    // (D-032; lo vigila `audits/script-cliente-sin-ts.mjs`). Nada de
+    // `define:vars`: los textos ya están en el HTML, el script solo lee y
+    // guarda la cadencia por la API.
+    (() => {
+      const grupo = document.getElementById("cadencia-grupo");
+      const guardar = document.getElementById("cadencia-guardar");
+      const estado = document.getElementById("cadencia-estado");
+      const error = document.getElementById("cadencia-error");
+      if (!grupo || !guardar || !estado) return;
+
+      const post = (accion, cuerpo) =>
+        fetch("/api/reportes?accion=" + accion, {
+          method: "POST",
+          headers: cuerpo ? { "content-type": "application/json" } : undefined,
+          body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+        }).then((r) => r.json());
+
+      const marcar = (cadence) => {
+        const input = grupo.querySelector('input[value="' + cadence + '"]');
+        if (input) input.checked = true;
+      };
+
+      // Estado inicial: lo que el servidor tiene (o los defaults, WEEKLY).
+      post("estado")
+        .then((r) => {
+          if (r && r.cadence) marcar(r.cadence);
+          guardar.disabled = false;
+        })
+        .catch(() => {
+          // Sin red no se muestra nada roto: el guardado lo confirmará la API.
+          guardar.disabled = false;
+        });
+
+      guardar.addEventListener("click", async () => {
+        const elegida = grupo.querySelector("input:checked");
+        if (!elegida) return;
+        guardar.disabled = true;
+        error.hidden = true;
+        estado.textContent = "";
+        try {
+          const r = await post("cadencia", { cadence: elegida.value });
+          if (r && r.ok) {
+            estado.textContent = document
+              .querySelector("[data-guardado]")
+              ?.getAttribute("data-guardado") ?? "OK";
+          } else {
+            error.hidden = false;
+          }
+        } catch {
+          error.hidden = false;
+        } finally {
+          guardar.disabled = false;
+        }
+      });
+    })();
+  </script>
+  <span data-guardado={t["pref.guardado"]} hidden></span>
+</Privada>

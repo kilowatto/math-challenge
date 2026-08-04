@@ -1619,9 +1619,17 @@ const CASOS = [
     // la 0016 (F5c) y la 0017 presentes, el primer hueco libre no declarado es
     // el 0018, y la sonda que lo caza es el archivo 0019. El archivo va
     // siempre UN número por encima del primer hueco libre no declarado.
+    // Reapuntado a 0021 cuando la 0019 (reportes por correo, F8) aterrizó: con
+    // la 0018 reservada al frente del panel (marcador `migration-safety-reserva`
+    // en la propia 0019), el primer hueco libre NO declarado es el 0020, y la
+    // sonda que lo caza es el archivo 0021. Una sonda en 0020 quedaría contigua
+    // a la 0019 real y correría en verde sin degradar nada — el auditor apagado
+    // en silencio de siempre. (El encargo decía 0020; la aritmética del propio
+    // mecanismo —sonda = primer hueco no declarado + 1— da 0021, y el arnés lo
+    // confirma: con 0020 el caso corre en verde.)
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0019_prueba_hueco.sql",
+    archivo: "migrations/0021_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -2187,6 +2195,61 @@ const CASOS = [
 
 
   },
+
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // F8 · Reportes por correo al padre (#287, #292).
+  //
+  // Los tres casos DEGRADAN archivos REALES —el motor puro, una plantilla de
+  // locale y la migración 0019 que este PR introduce— por la misma razón que
+  // los del resto del repo (D-070): el auditor nació verde porque el código se
+  // construyó con él delante, y un archivo inventado solo probaría que sabe
+  // leer un archivo inventado.
+
+  {
+    // #292. La violación por excelencia del subsistema: una resta entre las
+    // secciones de dos hermanos, plantada al final del motor REAL. Es la
+    // comparación implícita que mc-18 documenta como riesgo del correo
+    // familiar — y la forma que tomaría un cambio de buena fe («ordenémosles
+    // por lo que ganaron»).
+    auditor: "reporte-sin-comparacion",
+    que: "una resta entre las secciones de dos hermanos en el motor del reporte",
+    archivo: "packages/motor/src/reportes.ts",
+    parche: (t) =>
+      t +
+      "\nconst _diferenciaEntreHermanos = (hijos: SeccionHijo[]) =>\n" +
+      "  hijos[0].puntosGanados - hijos[1].puntosGanados;\n",
+    espera: "comparación entre hermanos",
+  },
+  {
+    // #292. El mismo principio en la plantilla REAL de un locale: un «mejor
+    // que su hermano» redactado con naturalidad, que es exactamente cómo se
+    // escribiría el defecto — nadie añade una comparación llamándola así.
+    auditor: "reporte-sin-comparacion",
+    que: "un «mejor que su hermano» en la plantilla del correo",
+    archivo: "apps/web/src/i18n/reportes/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        "{alias} ganó {puntos} puntos.",
+        "{alias} ganó {puntos} puntos, mejor que su hermano.",
+      ),
+    espera: "mejor que",
+  },
+  {
+    // #287. `child_report_state` entra a `CHILD_TABLES` de `child-free-text`
+    // en este mismo PR, y el caso demuestra que la línea roja #3 se aplica a
+    // la tabla nueva: una columna `TEXT` sin `CHECK` ligada a
+    // `child_profile_id` tiene que bloquear aquí igual que en `child_profiles`.
+    auditor: "child-free-text",
+    que: "una columna de texto libre en child_report_state",
+    archivo: "migrations/0019_reportes_correo.sql",
+    parche: (t) =>
+      t.replace(
+        "  updated_at          INTEGER NOT NULL\n);",
+        "  nota_del_padre      TEXT,\n  updated_at          INTEGER NOT NULL\n);",
+      ),
+    espera: "child_report_state",
+  },
   // ─── F7 #208 · El roster del dueño del grupo, degradado sobre el archivo REAL ─
   //
   // Los tres casos DEGRADAN `grupo-roster.ts` (D-070): la columna de presencia
@@ -2225,6 +2288,7 @@ const CASOS = [
     archivo: "apps/web/src/lib/grupo-roster.ts",
     parche: (t) => t.replace("ORDER BY p.alias ASC, p.id ASC", "ORDER BY r.current_streak DESC"),
     espera: "ORDER BY",
+
   },
 ];
 

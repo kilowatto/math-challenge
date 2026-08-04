@@ -259,25 +259,68 @@
     "binding": "AI"
   },
 
-  // ── El cron del recordatorio al padre (F7 #207, D-105) ───────────────────
+  // ── Los crones del padre: recordatorio push (F7) y reportes (F8) ─────────
   //
-  // Cada 30 minutos. La hora exacta la decide el motor puro
-  // (`packages/motor/src/recordatorio.ts`) por hogar y en la zona de
-  // `users.timezone`: la primera pasada a partir del inicio de la ventana de
-  // pantalla —o de las 17:00 locales si no hay— y nunca fuera de 07:00-20:00.
-  // El tope de UN push al día por hogar se persiste en D1
+  // `*/30 * * * *` — el recordatorio push (F7 #207, D-105). La hora exacta la
+  // decide el motor puro (`packages/motor/src/recordatorio.ts`) por hogar y en
+  // la zona de `users.timezone`: la primera pasada a partir del inicio de la
+  // ventana de pantalla —o de las 17:00 locales si no hay— y nunca fuera de
+  // 07:00-20:00. El tope de UN push al día por hogar se persiste en D1
   // (`push_recordatorio.last_sent_local_date`), así que la frecuencia del cron
   // no puede convertirse en más de un empujón al día aunque falle el reloj.
   //
-  // Vive aquí y no en `math-challenge-ingest` (que ya tiene el cron semanal
-  // del ciclo de liga): la suscripción, el copy y la clave pública VAPID son
-  // de la superficie del padre, que es ESTE Worker. Justificación completa en
-  // `apps/web/src/worker.ts` y en el PR de #207.
+  // `0 * * * *` — los reportes por correo (F8 #289). Cada hora, porque la hora
+  // de envío es LOCAL del hogar (`parent_report_settings.send_hour_local`,
+  // 7..20, en `users.timezone`): un disparo semanal fijo en UTC golpearía
+  // distinto a cada mercado. La decisión la toma el motor puro
+  // (`packages/motor/src/reportes.ts::decidirEnvioReporte`); este handler solo
+  // enumera y encola, nunca renderiza ni envía inline.
+  //
+  // Los dos viven aquí y no en `math-challenge-ingest` (que ya tiene el cron
+  // semanal del ciclo de liga): la suscripción, el copy, la clave pública
+  // VAPID, la preferencia de cadencia y el binding `EMAIL` son todos de la
+  // superficie del padre, que es ESTE Worker. Justificación completa en
+  // `apps/web/src/worker.ts` y en los PR de #207 y #289.
   //
   // Sin `VAPID_PRIVATE_KEY` (secreto, `wrangler secret put`) y
-  // `VAPID_PUBLIC_KEY` (var, la instala el orquestador) el ciclo corre y no
-  // envía nada: degradación silenciosa, el estado seguro por defecto.
-  "triggers": { "crons": ["*/30 * * * *"] },
+  // `VAPID_PUBLIC_KEY` (var, la instala el orquestador) el ciclo de push corre
+  // y no envía nada; sin la cola de reportes creada, el ciclo de correo corre
+  // y no encola nada. Degradación silenciosa: el estado seguro por defecto.
+  "triggers": { "crons": ["*/30 * * * *", "0 * * * *"] },
+
+  // ── La cola de los reportes por correo (F8 #289) ─────────────────────────
+  //
+  // Fan-out por hogar: un mensaje por cuenta de adulto elegible. El consumidor
+  // construye el reporte, renderiza la plantilla del locale del padre y envía
+  // con el binding `EMAIL`. Lote de 10, tres reintentos, y lo que agota los
+  // tres va a `math-challenge-reports-dlq` — una dirección suprimida NO se
+  // reintenta (el consumidor la detecta y apaga la cadencia del hogar: la
+  // reputación del remitente ya está «At Risk», insistir sobre un rebote es
+  // cómo se hunde del todo).
+  //
+  // **Las colas se crean a mano antes del primer despliegue con este config:**
+  //
+  //     npx wrangler queues create math-challenge-reports-queue
+  //     npx wrangler queues create math-challenge-reports-dlq
+  //
+  // Sin ellas, el ciclo degrada en silencio (enumera, no encola, no rompe) —
+  // el estado seguro por defecto hasta que el orquestador las cree.
+  "queues": {
+    "producers": [
+      {
+        "binding": "REPORTES_QUEUE",
+        "queue": "math-challenge-reports-queue"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "math-challenge-reports-queue",
+        "max_batch_size": 10,
+        "max_retries": 3,
+        "dead_letter_queue": "math-challenge-reports-dlq"
+      }
+    ]
+  },
 
   "vars": {
     // Los siete locales. No cinco: es-MX y es-ES no comparten separador

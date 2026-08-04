@@ -105,6 +105,48 @@ if (candidatos.length === 0) {
   notas.unshift(`${candidatos.length} archivo(s) de borrado revisados`);
 }
 
+// ---------------------------------------------------------------------------
+// 2. El borrado por CASCADE es estructural, no de runbook (F8 #287)
+// ---------------------------------------------------------------------------
+//
+// Toda tabla que cuelga de una ENTIDAD borrable —`user_id` → `users`,
+// `child_profile_id` → `child_profiles`— tiene que declarar
+// `ON DELETE CASCADE` en la propia referencia: borrar la cuenta o el perfil
+// limpia sus filas en la misma sentencia, sin que ningún runbook tenga que
+// acordarse de la lista. Una tabla nueva SIN el cascade es un dato de menor
+// (o de padre) que sobrevive al borrado en el sistema que menos se mira: la
+// propia base. Así nacieron `parent_report_settings` y `child_report_state`
+// (#287), y así tiene que nacer toda la que venga.
+//
+// Se lee de las migraciones REALES (segunda fuente, D-070), no de una lista
+// escrita aquí a mano. Solo se miran las columnas que nombran al DUEÑO de la
+// fila (`user_id`, `child_profile_id`): las columnas de ACTOR
+// (`decided_by`, `reviewed_by`, `updated_by`) referencian `users` sin cascade
+// a propósito — borrar al actor no debe borrar el hecho que registró.
+
+let tablasConCascade = 0;
+for (const archivo of archivos(/^migrations\/.*\.sql$/)) {
+  const texto = leer(archivo) ?? "";
+  for (const linea of texto.split("\n")) {
+    if (linea.trimStart().startsWith("--")) continue;
+    const esDueno = /\b(child_profile_id|user_id)\b[^\n]*\bREFERENCES\s+(child_profiles|users)\s*\(id\)/i;
+    if (!esDueno.test(linea)) continue;
+    if (!/ON\s+DELETE\s+CASCADE/i.test(linea)) {
+      problemas.push(
+        `${archivo}: una columna \`user_id\`/\`child_profile_id\` referencia a su dueño SIN ` +
+          "ON DELETE CASCADE. El borrado de la entidad dejaría esta fila viva (mc-32 riesgo " +
+          "#7): el cascade es cómo el runbook no tiene que acordarse de cada tabla.",
+      );
+    } else {
+      tablasConCascade++;
+    }
+  }
+}
+notas.push(
+  `${tablasConCascade} referencia(s) de fila-dueña con ON DELETE CASCADE verificado en migraciones ` +
+    "(#287: parent_report_settings y child_report_state entre ellas)",
+);
+
 informar({
   nombre: "borrado-cuatro-sistemas",
   problemas,

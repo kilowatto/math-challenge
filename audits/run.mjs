@@ -408,6 +408,18 @@ const ACTIVE = [
   // REALES (D-070), nunca archivos inventados.
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
 
+
+  // ─── Los reportes por correo al padre (F8 #292) ──────────────────────────
+  //
+  // El correo junta a todos los hijos de un hogar en un solo documento: es la
+  // superficie donde una comparación se cuela sin que nadie la escriba (un
+  // orden por puntos, un «va mejor que», un promedio del hogar). Vigila el
+  // motor puro (`packages/motor/src/reportes.ts`) y las plantillas de los 7
+  // locales. Sus controles negativos DEGRADAN los archivos reales (D-070):
+  // una resta entre `SeccionHijo` de dos hermanos y un «mejor que su
+  // hermano» plantado en la plantilla — los dos vistos fallar en el PR.
+  ["reporte-sin-comparacion", "el reporte al padre nunca compara",            "D-025, línea roja #7, mc-18, #286 §5, #292"],
+
   // ─── El de #208 (F7), y por qué nace VERDE ───────────────────────────────
   //
   // El roster del dueño de un salón o club de papás es la consulta que más
@@ -419,6 +431,7 @@ const ACTIVE = [
   // DEGRADACIONES del `grupo-roster.ts` REAL (D-070): la columna de más, el
   // filtro de status quitado y el ORDER BY por racha.
   ["racha-salones-minima",    "el grupo ve alias, puntos y current_streak — y nada más", "#208, D-025, D-044, D-106, mc-46 §6"],
+
 
 ];
 

@@ -45,8 +45,32 @@ const fuentes = archivos(/\.(ts|tsx|js|mjs|astro)$/)
 
 let consultas = 0;
 
+// ─── La excepción con marcador escrito (mismo mecanismo que D-106) ─────────
+//
+// El cruce de `child_consents` existe para las LISTAS PÚBLICAS: ningún perfil
+// aparece ante otros sin el opt-in LEADERBOARD (D-040). Hay lecturas de
+// `score_totals` que no son eso: el reporte por correo al padre (F8 #286-#288)
+// lee los perfiles DEL PROPIO HOGAR (`parent_user_id = ?`) para el adulto que
+// ya los ve en su panel — exigir ahí el opt-in del tablero dejaría sin puntos
+// el correo de quien nunca quiso tablero, que es al revés del consentimiento.
+// Como con `liga-no-quita-difusion`, el archivo que la necesita declara
+//
+//     tablero-orden-puntos-hogar: score_totals — <razón de 20+ caracteres>
+//
+// y solo ENTONCES se le perdona el cruce. Todo lo demás del archivo sigue
+// vigente: el UNION prohibido, el orden por puntos, y el cruce en cualquier
+// otra consulta.
+const MARCADOR_HOGAR = /tablero-orden-puntos-hogar: score_totals — .{20,}/;
+
 for (const archivo of fuentes) {
-  const texto = sinComentarios(leer(archivo) ?? "");
+  const crudo = leer(archivo) ?? "";
+  const texto = sinComentarios(crudo);
+  const lecturaDeHogar = MARCADOR_HOGAR.test(crudo);
+  if (lecturaDeHogar) {
+    notas.push(
+      `${archivo}: lectura de \`score_totals\` del propio hogar autorizada por marcador (F8)`,
+    );
+  }
   if (!/score_totals/i.test(texto)) continue;
   consultas++;
   comprobaciones++;
@@ -74,8 +98,9 @@ for (const archivo of fuentes) {
 
   // El opt-in. Toda consulta a `score_totals` (la de niños) tiene que cruzar
   // `child_consents`. La de adultos no: un adulto consiente por sí mismo.
+  // La ÚNICA excepción es la lectura del propio hogar con marcador escrito.
   const tocaNinos = /FROM\s+score_totals\b/i.test(texto);
-  if (tocaNinos && !/child_consents/.test(texto)) {
+  if (tocaNinos && !/child_consents/.test(texto) && !lecturaDeHogar) {
     problemas.push(
       `${archivo}: consulta \`score_totals\` sin cruzar \`child_consents\`. D-040: ningún perfil ` +
         "de niño aparece en ninguna instantánea del tablero sin una fila LEADERBOARD vigente " +

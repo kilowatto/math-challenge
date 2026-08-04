@@ -1,0 +1,162 @@
+---
+/**
+ * `/{locale}/app/parent/panel/[childId]/cosmeticos` — el roadmap de
+ * cosméticos de UN hijo, solo para el padre (F8 #284).
+ *
+ * ─── Por qué es una página aparte ────────────────────────────────────────────
+ *
+ * Decisión del dueño (respuesta a la pregunta 4 de #277): el roadmap vive
+ * DETRÁS de una pestaña que el padre abre a propósito — no se renderiza en la
+ * carga inicial del panel, que queda enfocada en dominio/racha/pantalla. Una
+ * ruta propia es la forma más literal de cumplirlo: aquí no hay un fetch
+ * diferido ni un `<details>`, hay otra pantalla.
+ *
+ * ─── Qué se muestra, y qué nunca ─────────────────────────────────────────────
+ *
+ * El catálogo de F7 (#255) tal cual: silueta bloqueada + condición en texto
+ * autorado por locale (las claves `condicion_clave` de `i18n/cosmeticos/`,
+ * que ya existen — jamás la fórmula cruda, que no es texto de cara al padre).
+ * El niño sigue descubriendo cada pieza como sorpresa: esta cuadrícula vive
+ * bajo `/parent/`, detrás de la sesión del adulto, y ninguna superficie de
+ * niño la enlaza (mc-43 §8). Nada es comprable ni tiene cuenta regresiva
+ * (D-014, línea roja #5).
+ *
+ * Autorización idéntica al resto del panel: `hijoDelPadre()` y 404
+ * indistinguible (línea roja #2). Sin beacon de RUM (`sinRum`, D-037).
+ */
+export const prerender = false;
+
+import Privada from "../../../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../../../lib/sesiones";
+import { pestanasPrivadas } from "../../../../../../lib/pestanas-privadas";
+import { hijoDelPadre } from "../../../../../../lib/padre-limite";
+import { leerDatosDelPanel } from "../../../../../../lib/padre-panel";
+import { zonaDelHogar } from "../../../../../../lib/progreso";
+import { rutaCasa, rutaPanelHijo } from "../../../../../../lib/rutas-app";
+import { ruta } from "../../../../../../i18n/rutas";
+import { TEXTOS_PADRE, TEXTOS_COSMETICO, rellenarPadre } from "../../../../../../components/parent/textos";
+import { componerDiagnostico } from "../../../../../../../../../packages/motor/src/diagnostico.ts";
+import { diaEfectivo } from "../../../../../../../../../packages/motor/src/tiempo-local.ts";
+
+const { locale: raw, childId = "" } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+if (!env?.DB) return Astro.redirect(rutaCasa(locale));
+
+const noEncontrado = () =>
+  new Response("404 — perfil desconocido", {
+    status: 404,
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store, private" },
+  });
+
+let hijo: Awaited<ReturnType<typeof hijoDelPadre>> = null;
+try {
+  hijo = await hijoDelPadre(env.DB, sesion.userId, childId);
+} catch (err) {
+  console.error("panel-cosmeticos: no se pudo leer el perfil", String(err).slice(0, 200));
+}
+if (!hijo) return noEncontrado();
+
+const zona = await zonaDelHogar(env, { id: sesion.userId, esAdulto: true });
+const datos = await leerDatosDelPanel(env.DB, hijo, diaEfectivo(Date.now(), zona));
+const roadmap = componerDiagnostico(datos.filas).cosmeticos;
+
+const textos = TEXTOS_PADRE[locale];
+const textosCosmetico = TEXTOS_COSMETICO[locale];
+const lead = rellenarPadre(textos["padre.panel.cosmeticosLead"], { alias: hijo.alias });
+
+const pestanas = pestanasPrivadas(locale, true, "progreso");
+
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={`${textos["padre.panel.cosmeticosTitulo"]} · ${hijo.alias}`} description={lead} pestanas={pestanas} sinRum={true}>
+  <article class="cosmeticos">
+    <h1>{textos["padre.panel.cosmeticosTitulo"]} · {hijo.alias}</h1>
+
+    <nav class="pestanas-internas" aria-label={textos["padre.panel.titulo"]}>
+      <a href={rutaPanelHijo(locale, hijo.id)}>{textos["padre.panel.pestanaProgreso"]}</a>
+      <span class="activa" aria-current="page">{textos["padre.panel.pestanaCosmeticos"]}</span>
+    </nav>
+
+    <p class="lead">{lead}</p>
+
+    {roadmap.length === 0 ? (
+      <p class="muted">{textos["padre.panel.cosmeticosVacio"]}</p>
+    ) : (
+      <ul class="cuadricula">
+        {roadmap.map((c) => {
+          const nombre = textosCosmetico[c.nombreClave] ?? c.cosmeticoId;
+          const condicion = c.condicionClave !== null ? (textosCosmetico[c.condicionClave] ?? null) : null;
+          const src = c.desbloqueado ? (c.arteAvifUrl ?? c.arteWebpUrl) : c.siluetaUrl;
+          return (
+            <li class={c.desbloqueado ? "pieza ganada" : "pieza bloqueada"}>
+              {src !== null ? (
+                <img src={src} alt="" width="96" height="96" loading="lazy" />
+              ) : (
+                <span class="sin-arte" aria-hidden="true">?</span>
+              )}
+              <p class="nombre">{nombre}</p>
+              {c.desbloqueado ? (
+                <p class="estado ganada">{textos["padre.panel.cosmeticosDesbloqueado"]}</p>
+              ) : (
+                <>
+                  <p class="estado">{textos["padre.panel.cosmeticosBloqueado"]}</p>
+                  {condicion !== null && <p class="condicion">{condicion}</p>}
+                  {src === null && <p class="condicion muted">{textos["padre.panel.cosmeticosSinArte"]}</p>}
+                </>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </article>
+
+  <style>
+    .cosmeticos { max-width: 40rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .muted { color: var(--color-text-muted); }
+    .pestanas-internas { display: flex; gap: 0.5rem; margin-block-end: var(--space); }
+    .pestanas-internas a, .pestanas-internas .activa { display: inline-flex; align-items: center;
+                                                       min-height: 44px; padding-inline: 1rem;
+                                                       border-radius: var(--radius); text-decoration: none;
+                                                       color: var(--color-text); font-size: var(--text-base); }
+    .pestanas-internas .activa { border-block-end: 3px solid var(--color-accent);
+                                 color: var(--color-text-brand); font-weight: var(--weight-subtitle); }
+    .pestanas-internas a:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+
+    .cuadricula { list-style: none; margin: 0; padding: 0; display: grid;
+                  grid-template-columns: repeat(2, 1fr); gap: var(--space); }
+    @media (min-width: 744px) { .cuadricula { grid-template-columns: repeat(3, 1fr); } }
+    .pieza { border: 1px solid var(--color-border); border-radius: var(--radius);
+             padding: var(--space); display: flex; flex-direction: column; align-items: center;
+             gap: 0.5rem; text-align: center; }
+    .pieza img { inline-size: 6rem; block-size: 6rem; object-fit: contain; }
+    .pieza.bloqueada img { filter: grayscale(1); }
+    .sin-arte { display: flex; align-items: center; justify-content: center;
+                inline-size: 6rem; block-size: 6rem; border-radius: var(--radius);
+                border: 2px dashed var(--color-border); color: var(--color-text-muted);
+                font-family: var(--font-marca); font-size: var(--text-xl); }
+    .nombre { font-family: var(--font-marca); font-weight: var(--weight-subtitle);
+              font-size: var(--text-base); margin: 0; }
+    .estado { font-size: var(--text-xs); color: var(--color-text-muted); margin: 0; }
+    .estado.ganada { color: var(--color-text-brand); }
+    .condicion { font-size: var(--text-xs); color: var(--color-text); margin: 0;
+                 line-height: var(--leading-body); }
+  </style>
+</Privada>

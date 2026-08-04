@@ -26,6 +26,14 @@ import ptBR from "../../i18n/padre/pt-BR.json";
 import ptPT from "../../i18n/padre/pt-PT.json";
 import deDE from "../../i18n/padre/de-DE.json";
 
+import cosEn from "../../i18n/cosmeticos/en.json";
+import cosEsMX from "../../i18n/cosmeticos/es-MX.json";
+import cosEsES from "../../i18n/cosmeticos/es-ES.json";
+import cosFrFR from "../../i18n/cosmeticos/fr-FR.json";
+import cosPtBR from "../../i18n/cosmeticos/pt-BR.json";
+import cosPtPT from "../../i18n/cosmeticos/pt-PT.json";
+import cosDeDE from "../../i18n/cosmeticos/de-DE.json";
+
 export const TEXTOS_PADRE: Record<string, Record<string, string>> = {
   "en": en,
   "es-MX": esMX,
@@ -34,6 +42,22 @@ export const TEXTOS_PADRE: Record<string, Record<string, string>> = {
   "pt-BR": ptBR,
   "pt-PT": ptPT,
   "de-DE": deDE,
+};
+
+/**
+ * Los nombres y condiciones de los cosméticos (F7 #255), para el roadmap del
+ * panel (#284). Son los mismos siete JSON que lee cualquier otra superficie de
+ * cosméticos — importados AQUÍ y no en cada página, por la razón de siempre:
+ * dos copias de la misma tabla es cómo una se queda sin el arreglo de la otra.
+ */
+export const TEXTOS_COSMETICO: Record<string, Record<string, string>> = {
+  "en": cosEn,
+  "es-MX": cosEsMX,
+  "es-ES": cosEsES,
+  "fr-FR": cosFrFR,
+  "pt-BR": cosPtBR,
+  "pt-PT": cosPtPT,
+  "de-DE": cosDeDE,
 };
 
 /**

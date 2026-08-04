@@ -409,6 +409,20 @@ const ACTIVE = [
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
 
 
+  // F8 #285 (criterio del paraguas #277). El panel del padre lee SOLO D1:
+  // un binding de Analytics Engine en su ruta es la puerta de atrás al
+  // detalle por intento que mc-32 riesgo #1 diseñó para que no se pudiera
+  // consultar. Sus controles negativos son un archivo PLANTADO en la ruta y
+  // una DEGRADACIÓN de la capa de datos real (D-070).
+  ["panel-sin-detalle-de-intento", "el panel del padre nunca toca Analytics Engine", "mc-32 riesgo #1, D-013, #285"],
+
+  // F8 #283. Las notas de diagnóstico van en la voz de Larry (decisión del
+  // dueño): toda causa del CHECK de la 0018 necesita plantilla autorada en
+  // los 7 locales y limpia del MISMO léxico que juzga lo que Larry le dice
+  // al niño. Las causas se leen de la MIGRACIÓN, no del motor (D-070).
+  ["notas-diagnostico-completas", "toda causa de nota tiene plantilla sin vergüenza en 7 locales", "D-020, D-022, LR-7, #283"],
+
+
   // ─── Los reportes por correo al padre (F8 #292) ──────────────────────────
   //
   // El correo junta a todos los hijos de un hogar en un solo documento: es la
@@ -431,6 +445,7 @@ const ACTIVE = [
   // DEGRADACIONES del `grupo-roster.ts` REAL (D-070): la columna de más, el
   // filtro de status quitado y el ORDER BY por racha.
   ["racha-salones-minima",    "el grupo ve alias, puntos y current_streak — y nada más", "#208, D-025, D-044, D-106, mc-46 §6"],
+
 
 
 ];
@@ -696,6 +711,31 @@ for (const prueba of [
   // en el ítem, y el corte que no suma XP.
   "apps/web/src/lib/limite-corte-racha.prueba.mjs",
 
+
+  // F8 #279, la composición de lectura del panel del padre. Lo que defiende
+  // no rompe nada visible: un estado de dominio con corte propio, una liga
+  // reordenada a mano o una nota con causa desconocida dan resultados
+  // plausibles y equivocados — y la posición de liga de un niño mal puesta,
+  // o la clave cruda `HABILIDAD_PAUSADA_LATERAL` pintada en la cara del
+  // padre, no los ve nadie leyendo el código. 19 casos, con los valores
+  // esperados escritos a mano desde las fuentes (D-070): la maestría en dos
+  // etapas de mc-05/D-018, la curva de XP de D-055, el orden de liga de la
+  // 0012.
+  "packages/motor/src/diagnostico.prueba.mjs",
+
+  // F8 #279-#285, la capa de datos del panel del padre contra `node:sqlite`.
+  // Ocho lecturas de tablas ajenas compuestas en una pantalla: una consulta
+  // mal escrita no da error, da una posición de liga leída SIN consentimiento
+  // LEADERBOARD (D-040), o una tendencia que suma días de hace un año. Los
+  // valores esperados están escritos a mano (D-070), incluida la ventana de
+  // 56 días y la puerta de consentimiento revocado.
+  "apps/web/src/lib/padre-panel.prueba.mjs",
+
+
+
+
+
+
   // F7 #208. El ROSTER de solo lectura del dueño de un salón o club de papás,
   // contra SQLite de verdad (`node:sqlite`) con las migraciones REALES. Lo que
   // defiende tampoco rompe nada visible: una columna de más en el SELECT no da
@@ -708,6 +748,7 @@ for (const prueba of [
   // primera lectura, el null sin oráculo para el grupo ajeno, y el club de
   // papás con la misma lista cerrada que el salón.
   "apps/web/src/lib/grupo-roster.prueba.mjs",
+
 
 ]) {
   const r = spawnSync(

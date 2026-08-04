@@ -16,10 +16,10 @@
 -- nunca vuelve a correr, y el cambio se perdería en silencio (la lección de
 -- la 0008).
 --
--- migration-safety-reserva: 0018 — repartida al frente del panel del padre,
--- que se construye en paralelo sobre otra rama y todavía no aterriza en main.
--- Este marcador bloquea en cuanto `migrations/0018_*.sql` exista: la excepción
--- nunca se vuelve permanente.
+-- (La 0018 era una reserva `migration-safety-reserva` de este archivo mientras
+-- el panel del padre la construía en paralelo; aterriza con este mismo merge y
+-- el marcador se borró aquí mismo al integrar, como el mecanismo exige: la
+-- excepción nunca se vuelve permanente.)
 --
 -- ─── La restricción estructural: una fila por ENTIDAD, nunca por envío ─────
 --

@@ -71,6 +71,11 @@ import {
   type Progreso,
 } from "../../lib/progreso";
 import { sumarPuntosDeLiga } from "../../lib/liga-membresia";
+import {
+  anotarPuntoDeDuelo,
+  servirItemDeDuelo,
+  validarTurnoDeDuelo,
+} from "../../lib/duelo-superficie";
 import { limiteAlServir, limiteAlResponder } from "../../lib/limite-dia";
 import { registrarAvanceDeHoy } from "../../lib/misiones-dia";
 import { bancoPrimariaD1 } from "../../lib/banco-primaria";
@@ -261,16 +266,49 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
 
   const locale = typeof cuerpo.locale === "string" ? cuerpo.locale : "en";
 
+  /*
+   * ─── El DUELO (F7 #244): el MISMO reto contra el `item_set` congelado ──────
+   *
+   * La pantalla manda `duelo` con el id del `league_duel` cuando la serie es
+   * de un duelo. Todo lo demás sigue igual —califica el servidor, se
+   * actualiza el modelo, corre la racha y la liga— porque los puntos del
+   * duelo son puntos NORMALES (#237: no es un sistema paralelo). Lo único que
+   * cambia es QUÉ ítem se sirve (el congelado, en orden, el mismo para los
+   * dos) y que el marcador del set se anota en la fila del duelo.
+   *
+   * El acceso a ítems prueba primero el banco de primaria en D1 (D-072) y
+   * cae a la ingesta: un NIÑO de PRIMARIA jugando un duelo recibe ítems de
+   * `item_bank`, y su `origen` de siempre —la ingesta, que sirve kinder— no
+   * los tiene. Es el mismo respaldo, al revés, que el del adulto de arriba.
+   */
+  const dueloId = typeof cuerpo.duelo === "string" ? cuerpo.duelo : null;
+  const accesoDuelo = {
+    presentar: async (itemId: string, loc: string) => {
+      if (env.DB) {
+        const item = await bancoPrimariaD1(env.DB, RETO).presentarItem(itemId, loc);
+        if (item) return item;
+      }
+      return env.INGEST.presentarItem(itemId, loc);
+    },
+    calificarContraBanco: async (itemId: string, eleccion: number | string) => {
+      if (env.DB) {
+        const v = await bancoPrimariaD1(env.DB, RETO).calificarContraBanco(itemId, eleccion);
+        if (v) return v;
+      }
+      return env.INGEST.calificarContraBanco(itemId, eleccion);
+    },
+  };
+
   // El año de nacimiento siembra el ítem 1 y **nada más** (D-060, criterio #88).
   // Se lee aquí, una vez, y no entra a ninguna función del motor salvo
   // `nivelSemilla`. El motor no recibe la edad ni la banda.
   const semilla = await nivelSemillaDe(env, quien.id, quien.esAdulto);
 
   if (accion === "siguiente") {
-    return servirSiguiente(env, quien, locale, semilla, cuerpo, origen);
+    return servirSiguiente(env, quien, locale, semilla, cuerpo, origen, dueloId, accesoDuelo.presentar);
   }
   if (accion === "responder") {
-    return recibirRespuesta(env, quien, locale, semilla, cuerpo, origen);
+    return recibirRespuesta(env, quien, locale, semilla, cuerpo, origen, dueloId, accesoDuelo.calificarContraBanco);
   }
   return json({ error: "accion_desconocida" }, 400);
 };
@@ -369,6 +407,8 @@ async function servirSiguiente(
   semilla: number,
   cuerpo: Record<string, unknown>,
   origen: OrigenDeItems,
+  dueloId: string | null,
+  presentarDuelo: (itemId: string, locale: string) => Promise<unknown | null>,
 ): Promise<Response> {
   const childProfileId = quien.id;
 
@@ -401,6 +441,27 @@ async function servirSiguiente(
      * todas formas y la racha no depende de nada de lo que pase aquí.
      */
     return json({ ok: true, corte: limite });
+  }
+
+  /*
+   * El duelo (F7 #244): se sirve el `item_set` congelado en orden, validado
+   * del lado del servidor (participante, ventana, turno). `fin` no es un
+   * error: es el set terminado, el duelo resuelto o la ventana cerrada — la
+   * pantalla vuelve a la liga, que es donde vive el resultado. El límite de
+   * pantalla ya se aplicó arriba, igual que en cualquier reto.
+   */
+  if (dueloId) {
+    const d = await servirItemDeDuelo(env, quien, dueloId, locale, presentarDuelo, Date.now());
+    if (d.estado === "fin") return json({ ok: true, fin: true });
+    if (d.estado === "error") {
+      return json({ error: d.motivo }, d.motivo === "item_desconocido" ? 500 : 409);
+    }
+    return json({
+      ok: true,
+      item: d.item,
+      limite: limite ?? undefined,
+      duelo: { hechos: d.hechos, total: d.total },
+    });
   }
 
   const [catalogoCrudo, resumen] = await Promise.all([
@@ -545,6 +606,11 @@ async function recibirRespuesta(
   semilla: number,
   cuerpo: Record<string, unknown>,
   origen: OrigenDeItems,
+  dueloId: string | null,
+  calificarDuelo: (
+    itemId: string,
+    eleccion: number | string,
+  ) => Promise<null | Awaited<ReturnType<Ingest["calificarContraBanco"]>>>,
 ): Promise<Response> {
   const childProfileId = quien.id;
   const itemId = typeof cuerpo.itemId === "string" ? cuerpo.itemId : null;
@@ -591,15 +657,31 @@ async function recibirRespuesta(
    */
   const reintento = cuerpo.reintento === true;
 
+  /*
+   * El turno del duelo se valida ANTES de juzgar el ítem (F7 #244): si no
+   * es el que toca del set congelado —o el duelo ya no está vivo— no se
+   * juzga ni entra al modelo. Un reintento no se valida: repite un ítem ya
+   * contado y, como en el reto normal, no mueve nada.
+   */
+  if (dueloId && !reintento) {
+    const turno = await validarTurnoDeDuelo(env, quien, dueloId, itemId, Date.now());
+    if (!turno.ok) return json({ error: turno.motivo }, 409);
+  }
+
   // ─── El servidor califica. Siempre. ──────────────────────────────────────
   //
   // Si el ítem no está en el origen elegido, se prueba el otro antes de
   // rendirse: es el caso del adulto al que `servirSiguiente` le sirvió kinder
   // de respaldo porque la siembra de primaria no corre en este ambiente. La
   // ingesta conserva su comportamiento de siempre — ítem desconocido, error.
-  const veredicto =
-    (await origen.calificarContraBanco(itemId, eleccion)) ??
-    (await env.INGEST.calificarContraBanco(itemId, eleccion));
+  // En duelo el orden se invierte —primaria primero, ingesta de respaldo—
+  // porque el set congelado sale del banco de primaria (D-072) y quien juega
+  // puede ser un niño, cuyo `origen` habitual es la ingesta.
+  const veredicto = dueloId
+    ? await calificarDuelo(itemId, eleccion)
+    : ((await origen.calificarContraBanco(itemId, eleccion)) ??
+      (await env.INGEST.calificarContraBanco(itemId, eleccion)));
+  if (!veredicto) return json({ error: "item_desconocido" }, 500);
 
   const resumen = await leerModelo(env.LEARNER_DO, childProfileId);
   const { estado } = estadoDe(resumen, veredicto.habilidad, semilla);
@@ -703,6 +785,7 @@ async function recibirRespuesta(
    */
   let progreso: Progreso | null = null;
   let limite: Awaited<ReturnType<typeof limiteAlResponder>> = null;
+  let avanceDuelo: Awaited<ReturnType<typeof anotarPuntoDeDuelo>> | null = null;
   if (!reintento) {
     const zona = await zonaDelHogar(env, quien);
     const registro = await registrarItem(env, quien, {
@@ -755,6 +838,25 @@ async function recibirRespuesta(
         racha: registro.progreso.racha.actual,
         ahora: Date.now(),
       });
+    }
+
+    /*
+     * El marcador del duelo (F7 #244). Va DESPUÉS de la liga a propósito: los
+     * puntos ya sumaron al total semanal normal por el cable de siempre, y
+     * aquí solo se anotan en la fila del duelo — la misma cifra, calculada
+     * por la ingesta con la fórmula de D-010, ninguna fórmula nueva. Falla
+     * abierto igual que la liga: si no se puede anotar, lo que se pierde es
+     * el marcador del set, nunca el juego. Un reintento no pasa por aquí.
+     */
+    if (dueloId) {
+      avanceDuelo = await anotarPuntoDeDuelo(
+        env,
+        quien,
+        dueloId,
+        itemId,
+        puntosCalificados ?? 0,
+        Date.now(),
+      );
     }
 
     /*
@@ -856,6 +958,17 @@ async function recibirRespuesta(
      * nada que decir.
      */
     limite: limite ?? undefined,
+    /*
+     * El avance del duelo, si esta respuesta fue de uno (F7 #244): cuántos
+     * ítems del set van, cuántos son, y si con éste terminé mi mitad. La
+     * pantalla no compone nada con esto — el resultado se mira en la liga—;
+     * es para que el cliente sepa cuándo el set se acabó. `undefined` fuera
+     * de duelo.
+     */
+    duelo:
+      dueloId && avanceDuelo?.ok
+        ? { hechos: avanceDuelo.hechos, total: avanceDuelo.total, terminado: avanceDuelo.terminado }
+        : undefined,
     /*
      * La racha y el XP ya escritos, para que la pantalla los pinte sin una
      * segunda petición. Números crudos y nada más: el texto lo compone quien

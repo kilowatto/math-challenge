@@ -1,0 +1,108 @@
+---
+/**
+ * `/{locale}/app/parent/panel/` — la puerta del panel del padre: el selector
+ * de hijo (F8 #285).
+ *
+ * ─── Un hijo a la vez, por construcción ──────────────────────────────────────
+ *
+ * La decisión de #285 no es «todavía no hicimos la comparativa»: es NO
+ * construirla. Ningún componente de esta superficie renderiza dos perfiles
+ * lado a lado — esta página es una lista de PUERTAS, cada una lleva al panel
+ * de un solo niño, y el panel de un niño no muestra ningún dato de otro. El
+ * precedente de mercado (el desplegable de Prodigy, #277 §1) valida la forma;
+ * la razón es D-014: la comparación pública entre niños está en la lista
+ * negra, y entre hermanos es la misma mecánica dentro de una casa.
+ *
+ * Con exactamente un hijo no hay nada que elegir: se entra directo a su
+ * panel y se ahorra una pantalla vacía de propósito.
+ *
+ * ─── Autorización ───────────────────────────────────────────────────────────
+ *
+ * La lista sale de `parent_user_id = sesion.userId` (línea roja #2): aquí no
+ * puede aparecer un perfil de otra cuenta porque la consulta no lo puede
+ * leer. Solo alias y banda — ningún dato más sale de la base (mc-25, D-013).
+ *
+ * Sin telemetría de rendimiento: la pantalla muestra perfiles de niños, y la
+ * lectura conservadora de D-037 es no medir ahí (`sinRum`).
+ */
+export const prerender = false;
+
+import Privada from "../../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../../lib/sesiones";
+import { pestanasPrivadas } from "../../../../../lib/pestanas-privadas";
+import { rutaCasa, rutaPanelHijo } from "../../../../../lib/rutas-app";
+import { ruta } from "../../../../../i18n/rutas";
+import { TEXTOS_PADRE } from "../../../../../components/parent/textos";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+if (!env?.DB) return Astro.redirect(rutaCasa(locale));
+
+// Los hijos de ESTA cuenta, y nada más que su alias y su banda (misma
+// consulta y misma razón que `app/index.astro`: minimización de D-013).
+let hijos: Array<{ id: string; alias: string; theme_band: string }> = [];
+try {
+  const r = await env.DB.prepare(
+    "SELECT id, alias, theme_band FROM child_profiles " +
+      "WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at",
+  )
+    .bind(sesion.userId)
+    .all<{ id: string; alias: string; theme_band: string }>();
+  hijos = r.results ?? [];
+} catch (err) {
+  console.error("panel: no se pudo leer la lista de hijos", String(err).slice(0, 200));
+}
+
+// Sin hijos esta página no tiene propósito: la casa sabe degradar. Con UNO,
+// elegir sería una pantalla de trámite — se entra directo.
+if (hijos.length === 0) return Astro.redirect(rutaCasa(locale));
+if (hijos.length === 1) return Astro.redirect(rutaPanelHijo(locale, hijos[0].id));
+
+const textos = TEXTOS_PADRE[locale];
+const pestanas = pestanasPrivadas(locale, true, "progreso");
+
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={textos["padre.panel.titulo"]} description={textos["padre.panel.lead"]} pestanas={pestanas} sinRum={true}>
+  <article class="selector">
+    <h1>{textos["padre.panel.titulo"]}</h1>
+    <nav aria-label={textos["padre.panel.selector"]}>
+      <ul>
+        {hijos.map((h) => (
+          <li>
+            <a class="puerta" href={rutaPanelHijo(locale, h.id)}>
+              <span class="alias">{h.alias}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </article>
+
+  <style>
+    .selector { max-width: 34rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: calc(var(--space) * 2); }
+    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space); }
+    /* 44px, la vara del ADULTO (touch-targets). */
+    .puerta { display: flex; align-items: center; min-height: 44px; padding: var(--space);
+              border: 1px solid var(--color-border); border-radius: var(--radius);
+              text-decoration: none; color: var(--color-text); background: var(--color-surface); }
+    .puerta .alias { font-family: var(--font-marca); font-weight: var(--weight-subtitle);
+                     font-size: var(--text-lg); }
+    .puerta:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+  </style>
+</Privada>

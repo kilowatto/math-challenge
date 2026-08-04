@@ -151,7 +151,14 @@ export const CARTAS = [
     // del roster se muestra como AUSENCIA de una señal positiva, nunca como
     // alerta sobre el niño — sin estas citas la carta veía el patrón y no
     // tenía con qué bloquearlo.
-    cita: ["LR-7", "D-003", "D-004", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-18", "mc-43", "mc-46", "D-107", "D-097", "mc-28"],
+    // `D-017`/`D-020`/`mc-15` se añaden en F8 (#280, #283): el panel del padre
+    // muestra el dominio en cuatro estados categóricos, nunca porcentaje ni
+    // nota escolar — D-017 es la decisión que prohíbe el «grado», mc-15 es la
+    // evidencia de que no existe equivalencia de grado citable con honestidad,
+    // y D-020 es la letra de la nota suave: el sujeto gramatical es el patrón,
+    // nunca el niño. Sin ellas la carta veía el «72% de dominio» y no tenía
+    // con qué bloquearlo.
+    cita: ["LR-7", "D-003", "D-004", "D-017", "D-020", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-15", "mc-18", "mc-43", "mc-46", "D-107", "D-097", "mc-28"],
     // `explicacion|larry` porque el módulo de explicación vive en
     // `packages/motor/`, que ninguno de los alcances heredados alcanza: sin esta
     // línea, la carta dormía justo sobre el archivo que compone lo que un niño
@@ -176,6 +183,13 @@ export const CARTAS = [
       // F9 #401: el roster del salón y la tarjeta de identidad del dueño del
       // grupo — el «necesita atención» sin vergüenza vive ahí.
       /grupo|salon|classroom/i,
+      // F8 #292: el reporte por correo al padre. El riesgo propio —la
+      // comparación implícita entre hermanos en el mismo correo— vive en
+      // `packages/motor/src/reportes.ts`, que no matcheaba ninguno de los
+      // patrones de arriba: sin esta línea, la carta que existe exactamente
+      // para ese riesgo nunca despertaba sobre el archivo donde el riesgo
+      // vive.
+      /reporte|informe/i,
     ],
   },
   {
@@ -271,6 +285,14 @@ export const CARTAS = [
       "cerrado.",
     ciega_a: "Calidad del modelo o del proveedor. El asunto es lo que Larry tiene permitido hacer.",
     cita: ["LR-7", "D-004", "D-015", "D-029", "mc-11", "mc-37"],
+    // F8 #283, verificado explícitamente (no asumido): las plantillas de las
+    // notas de diagnóstico (`padre.nota.*` en `apps/web/src/i18n/padre/*.json`)
+    // van en la voz de Larry hacia el ADULTO — la única superficie así — y el
+    // namespace `cause_code` ya queda cubierto por `TEXTOS` (`/i18n\//` y
+    // `/\.(json|md)$/`). No hace falta regex nuevo; sí queda escrito que la
+    // cobertura se comprobó, y que el sujeto gramatical de esas notas (el
+    // patrón o la habilidad, nunca el niño) lo vigila `anti-humillacion` con
+    // D-020 ya en su cita.
     alcance: [/larry/i, /prompt/i, /modera/i, ...TEXTOS],
   },
   {

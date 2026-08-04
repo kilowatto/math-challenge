@@ -46,7 +46,9 @@ import {
 } from "../../../../lib/sesiones";
 import { pestanasPrivadas } from "../../../../lib/pestanas-privadas";
 import { cargarTablaDe } from "../../../../lib/liga-membresia";
-import { rutaLigaJugador } from "../../../../lib/rutas-app";
+import { cargarPanelDeDuelo } from "../../../../lib/duelo-superficie";
+import Duelo from "../../../../components/liga/Duelo.astro";
+import { rutaLiga, rutaLigaJugador } from "../../../../lib/rutas-app";
 import { ruta } from "../../../../i18n/rutas";
 import { TEXTOS_LIGA } from "../../../../components/liga/textos";
 
@@ -78,6 +80,13 @@ if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
 const tabla = await cargarTablaDe(env ?? {}, { id: sesion.userId, esAdulto: true }, Date.now());
 
 /*
+ * El duelo del adulto aprendiz (F7 #244): misma sección que la del niño,
+ * mismo componente. El opt-in del adulto viene encendido — consiente por sí
+ * mismo (#244)— y su pantalla del reto es `/app/practicar/`, no la del niño.
+ */
+const panelDuelo = await cargarPanelDeDuelo(env ?? {}, { id: sesion.userId, esAdulto: true }, Date.now());
+
+/*
  * La franja de pestañas. `tieneHijos = false` a propósito, igual que
  * `app/mapa.astro`: esta pantalla es la del adulto sobre SÍ MISMO, y quien no
  * tiene hijos no lee una sola palabra sobre familia en su navegación (D-065
@@ -99,6 +108,16 @@ const pestanas = pestanasPrivadas(locale, false, "practicar");
         filas={tabla.filas}
         aliasPropio={tabla.aliasPropio}
         pintaRacha={true}
+      />
+    )}
+
+    {panelDuelo.estado === "ok" && (
+      <Duelo
+        locale={locale}
+        duelos={panelDuelo.duelos}
+        pares={panelDuelo.pares}
+        rutaJugar={`/${locale}/app/practicar/`}
+        rutaVolver={rutaLiga(locale)}
       />
     )}
   </article>

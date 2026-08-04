@@ -408,6 +408,32 @@ const ACTIVE = [
   // REALES (D-070), nunca archivos inventados.
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
 
+
+  // F8 #285 (criterio del paraguas #277). El panel del padre lee SOLO D1:
+  // un binding de Analytics Engine en su ruta es la puerta de atrás al
+  // detalle por intento que mc-32 riesgo #1 diseñó para que no se pudiera
+  // consultar. Sus controles negativos son un archivo PLANTADO en la ruta y
+  // una DEGRADACIÓN de la capa de datos real (D-070).
+  ["panel-sin-detalle-de-intento", "el panel del padre nunca toca Analytics Engine", "mc-32 riesgo #1, D-013, #285"],
+
+  // F8 #283. Las notas de diagnóstico van en la voz de Larry (decisión del
+  // dueño): toda causa del CHECK de la 0018 necesita plantilla autorada en
+  // los 7 locales y limpia del MISMO léxico que juzga lo que Larry le dice
+  // al niño. Las causas se leen de la MIGRACIÓN, no del motor (D-070).
+  ["notas-diagnostico-completas", "toda causa de nota tiene plantilla sin vergüenza en 7 locales", "D-020, D-022, LR-7, #283"],
+
+
+  // ─── Los reportes por correo al padre (F8 #292) ──────────────────────────
+  //
+  // El correo junta a todos los hijos de un hogar en un solo documento: es la
+  // superficie donde una comparación se cuela sin que nadie la escriba (un
+  // orden por puntos, un «va mejor que», un promedio del hogar). Vigila el
+  // motor puro (`packages/motor/src/reportes.ts`) y las plantillas de los 7
+  // locales. Sus controles negativos DEGRADAN los archivos reales (D-070):
+  // una resta entre `SeccionHijo` de dos hermanos y un «mejor que su
+  // hermano» plantado en la plantilla — los dos vistos fallar en el PR.
+  ["reporte-sin-comparacion", "el reporte al padre nunca compara",            "D-025, línea roja #7, mc-18, #286 §5, #292"],
+
   // ─── El de #208 (F7), y por qué nace VERDE ───────────────────────────────
   //
   // El roster del dueño de un salón o club de papás es la consulta que más
@@ -419,6 +445,8 @@ const ACTIVE = [
   // DEGRADACIONES del `grupo-roster.ts` REAL (D-070): la columna de más, el
   // filtro de status quitado y el ORDER BY por racha.
   ["racha-salones-minima",    "el grupo ve alias, puntos y current_streak — y nada más", "#208, D-025, D-044, D-106, mc-46 §6"],
+
+
 
 ];
 
@@ -683,6 +711,31 @@ for (const prueba of [
   // en el ítem, y el corte que no suma XP.
   "apps/web/src/lib/limite-corte-racha.prueba.mjs",
 
+
+  // F8 #279, la composición de lectura del panel del padre. Lo que defiende
+  // no rompe nada visible: un estado de dominio con corte propio, una liga
+  // reordenada a mano o una nota con causa desconocida dan resultados
+  // plausibles y equivocados — y la posición de liga de un niño mal puesta,
+  // o la clave cruda `HABILIDAD_PAUSADA_LATERAL` pintada en la cara del
+  // padre, no los ve nadie leyendo el código. 19 casos, con los valores
+  // esperados escritos a mano desde las fuentes (D-070): la maestría en dos
+  // etapas de mc-05/D-018, la curva de XP de D-055, el orden de liga de la
+  // 0012.
+  "packages/motor/src/diagnostico.prueba.mjs",
+
+  // F8 #279-#285, la capa de datos del panel del padre contra `node:sqlite`.
+  // Ocho lecturas de tablas ajenas compuestas en una pantalla: una consulta
+  // mal escrita no da error, da una posición de liga leída SIN consentimiento
+  // LEADERBOARD (D-040), o una tendencia que suma días de hace un año. Los
+  // valores esperados están escritos a mano (D-070), incluida la ventana de
+  // 56 días y la puerta de consentimiento revocado.
+  "apps/web/src/lib/padre-panel.prueba.mjs",
+
+
+
+
+
+
   // F7 #208. El ROSTER de solo lectura del dueño de un salón o club de papás,
   // contra SQLite de verdad (`node:sqlite`) con las migraciones REALES. Lo que
   // defiende tampoco rompe nada visible: una columna de más en el SELECT no da
@@ -696,6 +749,7 @@ for (const prueba of [
   // papás con la misma lista cerrada que el salón.
   "apps/web/src/lib/grupo-roster.prueba.mjs",
 
+
   // F9 #381-#383 · La superficie de grupos contra las migraciones REALES. El
   // flujo entero: la identidad declarada y el gate OwnerProof (su primera
   // ejecución real — el `declare const marca` que reventaba en runtime y nadie
@@ -707,6 +761,23 @@ for (const prueba of [
   // decisión del padre con sus tres condiciones y el cupo hecho cumplir por
   // el trigger, y la vista ordenada excluyendo al niño sin opt-in.
   "apps/web/src/lib/padre-grupo.prueba.mjs",
+
+
+  // F7 #244. El cable del DUELO, contra SQLite de verdad (`node:sqlite`) con el
+  // esquema REAL de `league_duel`. Lo que defiende tampoco rompe nada visible:
+  // un portón saltado no da error, da un niño de KINDER retado sin que su padre
+  // lo activara; un set servido en orden distinto no da error, da un duelo
+  // injusto; y un punto revelado antes de tiempo no da error, da media
+  // presencia. 19 casos: los tres portones ejecutados en la creación —KINDER,
+  // edad, opt-in— también para el retado, el tope de 3 pendientes, el set
+  // congelado servido EN ORDEN a los dos, el ganador por puntos y nunca por
+  // quién acabó antes, el empate sin desempate inventado, la expiración a las
+  // 48 h sin ganador y sin texto, y la lista cerrada EXACTA de claves del
+  // panel escrita a mano (D-070): sin ganador, sin presencia, sin fechas.
+  "apps/web/src/lib/duelo-superficie.prueba.mjs",
+
+
+
 
 ]) {
   const r = spawnSync(

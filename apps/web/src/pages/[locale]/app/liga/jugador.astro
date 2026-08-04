@@ -43,9 +43,11 @@ import {
   leerSesionAdulto,
   leerSesionNino,
 } from "../../../../lib/sesiones";
-import { rutaJugar, rutaKids, rutaLiga } from "../../../../lib/rutas-app";
+import { rutaJugar, rutaKids, rutaLiga, rutaLigaJugador } from "../../../../lib/rutas-app";
 import { cargarTablaDe } from "../../../../lib/liga-membresia";
+import { cargarPanelDeDuelo } from "../../../../lib/duelo-superficie";
 import Tabla from "../../../../components/liga/Tabla.astro";
+import Duelo from "../../../../components/liga/Duelo.astro";
 import { TEXTOS_LIGA } from "../../../../components/liga/textos";
 import "../../../../styles/fonts.css";
 import "../../../../styles/tokens.css";
@@ -108,6 +110,20 @@ if (env?.DB) {
 }
 
 const tabla = await cargarTablaDe(env ?? {}, { id: nino.childProfileId, esAdulto: false }, Date.now());
+
+/*
+ * El duelo (F7 #244): la sección vive JUNTO a la liga, que es su casa. El
+ * panel llega ya proyectado del servidor — sin presencia, sin puntos antes de
+ * terminar, sin expirados— y si no aplica (banda de opt-in sin duelo, sin
+ * liga, sin opt-in) sencillamente no se pinta. El destino de «Jugar» es la
+ * pantalla del reto de siempre con `?duelo=` — el mismo reto, contra el set
+ * congelado.
+ */
+const panelDuelo = await cargarPanelDeDuelo(
+  env ?? {},
+  { id: nino.childProfileId, esAdulto: false },
+  Date.now(),
+);
 ---
 
 <!doctype html>
@@ -137,6 +153,16 @@ const tabla = await cargarTablaDe(env ?? {}, { id: nino.childProfileId, esAdulto
           filas={tabla.filas}
           aliasPropio={tabla.aliasPropio}
           pintaRacha={banda !== "KINDER"}
+        />
+      )}
+
+      {panelDuelo.estado === "ok" && (
+        <Duelo
+          locale={locale}
+          duelos={panelDuelo.duelos}
+          pares={panelDuelo.pares}
+          rutaJugar={rutaJugar(locale)}
+          rutaVolver={rutaLigaJugador(locale)}
         />
       )}
 

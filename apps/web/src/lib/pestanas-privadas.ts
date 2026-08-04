@@ -40,6 +40,7 @@
  * navegación.
  */
 import { t, type Locale } from "../i18n";
+import { rutaPanel } from "./rutas-app";
 
 export type ClavePestana = "hijos" | "progreso" | "limite" | "practicar" | "cuenta";
 
@@ -52,17 +53,15 @@ export interface Pestana {
 }
 
 /**
- * Lo que está decidido y no construido: Progreso es F8 (D-057). Se enseña
- * igual, marcada — D-065 punto 5, el dueño prefirió el hueco visible a rehacer
- * la navegación cuando esa fase llegue.
+ * Lo que está decidido y no construido: hoy, nada. «Progreso» estuvo marcada
+ * como F8 (D-057) hasta que el panel del padre aterrizó (#277-#285) — el
+ * hueco visible que D-065 punto 5 prefería dejó de ser un hueco.
  *
  * «Practicar» ya NO está aquí: `/app/practicar/` sirve retos reales (#343).
  * «Límite» tampoco, desde F8 #269: la vista lista a los hijos y cada uno
  * enlaza a su pantalla de límite (`app/parent/screen-time/[childId]`).
  */
-export const PROXIMAMENTE: ReadonlySet<ClavePestana> = new Set<ClavePestana>([
-  "progreso",
-]);
+export const PROXIMAMENTE: ReadonlySet<ClavePestana> = new Set<ClavePestana>([]);
 
 /**
  * Las claves visibles para esta cuenta, en orden.
@@ -113,7 +112,12 @@ function etiquetas(locale: Locale): Record<ClavePestana, string> {
  * pestaña.
  */
 function href(locale: Locale, clave: ClavePestana): string {
-  return clave === "cuenta" ? `/${locale}/app/perfil/` : `/${locale}/app/?vista=${clave}`;
+  if (clave === "cuenta") return `/${locale}/app/perfil/`;
+  // «Progreso» es el panel del padre (F8 #277-#285), no una vista de la casa:
+  // el selector de hijo es su puerta, y vive bajo `app/parent/` como el
+  // resto de las pantallas que leen datos de UN niño.
+  if (clave === "progreso") return rutaPanel(locale);
+  return `/${locale}/app/?vista=${clave}`;
 }
 
 export function pestanasPrivadas(

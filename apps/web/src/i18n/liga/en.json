@@ -19,5 +19,10 @@
   "duelo.mismo_set": "You both get the same questions",
   "duelo.empate": "A tie",
   "duelo.resultado": "You {mios} — {alias} {suyos}",
-  "duelo.terminado": "Both of you have finished"
+  "duelo.terminado": "Both of you have finished",
+  "duelo.retar": "Challenge",
+  "duelo.te_toca": "Your turn to play your part",
+  "duelo.esperando": "You played your part",
+  "duelo.jugar": "Play",
+  "duelo.con_quien": "Challenge someone from your league"
 }

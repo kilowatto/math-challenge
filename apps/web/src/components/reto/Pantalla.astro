@@ -768,6 +768,18 @@ const {
       return r.ok ? r.json() : null;
     };
 
+    /*
+     * El duelo (F7 #244): si la URL trae `?duelo=<id>`, esta serie es el set
+     * congelado de un `league_duel`. El id viaja en las dos llamadas y el
+     * servidor decide todo lo demás — qué ítem toca, si la ventana sigue
+     * abierta, cuándo termina el set. Cuando el servidor dice `fin` (o un
+     * error de duelo), se vuelve a `salirA`: el resultado se mira en la liga,
+     * no aquí. Leer el query param en el cliente es lo que permite que el
+     * duelo se juegue desde CUALQUIER página que monte esta pantalla sin
+     * tocarla.
+     */
+    const dueloId = new URLSearchParams(location.search).get("duelo");
+
     const cajita = (clase, texto) => {
       const e = document.createElement("span");
       e.className = clase;
@@ -1091,12 +1103,23 @@ const {
       $mando.replaceChildren();
       $opciones.replaceChildren();
 
-      const r = await pedir("siguiente", { ultimoItemId, habilidad: habilidadFija ?? undefined });
+      const r = await pedir("siguiente", {
+        ultimoItemId,
+        habilidad: habilidadFija ?? undefined,
+        duelo: dueloId ?? undefined,
+      });
       // El día terminó — por el tope o por la noche: la respuesta ES la
       // despedida y no trae ítem. Se pinta y se acabó.
       if (r?.corte) {
         $enunciado.textContent = "";
         mostrarDespedida(r.corte);
+        return;
+      }
+      // El duelo terminó — el set se acabó, se resolvió o la ventana cerró:
+      // el resultado se mira en la liga, que es adonde vuelve `salirA` cuando
+      // se viene de un duelo.
+      if (r?.fin) {
+        location.href = salirA;
         return;
       }
       if (!r?.ok) {
@@ -1132,9 +1155,19 @@ const {
         // D-152: en el rejuego de un lugar, el id viaja también aquí — el
         // servidor lo usa solo para etiquetar la telemetría como «mapa».
         habilidad: habilidadFija ?? undefined,
+        duelo: dueloId ?? undefined,
       });
       mandando = false;
       if (!r) {
+        // En duelo, una llamada fallida —incluido el 409 del turno que ya no
+        // es— no se reintenta en pantalla: el progreso quedó en el servidor y
+        // el duelo se retoma desde la liga, que es adonde vuelve `salirA`
+        // cuando se viene de uno. Reintentar a ciegas aquí podría mandar dos
+        // veces el mismo ítem.
+        if (dueloId) {
+          location.href = salirA;
+          return;
+        }
         for (const b of $opciones.querySelectorAll("button")) b.disabled = false;
         $confirmar.hidden = false;
         return;

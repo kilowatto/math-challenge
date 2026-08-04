@@ -178,7 +178,7 @@
   "error.p.sumo_el_final": ["The last part got added back instead of taken away.", "Keep taking away \u2014 the second step also subtracts."],
   "error.p.paso_disparejo": ["The step changed size at the end.", "Measure the step between two neighbours \u2014 it stays the same."],
   "error.p.sumo_dos_pasos": ["That jumps two steps at once.", "Add the step just once to the last number."],
-  "error.p.repitio_el_ultimo_numero": ["That is the last number shown, not the next one.", "What does the pattern do each time? Apply it once more."],
+  "error.p.repitio_el_ultimo_numero": ["That is the last number shown, not the next one.", "Work out the step between two neighbours and apply it once more."],
   "error.p.siguio_sumando": ["This pattern does not add \u2014 it doubles.", "Check: each number is the one before times two."],
   "error.p.repitio_la_diferencia": ["The gap between numbers grows each time.", "Look at how the gaps change \u2014 each one is two more."]
 }

@@ -178,7 +178,7 @@
   "error.p.sumo_el_final": ["A \u00faltima parte foi somada outra vez em vez de tirada.", "Continua a tirar \u2014 o segundo passo tamb\u00e9m subtrai."],
   "error.p.paso_disparejo": ["O passo mudou de tamanho no fim.", "Mede o passo entre dois vizinhos \u2014 \u00e9 sempre o mesmo."],
   "error.p.sumo_dos_pasos": ["Isso salta dois passos de uma vez.", "Soma o passo uma s\u00f3 vez ao \u00faltimo n\u00famero."],
-  "error.p.repitio_el_ultimo_numero": ["Esse \u00e9 o \u00faltimo que aparece, n\u00e3o o seguinte.", "O que \u00e9 que o padr\u00e3o faz de cada vez? Aplica mais uma vez."],
+  "error.p.repitio_el_ultimo_numero": ["Esse \u00e9 o \u00faltimo que aparece, n\u00e3o o seguinte.", "Descobre a regra entre dois vizinhos e aplica-a mais uma vez."],
   "error.p.siguio_sumando": ["Este padr\u00e3o n\u00e3o soma: duplica.", "Repara: cada n\u00famero \u00e9 o anterior vezes dois."],
   "error.p.repitio_la_diferencia": ["A diferen\u00e7a entre os n\u00fameros cresce de cada vez.", "V\u00ea como as diferen\u00e7as mudam \u2014 cada uma \u00e9 mais duas."]
 }

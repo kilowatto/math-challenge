@@ -178,7 +178,7 @@
   "error.p.sumo_el_final": ["Der letzte Teil wurde wieder dazugez\u00e4hlt statt weggenommen.", "Nimm weiter weg \u2014 auch der zweite Schritt subtrahiert."],
   "error.p.paso_disparejo": ["Der Schritt hat am Ende seine Gr\u00f6\u00dfe ge\u00e4ndert.", "Miss den Schritt zwischen zwei Nachbarn \u2014 er bleibt gleich."],
   "error.p.sumo_dos_pasos": ["Das springt zwei Schritte auf einmal.", "Addiere den Schritt nur einmal zur letzten Zahl."],
-  "error.p.repitio_el_ultimo_numero": ["Das ist die letzte gezeigte Zahl, nicht die n\u00e4chste.", "Was macht das Muster jedes Mal? Wende es noch einmal an."],
+  "error.p.repitio_el_ultimo_numero": ["Das ist die letzte gezeigte Zahl, nicht die n\u00e4chste.", "Finde die Regel zwischen zwei Nachbarn und wende sie noch einmal an."],
   "error.p.siguio_sumando": ["Dieses Muster addiert nicht: Es verdoppelt.", "Schau genau: Jede Zahl ist die doppelte der vorherigen."],
   "error.p.repitio_la_diferencia": ["Der Abstand zwischen den Zahlen w\u00e4chst jedes Mal.", "Schau, wie sich die Abst\u00e4nde \u00e4ndern \u2014 jeder ist zwei gr\u00f6\u00dfer."]
 }

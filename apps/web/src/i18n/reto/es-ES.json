@@ -178,7 +178,7 @@
   "error.p.sumo_el_final": ["La \u00faltima parte se ha sumado otra vez en vez de quitarse.", "Sigue restando \u2014 el segundo paso tambi\u00e9n quita."],
   "error.p.paso_disparejo": ["El paso ha cambiado de tama\u00f1o al final.", "Mide el paso entre dos vecinos \u2014 es siempre el mismo."],
   "error.p.sumo_dos_pasos": ["Eso salta dos pasos de una vez.", "Suma el paso una sola vez al \u00faltimo n\u00famero."],
-  "error.p.repitio_el_ultimo_numero": ["\u00c9se es el \u00faltimo que se ve, no el que sigue.", "\u00bfQu\u00e9 hace el patr\u00f3n cada vez? Apl\u00edcalo una vez m\u00e1s."],
+  "error.p.repitio_el_ultimo_numero": ["\u00c9se es el \u00faltimo que se ve, no el que sigue.", "Mide el paso entre dos vecinos y apl\u00edcalo una vez m\u00e1s."],
   "error.p.siguio_sumando": ["Este patr\u00f3n no suma: duplica.", "F\u00edjate: cada n\u00famero es el anterior multiplicado por dos."],
   "error.p.repitio_la_diferencia": ["La diferencia entre los n\u00fameros crece cada vez.", "Mira c\u00f3mo cambian las diferencias \u2014 cada una es dos m\u00e1s."]
 }

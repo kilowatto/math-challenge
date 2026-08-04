@@ -47,6 +47,10 @@ const CHILD_TABLES = [
   "child_group_membership",
   "child_group_report",
   "school_teacher",
+  // F8 · Reportes (esquema de la 0019, #287): el snapshot por hijo contra el
+  // que se mide el periodo. Cuelga de `child_profile_id`, así que la línea
+  // roja #3 se le aplica igual que a las demás.
+  "child_report_state",
 ];
 
 // Columnas de texto permitidas en esas tablas, con su razón. Todo lo demás que

@@ -83,6 +83,12 @@ const DIRS_TEXTOS = [
   // dejes que se rompa del todo» junto al botón de reparar es confirm-shaming
   // con buenas palabras.
   ["apps/web/src/i18n/pausa", "pausa familiar"],
+  // F8 · Reportes por correo (#290/#291): el destinatario es el padre y el
+  // contenido nombra hijos. Las tres categorías son las mismas que caza el
+  // resto del escaneo: un «no pierdas el ritmo» es confirm-shaming aunque lo
+  // lea un adulto, y un «tu hijo va detrás» es la comparación que D-025 y
+  // mc-18 prohíben por nombre en este subsistema.
+  ["apps/web/src/i18n/reportes", "reportes por correo al padre"],
 ];
 
 const CATEGORIAS = ["perdida", "urgencia", "comparacion"];

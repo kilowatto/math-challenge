@@ -408,6 +408,17 @@ const ACTIVE = [
   // REALES (D-070), nunca archivos inventados.
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
 
+  // ─── Los reportes por correo al padre (F8 #292) ──────────────────────────
+  //
+  // El correo junta a todos los hijos de un hogar en un solo documento: es la
+  // superficie donde una comparación se cuela sin que nadie la escriba (un
+  // orden por puntos, un «va mejor que», un promedio del hogar). Vigila el
+  // motor puro (`packages/motor/src/reportes.ts`) y las plantillas de los 7
+  // locales. Sus controles negativos DEGRADAN los archivos reales (D-070):
+  // una resta entre `SeccionHijo` de dos hermanos y un «mejor que su
+  // hermano» plantado en la plantilla — los dos vistos fallar en el PR.
+  ["reporte-sin-comparacion", "el reporte al padre nunca compara",            "D-025, línea roja #7, mc-18, #286 §5, #292"],
+
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

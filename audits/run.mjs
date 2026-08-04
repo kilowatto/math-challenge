@@ -352,6 +352,22 @@ const ACTIVE = [
   ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
 
 
+
+  // ─── F9 · Grupos infantiles (#379-#387, #401) ───────────────────────────
+  //
+  // La superficie de mayor exposición del producto: un adulto que no es el
+  // padre viendo datos de hasta 35 menores. Los cuatro vigilan las cuatro
+  // formas de que eso se pase sin dar ningún error visible: un canal de texto
+  // (línea roja #3), una aprobación que no es del padre (D-011), la insignia
+  // de escuela verificada escrita a mano (D-086), y un campo de más — o el
+  // filtro de opt-in de menos — en lo que el grupo publica de un niño (D-027,
+  // D-087). Cada uno con su caso en `pruebas-auditores.mjs`, visto fallar
+  // sobre el archivo REAL o sobre la violación mínima plantada.
+  ["grupo-sin-chat",          "un grupo infantil no tiene chat ni texto libre", "línea roja #3, D-027, mc-46 §4, #380/#385"],
+  ["grupo-aprobacion-padre",  "la entrada a un grupo la aprueba SU padre",      "D-011, D-096, mc-28, #401"],
+  ["school-verification-required", "la insignia de escuela verificada tiene un solo escritor", "D-086, mc-28, #380/#381"],
+  ["grupo-visibilidad-minima", "el grupo ve de un niño solo lo que D-027 autoriza", "D-027, D-087, #383/#384"],
+
   // ─── Los dos de F5c (#358, #359), y por qué nacen VERDES ──────────────────
   //
   // El banco de primaria se construyó CON ellos delante, así que lo que
@@ -363,6 +379,7 @@ const ACTIVE = [
   // (D-070): los catálogos, el guion de siembra y la plantilla.
   ["banco-primaria-i18n",    "primaria no sirve nada que no esté en i18n",      "#358, #349, #354, D-022, D-070"],
   ["primaria-sin-ninos",     "ni «niños» ni «Kids» en el texto de PRIMARIA",     "#359, mc-21, D-022"],
+
 
   // ─── El tablero global (F7 #247) ─────────────────────────────────────────
   //
@@ -577,6 +594,17 @@ for (const prueba of [
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
 
+
+  // F9 #379-#387. El motor puro de grupos (código de unión sin ambiguos,
+  // topes por origen, la regla única del opt-in) y el ESQUEMA contra SQLite
+  // de verdad — las migraciones REALES aplicadas en memoria, no una copia a
+  // mano: que el cupo aborta al niño #31, que revocar al maestro baja su
+  // insignia en la misma transacción, que el `reason_code` libre no entra, y
+  // que borrar al dueño limpia grupo y reportes en cascada. Lo que defienden
+  // tampoco rompe nada visible: un CHECK mal escrito no da error, deja pasar.
+  "packages/motor/src/grupo.prueba.mjs",
+  "apps/web/src/lib/grupo-esquema.prueba.mjs",
+
   // F5c #352–#356. El banco de PRIMARIA: las cuatro plantillas, el presentador
   // y el cable D1 completo (migración 0016 + siembra + lectura, contra SQLite
   // de verdad). Lo que defienden tampoco rompe nada visible: un distractor que
@@ -587,6 +615,7 @@ for (const prueba of [
   "packages/motor/src/banco-primaria.prueba.mjs",
   "packages/motor/src/presentar.prueba.mjs",
   "apps/web/src/lib/banco-primaria.prueba.mjs",
+
 
 
 

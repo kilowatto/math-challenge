@@ -207,7 +207,15 @@ export const SUPERFICIES_DE_NINO = [
 export const esDeNino = (ruta) => SUPERFICIES_DE_NINO.some((re) => re.test(ruta));
 
 /** Las tablas de la base que guardan datos de un niño. */
-export const TABLAS_DE_NINO = ["child_profiles", "child_group", "child_group_members"];
+export const TABLAS_DE_NINO = [
+  "child_profiles",
+  "child_group",
+  // La membresía real se llama `child_group_membership` (0017). La lista decía
+  // `child_group_members` — una tabla que nunca existió, así que la membresía
+  // quedaba sin vigilar.
+  "child_group_membership",
+  "child_group_report",
+];
 
 /** Quita comentarios de SQL para que un ejemplo comentado no cuente como código. */
 export function sqlSinComentarios(sql) {

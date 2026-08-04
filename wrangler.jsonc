@@ -121,6 +121,18 @@
         "class_name": "Liga"
       },
       {
+        // math-challenge-classroom-do — el estado vivo de UN grupo infantil,
+        // UN OBJETO POR GRUPO (`idFromName(group_id)`). F9, D-098. Ver
+        // `apps/web/src/lib/classroom-do.ts` y docs/infrastructure.md.
+        //
+        // Misma regla que la liga: estado derivado (puntos y racha YA
+        // calculados, alias y avatar para difundir sin ir a D1), jamás el
+        // intento crudo. La vista ordenada excluye a los miembros sin
+        // `leaderboard_opt_in` (D-087) y el filtro vive dentro del objeto.
+        "name": "CLASSROOM_DO",
+        "class_name": "Salon"
+      },
+      {
         // math-challenge-missions-do — las misiones del día de UN niño,
         // UN OBJETO POR NIÑO (`idFromName(child_profile_id)`), separado del de
         // F4 por el argumento estructural de D-027 (#224). Ver
@@ -162,6 +174,12 @@
       // una migración de DO ya desplegada.
       "tag": "v4",
       "new_sqlite_classes": ["Misiones"]
+    },
+    {
+      // F9 #379. La v4 es de `Misiones` y ya está desplegada (inmutable): el
+      // salón entra como etiqueta NUEVA v5, nunca una edición de la v4.
+      "tag": "v5",
+      "new_sqlite_classes": ["Salon"]
     }
   ],
 
@@ -274,8 +292,6 @@
 
   // Pendientes de fases posteriores, deliberadamente ausentes para que wrangler
   // no falle contra objetos que no existen todavía:
-  //   F4  math-challenge-learner-do      (modelo adaptativo por niño)
-  //   F9  math-challenge-classroom-do    (salón y club de papás)
   //   F6  math-challenge-tutor-gateway   (AI Gateway — red de seguridad en
   //                                       dólares del tutor. NO es «delante de
   //                                       Claude»: D-035 quitó ese camino. El

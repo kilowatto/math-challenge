@@ -102,8 +102,9 @@ CREATE TABLE screen_time_daily_usage (
 
   -- Por qué terminó el día. Enum cerrado, jamás texto libre: la línea roja #3
   -- prohíbe que un niño escriba texto, y `audits/child-free-text.mjs` cubre
-  -- esta tabla sin ningún cambio porque escanea por forma de columna, no por
-  -- una lista a mano.
+  -- esta tabla porque la issue #401 la añadió a su lista CHILD_TABLES en el PR
+  -- de F9 — el escaneo es sobre una lista a mano, no «por forma de columna»
+  -- como esta línea afirmaba antes de esa corrección.
   --
   -- Lo lee el panel del padre —«el día terminó por el límite, no por descuido»—
   -- que es un subsistema hermano y no se construye en este PR. La columna se

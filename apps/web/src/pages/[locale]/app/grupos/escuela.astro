@@ -1,0 +1,168 @@
+---
+/**
+ * `/{locale}/app/grupos/escuela` — el registro de una escuela (F9 · #381,
+ * D-086, D-089, D-090).
+ *
+ * Los dos caminos de verificación, dichos ANTES del formulario:
+ *
+ *  · Si el correo de la cuenta pertenece a un dominio institucional ya
+ *    reconocido, la verificación es automática y no hace falta documento.
+ *  · Si no, se sube UN documento (AVIF/PDF) — membrete, nombre y dirección,
+ *    el estándar laxo y universal de D-090, igual para los cuatro mercados—
+ *    y la escuela queda pendiente hasta que una persona la revise (D-089:
+ *    un solo revisor, sin flujo de asignación; la cola es SQL + correo, D-116).
+ *
+ * La primera capa de mitigación, no la única: las capas reales son el tope de
+ * tamaño/creación y la aprobación del padre por niño (D-090, dicho en la
+ * issue #381).
+ */
+export const prerender = false;
+
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { ruta } from "../../../../i18n/rutas";
+import { f9Habilitado } from "../../../../lib/grupo-flag";
+import { TEXTOS_GRUPOS } from "../../../../components/grupos/textos";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const g = TEXTOS_GRUPOS[locale];
+
+const env = (
+  Astro.locals as {
+    runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace; CONFIG_KV?: KVNamespace } };
+  }
+).runtime?.env;
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+if (!(await f9Habilitado(env?.CONFIG_KV, locale))) {
+  return Astro.redirect(`/${locale}/app/grupos/`);
+}
+
+const hecho = Astro.url.searchParams.get("hecho");
+const textoHecho =
+  hecho === "dominio"
+    ? g["grupo.escuela.hechoDominio"]
+    : hecho === "documento"
+      ? g["grupo.escuela.hechoDocumento"]
+      : null;
+
+const e = Astro.url.searchParams.get("e");
+const errorEnPantalla =
+  e === "documento_faltante"
+    ? g["grupo.err.documento"]
+    : e === "tipo_documento" || e === "documento_grande"
+      ? g["grupo.err.tipoDocumento"]
+      : e !== null
+        ? g["grupo.err.generico"]
+        : null;
+
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={g["grupo.escuela.titulo"]} description={g["grupo.escuela.lead"]}>
+  <article class="escuela">
+    <h1>{g["grupo.escuela.titulo"]}</h1>
+    <p class="lead">{g["grupo.escuela.lead"]}</p>
+
+    {
+      textoHecho !== null ? (
+        <section class="bloque">
+          <p class="ok">{textoHecho}</p>
+          <a class="boton" href={`/${locale}/app/grupos/`}>
+            {g["grupo.indice.titulo"]}
+          </a>
+        </section>
+      ) : (
+        <Fragment>
+          <p class="muted">{g["grupo.escuela.dominioPista"]}</p>
+
+          <form
+            method="post"
+            action="/api/grupos/escuela"
+            enctype="multipart/form-data"
+            class="bloque"
+          >
+            <input type="hidden" name="locale" value={locale} />
+            {errorEnPantalla !== null && <p class="mal" role="alert">{errorEnPantalla}</p>}
+
+            <div class="campo">
+              <label for="nombre">{g["grupo.escuela.nombre"]}</label>
+              <input
+                type="text"
+                id="nombre"
+                name="nombre"
+                required
+                minlength="2"
+                maxlength="160"
+                autocomplete="organization"
+              />
+            </div>
+
+            <div class="campo">
+              <label for="pais">{g["grupo.escuela.pais"]}</label>
+              <input
+                type="text"
+                id="pais"
+                name="pais"
+                required
+                minlength="2"
+                maxlength="2"
+                autocomplete="country"
+                class="pais"
+              />
+            </div>
+
+            <div class="campo">
+              <label for="documento">{g["grupo.escuela.documento"]}</label>
+              <input type="file" id="documento" name="documento" accept=".avif,.pdf" />
+              <p class="pista">{g["grupo.escuela.documentoPista"]}</p>
+            </div>
+
+            <button type="submit" class="boton primario">{g["grupo.escuela.enviar"]}</button>
+          </form>
+        </Fragment>
+      )
+    }
+  </article>
+
+  <style>
+    .escuela { max-width: 34rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: var(--space); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space); }
+    label { font-family: var(--font-sistema); font-size: var(--text-base); }
+    input[type="text"] { font-family: var(--font-sistema); font-size: var(--text-base);
+                         min-height: 44px; padding-inline: 0.75rem; color: var(--color-text);
+                         background: var(--color-surface); border: 1px solid var(--color-border);
+                         border-radius: var(--radius); }
+    input.pais { inline-size: 5rem; text-transform: uppercase; }
+    input[type="file"] { font-family: var(--font-sistema); font-size: var(--text-sm);
+                         min-height: 44px; color: var(--color-text); }
+    .pista { font-size: var(--text-xs); color: var(--color-text-muted);
+             line-height: var(--leading-body); margin: 0; }
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             background: transparent; color: var(--color-text); font-family: var(--font-sistema);
+             font-size: var(--text-base); cursor: pointer; text-decoration: none; }
+    .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
+    input:focus-visible, button:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-end: var(--space); }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-end: var(--space); }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-body);
+             margin-block-end: var(--space); }
+  </style>
+</Privada>

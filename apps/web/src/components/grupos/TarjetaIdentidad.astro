@@ -1,0 +1,146 @@
+---
+/**
+ * La tarjeta de identidad del dueño del grupo (F9 · #382, D-011, D-086).
+ *
+ * ─── Lo que el padre ve ANTES de aprobar ─────────────────────────────────────
+ *
+ *  · La insignia de confianza, derivada de UN solo campo
+ *    (`group_owner_identity.assurance`, leído por `padre-grupo.ts`). La
+ *    gramática es la del patrón Bark: la insignia verificada es un elemento
+ *    que se AGREGA cuando existe («✓ Escuela verificada»); su ausencia es la
+ *    señal — «Sin verificar» se muestra en tono NEUTRO, nunca rojo de alarma
+ *    ni ícono de peligro. Un solo badge, un solo significado (HIG).
+ *  · Lo que el dueño declaró sobre sí mismo, con la honestidad al lado:
+ *    «lo escribió esa persona y nadie lo comprobó» (D-086).
+ *  · El tipo de grupo: salón de [escuela] / salón / club de papás.
+ *  · El consentimiento informado en una línea: «qué verá sobre tu hijo: su
+ *    alias, su racha y sus puntos. Nada más» (D-107 del reparto).
+ *
+ * Sin foto (la 0005 real no tiene `photo_r2_key`) y sin correo parcialmente
+ * enmascarado (no añade confianza verificable y expone un dato del dueño a
+ * cada familia que recibe el código — corrección del plan F9 §4).
+ *
+ * Teléfono: una columna, ancho completo. iPad: la misma tarjeta centrada —
+ * no hay más información que mostrar en pantalla ancha (issue #382).
+ */
+import type { TarjetaDelDuenio } from "../../lib/padre-grupo";
+import { rellenarGrupo } from "./textos";
+
+interface Props {
+  tarjeta: TarjetaDelDuenio;
+  textos: Record<string, string>;
+}
+
+const { tarjeta, textos: g } = Astro.props;
+
+const insigniaTexto = {
+  escuela_verificada: g["grupo.tarjeta.insigniaVerificada"],
+  dominio_escolar: g["grupo.tarjeta.insigniaDominio"],
+  revisado: g["grupo.tarjeta.insigniaRevisado"],
+  sin_verificar: g["grupo.tarjeta.insigniaSinVerificar"],
+}[tarjeta.insignia];
+
+const insigniaExplica = {
+  escuela_verificada: g["grupo.tarjeta.verificadaExplica"],
+  dominio_escolar: g["grupo.tarjeta.dominioExplica"],
+  revisado: g["grupo.tarjeta.revisadoExplica"],
+  sin_verificar: g["grupo.tarjeta.nadieLoComprobo"],
+}[tarjeta.insignia];
+
+const tipo =
+  tarjeta.origen_tipo === "salon"
+    ? tarjeta.escuela
+      ? rellenarGrupo(g["grupo.tipo.salon"], { escuela: tarjeta.escuela })
+      : g["grupo.tipo.salonSinEscuela"]
+    : g["grupo.tipo.club"];
+---
+
+<section class="tarjeta" aria-labelledby="quien-dirige">
+  <h2 id="quien-dirige">{g["grupo.tarjeta.quienDirige"]}</h2>
+
+  {/*
+    Un solo badge, un solo significado. La insignia verificada lleva el color
+    de marca (es el elemento que se AGREGA cuando existe); la de «sin
+    verificar» es neutra por construcción — su clase no conoce el rojo.
+  */}
+  <p class:list={["insignia", { positiva: tarjeta.insignia === "escuela_verificada" }]}>
+    {insigniaTexto}
+  </p>
+  <p class="explica">{insigniaExplica}</p>
+
+  <p class="tipo">{tipo}</p>
+
+  {
+    tarjeta.declaracion !== null && (
+      <blockquote class="declaracion">
+        <p class="declaracion-leyenda">{g["grupo.tarjeta.loQueDeclaro"]}</p>
+        <p>{tarjeta.declaracion}</p>
+      </blockquote>
+    )
+  }
+
+  <p class="que-vera">{g["grupo.tarjeta.queVera"]}</p>
+</section>
+
+<style>
+  .tarjeta {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: calc(var(--space) * 1.5);
+    margin-block-end: calc(var(--space) * 1.5);
+    max-width: 34rem;
+    margin-inline: auto;
+  }
+  h2 {
+    font-family: var(--font-sistema);
+    font-size: var(--text-base);
+    font-weight: var(--weight-subtitle);
+    margin: 0 0 var(--space);
+  }
+  .insignia {
+    display: inline-block;
+    font-family: var(--font-marca);
+    font-weight: var(--weight-subtitle);
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.35rem 0.75rem;
+    margin: 0 0 calc(var(--space) * 0.5);
+  }
+  /* La insignia POSITIVA: existe solo cuando hay verificación. */
+  .insignia.positiva {
+    color: var(--color-text-brand);
+    border-color: var(--color-text-brand);
+  }
+  .explica {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    line-height: var(--leading-body);
+    margin: 0 0 var(--space);
+  }
+  .tipo {
+    font-family: var(--font-sistema);
+    font-size: var(--text-base);
+    margin: 0 0 var(--space);
+  }
+  .declaracion {
+    margin: 0 0 var(--space);
+    padding-inline-start: var(--space);
+    border-inline-start: 3px solid var(--color-border);
+  }
+  .declaracion-leyenda {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    margin: 0 0 0.25rem;
+  }
+  .declaracion p:last-child {
+    margin: 0;
+    line-height: var(--leading-body);
+  }
+  .que-vera {
+    font-size: var(--text-sm);
+    line-height: var(--leading-body);
+    margin: 0;
+  }
+</style>

@@ -763,6 +763,35 @@ for (const prueba of [
   "apps/web/src/lib/grupo-roster.prueba.mjs",
 
 
+  // F9 #381-#383 · La superficie de grupos contra las migraciones REALES. El
+  // flujo entero: la identidad declarada y el gate OwnerProof (su primera
+  // ejecución real — el `declare const marca` que reventaba en runtime y nadie
+  // había visto), la creación con los topes exigidos (uno por día, cinco por
+  // cuenta, tope por origen), el salón afiliado que solo nace con escuela
+  // verificada y maestro activo (y la revocación cortando en el acto), el
+  // atajo de dominio y la revisión humana de la escuela con el assurance
+  // escrito VÍA TRIGGERS y nunca a mano, la tarjeta que no escribe nada, la
+  // decisión del padre con sus tres condiciones y el cupo hecho cumplir por
+  // el trigger, y la vista ordenada excluyendo al niño sin opt-in.
+  "apps/web/src/lib/padre-grupo.prueba.mjs",
+
+
+  // F7 #244. El cable del DUELO, contra SQLite de verdad (`node:sqlite`) con el
+  // esquema REAL de `league_duel`. Lo que defiende tampoco rompe nada visible:
+  // un portón saltado no da error, da un niño de KINDER retado sin que su padre
+  // lo activara; un set servido en orden distinto no da error, da un duelo
+  // injusto; y un punto revelado antes de tiempo no da error, da media
+  // presencia. 19 casos: los tres portones ejecutados en la creación —KINDER,
+  // edad, opt-in— también para el retado, el tope de 3 pendientes, el set
+  // congelado servido EN ORDEN a los dos, el ganador por puntos y nunca por
+  // quién acabó antes, el empate sin desempate inventado, la expiración a las
+  // 48 h sin ganador y sin texto, y la lista cerrada EXACTA de claves del
+  // panel escrita a mano (D-070): sin ganador, sin presencia, sin fechas.
+  "apps/web/src/lib/duelo-superficie.prueba.mjs",
+
+
+
+
 ]) {
   const r = spawnSync(
     "node",

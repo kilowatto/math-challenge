@@ -47,11 +47,18 @@ const CHILD_TABLES = [
   "child_group_membership",
   "child_group_report",
   "school_teacher",
+
   // F8 (esquema de la 0018, #278): las notas del sistema para el padre. Su
   // `cause_code` es TEXT con CHECK cerrado — pasa por el dominio acotado, no
   // por ALLOWED. El criterio de #278 exige esta entrada con su control
   // negativo visto fallar (caso en `audits/pruebas-auditores.mjs`).
   "child_diagnostic_notes",
+
+  // F8 · Reportes (esquema de la 0019, #287): el snapshot por hijo contra el
+  // que se mide el periodo. Cuelga de `child_profile_id`, así que la línea
+  // roja #3 se le aplica igual que a las demás.
+  "child_report_state",
+
 ];
 
 // Columnas de texto permitidas en esas tablas, con su razón. Todo lo demás que

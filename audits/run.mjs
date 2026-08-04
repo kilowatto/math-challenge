@@ -408,6 +408,7 @@ const ACTIVE = [
   // REALES (D-070), nunca archivos inventados.
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
 
+
   // F8 #285 (criterio del paraguas #277). El panel del padre lee SOLO D1:
   // un binding de Analytics Engine en su ruta es la puerta de atrás al
   // detalle por intento que mc-32 riesgo #1 diseñó para que no se pudiera
@@ -420,6 +421,32 @@ const ACTIVE = [
   // los 7 locales y limpia del MISMO léxico que juzga lo que Larry le dice
   // al niño. Las causas se leen de la MIGRACIÓN, no del motor (D-070).
   ["notas-diagnostico-completas", "toda causa de nota tiene plantilla sin vergüenza en 7 locales", "D-020, D-022, LR-7, #283"],
+
+
+  // ─── Los reportes por correo al padre (F8 #292) ──────────────────────────
+  //
+  // El correo junta a todos los hijos de un hogar en un solo documento: es la
+  // superficie donde una comparación se cuela sin que nadie la escriba (un
+  // orden por puntos, un «va mejor que», un promedio del hogar). Vigila el
+  // motor puro (`packages/motor/src/reportes.ts`) y las plantillas de los 7
+  // locales. Sus controles negativos DEGRADAN los archivos reales (D-070):
+  // una resta entre `SeccionHijo` de dos hermanos y un «mejor que su
+  // hermano» plantado en la plantilla — los dos vistos fallar en el PR.
+  ["reporte-sin-comparacion", "el reporte al padre nunca compara",            "D-025, línea roja #7, mc-18, #286 §5, #292"],
+
+  // ─── El de #208 (F7), y por qué nace VERDE ───────────────────────────────
+  //
+  // El roster del dueño de un salón o club de papás es la consulta que más
+  // datos de menores pone delante de un adulto sin verificar, y se construyó
+  // CON este auditor delante: de `child_streak` sale EXACTAMENTE
+  // `current_streak` (ni `max_streak`, ni escudos, ni pausas — la misma regla
+  // que D-106 aplicó a la liga), la revocación de la membresía corta en el
+  // WHERE, y la racha no ordena nada (D-025). Sus controles negativos son
+  // DEGRADACIONES del `grupo-roster.ts` REAL (D-070): la columna de más, el
+  // filtro de status quitado y el ORDER BY por racha.
+  ["racha-salones-minima",    "el grupo ve alias, puntos y current_streak — y nada más", "#208, D-025, D-044, D-106, mc-46 §6"],
+
+
 
 ];
 
@@ -684,6 +711,7 @@ for (const prueba of [
   // en el ítem, y el corte que no suma XP.
   "apps/web/src/lib/limite-corte-racha.prueba.mjs",
 
+
   // F8 #279, la composición de lectura del panel del padre. Lo que defiende
   // no rompe nada visible: un estado de dominio con corte propio, una liga
   // reordenada a mano o una nota con causa desconocida dan resultados
@@ -706,6 +734,20 @@ for (const prueba of [
 
 
 
+
+
+  // F7 #208. El ROSTER de solo lectura del dueño de un salón o club de papás,
+  // contra SQLite de verdad (`node:sqlite`) con las migraciones REALES. Lo que
+  // defiende tampoco rompe nada visible: una columna de más en el SELECT no da
+  // error, da la mejor marca personal —o la pausa— de un niño viajando a 35
+  // familias; y un filtro de `status` olvidado no da error, da un niño
+  // removido que sigue exponiendo su racha. 12 casos: la lista cerrada EXACTA
+  // escrita a mano (D-070), `max_streak`/escudos/pausas sembrados en la base
+  // y ausentes de la respuesta, el orden por alias contra una siembra donde
+  // racha y puntos ordenarían al revés (D-025), la revocación cortando en la
+  // primera lectura, el null sin oráculo para el grupo ajeno, y el club de
+  // papás con la misma lista cerrada que el salón.
+  "apps/web/src/lib/grupo-roster.prueba.mjs",
 
 
 ]) {

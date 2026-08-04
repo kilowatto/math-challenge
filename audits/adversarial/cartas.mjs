@@ -183,6 +183,13 @@ export const CARTAS = [
       // F9 #401: el roster del salón y la tarjeta de identidad del dueño del
       // grupo — el «necesita atención» sin vergüenza vive ahí.
       /grupo|salon|classroom/i,
+      // F8 #292: el reporte por correo al padre. El riesgo propio —la
+      // comparación implícita entre hermanos en el mismo correo— vive en
+      // `packages/motor/src/reportes.ts`, que no matcheaba ninguno de los
+      // patrones de arriba: sin esta línea, la carta que existe exactamente
+      // para ese riesgo nunca despertaba sobre el archivo donde el riesgo
+      // vive.
+      /reporte|informe/i,
     ],
   },
   {

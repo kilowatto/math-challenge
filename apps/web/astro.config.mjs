@@ -58,7 +58,7 @@ export default defineConfig({
     // «class not found» y el síntoma aparece en producción, no al construir.
     workerEntryPoint: {
       path: "src/worker.ts",
-      namedExports: ["RateLimiter", "Aprendiz", "Liga"],
+      namedExports: ["RateLimiter", "Aprendiz", "Liga", "Misiones"],
     },
   }),
   integrations: [redireccionesD049()],

@@ -200,5 +200,11 @@
   "mapaLugarEnCurso": "Ort begonnen",
   "mapaLugarPorVisitar": "Ort noch nicht besucht",
   "mapaAqui": "Larry ist hier",
-  "casaMapaCta": "Deine Karte"
+  "casaMapaCta": "Deine Karte",
+  "casaLigaCta": "Deine Liga",
+  "casaLigaActiva": "Liga: aktiv",
+  "casaLigaApagada": "Liga: aus",
+  "casaLigaActivar": "Aktivieren",
+  "casaLigaQuitar": "Ausschalten",
+  "casaLigaNota": "In der Liga spielt Ihr Kind mit einem erzeugten Alias, nie mit seinem Namen."
 }

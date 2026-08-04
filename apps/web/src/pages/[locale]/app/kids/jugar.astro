@@ -151,6 +151,32 @@ const rotulos = {
 const rutaCaras = `/${locale}/app/kids/`;
 
 /**
+ * El enlace a la liga (F7 #242). Va en la franja de ARRIBA, junto al sendero
+ * y nunca dentro del reto activo — #221 §3.6: los anuncios viven al principio
+ * o al final de la sesión, no en medio de un ítem.
+ *
+ * Se enseña siempre que hay sesión de niño, esté o no en una liga todavía: si
+ * no está, la pantalla lo dice con `liga.sin_liga`, que es honesto — y en la
+ * banda de opt-in es exactamente el camino por el que un padre se entera de
+ * que la liga existe y la activa desde la casa (D-081).
+ */
+import ligaEN from "../../../../i18n/liga/en.json";
+import ligaESMX from "../../../../i18n/liga/es-MX.json";
+import ligaESES from "../../../../i18n/liga/es-ES.json";
+import ligaFRFR from "../../../../i18n/liga/fr-FR.json";
+import ligaPTBR from "../../../../i18n/liga/pt-BR.json";
+import ligaPTPT from "../../../../i18n/liga/pt-PT.json";
+import ligaDEDE from "../../../../i18n/liga/de-DE.json";
+import { rutaLigaJugador } from "../../../../lib/rutas-app";
+
+const CATALOGOS_LIGA: Record<string, Record<string, unknown>> = {
+  en: ligaEN, "es-MX": ligaESMX, "es-ES": ligaESES, "fr-FR": ligaFRFR,
+  "pt-BR": ligaPTBR, "pt-PT": ligaPTPT, "de-DE": ligaDEDE,
+};
+const cl = CATALOGOS_LIGA[locale] ?? ligaEN;
+const ligaTitulo = typeof cl["liga.titulo"] === "string" ? (cl["liga.titulo"] as string) : "Your league";
+
+/**
  * Los pasos del sendero, leídos en el SERVIDOR (#205).
  *
  * Se lee `days_played_total` y nada más se usa: `actual` y `mejor` existen en
@@ -196,6 +222,18 @@ const pasosCaminados = progreso?.racha.diasJugadosTotal ?? null;
         </div>
       )
     }
+    {/*
+      La liga, en la franja de arriba y nunca dentro del reto activo (#221
+      §3.6: los anuncios viven al principio o al final de la sesión). Solo con
+      sesión de niño — la página de destino vuelve a comprobarla.
+    */}
+    {
+      nino && (
+        <div class="franja-liga">
+          <a class="liga-link" href={rutaLigaJugador(locale)}>{ligaTitulo}</a>
+        </div>
+      )
+    }
     {/* La pantalla vive en un componente compartido: la MISMA la usa el adulto
        en `/app/practicar/`. Ver `components/reto/Pantalla.astro`. */}
     <Pantalla locale={locale} rotulos={rotulos} salirA={rutaCaras} etiquetaVoz={ETIQUETA_DE_VOZ[locale]} />
@@ -209,6 +247,32 @@ const pasosCaminados = progreso?.racha.diasJugadosTotal ?? null;
         padding-block-start: calc(var(--space) * 1.5);
         padding-inline: var(--space);
       }
+
+      /* La liga: misma franja superior, sin competir con el reto. El blanco
+         táctil es el de la banda — 88 px en la más chica (`mc-20` §201)— y el
+         contorno es información del control, no adorno (WCAG 2.2 §1.4.11). */
+      .franja-liga {
+        display: flex;
+        justify-content: center;
+        padding-block-start: var(--space);
+        padding-inline: var(--space);
+      }
+      .liga-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-block-size: var(--tap-kinder, var(--tap-primaria));
+        padding-inline: calc(var(--space) * 1.5);
+        border: 2px solid var(--color-text-muted);
+        border-radius: calc(var(--radius) * 2);
+        color: var(--color-text);
+        background: var(--color-surface);
+        font-family: var(--font-marca);
+        font-weight: var(--weight-subtitle);
+        font-size: var(--text-lg);
+        text-decoration: none;
+      }
+      .liga-link:focus-visible { outline: 4px solid var(--color-accent); outline-offset: 3px; }
     </style>
   </body>
 </html>

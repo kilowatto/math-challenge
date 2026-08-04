@@ -14,7 +14,7 @@
  *     No contiene la cadena `child_profile_id` ni puede contenerla:
  *     `audits/recordatorio-sin-culpa.mjs` lo bloquea de forma estática.
  *
- * «Meta completada» hoy significa, por banda (D-128, 2026-08-03):
+ * «Meta completada» hoy significa, por banda (D-160, 2026-08-03):
  *
  *   · PRIMARIA en adelante — `mission_daily_summary.completed = 1` en el día
  *     LOCAL del hogar.

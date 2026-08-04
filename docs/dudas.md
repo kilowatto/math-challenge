@@ -914,3 +914,174 @@ minutos. El primero hace falta porque `bedtime_local` dice dónde empieza la
 noche y **ninguna decisión dice dónde termina**; el segundo recorta el
 checkpoint de un aparato que se durmió con la sesión abierta, para que cerrar la
 tapa no le cueste minutos al niño.
+
+---
+
+## 24. F9 — lo que la segunda pasada dejó abierto (2026-08-03)
+
+Registrado tras reescribir `docs/planes/f9-grupos-infantiles.md`. Las 12
+preguntas de diseño se cerraron en decisiones D-107 a D-116 (escritas
+primero como D-093 a D-102 y renumeradas tras el cierre de F7, que tomó
+D-103 a D-106 en una sesión paralela); esto es lo que NO se cerró.
+
+### 24.1 La foto del dueño del grupo no existe en el esquema real
+
+El plan de F2 diseñó `group_owner_identity` con `full_name`,
+`school_name`, `photo_r2_key`, `revoked_at` y `revoked_reason`; la
+migración `0005` real solo tiene `assurance`, `phone_verified_at` y
+`declared_context`. La tarjeta de identidad de F9 se diseñó sin foto por
+esto. **Pregunta:** ¿la foto del maestro (que D-011 menciona) entra como
+migración + superficie de subida aparte, o se enmienda D-011 para
+quitarla?
+
+### 24.2 `contextual_marks` no tiene lector, y `no-chat` no existe en su CHECK
+
+La migración `0003` real creó `contextual_marks` con cinco códigos
+(`PRIMER_PERFIL`, `PRIMER_RETO`, `LIMITE_PANTALLA`, `TABLERO_OPTIN`,
+`SEGUNDO_DISPOSITIVO`) — no el `onboarding_marks` con `no-chat` que el
+plan de F2 diseñó. Además ningún código de la app hace
+`SELECT … FROM contextual_marks`: las marcas se escriben y nunca se
+leen, así que «se muestra una vez» no está implementado. F9 dice «sin
+chat» en la propia pantalla de éxito de creación del grupo en vez de
+disparar una marca. **Pregunta:** ¿se construye el lector de marcas y se
+amplía el CHECK (reconstrucción de tabla), o se retira el mecanismo de
+marcas como camino y cada fase lo dice en contexto como hizo F9?
+
+### 24.3 La fuente del chip «activo esta semana» del roster
+
+`docs/planes/f9-grupos-infantiles.md` §6 lo deja por decidir en la issue
+#383: `league_membership.active_days` (solo existe si el niño está en
+liga) vs `screen_time_daily_usage` (existe para todo niño con límite
+configurado). Nunca `last_seen` (D-081). Recomendación:
+`screen_time_daily_usage`.
+
+### 24.4 El `ALTER` del `CHECK` de `assurance` contra migration-safety
+
+F9 necesita agregar `school_verified` al dominio de
+`group_owner_identity.assurance`. En SQLite eso es reconstrucción de
+tabla; `audits/migration-safety.mjs` puede exigir marcador. Se decide
+contra el auditor real en la issue #380, degradando primero (D-070).
+
+### 24.5 Los números de migración de F8 y F9 chocaban si no se repartían
+
+**RESUELTA (2026-08-03):** el dueño confirmó el reparto — `0013` = F8
+panel (#278), `0014` = F8 reportes (#287), `0015` = F9 grupos (#380),
+`0016` = F10 clubs (nueva). Los planes quedaron con su número.
+
+### 24.6 El checkout se borró y se recreó en medio de la sesión
+
+El 2026-08-03 el directorio del repo desapareció durante ~1 hora con
+trabajo no commiteado dentro, y reapareció sincronizado con
+`origin/main` — el trabajo local se perdió y hubo que re-aplicarlo.
+Además, la sesión paralela de cierre de F7 escribió D-103 a D-106
+mientras esta escribía las suyas: la colisión de números se resolvió
+renumerando a D-107 en adelante. **Pregunta:** ¿hace falta una regla de
+que ninguna sesión haga limpieza de worktrees/directorios mientras haya
+ramas con trabajo no commiteado, o basta con la regla de commitear al
+final de cada encargo?
+
+---
+
+## 25. Revisión completa de dudas (2026-08-03, pedida por el dueño)
+
+El dueño pidió revisar todo el archivo para resolver lo abierto. Se verificó
+cada entrada contra `decisions.md` (D-001 a D-135), las migraciones, los PRs
+mergeados (#403-#408, #410, #431, #433-#436) y el código — no contra la
+memoria.
+
+### 25.1 Resueltas y verificadas (sin necesidad de acción)
+
+| Duda | Cerrada por |
+|---|---|
+| §1, §11, §12 (corpus es-MX/fr-FR) | D-067 + PR #174 — 282/282 desplegado |
+| §2 (arreglar-decimales) | Superada por la corrida del 2026-08-01; hallazgos restantes son falsos positivos documentados |
+| §5 (aviso «aún no traducido») | Implementado en `[slug].astro:413-414` |
+| §7 (auditores antes que el código) | D-070 + el arnés de 103 controles negativos |
+| §8 (nadie vio el sitio) | D-068, capturas automáticas |
+| §9 (JR vs PRO) | D-066: es el perfil |
+| §13 (reportes sin verificar) | D-069 |
+| §14 (contraste + espaciado) | D-058 + D-059 |
+| §21 (voz de Larry) | D-077 → D-078 (`speechSynthesis`, 7 locales) |
+| §22.1-22.3 (escudos) | D-079 |
+| §22.5 (XP de misiones) | D-092 |
+| §23 social 23.1 (racha entre pares) | D-106 + PR #406 |
+| §23 social 23.2 (opt-in duelo) | migración `0012` (LEAGUE/DUEL en el catálogo) + patrón ratificado por D-110 |
+| §23 cableado 23.1 (racha en KINDER) | #205 + PRs #431, #436 |
+| §23 cableado 23.3 (`d1_migrations`) | el dueño autorizó la corrección el 2026-08-03; 12/12 registradas |
+| §23 misiones 23.1-23.4 | D-103, D-104, D-105 + PRs #433-#435 |
+| §24.5 (números de migración) | Reparto confirmado por el dueño: 0013/0014 F8, 0015 F9, 0016 F10, 0017 F11 |
+| F6 P-5, P-6, P-7, precio del adulto | D-085 retiró la tabla de planes: ya no hay gratis vs. pago |
+| F6 P-19 (voz en 4 locales) | D-077 → D-078 |
+
+### 25.2 Cerradas en esta sesión por el dueño (olas A, B y C del 2026-08-03)
+
+Preguntas interactivas con pros y contras por opción; sus respuestas quedan
+como decisiones D-136 en adelante: §24.1 (foto del dueño del grupo), §24.2
+(`contextual_marks`), §23 F8 23.1 (corte nocturno), §23 F8 23.3 (límite
+desde el día uno), §23 social 23.3 (sesgo de edad del duelo), §23 social
+23.5 (descenso ignora inactivos), F6 P-1 (kinder sin modelo en vivo),
+F6 P-15 (tope en el DO), F6 P-18 (medición de costos), F6 bloque de 15
+(ratificación), §6 (redirecciones 301).
+
+### 25.3 Ejecutables sin el dueño (quedan como trabajo, no como duda)
+
+- **§3 — `scripts/correr-lote.mjs`** con PID, `--parar` y avance reanudable
+  (AGENTS.md §8 lo sigue pidiendo: «deja escrito cómo se para»).
+- **§22.4 / §23.4 — ratificaciones de código ya implementado** (nombres de
+  columna en `EstadoRacha`; rename `tier`→`escalon`): una línea en
+  decisions.md en el próximo batch.
+- **§22 P4 / §23 cableado 23.2 — el bono `reto_completado` sin llamador**:
+  hay que construir una señal de cierre de reto observable por el servidor
+  (#192 sigue abierta).
+- **§23 F8 23.2 — `cerrarPorLimite` lo construye F8 y F7 lee**: ya está así
+  en código; se ratifica por escrito.
+- **§24.3 — chip «activo esta semana»**: `screen_time_daily_usage` (existe
+  para todo niño), nunca `last_seen` (D-081). Se aplica en #383.
+- **§24.4 — el `ALTER` del CHECK de `assurance`**: lo que #380 ya
+  especifica, degradando primero (D-070).
+- **§24.6 — regla anti-limpieza**: añadir a AGENTS.md «ninguna sesión hace
+  limpieza de worktrees/directorios mientras haya ramas con trabajo no
+  commiteado».
+
+### 25.4 Advertencia de la revisión
+
+`node audits/corpus-integridad.mjs` **falla hoy** — no por las dudas viejas
+sino por `mc-49`, `mc-50` y `mc-51`: investigaciones nuevas sin traducir.
+El verde del 2026-08-01 cubre mc-01…mc-48; los tres documentos nuevos están
+fuera de ese estado y su traducción sigue el marco de D-050/D-067 (pausada
+salvo es-MX/fr-FR). Decidir su traducción es tema aparte de este cierre.
+
+### 25.5 Vigencias comprometidas (D-133)
+
+- **2027**: revisar currículos en transición — México MCCEMS, streaming de
+  Singapur, la maquette de la Sorbonne, A-level y BNCC por año (los cinco
+  huecos `[unverified]` de `mc-51`).
+- **2030**: revisión decanal del MSC (msc2020.org) — re-mapear `ramas.ts`
+  (D-135) si los códigos de dos dígitos cambian.
+
+### 25.6 Resoluciones de las olas A, B y C (2026-08-03, noche)
+
+| Duda | Respuesta | Decisión |
+|---|---|---|
+| §24.1 foto del maestro | **Se agrega**: columna en 0015 + upload (contra la recomendación) | D-136 |
+| §24.2 `contextual_marks` | **Se construye el lector** y se amplía el CHECK (contra la recomendación) | D-137 |
+| §23 F8 23.1 nocturno | También impide empezar de madrugada | D-138 |
+| §23 F8 23.3 día uno | **Solo tras configurar** — supera lo implementado | D-139 |
+| §23 social 23.3 edad duelo | Sesgo a favor del acceso, ratificado | D-140 |
+| §23 social 23.5 descenso | Ignora inactivos, extensión de D-014 firmada | D-141 |
+| F6 P-1 kinder en vivo | 100% pregenerado, enmienda D-015 | D-142 |
+| F6 P-15 tope | En el Durable Object, enmienda D-015 | D-143 |
+| F6 P-18 medición | Se corre (~$5) | D-144 |
+| F6 bloque de 15 | Ratificadas en bloque | D-145 |
+| §6 redirecciones | Para siempre | D-146 |
+
+### 24.7 SUPERADO el reparto de §24.5 (2026-08-03, noche)
+
+Las 0013-0015 las tomaron otras sesiones mientras tanto
+(`0013_dias_jugados_sendero`, `0014_push_recordatorio_padre`,
+`0015_cosmeticos_kinder_v1` — verificado contra `d1_migrations` remoto
+con `wrangler d1 execute`). **Reparto vigente, confirmado por el
+dueño:** `0016` = F8 panel (#278), `0017` = F8 reportes (#287),
+`0018` = F9 grupos (#380), `0019` = F10 clubs (#412),
+`0020` = F11 push suscripciones (#429), `0021` = F12 `household_link`
+(#445). Los planes ya quedaron renumerados.

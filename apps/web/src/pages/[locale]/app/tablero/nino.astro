@@ -1,0 +1,243 @@
+---
+/**
+ * `/{locale}/app/tablero/nino/` — el tablero global visto por el NIÑO.
+ * F7 #247 · D-003, D-025, D-040, D-081 · `mc-10`, `mc-18`.
+ *
+ * ─── Por qué es un documento propio y no `Privada.astro` ─────────────────────
+ *
+ * Es superficie de NIÑO, y las tres razones de `app/kids/index.astro` aplican
+ * igual: `Privada.astro` monta `<Rum banda="SERIO">` y D-037 permite medir
+ * **solo en superficies de adulto**; la franja de pestañas de cuenta no es
+ * para un menor; y esta pantalla no se indexa. Lo que sí se hereda son los
+ * tokens: ni un color ni un tamaño se inventa aquí.
+ *
+ * ─── KINDER no pasa de la puerta ─────────────────────────────────────────────
+ *
+ * #247, con todas las letras: el tablero de la banda KINDER **nunca** se
+ * renderiza para el niño, en ninguna forma — existe solo como widget del
+ * panel del padre. Un niño de KINDER que llegue a esta URL se desvía a jugar,
+ * y `audits/tablero-sin-kinder-publico.mjs` vigila que ese desvío no se borre.
+ *
+ * ─── La escalera se decidió ANTES de esta página ─────────────────────────────
+ *
+ * Lo que llega a la plantilla ya pasó por `armarVista()` (`lib/tablero-datos.ts`):
+ *
+ *  · **PRIMARIA fuera del top 20** — la respuesta **no contiene la tabla**:
+ *    ni rango, ni posición, ni vecinos. No es que se esconda al pintar: no
+ *    viaja. Solo su propio total acumulado (#247, `mc-10`).
+ *  · **SECUNDARIA** — posición numérica exacta, con «tú estás aquí» incluso
+ *    fuera del top 100.
+ *
+ * ─── Cero de lo que esta pantalla no puede tener ─────────────────────────────
+ *
+ *  · **Cero texto libre** (línea roja #3): no hay un solo campo de escritura.
+ *  · **Cero telemetría** (D-037): ni un beacon, ni un observador de
+ *    rendimiento, ni un envío en segundo plano.
+ *  · **Cero JavaScript.** Una tabla servida en HTML es más rápida y más
+ *    fiable que cualquier cosa que haya que hidratar en un Android de gama
+ *    baja sobre 4G lento (§11 del plan, `mc-33`).
+ *  · **Cero lenguaje de pérdida** (D-014, condición 3 de D-081): ninguna
+ *    cadena habla de bajar de posición, de que te alcancen, ni del último
+ *    lugar (`mc-18` implicación 7).
+ *  · **Cero nombres reales** (línea roja #2): la estructura `FilaDeTablero`
+ *    no tiene dónde poner uno — solo alias generados.
+ */
+export const prerender = false;
+
+import TableroGlobal from "../../../../components/tablero/TableroGlobal.astro";
+import { TEXTOS_TABLERO, rellenarTablero } from "../../../../components/tablero/textos";
+import { isLocale, type Locale } from "../../../../i18n";
+import {
+  COOKIE_NINO,
+  leerCookies,
+  leerSesionNino,
+} from "../../../../lib/sesiones";
+import { hijoDelPadre } from "../../../../lib/padre-limite";
+import { rangoExacto, vistaParaNino } from "../../../../lib/tablero-datos";
+import { rutaCasa, rutaJugar, rutaKids } from "../../../../lib/rutas-app";
+import { formatear } from "../../../../../../../packages/motor/src/numeros.ts";
+import "../../../../styles/fonts.css";
+import "../../../../styles/tokens.css";
+import "../../../../styles/bandas.css";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+
+// Nunca en caché, en ningún intermediario: la respuesta depende de `mc_k`.
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+Astro.response.headers.set("referrer-policy", "same-origin");
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+
+// Sin sesión de niño no hay «quien mira»: a la casa del adulto, que ella misma
+// manda a `/entrar/?cambiar=1` cuando tampoco hay sesión de adulto.
+if (!env?.SESSION_KV || !env?.DB) return Astro.redirect(rutaCasa(locale));
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = await leerSesionNino(env.SESSION_KV, cookies[COOKIE_NINO]);
+if (!sesion) return Astro.redirect(rutaCasa(locale));
+
+// El perfil, verificado contra la cuenta que lo contiene (línea roja #2). Una
+// sesión cuyo perfil ya no existe vuelve a la rejilla de caras, que es la
+// recuperación natural del niño.
+const hijo = await hijoDelPadre(env.DB, sesion.parentUserId, sesion.childProfileId);
+if (!hijo) return Astro.redirect(rutaKids(locale));
+
+// ─── KINDER jamás ve un tablero (#247) ───────────────────────────────────────
+// Ni la lista, ni su tercio, ni un solo número de posición: su tablero existe
+// SOLO como widget del panel del padre. Este desvío lo vigila
+// `audits/tablero-sin-kinder-publico.mjs` — quitarlo es bloquear el commit.
+if (hijo.theme_band === "KINDER") return Astro.redirect(rutaJugar(locale));
+
+const { vista } = await vistaParaNino(env.DB, hijo);
+const textos = TEXTOS_TABLERO[locale];
+
+// La proyección a cadenas, entera en el servidor, con el locale de QUIEN MIRA
+// — nunca el `alias_locale` del dueño de la fila (#247, `mc-34`). Las dos
+// bandas que llegan aquí son exactas, así que `posicion` siempre trae `rank`.
+const filas = vista.lista.map((e) => {
+  const rango = rangoExacto(e.posicion);
+  return {
+    alias: e.alias,
+    puntos: formatear(e.total_score, locale),
+    posicion: rango === null ? "" : formatear(rango, locale),
+    soyYo: e.soy_yo,
+  };
+});
+
+const misPuntos = rellenarTablero(textos["tablero.tusPuntos"], {
+  puntos: formatear(vista.mi_total, locale),
+});
+// PRIMARIA fuera del top 20 recibe `mi_posicion = null` del servidor — esta
+// plantilla no podría inventarla aunque quisiera: el número no viajó.
+const rangoPropio = rangoExacto(vista.mi_posicion);
+const miPosicion =
+  rangoPropio !== null
+    ? rellenarTablero(textos["tablero.tuPosicion"], { posicion: formatear(rangoPropio, locale) })
+    : null;
+
+const titulo = `${textos["tablero.titulo"]} · ${textos[`tablero.banda.${vista.banda}`]}`;
+---
+
+<!doctype html>
+<html lang={locale} data-band={vista.banda}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    {/* Pantalla autenticada de un menor: fuera del índice, sin seguir enlaces. */}
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{titulo}</title>
+    <meta name="theme-color" content="#F36B1C" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="preload" href="/fonts/raleway-var-latin.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+
+  <body>
+    <main class="pantalla">
+      <h1 class="titulo">{titulo}</h1>
+
+      <section class="propio">
+        {vista.mi_total === 0 ? (
+          <p class="cifra">{textos["tablero.sinPuntos"]}</p>
+        ) : (
+          <p class="cifra">{misPuntos}</p>
+        )}
+        {miPosicion !== null && <p class="posicion">{miPosicion}</p>}
+        {/* PRIMARIA fuera del top 20: su total y nada más. Ninguna cadena le
+            dice dónde queda — `mc-10` mide qué le hace la presión de
+            rendimiento a las matemáticas a esa edad. */}
+        {vista.mi_total > 0 && vista.lista.length === 0 && (
+          <p class="pista">{textos["tablero.soloTotal"]}</p>
+        )}
+      </section>
+
+      {vista.lista.length > 0 && (
+        <section class="lista">
+          <TableroGlobal
+            filas={filas}
+            textos={{
+              colPosicion: textos["tablero.colPosicion"],
+              colJugador: textos["tablero.colJugador"],
+              colPuntos: textos["tablero.colPuntos"],
+              tu: textos["tablero.tu"],
+            }}
+          />
+        </section>
+      )}
+
+      {/* La única acción de la pantalla: volver a jugar. 48px, el piso de
+          PRIMARIA (`mc-21`) — en esta pantalla no hay banda KINDER, nunca. */}
+      <p class="salida">
+        <a class="volver" href={rutaJugar(locale)}>{textos["tablero.volver"]}</a>
+      </p>
+    </main>
+
+    <style>
+      .pantalla {
+        min-block-size: 100svb;
+        max-inline-size: 40rem;
+        margin-inline: auto;
+        padding-block: calc(var(--space) * 2) calc(var(--space) * 3);
+        padding-inline: var(--space);
+        /* D-041: el contenido no se mete bajo el indicador de inicio ni bajo
+           las esquinas redondeadas de un iPhone o iPad instalado. */
+        padding-block-end: calc(var(--space) * 3 + env(safe-area-inset-bottom));
+        padding-inline-start: calc(var(--space) + env(safe-area-inset-left));
+        padding-inline-end: calc(var(--space) + env(safe-area-inset-right));
+      }
+      .titulo {
+        font-family: var(--font-marca);
+        font-weight: var(--weight-title);
+        font-size: var(--text-xl);
+        line-height: 1.2;
+        color: var(--color-text-brand);
+        margin-block: 0 calc(var(--space) * 1.5);
+      }
+      .propio {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        padding: var(--space);
+        margin-block-end: calc(var(--space) * 1.5);
+      }
+      .cifra {
+        font-family: var(--font-marca);
+        font-weight: var(--weight-subtitle);
+        font-size: var(--text-lg);
+        margin: 0;
+      }
+      .posicion {
+        font-family: var(--font-marca);
+        font-size: var(--text-base);
+        color: var(--color-text-brand);
+        margin-block: 0.35rem 0;
+      }
+      .pista {
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        line-height: var(--leading-body);
+        margin-block: 0.35rem 0;
+      }
+      .lista { margin-block-end: calc(var(--space) * 1.5); }
+      .salida { margin-block-start: calc(var(--space) * 2); }
+      .volver {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-block-size: var(--tap-primaria);
+        padding-inline: 1.25rem;
+        border-radius: var(--radius);
+        background: var(--color-accent);
+        color: var(--color-on-accent);
+        font-family: var(--font-sistema);
+        font-size: var(--text-base);
+        text-decoration: none;
+      }
+      .volver:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
+    </style>
+  </body>
+</html>

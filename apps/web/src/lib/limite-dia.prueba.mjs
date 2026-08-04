@@ -140,7 +140,7 @@ const verdad = (v, msg) => {
 
 console.log("\nlimite-dia — el cable entre el motor y D1 (#270, #271, #273)\n");
 
-await caso("el primer servir del día crea la fila en cero y deja jugar (protección desde el día uno)", async () => {
+await caso("el primer servir del día crea la fila en cero y deja jugar (el uso se acumula con o sin configuración, D-139)", async () => {
   const { raw, db } = base();
   hijo(raw, "k1", "KINDER");
   const r = await limiteAlServir({ DB: db }, NINO("k1"), { ahora: MEDIODIA, zona: ZONA, locale: "es-MX" });
@@ -172,7 +172,8 @@ await caso("un aparato dormido 30 minutos cobra el tope de checkpoint, no los 30
 
 await caso("el aviso cae a 5 minutos del tope, sin cifra en KINDER, y `warned_at` queda escrito (#270)", async () => {
   const { raw, db } = base();
-  hijo(raw, "k1", "KINDER"); // default 20 min, aviso a los 15
+  hijo(raw, "k1", "KINDER");
+  config(raw, "k1"); // 20 min, aviso a los 15 — sin fila no habría aviso (D-139)
   sembrarUso(raw, "k1", { usados: 15, desdeDescanso: 4, sellado: MEDIODIA });
   const r = await limiteAlResponder({ DB: db }, NINO("k1"), { ahora: MEDIODIA + MIN, zona: ZONA, locale: "es-MX" });
   verdad(r && r.tipo === "AVISO", `esperaba AVISO, obtuve ${JSON.stringify(r)}`);
@@ -183,6 +184,7 @@ await caso("el aviso cae a 5 minutos del tope, sin cifra en KINDER, y `warned_at
 await caso("el aviso NO se repite si el niño cierra y reabre la app antes del corte (#270)", async () => {
   const { raw, db } = base();
   hijo(raw, "k1", "KINDER");
+  config(raw, "k1");
   sembrarUso(raw, "k1", { usados: 16, desdeDescanso: 4, avisado: MEDIODIA, sellado: MEDIODIA });
   // Reabre la app: entra por el servir…
   const alServir = await limiteAlServir({ DB: db }, NINO("k1"), { ahora: MEDIODIA + 2 * MIN, zona: ZONA, locale: "es-MX" });
@@ -194,7 +196,8 @@ await caso("el aviso NO se repite si el niño cierra y reabre la app antes del c
 
 await caso("el descanso se OFRECE al llegar al de la banda, reinicia su contador y no toca el total (#271)", async () => {
   const { raw, db } = base();
-  hijo(raw, "p1", "PRIMARIA"); // descanso cada 20
+  hijo(raw, "p1", "PRIMARIA");
+  config(raw, "p1", { daily: 30, descanso: 20 }); // descanso cada 20
   sembrarUso(raw, "p1", { usados: 20, desdeDescanso: 20, sellado: MEDIODIA });
   const r = await limiteAlResponder({ DB: db }, NINO("p1"), { ahora: MEDIODIA + MIN, zona: ZONA, locale: "es-MX" });
   verdad(r && r.tipo === "DESCANSO", `esperaba DESCANSO, obtuve ${JSON.stringify(r)}`);
@@ -207,7 +210,8 @@ await caso("el descanso se OFRECE al llegar al de la banda, reinicia su contador
 
 await caso("al llegar al tope diario el día se cierra con DAILY_LIMIT y el servir siguiente no sirve (#272)", async () => {
   const { raw, db } = base();
-  hijo(raw, "p1", "PRIMARIA"); // default 30
+  hijo(raw, "p1", "PRIMARIA");
+  config(raw, "p1", { daily: 30, descanso: 20 });
   sembrarUso(raw, "p1", { usados: 29, desdeDescanso: 9, avisado: MEDIODIA, sellado: MEDIODIA });
   const r = await limiteAlResponder({ DB: db }, NINO("p1"), { ahora: MEDIODIA + MIN, zona: ZONA, locale: "es-MX" });
   verdad(r && r.tipo === "CERRAR" && r.motivo === "DAILY_LIMIT", `esperaba CERRAR/DAILY_LIMIT, obtuve ${JSON.stringify(r)}`);
@@ -221,7 +225,8 @@ await caso("al llegar al tope diario el día se cierra con DAILY_LIMIT y el serv
 
 await caso("la despedida de KINDER no lleva conteo de retos ni cifra", async () => {
   const { raw, db } = base();
-  hijo(raw, "k1", "KINDER"); // default 20
+  hijo(raw, "k1", "KINDER");
+  config(raw, "k1"); // 20 min
   sembrarUso(raw, "k1", { usados: 20, desdeDescanso: 5, sellado: MEDIODIA });
   const r = await limiteAlResponder({ DB: db }, NINO("k1"), { ahora: MEDIODIA + MIN, zona: ZONA, locale: "es-MX" });
   verdad(r && r.tipo === "CERRAR", `esperaba CERRAR, obtuve ${JSON.stringify(r)}`);
@@ -299,12 +304,19 @@ await caso("un daily_minutos válido del padre SÍ se respeta (10, el piso de KI
   verdad(r && r.tipo === "CERRAR" && r.motivo === "DAILY_LIMIT", "el tope que el padre eligió manda");
 });
 
-await caso("sin fila de configuración el default de la banda protege desde el día uno (dudas §23.3)", async () => {
+await caso("sin fila de configuración NO hay límite, y los minutos se acumulan igual (D-139)", async () => {
+  // D-139 (2026-08-03) SUPERÓ la «protección desde el día uno»: el límite
+  // diario protege solo después de que el padre lo configura. Sin fila, ni a
+  // 10 veces el default de la banda se corta — y el uso se escribe igual, que
+  // es lo que el «hoy jugó X minutos» del padre lee (#269).
   const { raw, db } = base();
   hijo(raw, "k1", "KINDER"); // sin fila en screen_time_settings: hoy, TODOS los perfiles
-  sembrarUso(raw, "k1", { usados: 20, desdeDescanso: 5, sellado: MEDIODIA });
-  const r = await limiteAlResponder({ DB: db }, NINO("k1"), { ahora: MEDIODIA + MIN, zona: ZONA, locale: "es-MX" });
-  verdad(r && r.tipo === "CERRAR", "sin configuración no significa sin límite");
+  sembrarUso(raw, "k1", { usados: 200, desdeDescanso: 200, sellado: MEDIODIA });
+  const alResponder = await limiteAlResponder({ DB: db }, NINO("k1"), { ahora: MEDIODIA + MIN, zona: ZONA, locale: "es-MX" });
+  igual(alResponder, null, "sin configuración no hay corte diario, descanso ni aviso");
+  const alServir = await limiteAlServir({ DB: db }, NINO("k1"), { ahora: MEDIODIA + 2 * MIN, zona: ZONA, locale: "es-MX" });
+  igual(alServir, null, "y el servir siguiente sirve normal");
+  igual(uso(raw, "k1").minutes_used, 201, "los minutos se acumularon aunque no hubiera límite");
 });
 
 await caso("el día de ayer no gotea a hoy: la fila es por (niño, día local)", async () => {
@@ -338,11 +350,13 @@ await caso("la base rota no niega el juego: falla abierto y devuelve null", asyn
 await caso("el copy viaja en el locale de quien juega (de-DE) y cae a `en` con uno desconocido (D-022)", async () => {
   const { raw, db } = base();
   hijo(raw, "s1", "SECUNDARIA");
-  sembrarUso(raw, "s1", { usados: 45, desdeDescanso: 5, sellado: MEDIODIA }); // default 45
+  config(raw, "s1", { daily: 45, descanso: 25, corte: 30 });
+  sembrarUso(raw, "s1", { usados: 45, desdeDescanso: 5, sellado: MEDIODIA });
   const de = await limiteAlResponder({ DB: db }, NINO("s1"), { ahora: MEDIODIA + MIN, zona: ZONA, locale: "de-DE" });
   verdad(de && de.tipo === "CERRAR", "corte en alemán");
   const { raw: raw2, db: db2 } = base();
   hijo(raw2, "s1", "SECUNDARIA");
+  config(raw2, "s1", { daily: 45, descanso: 25, corte: 30 });
   sembrarUso(raw2, "s1", { usados: 45, desdeDescanso: 5, sellado: MEDIODIA });
   const xx = await limiteAlResponder({ DB: db2 }, NINO("s1"), { ahora: MEDIODIA + MIN, zona: ZONA, locale: "xx" });
   igual(xx.textos.cuerpo, "Good work today. See you tomorrow.", "locale desconocido → en");

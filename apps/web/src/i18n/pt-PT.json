@@ -200,5 +200,11 @@
   "mapaLugarEnCurso": "Lugar em curso",
   "mapaLugarPorVisitar": "Lugar por visitar",
   "mapaAqui": "O Larry está aqui",
-  "casaMapaCta": "O teu mapa"
+  "casaMapaCta": "O teu mapa",
+  "casaLigaCta": "A tua liga",
+  "casaLigaActiva": "Liga: ativada",
+  "casaLigaApagada": "Liga: desativada",
+  "casaLigaActivar": "Ativar",
+  "casaLigaQuitar": "Desativar",
+  "casaLigaNota": "Na liga, a criança joga com uma alcunha gerada, nunca com o nome."
 }

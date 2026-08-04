@@ -39,6 +39,32 @@ caso("TODOS los ítems generados son válidos (validarItem)", () => {
   if (malos.length) throw new Error(`${malos.length} inválidos; el primero (${malos[0].i.id}): ${malos[0].p.join(" | ")}`);
 });
 
+caso("un ítem mal formado REVIENTA la siembra (#366)", () => {
+  // Mismo control negativo que en el banco de kinder: la validación vive en
+  // `generarBancoPrimaria()`, no solo en esta prueba. Una plantilla corrupta
+  // tiene que impedir que la siembra se construya, no producir una fila rota
+  // en `item_bank`.
+  const corrupta = {
+    habilidad: "P01",
+    parametros: () => [{ params: {}, variacion: null }],
+    generar: () => ({ ...banco[0], id: "prueba-corrupta-366", errores: [] }),
+  };
+  PLANTILLAS_PRIMARIA.push(corrupta);
+  try {
+    let revento = false;
+    try {
+      generarBancoPrimaria();
+    } catch (e) {
+      revento = e.message.includes("prueba-corrupta-366");
+    }
+    if (!revento) {
+      throw new Error("generarBancoPrimaria() construyó la siembra con un ítem mal formado dentro");
+    }
+  } finally {
+    PLANTILLAS_PRIMARIA.pop();
+  }
+});
+
 caso("ningún id se repite y la generación es determinista", () => {
   es(new Set(banco.map((i) => i.id)).size, banco.length, "ids únicos");
   es(

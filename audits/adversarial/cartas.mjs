@@ -147,10 +147,13 @@ export const CARTAS = [
     // `mc-43` se añade en F7 (#257): sin ella la carta no podía invocar la
     // implicación 10 —«Larry never comments on the child's alias or avatar
     // choice»— que es la fuente de la frontera de apariencia e identidad.
-    // `D-107`/`D-097`/`mc-28` se añaden en F9 (#401): el «necesita atención»
+    // `D-107`/`D-111`/`mc-28` se añaden en F9 (#401): el «necesita atención»
     // del roster se muestra como AUSENCIA de una señal positiva, nunca como
     // alerta sobre el niño — sin estas citas la carta veía el patrón y no
-    // tenía con qué bloquearlo.
+    // tenía con qué bloquearlo. (Llegó escrita como `D-097`, un número que no
+    // existe en `decisions.md`: la numeración de F9 se reasignó al aterrizar
+    // y la referencia correcta es D-111 — la validación de citas de la propia
+    // flota la cazó.)
     // `D-017`/`D-020`/`mc-15` se añaden en F8 (#280, #283): el panel del padre
     // muestra el dominio en cuatro estados categóricos, nunca porcentaje ni
     // nota escolar — D-017 es la decisión que prohíbe el «grado», mc-15 es la
@@ -158,7 +161,7 @@ export const CARTAS = [
     // y D-020 es la letra de la nota suave: el sujeto gramatical es el patrón,
     // nunca el niño. Sin ellas la carta veía el «72% de dominio» y no tenía
     // con qué bloquearlo.
-    cita: ["LR-7", "D-003", "D-004", "D-017", "D-020", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-15", "mc-18", "mc-43", "mc-46", "D-107", "D-097", "mc-28"],
+    cita: ["LR-7", "D-003", "D-004", "D-017", "D-020", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-15", "mc-18", "mc-43", "mc-46", "D-107", "D-111", "mc-28"],
     // `explicacion|larry` porque el módulo de explicación vive en
     // `packages/motor/`, que ninguno de los alcances heredados alcanza: sin esta
     // línea, la carta dormía justo sobre el archivo que compone lo que un niño

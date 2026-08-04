@@ -19,5 +19,10 @@
   "duelo.mismo_set": "Ihr bekommt beide dieselben Aufgaben",
   "duelo.empate": "Unentschieden",
   "duelo.resultado": "Du {mios} — {alias} {suyos}",
-  "duelo.terminado": "Ihr seid beide fertig"
+  "duelo.terminado": "Ihr seid beide fertig",
+  "duelo.retar": "Herausfordern",
+  "duelo.te_toca": "Du bist dran mit Spielen",
+  "duelo.esperando": "Du hast deinen Teil gespielt",
+  "duelo.jugar": "Spielen",
+  "duelo.con_quien": "Wähle jemanden aus deiner Liga zum Herausfordern"
 }

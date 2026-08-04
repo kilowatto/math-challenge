@@ -19,5 +19,10 @@
   "duelo.mismo_set": "Os dois recebem as mesmas perguntas",
   "duelo.empate": "Empate",
   "duelo.resultado": "Você {mios} — {alias} {suyos}",
-  "duelo.terminado": "Os dois já terminaram"
+  "duelo.terminado": "Os dois já terminaram",
+  "duelo.retar": "Desafiar",
+  "duelo.te_toca": "Sua vez de jogar sua parte",
+  "duelo.esperando": "Você já jogou sua parte",
+  "duelo.jugar": "Jogar",
+  "duelo.con_quien": "Escolha quem desafiar na sua liga"
 }

@@ -1,0 +1,202 @@
+---
+/**
+ * La sección del DUELO dentro de la pantalla de la liga. F7 #244, D-081.
+ *
+ * ─── Lo que se pinta, y lo que no puede pintarse aquí ───────────────────────
+ *
+ * Los datos llegan ya proyectados por `cargarPanelDeDuelo` — que a su vez
+ * pasa por `verDuelo()` del motor— así que este componente no tiene qué
+ * ocultar: no lo recibe.
+ *
+ *  · **Sin presencia** (D-081 condición 2): no hay «en línea», ni «jugando
+ *    ahora», ni cuándo jugó el otro. Mientras el duelo está pendiente, los
+ *    puntos llegan en `null` para los dos lados — saber que el otro ya
+ *    terminó es media presencia, y es exactamente lo que produce la espera.
+ *  · **Sin prisa** (`mc-17`, `mc-19`): la ventana de 48 h no se muestra. No
+ *    hay cuenta regresiva, ni «te quedan», ni la fecha de cierre — el duelo
+ *    caduca solo y un expirado DESAPARECE de la lista, porque rechazar es
+ *    silencioso (#244).
+ *  · **Sin lenguaje de pérdida** (D-081 condición 3, `mc-46`): el resultado
+ *    es un marcador —«Tú 42 — Nutria Veloz 38»— o un empate dicho sin drama.
+ *    No hay «ganaste» ni «perdiste»: los textos vienen de `i18n/liga/`, que
+ *    `audits/racha-lexico.mjs` vigila en los siete locales.
+ *  · **Sin chat ni texto libre** (línea roja #3): no hay nada que teclear.
+ *    El reto se envía con un `<form method="post">` cuyo único dato es el id
+ *    de membresía del par — un identificador opaco del servidor, como el de
+ *    `rutaLimiteHijo`— y los campos ocultos de vuelta. Nadie escribe nada.
+ *
+ * ─── Por qué formularios y no JavaScript ─────────────────────────────────────
+ *
+ * La pantalla del niño no tiene scripts (ver `liga/jugador.astro`), y un
+ * aparato de gama baja tiene que poder retar aunque el script no cargue
+ * (`mc-47` §5). El endpoint contesta 303 de vuelta aquí —
+ * `respuesta-de-formulario.ts` documenta el bug que nace de contestar JSON a
+ * un formulario.
+ */
+import { formatear } from "../../../../../packages/motor/src/numeros.ts";
+import type { Locale } from "../../i18n";
+import type { FilaDePanel, ParRetable } from "../../lib/duelo-superficie";
+import { TEXTOS_LIGA, rellenar } from "./textos";
+
+interface Props {
+  locale: Locale;
+  /** Los duelos vivos, ya proyectados por el motor (ver arriba). */
+  duelos: readonly FilaDePanel[];
+  /** Los pares de la propia liga que pasan los portones. Vacío si no se puede retar. */
+  pares: readonly ParRetable[];
+  /** La base del enlace de juego: la pantalla del reto de quien mira. */
+  rutaJugar: string;
+  /** La pantalla de liga de quien mira, para el 303 del formulario. */
+  rutaVolver: string;
+}
+
+const { locale, duelos, pares, rutaJugar, rutaVolver } = Astro.props;
+const t = TEXTOS_LIGA[locale] ?? TEXTOS_LIGA["en"];
+const num = (n: number) => formatear(n, locale, 0);
+
+/** El marcador, o el empate dicho sin drama. Nunca un verbo de pérdida. */
+function resultadoDe(d: FilaDePanel): string {
+  if (d.empate) return t["duelo.empate"];
+  return rellenar(t["duelo.resultado"], {
+    mios: num(d.mis_puntos ?? 0),
+    alias: d.alias_del_otro,
+    suyos: num(d.puntos_del_otro ?? 0),
+  });
+}
+---
+
+<section class="duelo" aria-labelledby="duelo-titulo">
+  <h2 id="duelo-titulo" class="titulo">{t["duelo.titulo"]}</h2>
+
+  {
+    duelos.length > 0 && (
+      <ul class="lista" role="list">
+        {duelos.map((d) => (
+          <li class="fila">
+            {d.estado === "terminado" && (
+              <span class="texto">{resultadoDe(d)}</span>
+            )}
+            {d.estado === "esperando" && (
+              <span class="texto">{t["duelo.esperando"]}</span>
+            )}
+            {d.estado === "te_toca" && (
+              <>
+                <span class="texto">
+                  <span class="quien">
+                    {d.yo_rete
+                      ? t["duelo.te_toca"]
+                      : rellenar(t["duelo.invitacion"], { alias: d.alias_del_otro })}
+                  </span>
+                  <span class="pista">{t["duelo.mismo_set"]}</span>
+                </span>
+                <a class="boton" href={`${rutaJugar}?duelo=${encodeURIComponent(d.duelo_id)}`}>
+                  {t["duelo.jugar"]}
+                </a>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  {
+    pares.length > 0 && (
+      <>
+        <p class="pista">{t["duelo.con_quien"]}</p>
+        <ul class="lista" role="list">
+          {pares.map((p) => (
+            <li class="fila">
+              <span class="quien">{p.alias}</span>
+              <form method="post" action="/api/duelo?accion=retar">
+                <input type="hidden" name="volver" value={rutaVolver} />
+                <input type="hidden" name="locale" value={locale} />
+                <button class="boton" type="submit" name="rival" value={p.membership_id}>
+                  {t["duelo.retar"]}
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+</section>
+
+<style>
+  .duelo {
+    margin-block-start: calc(var(--space) * 2);
+  }
+
+  .titulo {
+    font-family: var(--font-marca);
+    font-weight: var(--weight-subtitle);
+    font-size: var(--text-xl, var(--text-lg));
+    color: var(--color-text);
+    margin-block: 0 var(--space);
+  }
+
+  .lista {
+    list-style: none;
+    margin: 0 0 var(--space);
+    padding: 0;
+    display: grid;
+    gap: calc(var(--space) * 0.5);
+  }
+
+  .fila {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--space) * 0.75);
+    padding: calc(var(--space) * 0.5) calc(var(--space) * 0.75);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius);
+  }
+
+  .texto {
+    display: grid;
+    gap: calc(var(--space) * 0.25);
+    flex: 1;
+  }
+
+  .quien {
+    font-family: var(--font-marca);
+    font-weight: var(--weight-subtitle);
+    font-size: var(--text-lg);
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+    flex: 1;
+  }
+
+  .pista {
+    font-family: var(--font-sistema);
+    font-size: var(--text-sm, var(--text-xs));
+    color: var(--color-text-muted);
+  }
+
+  /* El blanco táctil es el de la banda — 88 px en la más chica (`mc-20`
+     §201)— y el contorno es información del control, no adorno (WCAG 2.2
+     §1.4.11). */
+  .boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--tap-kinder, var(--tap-primaria));
+    padding-inline: calc(var(--space) * 1.5);
+    border: 2px solid var(--color-accent);
+    border-radius: var(--radius);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-family: var(--font-marca);
+    font-weight: var(--weight-subtitle);
+    font-size: var(--text-lg);
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .boton:focus-visible {
+    outline: 4px solid var(--color-text);
+    outline-offset: 3px;
+  }
+</style>

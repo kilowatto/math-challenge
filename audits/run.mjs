@@ -350,6 +350,20 @@ const ACTIVE = [
   // de que se mantiene — sus controles negativos son DEGRADACIONES de
   // `packages/tutor/src/en-vivo.ts`, del sobre y del i18n REALES (D-070).
   ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
+  // ─── El tablero global (F7 #247) ─────────────────────────────────────────
+  //
+  // La mitad de la ESCRITURA del opt-in y de su cumplimiento: nadie borra
+  // (`revoked_at`, nunca DELETE — D-051), el alta registra `granted_by` y
+  // `consent_version`, y el filtro se ejecuta contra `node:sqlite` con una
+  // fixture a mano (D-070) — un niño sin fila y otro revocado no aparecen
+  // aunque les siembres más puntos que a nadie.
+  ["tablero-optin",          "Opt-in del tablero: gobierno de la escritura y cumplimiento ejecutado", "D-040, D-051, #247, mc-25"],
+  // La frontera de KINDER: su tablero NUNCA se renderiza para el niño — el
+  // desvío de `tablero/nino.astro` se exige escrito a mano, los tercios son
+  // solo del widget del padre, y el árbol de `app/kids/**` no puede ni
+  // nombrarlo. La otra mitad (KINDER en tercios, nunca número) la ejecuta
+  // `tablero-orden-puntos.mjs`.
+  ["tablero-sin-kinder-publico", "El tablero de KINDER no existe para el niño", "#247, D-081, D-040, mc-10, mc-18"],
   // ─── El de #451, y por qué nace VERDE ────────────────────────────────────
   //
   // El dueño, jugando un reto, hizo swipe de izquierda a derecha y el
@@ -549,6 +563,7 @@ for (const prueba of [
   "apps/web/src/lib/pausa.prueba.mjs",
 
 
+
   // D-152. El enrutado del mapa de KINDER: qué lugares son enlace (los por
   // visitar se ven y NO se pisan) y de dónde sale el estado de cada lugar (el
   // resumen de F4, nunca una tabla propia del mapa). Lo que defiende no rompe
@@ -556,6 +571,17 @@ for (const prueba of [
   // guía de estilo prohíbe, y una fila fantasma es un lugar que el niño ve
   // empezado sin haberlo tocado jamás.
   "apps/web/src/lib/mapa-kids.prueba.mjs",
+
+  // F7 #247, #250. El TABLERO GLOBAL de punta a punta contra SQLite de verdad
+  // (`node:sqlite`): un niño sin consentimiento no aparece aunque tenga más
+  // puntos que nadie; uno revocado desaparece; PRIMARIA en el puesto 47 recibe
+  // SOLO su total (la tabla no viaja); SECUNDARIA en el 147 recibe su
+  // posición exacta; KINDER solo en tercios; y el opt-in se escribe con el
+  // gobierno de D-051 (alta = INSERT con granted_by, baja = revoked_at,
+  // NUNCA DELETE). La tabla de la escalera está escrita a mano (D-070), no
+  // importada del motor: si no, aprobaría su propia violación.
+  "apps/web/src/lib/padre-tablero.prueba.mjs",
+
 
   // F7 #237, #242, #243 · D-040, D-081, D-106. El ALTA, el CABLE de puntos y
   // la BAJA de la liga, contra SQLite de verdad (`node:sqlite`) con un DO de
@@ -566,6 +592,7 @@ for (const prueba of [
   // que lee ceros porque nadie escribió el espejo de D1. Las expectativas
   // están escritas a mano (D-070), no importadas del módulo.
   "apps/web/src/lib/liga-membresia.prueba.mjs",
+
   // F7 #224. El Durable Object de misiones diarias —uno por niño— y su cable,
   // contra SQLite de verdad (`node:sqlite`) y con la clase del DO de verdad.
   // Lo que defiende tampoco rompe nada visible: un reintento de red que paga

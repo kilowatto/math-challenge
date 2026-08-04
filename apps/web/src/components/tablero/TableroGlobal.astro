@@ -1,0 +1,110 @@
+---
+/**
+ * La tabla del tablero global, ya proyectada. F7 #247, D-081.
+ *
+ * ─── Por qué recibe CADENAS y no números ─────────────────────────────────────
+ *
+ * Todo lo numérico llega formateado desde el servidor con
+ * `numeros.ts::formatear` y el locale de **quien mira** — jamás el
+ * `alias_locale` del dueño de la fila (#247, `mc-34`). Un componente que
+ * formateara sería un segundo sitio donde se decide la convención decimal, y
+ * ese es exactamente el error que `mc-34` documenta: México escribe `1,234.5`
+ * y España `1.234,5`, y el que mira es quien manda.
+ *
+ * ─── Lo que esta plantilla no puede pintar ───────────────────────────────────
+ *
+ * No tiene dónde poner un nombre real (`alias` es lo único que entra), ni un
+ * rango para KINDER (su `posicion` llega como texto de tercio, ya decidido en
+ * el servidor), ni nada que hable de subir o bajar (D-014: no hay cadena de
+ * «bajaste de posición» que pintar, porque ninguna llega).
+ *
+ * La fila de quien mira lleva `soyYo` y se marca dos veces: con el texto «tú»
+ * y con el borde — nunca solo con color (WCAG 2.2 §1.4.1).
+ */
+
+interface FilaVista {
+  readonly alias: string;
+  /** Ya formateado con el locale de quien mira. */
+  readonly puntos: string;
+  /** Ya decidido y formateado: «12», «1 234» o el tercio de KINDER. */
+  readonly posicion: string;
+  readonly soyYo: boolean;
+}
+
+interface Props {
+  filas: readonly FilaVista[];
+  /** Las cuatro cadenas de cabecera, ya en el locale de quien mira. */
+  textos: {
+    readonly colPosicion: string;
+    readonly colJugador: string;
+    readonly colPuntos: string;
+    readonly tu: string;
+  };
+}
+
+const { filas, textos } = Astro.props;
+---
+
+<table class="tablero-global">
+  <thead>
+    <tr>
+      <th scope="col">{textos.colPosicion}</th>
+      <th scope="col">{textos.colJugador}</th>
+      <th scope="col">{textos.colPuntos}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {filas.map((f) => (
+      <tr class={f.soyYo ? "yo" : undefined}>
+        <td class="pos">{f.posicion}</td>
+        <td class="quien">
+          {f.alias}
+          {f.soyYo && <span class="marca-yo">{textos.tu}</span>}
+        </td>
+        <td class="pts">{f.puntos}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+<style>
+  .tablero-global {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-sistema);
+    font-size: var(--text-base);
+  }
+  .tablero-global th {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-weight: var(--weight-subtitle);
+    text-align: start;
+    padding-block-end: 0.35rem;
+    border-block-end: 1px solid var(--color-border);
+  }
+  .tablero-global td {
+    padding-block: 0.45rem;
+    border-block-end: 1px solid var(--color-border);
+  }
+  /* Posición y puntos a la derecha: las cifras se alinean por su borde
+     numérico, no por el inicial — la tabla se lee de un vistazo. */
+  .tablero-global .pos, .tablero-global .pts { text-align: end; }
+  .tablero-global th:first-child, .tablero-global td:first-child { padding-inline-end: var(--space); }
+  .tablero-global th:last-child, .tablero-global td:last-child { padding-inline-start: var(--space); }
+  /* «Tú estás aquí» (#247): borde Y texto, nunca solo color (WCAG 2.2 §1.4.1).
+     `--color-accent-hover` y no `--color-accent`: el naranja base da 2.83:1
+     sobre la superficie clara, por debajo del 3:1 de gráficos; el oscuro da
+     4.28:1. En tema oscuro el token cambia solo. */
+  .tablero-global tr.yo td {
+    border-block-end: 2px solid var(--color-accent-hover);
+    font-weight: var(--weight-subtitle);
+  }
+  .marca-yo {
+    margin-inline-start: 0.5rem;
+    font-size: var(--text-xs);
+    color: var(--color-text-brand);
+    border: 1px solid var(--color-text-brand);
+    border-radius: 999px;
+    padding-inline: 0.45rem;
+  }
+</style>

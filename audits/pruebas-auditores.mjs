@@ -1948,6 +1948,52 @@ const CASOS = [
 
   },
   {
+
+    // D-051: el alta sin `granted_by` no demuestra quién consintió. Se quita
+    // la columna del INSERT REAL del opt-in del tablero (#247).
+    auditor: "tablero-optin",
+    que: "el INSERT del consentimiento LEADERBOARD sin granted_by",
+    archivo: "apps/web/src/lib/padre-tablero.ts",
+    parche: (t) =>
+      t.replace(
+        "(child_profile_id, consent_code, granted_by, granted_at, consent_version)",
+        "(child_profile_id, consent_code, granted_at, consent_version)",
+      ),
+    espera: "granted_by",
+  },
+  {
+    // La baja que borra en vez de revocar. Se degrada la revocación REAL:
+    // un DELETE es la desaparición de la prueba ante un regulador (D-051),
+    // y además es la forma silenciosa de «desactivar borra los puntos».
+    auditor: "tablero-optin",
+    que: "la baja del opt-in como DELETE en vez de revoked_at",
+    archivo: "apps/web/src/lib/padre-tablero.ts",
+    parche: (t) =>
+      t.replace("UPDATE child_consents SET revoked_at = ? ", "DELETE FROM child_consents "),
+    espera: "DELETE",
+  },
+  {
+    // #247: sin el desvío, el tablero de un niño de cinco años se PINTA — no
+    // da ningún error. Se borra el guarda REAL de la pantalla del niño.
+    auditor: "tablero-sin-kinder-publico",
+    que: "el desvío de KINDER borrado de la pantalla del niño",
+    archivo: "apps/web/src/pages/[locale]/app/tablero/nino.astro",
+    parche: (t) =>
+      t.replace(
+        'if (hijo.theme_band === "KINDER") return Astro.redirect(rutaJugar(locale));',
+        "",
+      ),
+    espera: "KINDER",
+  },
+  {
+    // La otra mitad de #247: el tablero nombrado dentro del árbol del niño.
+    auditor: "tablero-sin-kinder-publico",
+    que: "un enlace al tablero plantado bajo /app/kids/",
+    archivo: "apps/web/src/pages/[locale]/app/kids/tablero-falso.astro",
+    contenido: '<a href="/en/app/tablero/nino/">tablero</a>\n',
+    espera: "KINDER",
+  },
+  {
     // F7 #224. El reparto del Durable Object de misiones, degradado sobre el
     // archivo REAL: si `idFromName` recibe un literal, todo el producto haría
     // cola detrás de un solo hilo (mc-32 riesgo #2).
@@ -1991,6 +2037,7 @@ const CASOS = [
     archivo: "apps/web/src/components/reto/Pantalla.astro",
     parche: (t) => t.replace('"touchstart"', '"tocado"'),
     espera: "touchstart",
+
   },
 ];
 

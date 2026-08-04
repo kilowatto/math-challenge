@@ -2591,7 +2591,27 @@ const CASOS = [
       "-- que el bug de #259 reaparecería.\n" +
       "DROP INDEX idx_alias_por_padre;\n",
     espera: "UNIQUE",
-
+  },
+  {
+    // El modo de fallo del que nace el auditor: alguien endurece (o ablanda)
+    // una cabecera en UNO de los dos sitios y los textos se separan en
+    // silencio. La degradación cambia el valor en el módulo del Worker y
+    // deja `_headers` intacto.
+    auditor: "cabeceras-ssr",
+    que: "X-Frame-Options vale distinto en el Worker que en _headers",
+    archivo: "apps/web/src/lib/cabeceras-seguridad.ts",
+    parche: (t) => t.replace('"x-frame-options": "DENY"', '"x-frame-options": "SAMEORIGIN"'),
+    espera: "vale distinto en _headers que en cabeceras-seguridad.ts",
+  },
+  {
+    // El patrón «correcto pero sin llamador»: el módulo existe y los valores
+    // coinciden, pero el middleware deja de ponerlos — y las rutas SSR vuelven
+    // a quedar desnudas sin que ningún valor cambie.
+    auditor: "cabeceras-ssr",
+    que: "el middleware deja de importar el módulo de cabeceras",
+    archivo: "apps/web/src/middleware.ts",
+    parche: (t) => t.replace('from "./lib/cabeceras-seguridad"', 'from "./lib/ratelimiter"'),
+    espera: "no importa cabeceras-seguridad.ts",
   },
 ];
 

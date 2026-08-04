@@ -7,9 +7,9 @@
 # a que cada respuesta pasara por código, y las estáticas hoy no pasan.
 #
 # LO QUE ESTE ARCHIVO NO PUEDE HACER: las respuestas que SÍ genera el Worker
-# —`/app/**` y `/api/**`, que son SSR— no lo leen. Esas necesitan las mismas
-# cabeceras puestas en el código, y no están. Es un hueco conocido: la parte con
-# sesión y datos de menores es justo la que queda sin CSP.
+# —`/app/**` y `/api/**`, que son SSR— no lo leen. Esas reciben las mismas seis
+# cabeceras desde `apps/web/src/middleware.ts` + `src/lib/cabeceras-seguridad.ts`
+# (issue #337), y `audits/cabeceras-ssr.mjs` bloquea si los dos textos se separan.
 
 /*
   # ─── CSP en modo OBSERVACIÓN ──────────────────────────────────────────────

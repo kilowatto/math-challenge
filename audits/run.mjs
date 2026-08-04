@@ -460,6 +460,23 @@ const ACTIVE = [
   ["distractores-explicables", "todo distractor se puede tocar y explicar una sola vez", "plan F5 §3.4j/§4.1, rezagados §7, línea roja #7, D-070"],
 
 
+  // ─── Los dos de F5b (#159–#167), y por qué nacen VERDES ──────────────────
+  //
+  // La franja adulta se construyó CON ellos delante, así que lo que vigilan
+  // es que no se erosione: una clave que falta en el séptimo locale, el cable
+  // de la siembra cortado (banda equivocada, techo donde no hay Kalyuga que
+  // aplicar), el enchufe de `/api/jugar` desconectado —la franja entera en
+  // D1 y nadie la ve—, el techo de 200 que impide que «mínima» crezca, la
+  // proporción de plantilla MEDIDA y publicada (#165), la Sabana colada en
+  // una pantalla del club, y la notación de mc-34 ejecutada contra una tabla
+  // escrita A MANO (D-070): de-DE multiplica con · y divide con :, fr-FR
+  // agrupa con el espacio fino insecable, el render real cruzado en los 7
+  // locales. Sus controles negativos son DEGRADACIONES de archivos REALES:
+  // los catálogos, la plantilla y el guion de siembra.
+  ["banco-adulto-i18n",      "la franja adulta no sirve nada que no esté en i18n", "#162, #166, mc-36, mc-11, D-022, D-034, D-070"],
+  ["franja-adulta",          "los barandales de D-034: techo 200, sin Sabana, una autoría siete notaciones", "#161, #163, #164, #165, D-034, mc-34"],
+
+
 
 ];
 
@@ -788,6 +805,18 @@ for (const prueba of [
   // 48 h sin ganador y sin texto, y la lista cerrada EXACTA de claves del
   // panel escrita a mano (D-070): sin ganador, sin presencia, sin fechas.
   "apps/web/src/lib/duelo-superficie.prueba.mjs",
+
+
+  // F5b #159–#167. La franja adulta (SERIO, N8–N10): las 17 plantillas sobre
+  // 13 habilidades y el cable D1 completo (migración 0016 + las DOS siembras
+  // + lectura, contra SQLite de verdad). Lo que defienden tampoco rompe nada
+  // visible: un distractor que no es ningún error real sigue siendo un número
+  // tocable, una mediana que coincide con la media deja «confundió media con
+  // mediana» sin botón, y un ítem de primaria calificado con banda SERIO
+  // cuenta mal la fórmula de D-010 — todo se descubre cuando Larry le
+  // explica a alguien un error que no cometió (#166).
+  "packages/motor/src/banco-adulto.prueba.mjs",
+  "apps/web/src/lib/banco-adulto.prueba.mjs",
 
 
 

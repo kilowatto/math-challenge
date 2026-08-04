@@ -73,6 +73,7 @@ import {
 import { sumarPuntosDeLiga } from "../../lib/liga-membresia";
 import { limiteAlServir, limiteAlResponder } from "../../lib/limite-dia";
 import { registrarAvanceDeHoy } from "../../lib/misiones-dia";
+import { bancoPrimariaD1 } from "../../lib/banco-primaria";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
 
 /*
@@ -115,7 +116,7 @@ const RETO: Record<string, Record<string, unknown>> = {
 export const prerender = false;
 
 interface Ingest {
-  catalogoAdaptativo(): Promise<Array<{ id: string; habilidad: string; nivel: number; dificultad: number }>>;
+  catalogoAdaptativo(): Promise<Array<{ id: string; habilidad: string; nivel: number; dificultad: number; hastaNivel?: number }>>;
   presentarItem(itemId: string, locale: string): Promise<null | {
     id: string; habilidad: string; nivel: number; formato: string;
     enunciado: string; vars: Record<string, string>;
@@ -129,6 +130,8 @@ interface Ingest {
   calificarContraBanco(itemId: string, eleccion: number | string): Promise<{
     acc: 0 | 1; causa: string | null; razonAlterna: string | null;
     inesperada: boolean; nivel: number; habilidad: string;
+    /** La banda del ítem calificado. La ingesta no la manda: es KINDER. */
+    banda?: "KINDER" | "PRIMARIA";
   }>;
   recordAttempt(input: Record<string, unknown>): Promise<{ puntos: number }>;
   /**
@@ -140,6 +143,26 @@ interface Ingest {
    */
   cerrarRetoPorLimite(perfilId: string, motivo: string): Promise<unknown>;
 }
+
+/**
+ * Los tres verbos que el bucle necesita de un banco de ítems, venga de donde
+ * venga. Hoy hay DOS orígenes (F5c #356, D-072): la ingesta, que sirve KINDER
+ * desde código, y `item_bank` en D1, que sirve PRIMARIA. El endpoint elige
+ * origen UNA vez por petición y el resto del camino — rotación, adaptativo,
+ * modelo, telemetría — no sabe ni le importa cuál fue.
+ */
+type OrigenDeItems = {
+  catalogoAdaptativo: Ingest["catalogoAdaptativo"];
+  presentarItem: Ingest["presentarItem"];
+  /**
+   * `null` cuando el ítem no está en ESTE origen: el banco de primaria en D1
+   * no lanza, deja que el endpoint caiga al de kinder (ver `recibirRespuesta`).
+   */
+  calificarContraBanco(
+    itemId: string,
+    eleccion: number | string,
+  ): Promise<null | Awaited<ReturnType<Ingest["calificarContraBanco"]>>>;
+};
 
 interface Env {
   INGEST: Ingest;
@@ -215,6 +238,19 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   }
   if (!quien) return json({ error: "sin_sesion" }, 401);
 
+  /**
+   * ─── El origen de los ítems (F5c #356, D-072) ────────────────────────────
+   *
+   * Un NIÑO juega KINDER, servido por la ingesta desde `banco-kinder.ts`, como
+   * hasta hoy — ese comportamiento no cambia. Un ADULTO que practica juega
+   * PRIMARIA desde `item_bank` en D1, que es donde D-072 manda que viva ese
+   * banco. Sin `DB` —o con la tabla todavía vacía, ver `servirSiguiente`— el
+   * adulto cae al banco de kinder: nunca se le niega el juego a nadie por
+   * infraestructura.
+   */
+  const origen: OrigenDeItems =
+    quien.esAdulto && env.DB ? bancoPrimariaD1(env.DB, RETO) : env.INGEST;
+
   const accion = url.searchParams.get("accion");
   let cuerpo: Record<string, unknown>;
   try {
@@ -231,10 +267,10 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const semilla = await nivelSemillaDe(env, quien.id, quien.esAdulto);
 
   if (accion === "siguiente") {
-    return servirSiguiente(env, quien, locale, semilla, cuerpo);
+    return servirSiguiente(env, quien, locale, semilla, cuerpo, origen);
   }
   if (accion === "responder") {
-    return recibirRespuesta(env, quien, locale, semilla, cuerpo);
+    return recibirRespuesta(env, quien, locale, semilla, cuerpo, origen);
   }
   return json({ error: "accion_desconocida" }, 400);
 };
@@ -332,6 +368,7 @@ async function servirSiguiente(
   locale: string,
   semilla: number,
   cuerpo: Record<string, unknown>,
+  origen: OrigenDeItems,
 ): Promise<Response> {
   const childProfileId = quien.id;
 
@@ -366,10 +403,38 @@ async function servirSiguiente(
     return json({ ok: true, corte: limite });
   }
 
-  const [catalogo, resumen] = await Promise.all([
-    env.INGEST.catalogoAdaptativo(),
+  const [catalogoCrudo, resumen] = await Promise.all([
+    origen.catalogoAdaptativo(),
     leerModelo(env.LEARNER_DO, childProfileId),
   ]);
+
+  let catalogo = catalogoCrudo;
+
+  /**
+   * El respaldo del adulto: si el banco de primaria de ESTE ambiente está
+   * vacío — la migración 0016 está aplicada pero la siembra no corre todavía
+   * — el adulto juega kinder como venía haciendo, en vez de encontrarse un
+   * `banco_vacio`. Un ítem por debajo de su nivel es infinitamente mejor que
+   * ningún ítem (línea roja #4 en espíritu).
+   */
+  if (catalogo.length === 0 && origen !== env.INGEST) {
+    origen = env.INGEST;
+    catalogo = await origen.catalogoAdaptativo();
+  }
+
+  /**
+   * El modelo que se APAGA por nivel (#354, reversión de la pericia de
+   * Kalyuga, mc-04). El ejemplo resuelto con un paso en blanco enseña al
+   * principiante y estorba al que ya sabe, así que su fila de D1 declara
+   * `hasta_nivel` y aquí deja de existir para quien el motor ya ubica por
+   * encima. El techo viaja por fila y no por plantilla precisamente para que
+   * curarlo no sea un despliegue (D-072).
+   */
+  catalogo = catalogo.filter((c) => {
+    if (c.hastaNivel == null) return true;
+    const { estado } = estadoDe(resumen, c.habilidad, semilla);
+    return nivelDeHabilidad(estado.habilidad) <= c.hastaNivel;
+  });
 
   const habilidades = [...new Set(catalogo.map((c) => c.habilidad))].sort();
   if (habilidades.length === 0) return json({ error: "banco_vacio" }, 503);
@@ -450,7 +515,7 @@ async function servirSiguiente(
   const elegido = elegirSiguiente(candidatos, estado, evitar, Math.random);
   if (!elegido) return json({ error: "sin_items" }, 503);
 
-  const item = await env.INGEST.presentarItem(elegido.id, locale);
+  const item = await origen.presentarItem(elegido.id, locale);
   if (!item) return json({ error: "item_desconocido" }, 500);
 
   return json({
@@ -479,6 +544,7 @@ async function recibirRespuesta(
   locale: string,
   semilla: number,
   cuerpo: Record<string, unknown>,
+  origen: OrigenDeItems,
 ): Promise<Response> {
   const childProfileId = quien.id;
   const itemId = typeof cuerpo.itemId === "string" ? cuerpo.itemId : null;
@@ -526,7 +592,14 @@ async function recibirRespuesta(
   const reintento = cuerpo.reintento === true;
 
   // ─── El servidor califica. Siempre. ──────────────────────────────────────
-  const veredicto = await env.INGEST.calificarContraBanco(itemId, eleccion);
+  //
+  // Si el ítem no está en el origen elegido, se prueba el otro antes de
+  // rendirse: es el caso del adulto al que `servirSiguiente` le sirvió kinder
+  // de respaldo porque la siembra de primaria no corre en este ambiente. La
+  // ingesta conserva su comportamiento de siempre — ítem desconocido, error.
+  const veredicto =
+    (await origen.calificarContraBanco(itemId, eleccion)) ??
+    (await env.INGEST.calificarContraBanco(itemId, eleccion));
 
   const resumen = await leerModelo(env.LEARNER_DO, childProfileId);
   const { estado } = estadoDe(resumen, veredicto.habilidad, semilla);
@@ -549,7 +622,7 @@ async function recibirRespuesta(
         nivel: veredicto.nivel,
         correcto,
         ahora: Date.now(),
-        banda: "KINDER",
+        banda: veredicto.banda ?? "KINDER",
         nivelSemilla: semilla,
       });
 
@@ -576,11 +649,14 @@ async function recibirRespuesta(
         skillId: veredicto.habilidad,
         correct: veredicto.acc,
         level: veredicto.nivel,
-        // KINDER no se cronometra (D-024): se manda 0 y el motor de puntuación
-        // ni siquiera recibe el campo. Poner aquí un tiempo del cliente sería
-        // exactamente lo que F3 prohíbe.
+        // KINDER no se cronometra (D-024) y PRIMARIA todavía tampoco: el sello
+        // de tiempo del servidor es del Durable Object de sesión de reto, que
+        // este endpoint todavía no abre (residuo ya declarado). Se manda 0 y,
+        // en una banda que puntúa con tiempo, la ingesta lo marca `piso` —
+        // dato honesto, no tiempo medido. Poner aquí un tiempo del cliente
+        // sería exactamente lo que F3 prohíbe.
         responseTimeMs: 0,
-        themeBand: "KINDER",
+        themeBand: veredicto.banda ?? "KINDER",
         locale,
         authoredDifficulty: undefined,
         itemEloBefore: dificultad,

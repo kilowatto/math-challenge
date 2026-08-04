@@ -251,6 +251,14 @@ export function validarItem(item: Item): string[] {
     p.push(`nivel ${item.nivel} fuera de la escalera 1..12 de D-017`);
   }
 
+  // La respuesta. Sin ella no hay nada que calificar — y las comprobaciones de
+  // abajo no pueden ni comparar. El `?.` es deliberado: esta función se ejecuta
+  // sobre filas de `item_bank`, que D-072 permite editar a mano, y su contrato
+  // es devolver problemas, NUNCA lanzar sobre entrada rota.
+  if (item.respuesta == null || item.respuesta.valor === undefined || item.respuesta.valor === null) {
+    p.push("sin `respuesta.valor`. Un ítem sin respuesta no se puede calificar (plan §9).");
+  }
+
   if (!item.errores || item.errores.length === 0) {
     p.push(
       "sin `errores` con causa nombrada. Un ítem así solo sabe decir «mal», y entonces " +
@@ -259,7 +267,7 @@ export function validarItem(item: Item): string[] {
   }
   for (const e of item.errores ?? []) {
     if (!e.causa || e.causa.trim() === "") p.push(`un error sin causa nombrada (valor ${e.valor})`);
-    if (String(e.valor) === String(item.respuesta.valor)) {
+    if (item.respuesta != null && String(e.valor) === String(item.respuesta.valor)) {
       p.push(`el error ${e.valor} es igual a la respuesta correcta`);
     }
   }
@@ -281,7 +289,13 @@ export function validarItem(item: Item): string[] {
   }
 
   // La variación, como estructura y con sus tres campos.
-  if (item.variacion !== null) {
+  //
+  // `!= null` a propósito: `undefined` también cuenta como ausente. Con
+  // `!== null`, un ítem mal formado venido de fuera —una fila de `item_bank`
+  // editada a mano, que D-072 permite— reventaba esta función con un
+  // TypeError en vez de devolver la lista de problemas, y un validador que
+  // lanza sobre entrada rota falla justo donde más se le necesita.
+  if (item.variacion != null) {
     for (const campo of ["varia", "constante", "por_que"] as const) {
       if (!item.variacion[campo] || String(item.variacion[campo]).trim() === "") {
         p.push(
@@ -342,7 +356,9 @@ export function validarItem(item: Item): string[] {
  */
 export function opcionesDeItem(item: Item): Array<number | string> {
   return [
-    item.respuesta.valor,
+    // `?.`: también se la llama desde `validarItem` sobre ítems rotos, y ahí
+    // su trabajo es ayudar a LISTAR el problema, no reventar con otro.
+    ...(item.respuesta != null ? [item.respuesta.valor] : []),
     ...(item.errores ?? []).map((e) => e.valor),
     ...(item.tambienCorrectas ?? []).map((c) => c.valor),
   ];

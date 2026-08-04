@@ -352,6 +352,7 @@ const ACTIVE = [
   ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
 
 
+
   // ─── F9 · Grupos infantiles (#379-#387, #401) ───────────────────────────
   //
   // La superficie de mayor exposición del producto: un adulto que no es el
@@ -366,6 +367,19 @@ const ACTIVE = [
   ["grupo-aprobacion-padre",  "la entrada a un grupo la aprueba SU padre",      "D-011, D-096, mc-28, #401"],
   ["school-verification-required", "la insignia de escuela verificada tiene un solo escritor", "D-086, mc-28, #380/#381"],
   ["grupo-visibilidad-minima", "el grupo ve de un niño solo lo que D-027 autoriza", "D-027, D-087, #383/#384"],
+
+  // ─── Los dos de F5c (#358, #359), y por qué nacen VERDES ──────────────────
+  //
+  // El banco de primaria se construyó CON ellos delante, así que lo que
+  // vigilan es que no se erosione: una opción servida como su identificador
+  // (#349 generalizado al banco de D1), una clave que falta en el séptimo
+  // locale, el cable del apagado por nivel de Kalyuga desconectado en una de
+  // sus tres piezas, o un «niños» en el copy de una banda que mc-21 mide como
+  // rechazo. Sus controles negativos son DEGRADACIONES de archivos REALES
+  // (D-070): los catálogos, el guion de siembra y la plantilla.
+  ["banco-primaria-i18n",    "primaria no sirve nada que no esté en i18n",      "#358, #349, #354, D-022, D-070"],
+  ["primaria-sin-ninos",     "ni «niños» ni «Kids» en el texto de PRIMARIA",     "#359, mc-21, D-022"],
+
 
   // ─── El tablero global (F7 #247) ─────────────────────────────────────────
   //
@@ -580,6 +594,7 @@ for (const prueba of [
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
 
+
   // F9 #379-#387. El motor puro de grupos (código de unión sin ambiguos,
   // topes por origen, la regla única del opt-in) y el ESQUEMA contra SQLite
   // de verdad — las migraciones REALES aplicadas en memoria, no una copia a
@@ -589,6 +604,18 @@ for (const prueba of [
   // tampoco rompe nada visible: un CHECK mal escrito no da error, deja pasar.
   "packages/motor/src/grupo.prueba.mjs",
   "apps/web/src/lib/grupo-esquema.prueba.mjs",
+
+  // F5c #352–#356. El banco de PRIMARIA: las cuatro plantillas, el presentador
+  // y el cable D1 completo (migración 0016 + siembra + lectura, contra SQLite
+  // de verdad). Lo que defienden tampoco rompe nada visible: un distractor que
+  // no corresponde a ningún error real sigue siendo un número tocable, y un
+  // separador de millares equivocado se lee como OTRO número solo en el locale
+  // que no habla quien escribió el código (mc-34). Lo primero se descubre
+  // cuando Larry le explica a alguien un error que no cometió.
+  "packages/motor/src/banco-primaria.prueba.mjs",
+  "packages/motor/src/presentar.prueba.mjs",
+  "apps/web/src/lib/banco-primaria.prueba.mjs",
+
 
 
 

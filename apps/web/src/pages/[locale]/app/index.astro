@@ -56,9 +56,10 @@ import Privada from "../../../layouts/Privada.astro";
 import RecordatorioPush from "../../../components/push/RecordatorioPush.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
-import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaLiga } from "../../../lib/rutas-app";
+import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo, rutaLiga } from "../../../lib/rutas-app";
 import { estadoDeParticipacion } from "../../../lib/liga-membresia";
 import { TEXTOS_PADRE } from "../../../components/parent/textos";
+import { TEXTOS_TABLERO } from "../../../components/tablero/textos";
 import {
   pestanasPrivadas,
   clavesDePestana,
@@ -286,7 +287,12 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
                     La pausa familiar (#204) se declara por hijo, desde la casa.
                     Una pantalla sin enlace es una pantalla que no existe.
                   */}
-                  <a class="pausa" href={`/${locale}/app/pausa/?hijo=${h.id}`}>{pPausa["pausa.titulo"]}</a>{/*
+                  <a class="pausa" href={`/${locale}/app/pausa/?hijo=${h.id}`}>{pPausa["pausa.titulo"]}</a>
+                  {/*
+                    El opt-in del tablero, por hijo (F7 #247, D-040) — y en
+                    KINDER, el único lugar donde su tablero existe (D-081).
+                  */}
+                  <a class="pausa" href={rutaTableroHijo(locale, h.id)}>{TEXTOS_TABLERO[locale]["tablero.padre.abrir"]}</a>{/*
                     El interruptor de la liga (F7 #243, D-081): la banda más
                     chica arranca apagada y el padre la activa aquí; de PRIMARIA
                     en adelante arranca encendida y aquí se puede apagar. La
@@ -387,6 +393,12 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
           porque «Practicar» ya es donde vive todo lo del adulto que juega solo.
         */}
         <a class="boton" href={`/${locale}/app/mapa/`}>{m.casaMapaCta}</a>{/*
+          El tablero global del propio adulto (F7 #247, D-025): su banda,
+          ordenada por puntos, con «tú estás aquí» aunque quede fuera del top
+          100. Misma razón de sitio que el mapa: «Practicar» es donde vive
+          todo lo del adulto que juega solo.
+        */}
+        <a class="boton" href={rutaTablero(locale)}>{TEXTOS_TABLERO[locale]["tablero.abrir"]}</a>{/*
           La liga semanal del propio adulto (F7, #237, #242): su cohorte de
           ~30 con alias generado, nunca su nombre. Mismo criterio que el mapa:
           una página sin enlace es una página que no existe.

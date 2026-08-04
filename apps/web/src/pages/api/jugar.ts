@@ -405,7 +405,28 @@ async function servirSiguiente(
   // un número que el modelo ya tiene. No hace falta guardar nada nuevo y no
   // depende de que el cliente diga la verdad.
   const respondidosEnTotal = resumen.reduce((n, r) => n + r.respondidos, 0);
-  const skillId = plan.length > 0 ? plan[respondidosEnTotal % plan.length] : habilidades[0];
+
+  /*
+   * ─── Rejugar un lugar del mapa (D-152) ───────────────────────────────────
+   *
+   * El niño tocó un lugar de la Sabana y la pantalla manda su id. Si es una
+   * habilidad del banco, la serie es de ESE tema en vez de la rotación
+   * intercalada — es la única desviación, y es la que el dueño pidió con
+   * nombre: «poder tener retos de todos los niveles y poder seleccionarlos».
+   *
+   * Lo que NO cambia, a propósito: la dificultad la sigue eligiendo el motor
+   * adaptativo dentro de la habilidad (D-017 — el mapa presenta lugares, no
+   * pregunta niveles), el límite de pantalla se aplicó igual unas líneas más
+   * arriba, y un id que no está en el banco se ignora y se cae al plan de
+   * siempre — nunca se le niega el juego a un niño por una URL tocada.
+   */
+  const lugarPedido =
+    typeof cuerpo.habilidad === "string" && habilidades.includes(cuerpo.habilidad)
+      ? cuerpo.habilidad
+      : null;
+
+  const skillId =
+    lugarPedido ?? (plan.length > 0 ? plan[respondidosEnTotal % plan.length] : habilidades[0]);
 
   // ─── Qué ítem de esa habilidad: el motor adaptativo ──────────────────────
   const { estado } = estadoDe(resumen, skillId, semilla);
@@ -568,7 +589,11 @@ async function recibirRespuesta(
         learnerAfter: despues.habilidad,
         kUsed: kUsado,
         indexInSession: undefined,
-        selectionMode: "adaptativo",
+        // «mapa» cuando el ítem viene del rejuego de un lugar (D-152): el id que
+        // manda la pantalla coincide con la habilidad real del ítem calificado.
+        // Sin la etiqueta, una serie por lugar se contaría como selección
+        // adaptativa y ensuciaría la recalibración del selector.
+        selectionMode: cuerpo.habilidad === veredicto.habilidad ? "mapa" : "adaptativo",
       });
       puntosCalificados =
         typeof telemetria?.puntos === "number" && Number.isFinite(telemetria.puntos)

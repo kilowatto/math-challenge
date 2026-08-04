@@ -563,6 +563,15 @@ for (const prueba of [
   "apps/web/src/lib/pausa.prueba.mjs",
 
 
+
+  // D-152. El enrutado del mapa de KINDER: qué lugares son enlace (los por
+  // visitar se ven y NO se pisan) y de dónde sale el estado de cada lugar (el
+  // resumen de F4, nunca una tabla propia del mapa). Lo que defiende no rompe
+  // nada visible: un «por visitar» convertido en enlace es un candado que la
+  // guía de estilo prohíbe, y una fila fantasma es un lugar que el niño ve
+  // empezado sin haberlo tocado jamás.
+  "apps/web/src/lib/mapa-kids.prueba.mjs",
+
   // F7 #247, #250. El TABLERO GLOBAL de punta a punta contra SQLite de verdad
   // (`node:sqlite`): un niño sin consentimiento no aparece aunque tenga más
   // puntos que nadie; uno revocado desaparece; PRIMARIA en el puesto 47 recibe
@@ -572,6 +581,7 @@ for (const prueba of [
   // NUNCA DELETE). La tabla de la escalera está escrita a mano (D-070), no
   // importada del motor: si no, aprobaría su propia violación.
   "apps/web/src/lib/padre-tablero.prueba.mjs",
+
 
   // F7 #237, #242, #243 · D-040, D-081, D-106. El ALTA, el CABLE de puntos y
   // la BAJA de la liga, contra SQLite de verdad (`node:sqlite`) con un DO de
@@ -605,6 +615,7 @@ for (const prueba of [
   // produciendo el MISMO estado, la idempotencia cuando D-091 ya contó el día
   // en el ítem, y el corte que no suma XP.
   "apps/web/src/lib/limite-corte-racha.prueba.mjs",
+
 
 
 

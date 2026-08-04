@@ -1,6 +1,6 @@
 ---
 /**
- * KINDER — el sendero de la Sabana. #232, D-019.
+ * KINDER — el sendero de la Sabana. #232, D-019, D-152.
  *
  * ─── Envoltura, no un mapa nuevo ───────────────────────────────────────────
  *
@@ -8,10 +8,27 @@
  * F7 no autora ni un lugar ni una pieza: pinta el estado de los que ya existen.
  * Primer criterio de #232, y por eso este archivo no encarga nada.
  *
+ * ─── Enrutado (D-152): un toque en el lugar lleva al reto ──────────────────
+ *
+ * El mapa es el catálogo visual de niveles, estilo mapa de Angry Birds: el
+ * lugar en curso y los terminados son **un enlace de verdad** (`<a>`, no un div
+ * con un gesto encima), y los completados se pueden rejugar siempre — nada se
+ * bloquea hacia atrás. Los lugares por visitar SE VEN y no se pisan: no es un
+ * candado visual de castigo (guía de estilo § mapa), es sencillamente
+ * no-enlace.
+ *
+ * Quien decide el destino es la PÁGINA, que lo recibe de `lib/mapa-kids.ts`
+ * (probado en `mapa-kids.prueba.mjs`). Sin la propiedad `destinoDe`, este
+ * componente pinta exactamente lo que pintaba antes: círculos que se miran.
+ *
+ * La dificultad la sigue eligiendo el motor (D-017): el enlace lleva el id del
+ * lugar y nada más. El mapa presenta lugares; no pregunta niveles.
+ *
  * ─── Ni un número. Ni una palabra que el niño tenga que leer ──────────────
  *
  * El usuario tiene cuatro años y **no lee** (D-019). Lo que distingue un lugar
- * de otro aquí es relleno y borde, no texto.
+ * de otro aquí es el DIBUJO del lugar, el relleno y el borde, no texto — la
+ * Sabana no habla, y el arte se autora una vez para los siete locales.
  *
  * La garantía no vive en este archivo: `construirSendero()` devuelve un modelo
  * de vista **sin un solo campo numérico** (`packages/motor/src/mapa.ts`), así
@@ -23,22 +40,24 @@
  * el niño — y no contiene ninguna cifra, que es lo que
  * `audits/mapa-sin-numero-de-nivel.mjs` comprueba.
  *
+ * ─── El arte por lugar ─────────────────────────────────────────────────────
+ *
+ * `arte-lugares.json` lo escribe `scripts/gen-mapa.mjs` (Recraft, AVIF + WebP,
+ * `mc-47` §5). Donde el arte existe, el lugar se pinta con su imagen; donde no,
+ * se queda el círculo de siempre — un hueco que se ve es un hueco que se
+ * llena. La imagen es decorativa (`alt=""`): el nombre accesible ya lo da el
+ * `aria-label`, y anunciar «imagen» dos veces sobra.
+ *
  * ─── Un lugar sin visitar no es un fracaso ─────────────────────────────────
  *
  * Nada se tacha, nada se apaga a gris muerto, y perder una racha no regresa el
  * sendero (`mc-43` implicación 7: *streak loss never erases or visually
  * regresses the progress map*). Un lugar por visitar es un círculo vacío.
- *
- * ─── D-073: kinder está APLAZADO ───────────────────────────────────────────
- *
- * Esta pieza está construida y **no está en el camino de nadie**: `Mapa.astro`
- * la pinta solo cuando la forma es `sendero`, y hoy ninguna ruta del producto
- * pide esa forma. Se construye ahora porque el contrato de lectura es el mismo
- * para las tres formas y separarlo habría significado escribirlo dos veces.
  */
 import { t, type Locale } from "../../i18n";
 import Companero from "./Companero.astro";
-import type { Sendero } from "../../../../../packages/motor/src/mapa.ts";
+import ARTE from "./arte-lugares.json";
+import type { LugarDelSendero, Sendero } from "../../../../../packages/motor/src/mapa.ts";
 
 interface Props {
   locale: Locale;
@@ -46,9 +65,15 @@ interface Props {
   /** Si el compañero se pinta. En KINDER Larry camina: es el mapa (D-080). */
   companeroVisible: boolean;
   accesorios?: readonly string[];
+  /**
+   * El destino de cada lugar, o `null` si no se pisa (D-152). Sin esta
+   * propiedad el sendero se pinta sin enlaces, como siempre — la decisión de
+   * enrutar es de la página, no de la pieza.
+   */
+  destinoDe?: (lugar: LugarDelSendero) => string | null;
 }
 
-const { locale, sendero, companeroVisible, accesorios = [] } = Astro.props;
+const { locale, sendero, companeroVisible, accesorios = [], destinoDe } = Astro.props;
 const m = t(locale);
 
 /**
@@ -63,21 +88,53 @@ const NOMBRE: Record<string, string> = {
   en_curso: m.mapaLugarEnCurso,
   por_visitar: m.mapaLugarPorVisitar,
 };
+
+/** Qué lugares tienen arte generado. Lo escribe `scripts/gen-mapa.mjs`. */
+const CON_ARTE: Record<string, boolean> = ARTE;
 ---
 
 <ol class="sendero" aria-label={m.mapaSenderoNombre}>
   {
-    sendero.lugares.map((l) => (
-      <li
-        class="sendero__lugar"
-        data-estado={l.estado}
-        data-aqui={l.aqui ? "si" : "no"}
-        aria-label={l.aqui ? `${NOMBRE[l.estado]} — ${m.mapaAqui}` : NOMBRE[l.estado]}
-      >
-        {l.aqui && (
-          <Companero locale={locale} visible={companeroVisible} accesorios={accesorios} />
-        )}
-      </li>
-    ))
+    sendero.lugares.map((l) => {
+      const destino = destinoDe?.(l) ?? null;
+      const nombre = l.aqui ? `${NOMBRE[l.estado]} — ${m.mapaAqui}` : NOMBRE[l.estado];
+      const contenido = (
+        <Fragment>
+          {CON_ARTE[l.lugar] === true && (
+            <picture>
+              <source srcset={`/mapa/${l.lugar}.avif`} type="image/avif" />
+              <img
+                class="sendero__arte"
+                src={`/mapa/${l.lugar}.webp`}
+                alt=""
+                width="512"
+                height="512"
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
+          )}
+          {l.aqui && (
+            <Companero locale={locale} visible={companeroVisible} accesorios={accesorios} />
+          )}
+        </Fragment>
+      );
+      return (
+        <li
+          class="sendero__lugar"
+          data-estado={l.estado}
+          data-aqui={l.aqui ? "si" : "no"}
+          aria-label={destino === null ? nombre : undefined}
+        >
+          {destino !== null ? (
+            <a class="sendero__enlace" href={destino} aria-label={nombre}>
+              {contenido}
+            </a>
+          ) : (
+            contenido
+          )}
+        </li>
+      );
+    })
   }
 </ol>

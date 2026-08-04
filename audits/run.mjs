@@ -460,6 +460,19 @@ const ACTIVE = [
   ["distractores-explicables", "todo distractor se puede tocar y explicar una sola vez", "plan F5 §3.4j/§4.1, rezagados §7, línea roja #7, D-070"],
 
 
+  // ─── El de F5 (conteos K01–K14), y por qué nace VERDE ────────────────────
+  //
+  // Al completar los conteos de los diez bancos cortos se autoraron 25 claves
+  // de enunciado nuevas en siete archivos a mano — y se descubrió que NINGÚN
+  // auditor miraba los enunciados: `retro-completa` vigila las causas y
+  // `opciones-contestables` los dibujos, así que una clave olvidada en un
+  // locale se servía cruda («k.recta.salta_2») delante de un niño que no lee.
+  // Este auditor cruza toda clave del banco con los 7 catálogos, y toda
+  // `{variable}` de cada plantilla con las `vars` del ítem. Su control
+  // negativo borra una clave del `de-DE.json` REAL (D-070).
+  ["kinder-enunciados-i18n", "todo enunciado del banco existe, con sus variables, en los 7 locales", "D-022, #349, #347, línea roja #3, mc-34"],
+
+
   // ─── Los dos de F5b (#159–#167), y por qué nacen VERDES ──────────────────
   //
   // La franja adulta se construyó CON ellos delante, así que lo que vigilan
@@ -487,6 +500,7 @@ const ACTIVE = [
   // aquí y no en producción. Nace VERDE porque el índice ya existe; lo que
   // vigila es que nadie lo quite.
   ["alias-unico",            "el alias del niño tiene índice único por padre, y nadie lo quita", "D-003, #259"],
+
 
 
 

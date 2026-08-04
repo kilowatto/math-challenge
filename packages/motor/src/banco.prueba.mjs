@@ -271,14 +271,149 @@ caso("#347 · todo ítem de contar dice QUÉ se cuenta", () => {
   }
 });
 
-caso("#347 · los tres objetos de contar salen de verdad, no solo el pato", () => {
+caso("#347 · los objetos de contar salen de verdad, no solo el pato", () => {
   const glifos = new Set(
     banco.filter((i) => i.formato === "toca_para_contar").map((i) => i.enunciado.vars.glifo),
   );
   if (glifos.size < 3) {
     throw new Error(`solo ${glifos.size} objeto(s) distintos: ${[...glifos].join(" ")}`);
   }
-  console.log(`      ${[...glifos].join(" ")} — tres objetos, tres claves de enunciado`);
+  console.log(`      ${[...glifos].join(" ")} — cada objeto con su clave de enunciado`);
+});
+
+// ===========================================================================
+// F5 · los conteos que los issues exigen (#144–#157)
+// ===========================================================================
+//
+// El banco existía, pero medido contra sus propios issues diez habilidades se
+// quedaban cortas. La cifra de cada una es la del issue, tras la crítica
+// adversarial del plan de F5 — no un número redondo. Se busca por HABILIDAD,
+// nunca por id literal: los ids cambian cada vez que una plantilla gana un eje
+// (k11-3-4 pasó a k11-3-4-0 cuando ganó el contexto).
+
+const CONTEO_DE_ISSUE = {
+  K01: 39,  // #144
+  K03: 86,  // #146
+  K04: 41,  // #147
+  K06: 68,  // #149
+  K08: 131, // #151
+  K09: 37,  // #152
+  K10: 45,  // #153
+  K11: 150, // #154
+  K12: 119, // #155
+  K14: 90,  // #157
+};
+
+caso("cada habilidad del encargo llega al conteo de su issue (#144–#157)", () => {
+  const conteos = {};
+  for (const i of banco) conteos[i.habilidad] = (conteos[i.habilidad] ?? 0) + 1;
+  const cortas = Object.entries(CONTEO_DE_ISSUE).filter(([h, n]) => (conteos[h] ?? 0) < n);
+  if (cortas.length > 0) {
+    throw new Error(
+      cortas.map(([h, n]) => `${h}: ${conteos[h] ?? 0} de ${n}`).join(" · ") +
+        ". El banco existe, pero contra el issue no llega.",
+    );
+  }
+  console.log(
+    "      " + Object.keys(CONTEO_DE_ISSUE).map((h) => `${h} ${conteos[h]}≥${CONTEO_DE_ISSUE[h]}`).join(" · "),
+  );
+});
+
+// La recta numérica gana cuatro preguntas nuevas sobre la MISMA escena (la
+// recta del 0 al 10 con un hueco): el número que falta sin ancla en el texto,
+// saltar hacia adelante y hacia atrás, y contar saltos hasta el hueco. Cada
+// una se busca por lo que la hace ella, no por su id.
+caso("K08 · saltar hacia adelante: estás en el 3, das dos saltos, caes en el 5", () => {
+  const salta = banco.find(
+    (i) => i.enunciado.clave === "k.recta.salta_2" && i.enunciado.vars.a === 3,
+  );
+  if (!salta) throw new Error("no encontré el salto de dos desde el 3");
+  es(salta.respuesta.valor, 5);
+  // La pantalla dibuja la recta con el hueco donde se cae: `despues` - 1 = 5.
+  es(salta.enunciado.vars.despues, 6, "el hueco se dibuja en el 5");
+  es(calificarRespuesta(salta, 3).causa, "error.repitio_la_parte", "no saltó: sigue en el 3");
+  es(calificarRespuesta(salta, 4).causa, "error.se_salto_uno", "un salto de menos");
+});
+
+caso("K08 · saltar hacia atrás jamás sale de la recta (rezagados §7 en otra cara)", () => {
+  const regresa = banco.find(
+    (i) => i.enunciado.clave === "k.recta.regresa_1" && i.enunciado.vars.a === 1,
+  );
+  if (!regresa) throw new Error("no encontré el salto hacia atrás desde el 1");
+  es(regresa.respuesta.valor, 0, "1 menos un salto es 0, el borde de la recta");
+  for (const e of regresa.errores) {
+    if (typeof e.valor === "number" && (e.valor < 0 || e.valor > 10)) {
+      throw new Error(`distractor ${e.valor} fuera de la recta 0-10`);
+    }
+  }
+});
+
+caso("K08 · contar saltos hasta el hueco no es leer dónde está el hueco", () => {
+  const saltos = banco.find(
+    (i) => i.enunciado.clave === "k.recta.saltos" && i.enunciado.vars.a === 2 && i.respuesta.valor === 3,
+  );
+  if (!saltos) throw new Error("no encontré «cuántos saltos del 2 al hueco» con respuesta 3");
+  // El error propio de esta pregunta: decir la POSICIÓN del hueco (5) en vez
+  // de los saltos (3). Es `conto_desde_uno`: usó la recta como etiqueta, no
+  // como camino.
+  es(calificarRespuesta(saltos, 5).causa, "error.conto_desde_uno", "dijo la posición, no los saltos");
+});
+
+caso("K08 · ninguna opción de la recta sale del 0-10, ni con el hueco en un borde", () => {
+  for (const i of banco.filter((x) => x.habilidad === "K08")) {
+    for (const v of [i.respuesta.valor, ...i.errores.map((e) => e.valor)]) {
+      if (typeof v === "number" && (v < 0 || v > 10)) {
+        throw new Error(`${i.id}: la opción ${v} no está en la recta 0-10`);
+      }
+    }
+  }
+});
+
+caso("K09 · el marco pregunta también «pon una» y «quita una»", () => {
+  const pon = banco.find((i) => i.enunciado.clave === "k.marco.pon_una" && i.enunciado.vars.llenas === 4);
+  if (!pon) throw new Error("no encontré «pon una ficha más» con 4 llenas");
+  es(pon.respuesta.valor, 5);
+  es(calificarRespuesta(pon, 4).causa, "error.repitio_la_parte", "no puso ninguna");
+  const quita = banco.find((i) => i.enunciado.clave === "k.marco.quita_una" && i.enunciado.vars.llenas === 10);
+  if (!quita) throw new Error("no encontré «quita una ficha» con el marco lleno");
+  es(quita.respuesta.valor, 9);
+  es(calificarRespuesta(quita, 8).causa, "error.conto_el_que_quita", "quitó una de más");
+});
+
+caso("K10 · el dos también se descompone (1 y 1)", () => {
+  const dos = banco.find((i) => i.habilidad === "K10" && i.enunciado.vars.total === 2);
+  if (!dos) throw new Error("el total 2 no está: la descomposición empezaba en 3");
+  es(dos.respuesta.valor, 1);
+});
+
+caso("K06 · la cardinalidad se pregunta sobre siete objetos, no siempre sobre patos", () => {
+  const claves = new Set(banco.filter((i) => i.habilidad === "K06").map((i) => i.enunciado.clave));
+  if (claves.size < 7) {
+    throw new Error(
+      `solo ${claves.size} enunciado(s) distinto(s). Preguntar siempre por patitos convierte ` +
+        "la habilidad en una sola tarea repetida; el objeto es el eje de variación.",
+    );
+  }
+});
+
+caso("K14 · el patrón AB no es siempre círculo-cuadrado", () => {
+  const parejas = new Set(
+    banco
+      .filter((i) => i.habilidad === "K14" && i.enunciado.vars.ciclo === 2)
+      .map((i) => i.enunciado.vars.figuras),
+  );
+  if (parejas.size < 6) {
+    throw new Error(
+      `solo ${parejas.size} pareja(s) de figuras en AB. Con una sola, «patrón» y «estas dos ` +
+        "figuras» se confunden: la regla tiene que sobrevivir al cambio de piezas.",
+    );
+  }
+  // Y la respuesta sigue siendo una figura dibujable en todas las parejas.
+  for (const i of banco.filter((x) => x.habilidad === "K14")) {
+    if (!i.dibujos?.[String(i.respuesta.valor)]?.glifo) {
+      throw new Error(`${i.id}: la respuesta no tiene figura que dibujar`);
+    }
+  }
 });
 
 console.log("");

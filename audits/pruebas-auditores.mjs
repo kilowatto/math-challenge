@@ -1619,9 +1619,17 @@ const CASOS = [
     // la 0016 (F5c) y la 0017 presentes, el primer hueco libre no declarado es
     // el 0018, y la sonda que lo caza es el archivo 0019. El archivo va
     // siempre UN número por encima del primer hueco libre no declarado.
+    // Reapuntado a 0021 cuando la 0019 (reportes por correo, F8) aterrizó: con
+    // la 0018 reservada al frente del panel (marcador `migration-safety-reserva`
+    // en la propia 0019), el primer hueco libre NO declarado es el 0020, y la
+    // sonda que lo caza es el archivo 0021. Una sonda en 0020 quedaría contigua
+    // a la 0019 real y correría en verde sin degradar nada — el auditor apagado
+    // en silencio de siempre. (El encargo decía 0020; la aritmética del propio
+    // mecanismo —sonda = primer hueco no declarado + 1— da 0021, y el arnés lo
+    // confirma: con 0020 el caso corre en verde.)
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0019_prueba_hueco.sql",
+    archivo: "migrations/0021_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -2187,6 +2195,142 @@ const CASOS = [
 
 
   },
+
+  {
+    // F8 #285. El fallo que este auditor existe para cazar: un archivo NUEVO
+    // en la ruta del panel que lee el binding de Analytics Engine. Plantado,
+    // no degradado — el archivo real no lo referencia.
+    auditor: "panel-sin-detalle-de-intento",
+    que: "una página del panel leyendo ATTEMPTS_AE",
+    archivo: "apps/web/src/pages/[locale]/app/parent/panel/sonda-ae.astro",
+    contenido:
+      "---\nexport const prerender = false;\n" +
+      "const ae = (Astro.locals as any).runtime?.env?.ATTEMPTS_AE;\n---\n<p>{ae ? 'sí' : 'no'}</p>\n",
+    espera: "ATTEMPTS_AE",
+  },
+  {
+    // F8 #285. La otra mitad, sobre la capa de datos REAL (D-070): un
+    // writeDataPoint en `padre-panel.ts` convertiría cada apertura del panel
+    // en una escritura al dataset de intentos — y la pantalla se vería igual.
+    auditor: "panel-sin-detalle-de-intento",
+    que: "un writeDataPoint en la capa de datos real del panel",
+    archivo: "apps/web/src/lib/padre-panel.ts",
+    parche: (t) =>
+      t.replace(
+        "export async function leerDatosDelPanel(",
+        "const sonda = (env) => env.ATTEMPTS_AE?.writeDataPoint({ blobs: ['panel'] });\n" +
+          "export async function leerDatosDelPanel(",
+      ),
+    espera: "writeDataPoint",
+  },
+  {
+    // F8 #278, criterio explícito: `child_diagnostic_notes` entra a
+    // CHILD_TABLES con su control visto fallar. La columna de texto libre que
+    // la línea roja #3 prohíbe en una tabla de niño, plantada como ALTER.
+    auditor: "child-free-text",
+    que: "una columna de texto libre añadida a child_diagnostic_notes",
+    archivo: "migrations/9998_prueba_notas_texto.sql",
+    contenido: "ALTER TABLE child_diagnostic_notes ADD COLUMN nota TEXT;\n",
+    espera: "sin dominio acotado",
+  },
+  {
+    // F8 #283. La causa sin plantilla, sobre el archivo REAL de mensajes:
+    // si en.json pierde la plantilla de PATRON_INUSUAL_PARA_EDAD, la nota de
+    // D-020 mostraría la clave cruda solo en inglés — el modo de fallo de D-022.
+    auditor: "notas-diagnostico-completas",
+    que: "la plantilla de PATRON_INUSUAL_PARA_EDAD borrada del inglés",
+    archivo: "apps/web/src/i18n/padre/en.json",
+    parche: (t) =>
+      t.replace(
+        /  "padre\.nota\.PATRON_INUSUAL_PARA_EDAD": "[^"]*",\n/,
+        "",
+      ),
+    espera: "PATRON_INUSUAL_PARA_EDAD",
+  },
+  {
+    // F8 #283. La otra dirección, sobre la migración REAL (D-070): una causa
+    // nueva en el CHECK sin plantilla en ningún locale. Las causas se leen de
+    // la migración a mano, así que esto bloquea aunque el motor se sincronice.
+    auditor: "notas-diagnostico-completas",
+    que: "una causa nueva en la 0018 sin plantilla en ningún locale",
+    archivo: "migrations/0018_child_diagnostic_notes.sql",
+    parche: (t) =>
+      t.replace(
+        "'PATRON_INUSUAL_PARA_EDAD'     -- D-020: anti-trampa tier 0",
+        "'PATRON_INUSUAL_PARA_EDAD',     -- D-020: anti-trampa tier 0\n" +
+          "                       'CAUSA_SIN_PLANTILLA'",
+      ),
+    espera: "CAUSA_SIN_PLANTILLA",
+  },
+  {
+    // F8 #283. La voz de Larry degradada, sobre el archivo REAL de mensajes:
+    // una plantilla que humilla («los demás niños», categoría comparación del
+    // léxico de es-MX) tiene que bloquear igual que en la superficie del niño.
+    auditor: "notas-diagnostico-completas",
+    que: "una plantilla de nota que compara con los demás niños",
+    archivo: "apps/web/src/i18n/padre/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        /"padre\.nota\.PATRON_INUSUAL_PARA_EDAD": "[^"]*"/,
+        '"padre.nota.PATRON_INUSUAL_PARA_EDAD": "Te habla Larry. {alias} no responde como los demás niños de su edad."',
+      ),
+    espera: "comparacion",
+  },
+
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // F8 · Reportes por correo al padre (#287, #292).
+  //
+  // Los tres casos DEGRADAN archivos REALES —el motor puro, una plantilla de
+  // locale y la migración 0019 que este PR introduce— por la misma razón que
+  // los del resto del repo (D-070): el auditor nació verde porque el código se
+  // construyó con él delante, y un archivo inventado solo probaría que sabe
+  // leer un archivo inventado.
+
+  {
+    // #292. La violación por excelencia del subsistema: una resta entre las
+    // secciones de dos hermanos, plantada al final del motor REAL. Es la
+    // comparación implícita que mc-18 documenta como riesgo del correo
+    // familiar — y la forma que tomaría un cambio de buena fe («ordenémosles
+    // por lo que ganaron»).
+    auditor: "reporte-sin-comparacion",
+    que: "una resta entre las secciones de dos hermanos en el motor del reporte",
+    archivo: "packages/motor/src/reportes.ts",
+    parche: (t) =>
+      t +
+      "\nconst _diferenciaEntreHermanos = (hijos: SeccionHijo[]) =>\n" +
+      "  hijos[0].puntosGanados - hijos[1].puntosGanados;\n",
+    espera: "comparación entre hermanos",
+  },
+  {
+    // #292. El mismo principio en la plantilla REAL de un locale: un «mejor
+    // que su hermano» redactado con naturalidad, que es exactamente cómo se
+    // escribiría el defecto — nadie añade una comparación llamándola así.
+    auditor: "reporte-sin-comparacion",
+    que: "un «mejor que su hermano» en la plantilla del correo",
+    archivo: "apps/web/src/i18n/reportes/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        "{alias} ganó {puntos} puntos.",
+        "{alias} ganó {puntos} puntos, mejor que su hermano.",
+      ),
+    espera: "mejor que",
+  },
+  {
+    // #287. `child_report_state` entra a `CHILD_TABLES` de `child-free-text`
+    // en este mismo PR, y el caso demuestra que la línea roja #3 se aplica a
+    // la tabla nueva: una columna `TEXT` sin `CHECK` ligada a
+    // `child_profile_id` tiene que bloquear aquí igual que en `child_profiles`.
+    auditor: "child-free-text",
+    que: "una columna de texto libre en child_report_state",
+    archivo: "migrations/0019_reportes_correo.sql",
+    parche: (t) =>
+      t.replace(
+        "  updated_at          INTEGER NOT NULL\n);",
+        "  nota_del_padre      TEXT,\n  updated_at          INTEGER NOT NULL\n);",
+      ),
+    espera: "child_report_state",
+  },
   // ─── F7 #208 · El roster del dueño del grupo, degradado sobre el archivo REAL ─
   //
   // Los tres casos DEGRADAN `grupo-roster.ts` (D-070): la columna de presencia
@@ -2225,6 +2369,8 @@ const CASOS = [
     archivo: "apps/web/src/lib/grupo-roster.ts",
     parche: (t) => t.replace("ORDER BY p.alias ASC, p.id ASC", "ORDER BY r.current_streak DESC"),
     espera: "ORDER BY",
+
+
   },
 ];
 

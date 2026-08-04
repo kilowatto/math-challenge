@@ -88,3 +88,22 @@ export const rutaLiga = (locale: Locale | string) => `/${locale}/app/liga/`;
 /** La liga del perfil de niño (sesión `mc_k`). */
 export const rutaLigaJugador = (locale: Locale | string) => `/${locale}/app/liga/jugador/`;
 
+/**
+ * El panel del padre con diagnóstico (F8 #277-#285): la entrada es el
+ * selector de hijo — un perfil a la vez, nunca una comparación lado a lado
+ * entre hermanos (#285, mismo patrón que Prodigy valida en el mismo mercado).
+ */
+export const rutaPanel = (locale: Locale | string) => `/${locale}/app/parent/panel/`;
+
+/** El panel de UN hijo. Mismo criterio de id opaco en URL que `rutaLimiteHijo`. */
+export const rutaPanelHijo = (locale: Locale | string, childId: string) =>
+  `/${locale}/app/parent/panel/${encodeURIComponent(childId)}/`;
+
+/**
+ * El roadmap de cosméticos de UN hijo, pestaña aparte por decisión del dueño
+ * (#284, respuesta a la pregunta 4 de #277): la pantalla principal queda
+ * enfocada en dominio/racha/pantalla y el roadmap exige una acción explícita.
+ */
+export const rutaPanelCosmeticos = (locale: Locale | string, childId: string) =>
+  `/${locale}/app/parent/panel/${encodeURIComponent(childId)}/cosmeticos`;
+

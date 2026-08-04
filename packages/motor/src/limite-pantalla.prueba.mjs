@@ -227,14 +227,14 @@ caso("una hora de dormir justo después de medianoche no rompe la aritmética", 
   falso(enVentanaNocturna("22:00", "00:30", 60), "22:00 todavía no");
 });
 
-console.log("\nla configuración del padre, con o sin fila (#265 pregunta 3)\n");
+console.log("\nla configuración del padre, con o sin fila (D-139)\n");
 
-caso("sin fila, aplica el default de la banda: la protección no espera al padre", () => {
-  const c = configuracionVigente("KINDER", null);
-  igual(c.daily_minutes, 20);
-  igual(c.break_every_min, 15);
-  igual(c.bedtime_cutoff_min, 60);
-  igual(c.bedtime_local, null, "sin corte nocturno hasta que el padre lo encienda");
+caso("sin fila NO hay configuración vigente: el límite empieza cuando el padre la activa (D-139)", () => {
+  // D-139 (2026-08-03) SUPERÓ la «protección desde el día uno» que este motor
+  // implementó primero: `null` es «sin límite», no el default de la banda.
+  igual(configuracionVigente("KINDER", null), null, "KINDER sin fila");
+  igual(configuracionVigente("PRIMARIA", null), null, "PRIMARIA sin fila");
+  igual(configuracionVigente("SECUNDARIA", null), null, "SECUNDARIA sin fila");
 });
 
 caso("el default nunca inventa una hora de dormir a partir del año de nacimiento", () => {
@@ -250,7 +250,7 @@ caso("un daily_minutes fuera de rango se corrige al default, no se respeta", () 
     bedtime_cutoff_min: 60,
     bedtime_local: null,
   });
-  igual(c.daily_minutes, 20, "600 minutos no pueden convertirse en el límite de un niño de 5 años");
+  igual(c?.daily_minutes, 20, "600 minutos no pueden convertirse en el límite de un niño de 5 años");
 });
 
 caso("bedtime_cutoff_min viene SIEMPRE de la banda, aunque la fila diga otra cosa", () => {
@@ -260,7 +260,7 @@ caso("bedtime_cutoff_min viene SIEMPRE de la banda, aunque la fila diga otra cos
     bedtime_cutoff_min: 999,
     bedtime_local: "22:00",
   });
-  igual(c.bedtime_cutoff_min, 30, "D-016 publica un solo valor por banda, sin rango");
+  igual(c?.bedtime_cutoff_min, 30, "D-016 publica un solo valor por banda, sin rango");
 });
 
 caso("una hora de dormir mal formada se trata como «sin corte nocturno», no como medianoche", () => {
@@ -270,7 +270,7 @@ caso("una hora de dormir mal formada se trata como «sin corte nocturno», no co
     bedtime_cutoff_min: 60,
     bedtime_local: "veinte y media",
   });
-  igual(c.bedtime_local, null);
+  igual(c?.bedtime_local, null);
 });
 
 console.log("\nel consumo del día (#267)\n");
@@ -334,7 +334,10 @@ console.log("\nla decisión (#270, #271, #272, #273)\n");
 const usoCon = (campos) => ({ ...usoInicial("2026-08-02"), ...campos });
 const entradaBase = {
   banda: "PRIMARIA",
-  config: null, // 30 min de default, sin corte nocturno
+  // La fila que el padre guardó: 30 min diarios, descanso cada 20, sin corte
+  // nocturno. Sin fila NO hay límite (D-139), así que los casos que ejercen el
+  // límite necesitan esta fila.
+  config: { daily_minutes: 30, break_every_min: 20, bedtime_cutoff_min: 60, bedtime_local: null },
   uso: usoInicial("2026-08-02"),
   horaAhora: "16:00",
   puntoSeguro: true,
@@ -432,10 +435,36 @@ caso("dentro de la ventana nocturna se cierra aunque queden minutos del día", (
   igual(d.motivo, "BEDTIME");
 });
 
-caso("sin fila de configuración, el límite YA protege con el default de la banda", () => {
-  const d = decidir({ ...entradaBase, banda: "KINDER", config: null, uso: usoCon({ minutes_used: 20 }) });
-  igual(d.tipo, "CERRAR", "un perfil sin configuración jugaría sin límite ninguno");
-  igual(d.motivo, "DAILY_LIMIT");
+caso("sin fila de configuración NO hay límite: ni corte, ni descanso, ni aviso (D-139)", () => {
+  // D-139 SUPERÓ la respuesta A («protege desde el día uno con el default»).
+  // El barrido cubre los estados que ANTES cortaban, avisaban o descansaban
+  // con el default de la banda: con `config: null` todos son SEGUIR ahora.
+  for (const banda of ["KINDER", "PRIMARIA", "SECUNDARIA"]) {
+    for (const minutos of [0, 15, 20, 25, 30, 45, 90, 500]) {
+      for (const desdeDescanso of [0, 15, 20, 25, 999]) {
+        for (const hora of ["01:00", "16:00", "21:30", "23:59"]) {
+          const d = decidir({
+            banda,
+            config: null,
+            uso: usoCon({ minutes_used: minutos, minutes_since_break: desdeDescanso }),
+            horaAhora: hora,
+            puntoSeguro: true,
+          });
+          igual(d.tipo, "SEGUIR", `${banda} sin fila, ${minutos} min, ${hora}`);
+        }
+      }
+    }
+  }
+});
+
+caso("sin fila tampoco se bloquea el arranque de madrugada: sin fila no hay bedtime (D-139, D-138)", () => {
+  const d = decidirAlIniciar({
+    banda: "KINDER",
+    config: null,
+    uso: usoInicial("2026-08-02"),
+    horaAhora: "01:00",
+  });
+  igual(d.tipo, "SEGUIR", "el corte nocturno nace apagado y solo lo enciende el padre");
 });
 
 caso("decidirAlIniciar bloquea empezar de madrugada (respuesta A de #265 pregunta 1)", () => {
@@ -544,7 +573,7 @@ caso("ninguna función del motor acepta un precio: las firmas se leen y se cuent
 caso("un campo de pago inyectado en la entrada NO cambia la decisión", () => {
   const base = {
     banda: "KINDER",
-    config: null,
+    config: { daily_minutes: 20, break_every_min: 15, bedtime_cutoff_min: 60, bedtime_local: null },
     uso: usoCon({ minutes_used: 20 }),
     horaAhora: "16:00",
     puntoSeguro: true,

@@ -35,6 +35,7 @@
 
 import {
   LIMITES_POR_BANDA,
+  configuracionPorDefecto,
   configuracionVigente,
   minutosDiariosPermitidos,
   minutosDelDia,
@@ -113,11 +114,14 @@ export interface EstadoDelLimite {
  * La configuración vigente y los minutos de hoy.
  *
  * Sin fila en `screen_time_settings` —que hoy son todos los perfiles, porque el
- * paso de onboarding de F2 nunca se construyó— `configuracionVigente` devuelve
- * el default de la banda: el límite protege desde el día uno (respuesta A de la
- * pregunta 3 de #265, `docs/dudas.md` §23.3 F8). Y `bedtime_local` nace en
- * `null`: el corte nocturno no se enciende solo, porque adivinar una hora de
- * dormir sería un dato que el producto no tiene (D-053).
+ * paso de onboarding de F2 nunca se construyó— **no hay límite vigente (D-139,
+ * 2026-08-03)**: la protección empieza cuando el padre guarda aquí por primera
+ * vez. Lo que esta función devuelve en ese caso es el default de la banda como
+ * OFERTA —lo que el control de la pantalla precarga y lo que quedaría si el
+ * padre guarda sin tocar nada—, no como límite activo; `tieneFila: false` es
+ * lo que distingue los dos mundos. Y `bedtime_local` nace en `null`: el corte
+ * nocturno no se enciende solo, porque adivinar una hora de dormir sería un
+ * dato que el producto no tiene (D-053).
  */
 export async function estadoDelLimite(
   db: D1Database,
@@ -136,7 +140,10 @@ export async function estadoDelLimite(
       .first<{ minutes_used: number }>(),
   ]);
   return {
-    config: configuracionVigente(banda, fila),
+    // D-139: sin fila, `configuracionVigente` es `null` («sin límite»). La
+    // pantalla muestra entonces el default de la banda como punto de partida
+    // de la OFERTA — ver el encabezado de esta función.
+    config: configuracionVigente(banda, fila) ?? configuracionPorDefecto(banda),
     tieneFila: fila !== null,
     minutosUsados: uso?.minutes_used ?? 0,
   };

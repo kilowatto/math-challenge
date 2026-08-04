@@ -64,6 +64,7 @@ import {
 } from "../../../../../packages/motor/src/explicacion.ts";
 import {
   registrarItem,
+  registrarDiaPorLimite,
   textoDeXp,
   zonaDelHogar,
   type Jugador,
@@ -129,6 +130,14 @@ interface Ingest {
     inesperada: boolean; nivel: number; habilidad: string;
   }>;
   recordAttempt(input: Record<string, unknown>): Promise<unknown>;
+  /**
+   * El corte del límite de pantalla llega a la sesión de reto (F8 #404):
+   * `puedeCortar()` → `cerrarPorLimite(motivo)` sobre el Durable Object. Ver
+   * el comentario de `avisarCorteALaSesion` abajo — hoy `/api/jugar` no abre
+   * ese DO, así que la llamada es el sitio donde el corte tocará la sesión
+   * cuando el cableado de F3 aterrice aquí.
+   */
+  cerrarRetoPorLimite(perfilId: string, motivo: string): Promise<unknown>;
 }
 
 interface Env {
@@ -283,6 +292,38 @@ function estadoDe(resumen: Resumen[], skillId: string, semilla: number) {
   };
 }
 
+/**
+ * El corte, dicho también a la sesión de reto de F3 (F8 #404).
+ *
+ * El corte real se enforcea con el estado de `screen_time_daily_usage` — vive
+ * en D1, así que sobrevive a cerrar y reabrir la app (`lib/limite-dia.ts`).
+ * Esta llamada es el OTRO extremo del diseño del plan (§8.1): el RPC
+ * `puedeCortar()` → `cerrarPorLimite(motivo)` del Durable Object de sesión
+ * tenía cero llamadores, que es el patrón «código correcto que ninguna ruta
+ * alcanza» para el que existe `audits/funcion-sin-llamar.mjs`.
+ *
+ * Honestidad de alcance, dicha aquí y en el PR: **hoy `/api/jugar` no abre
+ * ese DO** (residuo declarado desde F4: servir/responder viven en esta ruta,
+ * no en la sesión), así que el DO no tiene estado que cerrar y el RPC
+ * contesta `cerrada: false`. La llamada se hace igual, por dos razones: el
+ * patrón de corte queda cableado en la ruta de verdad —el día que esta ruta
+ * abra la sesión de F3 bajo el mismo nombre (`idFromName(childProfileId)`),
+ * el corte la cerrará sin tocar este archivo—, y el RPC deja de ser código
+ * inalcanzable. Lo que NO se hace: abrir la sesión aquí solo para cerrarla,
+ * que duplicaría servir/responder enteros.
+ *
+ * Best effort, como la telemetría: si el RPC falla, el corte ya viaja en la
+ * respuesta y está escrito en D1. Nunca se le niega la despedida a un niño
+ * por un Durable Object.
+ */
+async function avisarCorteALaSesion(env: Env, quien: Jugador, motivo: string): Promise<void> {
+  try {
+    await env.INGEST.cerrarRetoPorLimite(quien.id, motivo);
+  } catch {
+    // Silencio a propósito: el corte no depende de esta llamada.
+  }
+}
+
 async function servirSiguiente(
   env: Env,
   quien: Jugador,
@@ -310,7 +351,18 @@ async function servirSiguiente(
     zona: await zonaDelHogar(env, quien),
     locale,
   });
-  if (limite?.tipo === "CERRAR") return json({ ok: true, corte: limite });
+  if (limite?.tipo === "CERRAR") {
+    await avisarCorteALaSesion(env, quien, limite.motivo ?? "DAILY_LIMIT");
+    /*
+     * Aquí NO se llama a `registrarDiaPorLimite`, a propósito: el día se
+     * cuenta en el PRIMER ítem contestado (D-091) y un corte al servir llega
+     * antes de cualquier ítem — registrarlo convertiría «abrió la app a la
+     * 1 a.m. y lo despidieron» en un día de racha, que es justo lo que D-091
+     * vino a impedir. Si el niño ya jugó hoy, el día ya está contado de
+     * todas formas y la racha no depende de nada de lo que pase aquí.
+     */
+    return json({ ok: true, corte: limite });
+  }
 
   const [catalogo, resumen] = await Promise.all([
     env.INGEST.catalogoAdaptativo(),
@@ -542,10 +594,11 @@ async function recibirRespuesta(
     progreso = await registrarItem(env, quien, {
       nivel: veredicto.nivel,
       acc: veredicto.acc,
-      // F8 es quien produce el otro motivo (`docs/planes/f8-limite-pantalla.md`
-      // §8). No cambia el estado que sale del motor — `registrarDia` lo
-      // garantiza y `audits/racha-limite-no-rompe.mjs` lo mide sobre 1 620
-      // estados —, así que esto no es una decisión disfrazada de constante.
+      // El otro motivo (`LIMITE_DE_PANTALLA_CORTO_LA_SESION`) lo produce el
+      // corte de F8 y entra por `registrarDiaPorLimite`, abajo — el día ya
+      // está contado para entonces (D-091). Ninguno cambia el estado que sale
+      // del motor: `registrarDia` lo garantiza y
+      // `audits/racha-limite-no-rompe.mjs` lo mide sobre 1 620 estados.
       motivo: { tipo: "RETO_COMPLETADO" },
       ahora: Date.now(),
       zona,
@@ -587,6 +640,26 @@ async function recibirRespuesta(
       zona,
       locale,
     });
+
+    /*
+     * El corte ocurrió: el motivo del límite llega a la racha (F8 #404).
+     *
+     * El día ya se contó arriba con `RETO_COMPLETADO` (D-091), así que esta
+     * llamada es idempotente por construcción — `registrarDia` devuelve el
+     * mismo objeto y no se escribe nada. Lo que cambia es que el camino del
+     * corte NOMBRA su motivo: `LIMITE_DE_PANTALLA_CORTO_LA_SESION` entra en
+     * `registrarDia` de verdad, que es la omisión silenciosa que
+     * `audits/limite-no-rompe-el-dia.mjs` declara como su punto ciego y el
+     * KPI de #202 (sesiones cortadas donde la racha no avanzó = 0).
+     */
+    if (limite?.tipo === "CERRAR" && limite.motivo) {
+      await registrarDiaPorLimite(env, quien, {
+        motivo: limite.motivo,
+        ahora: Date.now(),
+        zona,
+      });
+      await avisarCorteALaSesion(env, quien, limite.motivo);
+    }
   }
 
   /**

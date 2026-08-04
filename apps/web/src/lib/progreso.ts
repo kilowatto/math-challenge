@@ -75,6 +75,10 @@ import {
   rangoDeXp,
   xpDeItem,
 } from "../../../../packages/motor/src/xp.ts";
+import {
+  diaCumplidoPorCorte,
+  type MotivoDeCierre,
+} from "../../../../packages/motor/src/limite-pantalla.ts";
 import { formatear } from "../../../../packages/motor/src/numeros.ts";
 import type { Locale } from "../i18n";
 
@@ -377,6 +381,80 @@ export async function registrarItem(
     // Silencio deliberado, misma regla que la telemetría de `/api/jugar`: lo que
     // se pierde si esto falla es un contador, no el juego.
     return null;
+  }
+}
+
+/**
+ * El límite de pantalla cortó la sesión: el motivo del corte llega a la racha
+ * (F8 #404, la frontera que D-091 dejó preparada).
+ *
+ * `registrarItem` se llama con `RETO_COMPLETADO` en cada ítem que cuenta, y el
+ * corte se decide DESPUÉS (D-091: el día se cuenta en el primer ítem, así que
+ * para cuando el límite corta, el día lleva minutos cumplido). Esta función es
+ * el segundo extremo de ese diseño: cuando la decisión es `CERRAR`, la ruta la
+ * llama con el motivo de cierre y aquí se convierte con `diaCumplidoPorCorte()`
+ * —la única función que produce `LIMITE_DE_PANTALLA_CORTO_LA_SESION`— y entra
+ * en `registrarDia` de verdad. Es la omisión que `audits/limite-no-rompe-el-dia.mjs`
+ * declara como su punto ciego, hecha imposible por el cable y no por la
+ * vigilancia: el camino del corte NOMBRA el motivo.
+ *
+ * En la práctica es casi siempre un no-op, y eso es el diseño funcionando: el
+ * día ya se contó en el ítem de hace un instante, `registrarDia` devuelve el
+ * mismo objeto y no se escribe nada. La llamada existe para que el motivo
+ * fluya (el KPI de #202: sesiones cortadas donde la racha no avanzó = 0) y
+ * para que ningún camino futuro del corte pueda olvidarse de registrar.
+ *
+ * **No suma XP.** El ítem que se acabó de contestar ya lo sumó `registrarItem`
+ * en esta misma petición; esto no es un ítem nuevo, es el cierre del día.
+ *
+ * Nunca lanza, como `registrarItem`: lo que se pierde si falla es un contador,
+ * no el juego — y el corte ya viaja en la respuesta de todas formas.
+ */
+export async function registrarDiaPorLimite(
+  env: Env,
+  quien: Jugador,
+  entrada: {
+    motivo: MotivoDeCierre;
+    ahora: number;
+    zona: string;
+  },
+): Promise<void> {
+  if (!env.DB) return;
+
+  try {
+    const hoy = diaEfectivo(entrada.ahora, entrada.zona);
+
+    const fila = await env.DB.prepare(quien.esAdulto ? SQL_LEER_RACHA_ADULTO : SQL_LEER_RACHA_NINO)
+      .bind(quien.id)
+      .first<FilaRacha>();
+
+    const antes = estadoDeFila(fila ?? null);
+    const conDia = registrarDia(antes, hoy, diaCumplidoPorCorte(entrada.motivo));
+    // Misma comparación por referencia que `registrarItem`: el día ya contado
+    // no se vuelve a escribir, y con el día nuevo tampoco hay escudos que
+    // ganar dos veces.
+    const despues = conDia === antes ? antes : ganarEscudos(conDia);
+    if (despues === antes) return;
+
+    await env.DB.prepare(quien.esAdulto ? SQL_UPSERT_RACHA_ADULTO : SQL_UPSERT_RACHA).bind(
+      // Trece valores para trece columnas, el mismo orden que `registrarItem`.
+      crypto.randomUUID(),
+      quien.id,
+      despues.current_streak,
+      despues.max_streak,
+      despues.last_completed_local_date,
+      despues.shields_available,
+      despues.shields_earned_total,
+      despues.shields_earned_this_streak,
+      despues.pause_until_local_date,
+      despues.pause_uses_this_year,
+      despues.pause_year,
+      despues.days_played_total,
+      entrada.ahora,
+    ).run();
+  } catch {
+    // Silencio deliberado, misma regla que arriba.
+    return;
   }
 }
 

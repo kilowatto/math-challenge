@@ -1,0 +1,175 @@
+---
+/**
+ * La tabla de la cohorte — lo que un jugador ve de su liga. F7 #242, #243.
+ *
+ * liga-no-quita-difusion: current_streak — D-106 (2026-08-03): el dueño
+ * enmendó #243 y la racha SÍ se muestra entre pares de liga, como dato de solo
+ * lectura que llega ya calculado en la fila difundida. Este componente la
+ * pinta y jamás la escribe; el marcador de arriba es lo que le dice a
+ * `audits/liga-no-quita.mjs` que esta mención está autorizada por escrito.
+ *
+ * ─── Lo que se pinta, y lo que no puede pintarse aquí ───────────────────────
+ *
+ * Cada fila es una `FilaDifundida`: alias, avatar, puntos de la semana, racha
+ * en curso y posición **ya proyectada del servidor** — tercio o número según
+ * la banda de la cohorte, decidido por `posicionVisible()` del motor, no aquí.
+ * El número exacto de una cohorte de opt-in infantil no viaja nunca al
+ * navegador (D-081), así que este archivo no tiene qué ocultar: no lo recibe.
+ *
+ *  · **Sin presencia.** No hay «en línea», ni punto verde, ni «jugando ahora»:
+ *    la fila no lleva ese dato (condición 2 de D-081) y este componente no
+ *    podría inventarlo aunque quisiera.
+ *  · **Sin lenguaje de pérdida** (condición 3): los textos vienen de
+ *    `i18n/liga/`, que `audits/racha-lexico.mjs` vigila en los siete locales.
+ *  · **Sin nombre real, jamás** (línea roja #2): la fila no tiene campo donde
+ *    quepa.
+ *
+ * ─── La racha como número: no en todas las bandas ───────────────────────────
+ *
+ * `pintaRacha` lo decide la PÁGINA según la banda de quien mira: #205 y D-019
+ * dicen que en la banda más chica la racha nunca es una cifra (es el sendero
+ * de Larry), y esa regla manda sobre lo que la fila difunde. De ahí en
+ * adelante, la racha entre pares es la señal de constancia que D-106 autoriza.
+ */
+import { formatear } from "../../../../../packages/motor/src/numeros.ts";
+import type { Locale } from "../../i18n";
+import type { FilaDifundida } from "../../lib/liga-do";
+import Cara from "./Cara.astro";
+import { TEXTOS_LIGA, rellenar } from "./textos";
+
+interface Props {
+  locale: Locale;
+  /** La tabla, en el orden que manda el motor (puntos, días activos, llegada). */
+  filas: readonly FilaDifundida[];
+  /** El alias de quien mira, para marcar su fila. `null` si no se pudo saber. */
+  aliasPropio: string | null;
+  /** ¿La racha se pinta como cifra? Lo decide la página, por banda (ver arriba). */
+  pintaRacha: boolean;
+}
+
+const { locale, filas, aliasPropio, pintaRacha } = Astro.props;
+const t = TEXTOS_LIGA[locale] ?? TEXTOS_LIGA["en"];
+const num = (n: number) => formatear(n, locale, 0);
+
+/** Índice de catálogo válido; lo que no lo sea cae al 0 — degrada, no revienta. */
+function indiceDe(valor: unknown): number {
+  if (typeof valor !== "number" || !Number.isInteger(valor) || valor < 0) return 0;
+  return valor % 6;
+}
+
+function caraDe(avatarParts: string): { forma: number; color: number } {
+  try {
+    const p = JSON.parse(avatarParts || "{}");
+    return { forma: indiceDe(p.cara), color: indiceDe(p.color) };
+  } catch {
+    return { forma: 0, color: 0 };
+  }
+}
+
+/** La posición como texto: el número exacto, o el nombre del tercio. */
+function posicionDe(f: FilaDifundida): string {
+  if (f.posicion.forma === "exacta") return num(f.posicion.rank);
+  return t[`liga.tercio.${f.posicion.tercio}`] ?? "";
+}
+
+function rachaDe(n: number): string {
+  return n === 1 ? t["liga.racha_uno"] : rellenar(t["liga.racha_otros"], { n: num(n) });
+}
+
+/*
+ * La fila propia se reconoce por alias: la fila difundida no lleva id (la
+ * privacidad es la ausencia del campo, #242). Dos alias idénticos en la misma
+ * cohorte son posibles en teoría —120 combinaciones × 9 000 sufijos por
+ * locale— y el `find` marcaría la primera; el texto de posición sería el de
+ * esa fila. Se acepta: es un marcador visual, no un dato.
+ */
+const propia = aliasPropio !== null ? filas.find((f) => f.alias === aliasPropio) : undefined;
+---
+
+{propia && (
+  <p class="miPosicion">{rellenar(t["liga.tu_posicion"], { posicion: posicionDe(propia) })}</p>
+)}
+
+<ul class="tablaLiga" role="list">
+  {filas.map((f) => {
+    const cara = caraDe(f.avatar_parts);
+    const esPropia = propia !== undefined && f.alias === propia.alias;
+    return (
+      <li class={esPropia ? "fila propia" : "fila"}>
+        <Cara forma={cara.forma} color={cara.color} />
+        <span class="quien">
+          {f.alias}
+          {esPropia && <span class="tu"> ({t["liga.eres_tu"]})</span>}
+        </span>
+        {pintaRacha && <span class="racha">{rachaDe(f.current_streak)}</span>}
+        <span class="puntos">{rellenar(t["liga.puntos"], { n: num(f.points_this_week) })}</span>
+        <span class="posicion">{posicionDe(f)}</span>
+      </li>
+    );
+  })}
+</ul>
+
+<style>
+  .miPosicion {
+    font-family: var(--font-marca);
+    font-weight: var(--weight-subtitle);
+    font-size: var(--text-lg);
+    color: var(--color-text);
+    margin-block: 0 var(--space);
+  }
+
+  .tablaLiga {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: calc(var(--space) * 0.5);
+  }
+
+  .fila {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--space) * 0.75);
+    padding: calc(var(--space) * 0.5) calc(var(--space) * 0.75);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius);
+  }
+
+  /* La propia fila se marca con el borde de acento Y con el «(tú)» escrito —
+     nunca solo con color (WCAG 2.2 §1.4.1). */
+  .fila.propia {
+    border-color: var(--color-accent);
+  }
+
+  .quien {
+    font-family: var(--font-marca);
+    font-weight: var(--weight-subtitle);
+    font-size: var(--text-lg);
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+    flex: 1;
+  }
+
+  .tu {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm, var(--text-xs));
+  }
+
+  .racha,
+  .puntos {
+    font-family: var(--font-sistema);
+    font-size: var(--text-sm, var(--text-xs));
+    color: var(--color-text);
+    white-space: nowrap;
+  }
+
+  .posicion {
+    font-family: var(--font-sistema);
+    font-size: var(--text-sm, var(--text-xs));
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    min-inline-size: 3ch;
+    text-align: end;
+  }
+</style>

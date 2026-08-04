@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Casos de la capa de datos del recordatorio push — #207, D-128.
+// Casos de la capa de datos del recordatorio push — #207, D-160.
 //
 //     node --experimental-strip-types apps/web/src/lib/push-hogares.prueba.mjs
 //
@@ -113,7 +113,7 @@ const igual = (a, b, msg) => {
 const DIA = "2026-08-03";
 const AYER = "2026-08-02";
 
-console.log("\npush-hogares — la meta por banda (D-128)\n");
+console.log("\npush-hogares — la meta por banda (D-160)\n");
 
 await caso("KINDER que jugó hoy cuenta como completado, aunque no tenga fila de misión (D-104)", async () => {
   const { raw, db } = baseCompleta();

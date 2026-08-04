@@ -56,8 +56,10 @@ import Privada from "../../../layouts/Privada.astro";
 import RecordatorioPush from "../../../components/push/RecordatorioPush.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
-import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo } from "../../../lib/rutas-app";
+import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo, rutaLiga } from "../../../lib/rutas-app";
+import { estadoDeParticipacion } from "../../../lib/liga-membresia";
 import { TEXTOS_PADRE } from "../../../components/parent/textos";
+import { TEXTOS_TABLERO } from "../../../components/tablero/textos";
 import {
   pestanasPrivadas,
   clavesDePestana,
@@ -135,6 +137,22 @@ if (env?.DB) {
     // Sin base, la casa se enseña vacía en vez de dar un 500. El adulto puede
     // marcar el aparato y añadir su passkey igual.
     hijos = [];
+  }
+}
+
+/*
+ * La liga de cada hijo, para el interruptor de la vista «Hijos» (F7 #243,
+ * D-081). El estado EFECTIVO —default de la banda más lo que el padre haya
+ * decidido— lo calcula `estadoDeParticipacion`: es la misma lectura que hace
+ * el alta, así que el interruptor no puede mostrar una cosa y hacer otra.
+ * Sin base, todos apagados en la pantalla: el interruptor fallaría igual al
+ * usarse, y un control que no obedece no debe prometer que sí.
+ */
+const ligaPorHijo = new Map<string, boolean>();
+if (env?.DB) {
+  for (const h of hijos) {
+    const p = await estadoDeParticipacion(env, { id: h.id, esAdulto: false });
+    ligaPorHijo.set(h.id, p !== null);
   }
 }
 
@@ -270,10 +288,35 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
                     Una pantalla sin enlace es una pantalla que no existe.
                   */}
                   <a class="pausa" href={`/${locale}/app/pausa/?hijo=${h.id}`}>{pPausa["pausa.titulo"]}</a>
+                  {/*
+                    El opt-in del tablero, por hijo (F7 #247, D-040) — y en
+                    KINDER, el único lugar donde su tablero existe (D-081).
+                  */}
+                  <a class="pausa" href={rutaTableroHijo(locale, h.id)}>{TEXTOS_TABLERO[locale]["tablero.padre.abrir"]}</a>{/*
+                    El interruptor de la liga (F7 #243, D-081): la banda más
+                    chica arranca apagada y el padre la activa aquí; de PRIMARIA
+                    en adelante arranca encendida y aquí se puede apagar. La
+                    baja revoca, nunca borra — y saca al perfil de la tabla viva
+                    en el mismo acto. Formulario de verdad, sin JavaScript: un
+                    aparato de gama baja tiene que poder apagarla aunque el
+                    script no cargue (mc-47 §5).
+                  */}
+                  <form class="ligaOptin" method="post" action="/api/optin-hijo">
+                    <input type="hidden" name="hijo" value={h.id} />
+                    <input type="hidden" name="locale" value={locale} />
+                    <input type="hidden" name="accion" value={ligaPorHijo.get(h.id) ? "revocar" : "activar"} />
+                    <span class="estado">
+                      {ligaPorHijo.get(h.id) ? m.casaLigaActiva : m.casaLigaApagada}
+                    </span>
+                    <button type="submit" class="boton">
+                      {ligaPorHijo.get(h.id) ? m.casaLigaQuitar : m.casaLigaActivar}
+                    </button>
+                  </form>
                 </li>
               ))}
             </ul>
           )}
+          {hijos.length > 0 && <p class="muted">{m.casaLigaNota}</p>}
           <a class="boton" href={rutaPerfilNuevo(locale)}>{m.casaNuevoHijo}</a>
           {aparatoMarcado && hijos.length > 0 && (
             <a class="boton primario" href={rutaKids(locale)}>{m.casaJugar}</a>
@@ -350,6 +393,17 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
           porque «Practicar» ya es donde vive todo lo del adulto que juega solo.
         */}
         <a class="boton" href={`/${locale}/app/mapa/`}>{m.casaMapaCta}</a>{/*
+          El tablero global del propio adulto (F7 #247, D-025): su banda,
+          ordenada por puntos, con «tú estás aquí» aunque quede fuera del top
+          100. Misma razón de sitio que el mapa: «Practicar» es donde vive
+          todo lo del adulto que juega solo.
+        */}
+        <a class="boton" href={rutaTablero(locale)}>{TEXTOS_TABLERO[locale]["tablero.abrir"]}</a>{/*
+          La liga semanal del propio adulto (F7, #237, #242): su cohorte de
+          ~30 con alias generado, nunca su nombre. Mismo criterio que el mapa:
+          una página sin enlace es una página que no existe.
+        */}
+        <a class="boton" href={rutaLiga(locale)}>{m.casaLigaCta}</a>{/*
           Y su propia pausa (#204, banda SERIO/JR/PRO): el adulto aprendiz se la
           autodeclara, mismo mecanismo y mismo tope, sin aprobación de nadie.
         */}
@@ -425,11 +479,17 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
              margin-block-end: var(--space); }
     .hijos { list-style: none; padding: 0; margin: 0 0 var(--space); display: flex; flex-direction: column; gap: 0.5rem; }
     .hijo { display: flex; justify-content: space-between; align-items: center; gap: var(--space);
+            flex-wrap: wrap;
             padding: 0.6rem 0.8rem; border: 1px solid var(--color-border); border-radius: var(--radius); }
     .alias { font-family: var(--font-sistema); font-weight: var(--weight-subtitle); }
     .banda { font-size: var(--text-xs); color: var(--color-text-muted); }
     .pausa { display: inline-flex; align-items: center; min-block-size: 24px;
              font-size: var(--text-xs); color: var(--color-text-muted); }
+    /* El interruptor de la liga va dentro de la fila del hijo: estado en texto
+       (nunca solo color, WCAG 2.2 §1.4.1) y botón con la vara del adulto. */
+    .ligaOptin { display: flex; align-items: center; gap: 0.5rem; margin: 0; }
+    .ligaOptin .estado { font-size: var(--text-xs); color: var(--color-text-muted); white-space: nowrap; }
+    .ligaOptin .boton { min-height: 44px; margin-inline-end: 0; }
     /* 44px, la vara del ADULTO. Los 88 de kinder son para las superficies de niño. */
     .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
              padding-inline: 1rem; margin-inline-end: 0.5rem; border-radius: var(--radius);

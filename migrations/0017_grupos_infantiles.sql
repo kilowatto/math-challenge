@@ -2,13 +2,11 @@
 -- 0017 — Grupos infantiles: escuela verificada, salón y club de papás
 -- ---------------------------------------------------------------------------
 --
--- migration-safety-reserva: 0016 — repartida al frente F5c en construcción
---
--- La reserva de arriba es la mitad visible de un hueco REAL: la 0016 pertenece
--- a otra rama que no ha aterrizado en `main` cuando esta se escribió. El
--- auditor respeta la declaración **y bloquea en cuanto la 0016 exista** — que
--- es exactamente lo que se quiere: una excepción que nadie borra deja de
--- vigilar el hueco para siempre (ver la lección de la 0012).
+-- (La 0016 era una reserva `migration-safety-reserva` de este archivo mientras
+-- F5c la construía en paralelo; aterrizó en `main` y el marcador se borró aquí
+-- mismo al integrar, como el mecanismo exige: la excepción nunca se vuelve
+-- permanente — una excepción que nadie borra deja de vigilar el hueco para
+-- siempre, ver la lección de la 0012.)
 --
 -- Hace cumplir: D-011, D-027, D-043, D-044, D-086, D-087, D-088, D-089, D-090
 -- y las decisiones de detalle de F9 (D-093 a D-102 según el reparto del

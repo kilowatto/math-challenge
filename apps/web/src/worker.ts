@@ -28,6 +28,7 @@ import { RateLimiter } from "./lib/ratelimiter";
 import { Aprendiz } from "./lib/aprendiz";
 import { Liga } from "./lib/liga-do";
 import { Salon } from "./lib/classroom-do";
+import { Misiones } from "./lib/missions-do";
 import { cicloDeRecordatorios, type EntornoPush } from "./lib/push-envio";
 
 export function createExports(manifest: ConstructorParameters<typeof App>[0]) {
@@ -64,6 +65,7 @@ export function createExports(manifest: ConstructorParameters<typeof App>[0]) {
     RateLimiter,
     Aprendiz,
     Liga,
+    Misiones,
     Salon,
   };
 }

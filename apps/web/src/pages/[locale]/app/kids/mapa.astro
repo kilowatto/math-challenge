@@ -1,0 +1,233 @@
+---
+/**
+ * `/{locale}/app/kids/mapa` — **la Sabana, enrutada. La entrada del niño.**
+ * D-152.
+ *
+ * @banda KINDER
+ *
+ * Ese marcador de arriba no es decoración: `audits/touch-targets.mjs` lo lee
+ * (`bandaDe()`) y mide **todos** los blancos táctiles de este archivo contra
+ * 88 px, el piso de `mc-20` §201. Cada lugar del sendero es un círculo de ese
+ * tamaño, y el enlace lo llena entero — el niño apunta al dibujo, no al borde.
+ *
+ * ─── Qué es esto ───────────────────────────────────────────────────────────
+ *
+ * El mapa de progreso convertido en el catálogo visual de niveles, estilo mapa
+ * de Angry Birds (D-152, decisión del dueño): un toque en el lugar en curso
+ * lleva al reto, los lugares completados se pueden **rejugar siempre** — nada
+ * se bloquea hacia atrás — y los lugares por visitar se ven pero no se pisan.
+ * No es un candado de castigo: es sencillamente no-enlace (guía de estilo §
+ * mapa).
+ *
+ * La dificultad la sigue eligiendo el motor (D-017 intacta): cada enlace lleva
+ * el id del lugar (`K07`) y nada más. El mapa PRESENTA los lugares; no pregunta
+ * ningún escalón.
+ *
+ * ─── De dónde sale el estado, y de quién es ────────────────────────────────
+ *
+ * El mapa **no tiene tabla propia** (#231). El estado de cada lugar se lee del
+ * resumen del Durable Object del aprendiz (F4, `lib/aprendiz.ts`), traducido a
+ * las fases del sendero por `lib/mapa-kids.ts` — que es puro y tiene su prueba.
+ * La máquina de historia de F3 (exploración → práctica → síntesis) todavía no
+ * tiene cable a la pantalla: el lugar se marca por el dominio medido, no por la
+ * historia, y eso queda dicho aquí en vez de escondido.
+ *
+ * Sin sesión de niño no hay mapa: sin saber DE QUIÉN es el sendero, enseñarlo
+ * sería inventar un progreso. Se vuelve a la reja de caras, que es donde el
+ * niño sabe entrar — jamás a un formulario (línea roja #2).
+ *
+ * ─── Por qué esta página NO usa `layouts/Base.astro` ────────────────────────
+ *
+ * Las mismas tres razones que `app/kids/index.astro` documenta, y cualquiera
+ * basta: Base monta la medición de vitals, que D-037 permite SOLO en
+ * superficies de adulto (`audits/telemetria-infantil.mjs` bloquea); Base monta
+ * la barra del sitio abierto, que delante de un niño de cuatro años son siete
+ * salidas del producto; y esta URL es una pantalla autenticada que no debe
+ * indexarse. Lo que sí se hereda son los tokens: ni un color ni un tamaño se
+ * inventa aquí.
+ *
+ * ─── Cero de lo que esta pantalla no puede tener ───────────────────────────
+ *
+ *  · **Cero texto libre** (línea roja #3): el niño toca lugares, no escribe.
+ *  · **Cero telemetría** (D-037) y **cero JavaScript**: catorce enlaces servidos
+ *    por HTML son más rápidos y más fiables que cualquier cosa que haya que
+ *    hidratar en un Android de gama baja sobre 4G lento (`mc-33`, `mc-47` §5).
+ *  · **Cero números** (D-019, #232): la Sabana no habla. El arte se autora una
+ *    vez (`scripts/gen-mapa.mjs`) y sirve a los siete locales; el nombre
+ *    accesible de cada lugar viaja en `aria-label` para el lector de pantalla
+ *    y para el adulto que mira por encima del hombro.
+ *
+ * ─── La forma es el sendero para toda banda de niño, hoy ────────────────────
+ *
+ * El banco autorado es el de kinder (653 ítems, 14 habilidades, F5) y es el
+ * principio de la escalera para todos (D-034): un niño de PRIMARIA recorre los
+ * mismos catorce lugares. El día que haya contenido de PRIMARIA/SECUNDARIA, la
+ * forma sale de `formaDeMapa(tema)` y el árbol ya sabe enrutarse — la propiedad
+ * `destinoDeNodo` de `Mapa.astro` está hecha y sin llamador, a propósito.
+ */
+import { isLocale, t, type Locale } from "../../../../i18n";
+import {
+  COOKIE_NINO,
+  leerCookies,
+  leerSesionNino,
+} from "../../../../lib/sesiones";
+import { leerModelo } from "../../../../lib/aprendiz";
+import { rutaKids } from "../../../../lib/rutas-app";
+import { destinoDeLugar, fasesDelSendero } from "../../../../lib/mapa-kids";
+import Mapa from "../../../../components/mapa/Mapa.astro";
+import { construirSendero } from "../../../../../../../packages/motor/src/mapa.ts";
+import { HABILIDADES_KINDER } from "../../../../../../../packages/motor/src/banco-kinder.ts";
+
+import "../../../../styles/fonts.css";
+import "../../../../styles/tokens.css";
+import "../../../../styles/bandas.css";
+import "../../../../styles/mapa.css";
+
+export const prerender = false;
+
+/**
+ * Nunca en caché, en ningún intermediario: esta respuesta es el progreso de UN
+ * niño. `sw.js` ya se salta `/app/` entero por la misma razón.
+ */
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+Astro.response.headers.set("referrer-policy", "same-origin");
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const m = t(locale);
+
+// --- La puerta: sin sesión de niño no hay sendero que enseñar ---------------
+
+const runtime = (Astro.locals as any).runtime;
+const env = runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+
+let nino = null;
+try {
+  nino = env?.SESSION_KV
+    ? await leerSesionNino(env.SESSION_KV, cookies[COOKIE_NINO])
+    : null;
+} catch {
+  nino = null;
+}
+if (!nino) {
+  const r = Astro.redirect(rutaKids(locale), 302);
+  r.headers.set("cache-control", "no-store, private");
+  r.headers.set("vary", "cookie");
+  return r;
+}
+
+// --- El sendero, compuesto de piezas que ya existen -------------------------
+
+/**
+ * El resumen del aprendiz (F4). `leerModelo` falla ABIERTO —devuelve `[]`— y
+ * aquí eso significa un sendero entero por visitar, que es honesto: si no se
+ * pudo leer el progreso, no se puede enseñar. El juego nunca se niega por esto:
+ * el primer lugar sigue siendo enlace, porque lo decide `construirSendero()`.
+ */
+const resumen = await leerModelo(env?.LEARNER_DO, nino.childProfileId);
+
+/** Los catorce lugares de la Sabana, en el orden en que se recorren (D-019). */
+const orden = Object.keys(HABILIDADES_KINDER);
+
+const sendero = construirSendero(orden, fasesDelSendero(resumen));
+
+/**
+ * Lo que Larry lleva puesto (#235, D-080). Una preferencia, no progreso: si la
+ * tabla no está en este entorno o la lectura falla, Larry sale sin accesorios,
+ * que es degradar y no reventar.
+ */
+let accesorios: string[] = [];
+if (env?.DB) {
+  try {
+    const fila = await env.DB.prepare(
+      "SELECT accessory_ids FROM companion_state WHERE child_profile_id = ?",
+    )
+      .bind(nino.childProfileId)
+      .first<{ accessory_ids: string }>();
+    if (fila) {
+      const leidos = JSON.parse(fila.accessory_ids);
+      if (Array.isArray(leidos)) accesorios = leidos.filter((x) => typeof x === "string");
+    }
+  } catch {
+    accesorios = [];
+  }
+}
+---
+
+<!doctype html>
+<html lang={locale} dir="ltr" data-band="KINDER">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    {/* Pantalla autenticada de un menor: fuera del índice, siempre. */}
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{m.mapaSenderoNombre}</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <main class="mapa-kids">
+      <h1 class="mapa-kids__titulo">{m.mapaSenderoNombre}</h1>
+
+      <Mapa
+        locale={locale}
+        tema="KINDER"
+        mapa={sendero}
+        companeroVisible={true}
+        accesorios={accesorios}
+        sinFuenteDeHabilidades={false}
+        accionCompanero={null}
+        destinoDeLugar={(l) => destinoDeLugar(locale, l.lugar, l.estado)}
+      />
+
+      {/*
+        La salida hacia la reja de caras. Va al final, chica, dentro de un
+        párrafo — la excepción «Inline» de WCAG 2.2 §2.5.8, la misma forma que
+        la salida del adulto en la reja. Un enlace de 88 px aquí competiría con
+        los lugares, que es justo lo contrario de lo que esta pantalla quiere.
+      */}
+      <p class="mapa-kids__salida">
+        <a href={rutaKids(locale)}>{m.kidsTitle}</a>
+      </p>
+    </main>
+
+    <style>
+      /* Solo tokens que existen — un `var()` sin definir invalida la
+         declaración entera, en silencio. */
+      .mapa-kids {
+        max-inline-size: 60rem;
+        margin-inline: auto;
+        padding-block: calc(var(--space) * 2) calc(var(--space) * 3);
+        padding-inline: var(--space);
+        /* D-041: en iPhone/iPad instalado, fuera del indicador de inicio. */
+        padding-block-end: calc(var(--space) * 3 + env(safe-area-inset-bottom));
+        padding-inline-start: calc(var(--space) + env(safe-area-inset-left));
+        padding-inline-end: calc(var(--space) + env(safe-area-inset-right));
+      }
+
+      /* La marca habla en Raleway, y en KINDER nunca en Light: `bandas.css`
+         sube `--weight-title` a Medium con `data-band="KINDER"`. */
+      .mapa-kids__titulo {
+        font-family: var(--font-marca);
+        font-weight: var(--weight-title);
+        font-size: var(--text-2xl);
+        line-height: 1.2;
+        color: var(--color-text-brand);
+        margin-block: 0 calc(var(--space) * 1.5);
+      }
+
+      /* La voz del sistema (D-036): una salida de utilidad, no la marca. */
+      .mapa-kids__salida {
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        margin-block-start: calc(var(--space) * 2);
+      }
+
+      .mapa-kids__salida a { color: var(--color-text-brand); }
+    </style>
+  </body>
+</html>

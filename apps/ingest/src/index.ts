@@ -43,6 +43,11 @@ const MENSAJES_DE_RETO: Record<string, Record<string, unknown>> = {
   "de-DE": retoDe,
 };
 import { agregar, validarLote, SQL_UPSERT } from "../../../packages/motor/src/rollup.ts";
+import {
+  diaCumplidoPorCorte,
+  type MotivoDeCierre,
+} from "../../../packages/motor/src/limite-pantalla.ts";
+import type { MotivoDelDia } from "../../../packages/motor/src/racha.ts";
 
 interface Env {
   DB: D1Database;
@@ -195,6 +200,57 @@ export class Ingest extends WorkerEntrypoint<Env> {
     });
 
     return { ...veredicto, imposible };
+  }
+
+  /**
+   * El límite de pantalla cierra la sesión de reto del niño (F8 #404).
+   *
+   * Lo llama `/api/jugar` cuando `decidir()` dijo `CERRAR`, DESPUÉS de que el
+   * punto seguro quedó garantizado por construcción del flujo (el ítem servido
+   * acaba de contestarse, o todavía no se sirve ninguno). Aun así se vuelve a
+   * preguntar aquí —`puedeCortar()` antes de `cerrarPorLimite()`— porque entre
+   * las dos llamadas cabe una respuesta a medio servir, y la garantía que vale
+   * es la que se verifica donde se actúa (D-016: nunca corte a media
+   * respuesta).
+   *
+   * El DO se alcanza por `idFromName(perfilId)`: una sesión por niño, nunca un
+   * objeto global (`audits/do-por-entidad.mjs`). Hoy `/api/jugar` todavía no
+   * abre la sesión de F3, así que lo normal es que el DO no tenga estado y
+   * `cerrarPorLimite` conteste `cerrada: false` — el corte real se enforcea en
+   * D1 (`screen_time_daily_usage`), que sobrevive a cerrar y reabrir la app.
+   * Esta llamada deja el patrón de corte cableado en producción: cuando la
+   * ruta abra la sesión bajo este mismo nombre, el corte la cerrará sin tocar
+   * nada más.
+   *
+   * Devuelve también el motivo de RACHA que `diaCumplidoPorCorte()` produce
+   * para este cierre, para que quien cierre nunca tenga que componerlo a mano
+   * — la omisión silenciosa que `audits/limite-no-rompe-el-dia.mjs` vigila es
+   * un camino de cierre que no nombra el motivo, y aquí el motivo sale de la
+   * misma llamada que cierra.
+   */
+  async cerrarRetoPorLimite(
+    perfilId: string,
+    motivo: MotivoDeCierre,
+  ): Promise<{
+    cerrada: boolean;
+    contestadas: number;
+    puntos: number;
+    motivo: MotivoDeCierre;
+    motivoRacha: MotivoDelDia;
+  }> {
+    const id = this.env.SESION_RETO_DO.idFromName(perfilId);
+    const sesion = this.env.SESION_RETO_DO.get(id) as unknown as {
+      puedeCortar(): Promise<{ seguro: boolean; contestadas: number; puntos: number }>;
+      cerrarPorLimite(
+        m: MotivoDeCierre,
+      ): Promise<{ cerrada: boolean; contestadas: number; puntos: number; motivo: MotivoDeCierre }>;
+    };
+
+    const { seguro } = await sesion.puedeCortar();
+    const cierre = seguro
+      ? await sesion.cerrarPorLimite(motivo)
+      : { cerrada: false, contestadas: 0, puntos: 0, motivo };
+    return { ...cierre, motivoRacha: diaCumplidoPorCorte(motivo) };
   }
 
   /**

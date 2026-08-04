@@ -30,7 +30,8 @@ import Tablero from "./Tablero.astro";
 import Companero from "./Companero.astro";
 import { apareceSolo } from "../../../../../packages/motor/src/companero.ts";
 import type { TemaVisual } from "../../../../../packages/motor/src/bandas.ts";
-import type { Sendero as ModeloSendero, Arbol as ModeloArbol, Tablero as ModeloTablero }
+import type { Sendero as ModeloSendero, Arbol as ModeloArbol, Tablero as ModeloTablero,
+  LugarDelSendero, NodoDelArbol }
   from "../../../../../packages/motor/src/mapa.ts";
 
 interface Props {
@@ -46,6 +47,13 @@ interface Props {
    * una superficie sin endpoint no debe enseñar un control que no hace nada.
    */
   accionCompanero?: string | null;
+  /**
+   * El destino de cada lugar del sendero o nodo del árbol (D-152), o `null`
+   * para los que no se pisan. Sin ellas, el mapa se pinta sin enlaces, como
+   * siempre: enrutar es decisión de la página.
+   */
+  destinoDeLugar?: (lugar: LugarDelSendero) => string | null;
+  destinoDeNodo?: (nodo: NodoDelArbol) => string | null;
 }
 
 const {
@@ -56,6 +64,8 @@ const {
   accesorios = [],
   sinFuenteDeHabilidades,
   accionCompanero = null,
+  destinoDeLugar,
+  destinoDeNodo,
 } = Astro.props;
 const m = t(locale);
 
@@ -74,6 +84,7 @@ const conInterruptor = accionCompanero !== null && !apareceSolo(tema);
       sendero={mapa}
       companeroVisible={companeroVisible}
       accesorios={accesorios}
+      destinoDe={destinoDeLugar}
     />
   )}
 
@@ -83,6 +94,7 @@ const conInterruptor = accionCompanero !== null && !apareceSolo(tema);
       arbol={mapa}
       companeroVisible={companeroVisible}
       accesorios={accesorios}
+      destinoDe={destinoDeNodo}
     />
   )}
 

@@ -262,13 +262,18 @@ export interface ConfiguracionDeLimite {
 }
 
 /**
- * La configuración con la que nace un perfil, antes de que el padre toque nada.
+ * El punto de partida que se le OFRECE al padre en su pantalla (#269).
+ *
+ * **No es la configuración que aplica sin fila.** Lo fue —«protección desde el
+ * día uno», la respuesta A de la pregunta 3 de #265— y D-139 (2026-08-03) lo
+ * superó por decisión del dueño: sin fila en `screen_time_settings` NO hay
+ * límite. Lo que queda para esta función es lo que la pantalla del padre
+ * precarga en su control: el default de la banda como oferta inicial, no como
+ * protección vigente.
  *
  * `bedtime_local: null` — sin corte nocturno hasta que el padre lo encienda.
- * El límite diario, en cambio, aplica desde el primer minuto con el default de
- * la banda: la protección no espera a que un adulto visite una pantalla que
- * nada lo obliga a visitar. Es la respuesta A de la pregunta 3 de #265, y se
- * anota en `docs/dudas.md` como implementada a la espera de confirmación.
+ * Eso no cambió con D-139: nace apagado y es independiente (D-138), porque
+ * adivinar una hora de dormir sería inventar un dato (D-053).
  */
 export function configuracionPorDefecto(banda: BandaConLimite): ConfiguracionDeLimite {
   const limite = LIMITES_POR_BANDA[banda];
@@ -281,14 +286,19 @@ export function configuracionPorDefecto(banda: BandaConLimite): ConfiguracionDeL
 }
 
 /**
- * La configuración que de verdad se aplica, con o sin fila en la base.
+ * La configuración que de verdad se aplica — **o `null`, que es «sin límite»**.
  *
  * Tres cosas, y las tres importan:
  *
- *  · **Sin fila, el default de la banda.** F2 diseñó un paso de onboarding que
- *    escribe `screen_time_settings` y nunca se construyó, así que hoy ninguna
- *    ruta la llena: un perfil real no tiene fila. Si la ausencia significara
- *    «sin límite», el límite no existiría para nadie.
+ *  · **Sin fila, NO hay límite (D-139, 2026-08-03).** Decisión del dueño,
+ *    contra lo que este archivo implementó primero y contra la recomendación
+ *    del plan (§14.3, marcada SUPERADA): el límite diario protege solo después
+ *    de que el padre lo configura. Es la lectura de «el padre decide» que el
+ *    dueño prefirió sobre la de «garantía por default». Un `null` de retorno
+ *    es la ausencia de límite hecha tipo: quien llama no recibe unos minutos
+ *    que comparar, recibe el hecho de que no hay nada que comparar. El corte
+ *    nocturno no cambia — sigue apagado por default e independiente (D-138),
+ *    y sin fila tampoco puede existir, porque `bedtime_local` nace NULL.
  *  · **Un `daily_minutes` fuera de rango se corrige al default**, no se
  *    respeta. Una fila escrita antes de que existiera la validación —o por una
  *    vía que no la usó— no puede convertirse en un límite de 600 minutos.
@@ -301,10 +311,10 @@ export function configuracionPorDefecto(banda: BandaConLimite): ConfiguracionDeL
 export function configuracionVigente(
   banda: BandaConLimite,
   fila: ConfiguracionDeLimite | null,
-): ConfiguracionDeLimite {
-  const porDefecto = configuracionPorDefecto(banda);
-  if (fila === null) return porDefecto;
+): ConfiguracionDeLimite | null {
+  if (fila === null) return null;
 
+  const porDefecto = configuracionPorDefecto(banda);
   const limite = LIMITES_POR_BANDA[banda];
   const diarios = minutosDiariosPermitidos(banda, fila.daily_minutes)
     ? fila.daily_minutes
@@ -490,7 +500,7 @@ const SEGUIR: Decision = Object.freeze({ tipo: "SEGUIR" });
  */
 export interface EntradaDeDecision {
   readonly banda: BandaConLimite;
-  /** La fila de `screen_time_settings`, o `null` si el padre nunca guardó. */
+  /** La fila de `screen_time_settings`, o `null` si el padre nunca guardó — y entonces NO hay límite (D-139). */
   readonly config: ConfiguracionDeLimite | null;
   readonly uso: UsoDelDia;
   /** La hora en la zona del HOGAR (`users.timezone`), calculada con `horaLocal`. */
@@ -514,6 +524,10 @@ export interface EntradaDeDecision {
  *
  * ─── El orden de lo demás, y por qué ese ─────────────────────────────────
  *
+ *  0. **Sin configuración, `SEGUIR` (D-139).** Sin fila en
+ *     `screen_time_settings` no hay límite diario — la protección empieza
+ *     cuando el padre la activa, no antes. Y tampoco puede haber corte
+ *     nocturno, porque `bedtime_local` nace NULL y solo lo enciende el padre.
  *  1. **Noche.** Va primero porque es lo único de D-016 con evidencia
  *     experimental detrás (el ECA de Bath, `mc-26` §5). Si la hora ya cayó en
  *     la ventana, da igual cuántos minutos queden del día.
@@ -536,6 +550,10 @@ export function decidir(entrada: EntradaDeDecision): Decision {
   if (!entrada.puntoSeguro) return SEGUIR;
 
   const config = configuracionVigente(entrada.banda, entrada.config);
+  // D-139: sin fila en `screen_time_settings` no hay límite — ni diario, ni
+  // nocturno (sin fila, `bedtime_local` no puede existir), ni descanso, ni
+  // aviso. La protección empieza cuando el padre la configura.
+  if (config === null) return SEGUIR;
   const uso = entrada.uso;
 
   if (enVentanaNocturna(entrada.horaAhora, config.bedtime_local, config.bedtime_cutoff_min)) {

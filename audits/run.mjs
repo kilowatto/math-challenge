@@ -350,7 +350,6 @@ const ACTIVE = [
   // de que se mantiene — sus controles negativos son DEGRADACIONES de
   // `packages/tutor/src/en-vivo.ts`, del sobre y del i18n REALES (D-070).
   ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
-
   // ─── El tablero global (F7 #247) ─────────────────────────────────────────
   //
   // La mitad de la ESCRITURA del opt-in y de su cumplimiento: nadie borra
@@ -365,6 +364,18 @@ const ACTIVE = [
   // nombrarlo. La otra mitad (KINDER en tercios, nunca número) la ejecuta
   // `tablero-orden-puntos.mjs`.
   ["tablero-sin-kinder-publico", "El tablero de KINDER no existe para el niño", "#247, D-081, D-040, mc-10, mc-18"],
+  // ─── El de #451, y por qué nace VERDE ────────────────────────────────────
+  //
+  // El dueño, jugando un reto, hizo swipe de izquierda a derecha y el
+  // navegador lo sacó de la sesión — la misma lección que #341: lo encontró
+  // una persona con el pulgar, no un auditor. La corrección (CSS de
+  // overscroll + guardia de borde para el bug 240183 de WebKit) se construyó
+  // CON este auditor delante, así que lo que vigila es que no se erosione y,
+  // sobre todo, que la quinta pantalla de reto no nazca sin la protección:
+  // una página nueva con «jugar-body» que no monte <Pantalla> bloquea. Sus
+  // controles negativos son DEGRADACIONES del reto.css y de la Pantalla.astro
+  // REALES (D-070), nunca archivos inventados.
+  ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -508,7 +519,7 @@ for (const prueba of [
   // seguida sin jugar archive en silencio. Lo que defiende tampoco rompe nada
   // visible: un doble cierre no da error, asciende a alguien dos veces.
   "apps/ingest/src/ciclo-liga.prueba.mjs",
-  // F7 #207, D-128. La meta por banda en la capa de datos del recordatorio:
+  // F7 #207, D-160. La meta por banda en la capa de datos del recordatorio:
   // KINDER completa habiendo JUGADO hoy (la racha), las demás bandas por fila
   // de misión. Lo que defiende tampoco rompe nada visible: un SQL mal escrito
   // no da error — da un push diario aunque la niña haya jugado, o un niño de
@@ -560,6 +571,17 @@ for (const prueba of [
   // NUNCA DELETE). La tabla de la escalera está escrita a mano (D-070), no
   // importada del motor: si no, aprobaría su propia violación.
   "apps/web/src/lib/padre-tablero.prueba.mjs",
+  // F7 #224. El Durable Object de misiones diarias —uno por niño— y su cable,
+  // contra SQLite de verdad (`node:sqlite`) y con la clase del DO de verdad.
+  // Lo que defiende tampoco rompe nada visible: un reintento de red que paga
+  // el XP dos veces no da error, da una recompensa que ya no es la fija y
+  // publicada (línea roja #5); y un rollup escrito al margen del dueño no da
+  // error, da dos progresos para la misma misión y el que se lee depende del
+  // orden. 17 casos: el XP una sola vez, el bono una sola vez, el borrado en
+  // cero, y la pantalla leyendo el rollup.
+  "apps/web/src/lib/missions-do.prueba.mjs",
+
+
 
 
 ]) {

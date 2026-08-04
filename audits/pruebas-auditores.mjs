@@ -1940,6 +1940,7 @@ const CASOS = [
 
   },
   {
+
     // D-051: el alta sin `granted_by` no demuestra quién consintió. Se quita
     // la columna del INSERT REAL del opt-in del tablero (#247).
     auditor: "tablero-optin",
@@ -1983,6 +1984,52 @@ const CASOS = [
     archivo: "apps/web/src/pages/[locale]/app/kids/tablero-falso.astro",
     contenido: '<a href="/en/app/tablero/nino/">tablero</a>\n',
     espera: "KINDER",
+  },
+  {
+    // F7 #224. El reparto del Durable Object de misiones, degradado sobre el
+    // archivo REAL: si `idFromName` recibe un literal, todo el producto haría
+    // cola detrás de un solo hilo (mc-32 riesgo #2).
+    auditor: "do-por-entidad",
+    que: "el DO de misiones repartido con un literal global en vez de por niño",
+    archivo: "apps/web/src/lib/missions-do.ts",
+    parche: (t) => t.replace("ns.idFromName(perfilId)", 'ns.idFromName("global")'),
+    espera: "global",
+  },
+  {
+    // F7 #224. El reloj en el camino de misión, sobre el archivo REAL del DO:
+    // el día lo calcula quien llama con `diaEfectivo()`, y un `Date.now()`
+    // aquí haría que dos llamadas el mismo día vieran menús distintos.
+    auditor: "mision-recompensa-deterministica",
+    que: "un Date.now() dentro del Durable Object de misiones",
+    archivo: "apps/web/src/lib/missions-do.ts",
+    parche: (t) =>
+      t.replace(
+        "const habilidadNueva = !dia.habilidades.includes(p.habilidad);",
+        "const habilidadNueva = Date.now() > 0 && !dia.habilidades.includes(p.habilidad);",
+      ),
+    espera: "reloj",
+  },
+  {
+    // #451. La protección de gestos, sobre el reto.css REAL: sin la
+    // declaración de overscroll-behavior-x el swipe-back vuelve a sacar al
+    // jugador del reto en Chrome/Firefox/Edge, y nada visible se rompe — la
+    // página se ve perfecta y el gesto sigue siendo del navegador.
+    auditor: "gestos-reto",
+    que: "reto.css sin overscroll-behavior-x: none",
+    archivo: "apps/web/src/styles/reto.css",
+    parche: (t) => t.replace("  overscroll-behavior-x: none;\n", ""),
+    espera: "overscroll-behavior-x",
+  },
+  {
+    // #451. La otra mitad, sobre la Pantalla.astro REAL: sin el listener de
+    // touchstart no hay guardia de borde, y en Safari de iOS el CSS no basta
+    // (WebKit bug 240183) — el bug entero vuelve solo en ese navegador.
+    auditor: "gestos-reto",
+    que: "Pantalla.astro sin la guardia de borde para iOS",
+    archivo: "apps/web/src/components/reto/Pantalla.astro",
+    parche: (t) => t.replace('"touchstart"', '"tocado"'),
+    espera: "touchstart",
+
   },
 ];
 

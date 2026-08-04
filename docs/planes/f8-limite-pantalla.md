@@ -561,7 +561,18 @@ propone agregar `D-016`** a `cita`. `alcance` ya cubre `apps/web/` e incluye
   trabajo cerrado". Este documento no la construye — el resumen de "hoy jugó
   X minutos" (§5.2) ya cubre la necesidad sin requerir push.
 
-## 14. Preguntas al dueño
+## 14. Preguntas al dueño — RESUELTAS (2026-08-03, noche)
+
+> **14.1 → D-138:** el corte nocturno **también bloquea iniciar** de
+> madrugada. **14.2 →** F8 construye `cerrarPorLimite` y F7 lo lee (ya
+> implementado así; ratificado). **14.3 → D-139: SUPERADA la respuesta A
+> implementada.** El dueño decidió lo contrario de lo que este documento
+> recomendó y de lo que se construyó: **sin fila en
+> `screen_time_settings` no hay límite diario** — la protección empieza
+> cuando el padre la configura. `configuracionVigente(banda, null)` debe
+> dejar de devolver el default de la banda. El cambio de código es
+> criterio nuevo de las issues #269 y #404. El texto original de las tres
+> preguntas queda abajo como registro.
 
 ### 14.1 ¿El corte nocturno también bloquea iniciar una sesión nueva de madrugada, o solo corta la que ya estaba en curso?
 

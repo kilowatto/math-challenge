@@ -22,6 +22,7 @@ import {
   type CategoryKey,
   type SummaryBlock,
 } from "../../../lib/corpus";
+import { necesitaLatinExt } from "../../../lib/latin-ext";
 
 /**
  * /{locale}/{segmento}/{slug}/ — una de las 47 investigaciones (S1).
@@ -601,6 +602,15 @@ const corpusNote = c.corpusNote
 // Las marcas [unverified] del cuerpo se vuelven visibles y apuntan al panel.
 body = markUnverified(body, UNVERIFIED_ANCHOR, c.verifyHeading);
 
+// ¿Hay algún glifo fuera del subconjunto latin? Con uno basta para que el
+// navegador pida latin-ext al renderizar — el h1 de mc-01 («Banshō») fue el
+// caso medido en #327 — y si no va precargada, el swap fecha el LCP a su
+// llegada. Se revisa TODO lo que se pinta, no solo el cuerpo: el título es
+// justo donde estaba la ō. El € no cuenta: lo cubre el rango latin.
+const preloadLatinExt = necesitaLatinExt(
+  [titulo, lead, abstract, body].join("\n"),
+);
+
 const repoUrl = `https://github.com/kilowatto/math-challenge/blob/main/docs/research/${doc.file}`;
 
 // ---------------------------------------------------------------------------
@@ -682,7 +692,7 @@ if (doc.faq.length >= FAQ_MIN_PAIRS) {
 const jsonLd = { "@context": "https://schema.org", "@graph": graph };
 ---
 
-<Base locale={locale} seccion="investigacion" slug={doc.slug} title={titulo} description={lead} contentLang={ARTICLE_LANG}>
+<Base locale={locale} seccion="investigacion" slug={doc.slug} title={titulo} description={lead} contentLang={ARTICLE_LANG} preloadLatinExt={preloadLatinExt}>
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
   <nav class="migas" aria-label={c.breadcrumbResearch}>

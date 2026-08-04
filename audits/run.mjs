@@ -459,6 +459,16 @@ const ACTIVE = [
   // resucitan una causa borrada.
   ["distractores-explicables", "todo distractor se puede tocar y explicar una sola vez", "plan F5 §3.4j/§4.1, rezagados §7, línea roja #7, D-070"],
 
+  // ─── El de #337 (cabeceras SSR) ──────────────────────────────────────────
+  //
+  // `_headers` solo alcanza los assets estáticos; las rutas del Worker
+  // (`/app/**`, `/api/**`, sign-in) reciben las mismas seis cabeceras desde
+  // `src/middleware.ts` + `src/lib/cabeceras-seguridad.ts`. La duplicidad es
+  // obligada por la plataforma; este auditor es lo que impide que los dos
+  // textos se separen en silencio. Su lista de las seis está escrita A MANO
+  // como segunda fuente (D-070), y su control negativo degrada el módulo REAL.
+  ["cabeceras-ssr",        "las 6 cabeceras de seguridad, idénticas en assets y Worker", "#337, línea roja #1, D-070"],
+
 
   // ─── El de F5 (conteos K01–K14), y por qué nace VERDE ────────────────────
   //

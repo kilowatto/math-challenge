@@ -134,6 +134,42 @@ try {
   problems.push(`no se pudo comprobar el estado de Zaraz: ${err.message}`);
 }
 
+// 4-ter. Las seis cabeceras de seguridad llegan TAMBIÉN a las rutas del
+// Worker (#337).
+//
+// `public/_headers` solo cubre los assets estáticos. El hueco medido era que
+// `/app/**` y `/api/**` —la sesión y los datos de los menores— no tenían ni
+// CSP ni Permissions-Policy. Este auditor solo miraba rutas estáticas, y por
+// eso el hueco no se vio: hay que preguntarle a una ruta SSR de verdad.
+//
+// `/api/health` es GET sin sesión. `/en/app/` sin sesión responde 302 al
+// sign-in — y el 302 también tiene que llevar las cabeceras, porque es la
+// primera respuesta del área privada que un navegador recibe.
+const SEIS = [
+  "content-security-policy-report-only",
+  "strict-transport-security",
+  "x-frame-options",
+  "x-content-type-options",
+  "referrer-policy",
+  "permissions-policy",
+];
+for (const [ruta, init] of [
+  ["/api/health", {}],
+  ["/en/app/", { redirect: "manual" }],
+]) {
+  try {
+    const res = await fetch(`${ORIGIN}${ruta}`, init);
+    const faltantes = SEIS.filter((h) => !res.headers.get(h));
+    if (faltantes.length === 0) {
+      ok.push(`cabeceras de seguridad en ${ruta} (SSR, ${res.status})`);
+    } else {
+      problems.push(`${ruta} (SSR) sin cabeceras: ${faltantes.join(", ")} — #337`);
+    }
+  } catch (err) {
+    problems.push(`no se pudieron leer las cabeceras de ${ruta}: ${err.message}`);
+  }
+}
+
 // 5. El camino de RPC nativo está vivo (D-030): web → ingest → D1
 try {
   const health = await (await get("/api/health")).json();

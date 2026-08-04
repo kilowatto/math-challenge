@@ -2457,6 +2457,36 @@ const CASOS = [
     parche: (t) => t.replace(".filter((f) => visibleEnTablaDePosiciones(f.opt_in))", ""),
     espera: "visibleEnTablaDePosiciones",
   },
+  // ─── F5 · `kinder-enunciados-i18n`, degradando el catálogo REAL (D-070) ──
+  //
+  // El auditor nació porque al autorar 25 claves en siete archivos a mano,
+  // ninguna comprobación hubiera visto una olvidada. La degradación borra una
+  // clave del `de-DE.json` REAL: es el olvido literal, en el archivo literal.
+  {
+    auditor: "kinder-enunciados-i18n",
+    que: "una clave de enunciado del banco sin texto en de-DE",
+    archivo: "apps/web/src/i18n/reto/de-DE.json",
+    parche: (t) =>
+      t.replace(
+        '  "k.recta.saltos": "Wie viele Sprünge sind es von der {a} bis zur Lücke?",\n',
+        "",
+      ),
+    espera: "k.recta.saltos",
+  },
+  {
+    // La otra cara: la clave existe, pero la plantilla pide una variable que
+    // el ítem no trae, y el niño ve «{a}» literal en mitad de la frase. Se
+    // degrada el catálogo REAL añadiendo un hueco a una plantilla viva.
+    auditor: "kinder-enunciados-i18n",
+    que: "una plantilla pide {llenas} y el ítem no la trae",
+    archivo: "apps/web/src/i18n/reto/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"k.recta.saltos": "¿Cuántos saltos hay del {a} hasta el hueco?"',
+        '"k.recta.saltos": "¿Cuántos saltos hay del {a} hasta el hueco? Piensa en las {llenas}."',
+      ),
+    espera: "{llenas}",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

@@ -671,6 +671,17 @@ for (const prueba of [
   // en el ítem, y el corte que no suma XP.
   "apps/web/src/lib/limite-corte-racha.prueba.mjs",
 
+  // F8 #279, la composición de lectura del panel del padre. Lo que defiende
+  // no rompe nada visible: un estado de dominio con corte propio, una liga
+  // reordenada a mano o una nota con causa desconocida dan resultados
+  // plausibles y equivocados — y la posición de liga de un niño mal puesta,
+  // o la clave cruda `HABILIDAD_PAUSADA_LATERAL` pintada en la cara del
+  // padre, no los ve nadie leyendo el código. 19 casos, con los valores
+  // esperados escritos a mano desde las fuentes (D-070): la maestría en dos
+  // etapas de mc-05/D-018, la curva de XP de D-055, el orden de liga de la
+  // 0012.
+  "packages/motor/src/diagnostico.prueba.mjs",
+
 
 
 

@@ -1619,9 +1619,17 @@ const CASOS = [
     // la 0016 (F5c) y la 0017 presentes, el primer hueco libre no declarado es
     // el 0018, y la sonda que lo caza es el archivo 0019. El archivo va
     // siempre UN número por encima del primer hueco libre no declarado.
+    // Reapuntado a 0020 cuando la 0018 (child_diagnostic_notes, F8 panel)
+    // aterrizó: la 0019 está repartida al frente de reportes y NO se declaró
+    // con `migration-safety-reserva` a propósito — la rama de la 0018 corre
+    // contigua y no necesita reserva para sí misma, y una reserva declarada
+    // convertiría el hueco 0019 en «declarado»: una sonda en 0020 crearía
+    // solo ese hueco, ya cubierto, y el caso correría en verde sin degradar
+    // nada. Sin reserva, la sonda en 0020 deja la 0019 sin declarar y el
+    // control sigue vivo. Cuando la 0019 aterrice, esto se reapunta a 0021.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0019_prueba_hueco.sql",
+    archivo: "migrations/0020_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },

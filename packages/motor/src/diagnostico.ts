@@ -261,8 +261,12 @@ export function tendenciaDe8Semanas(
 
 export interface FilaDeCosmetico {
   readonly cosmetic_id: string;
+  /** Clave i18n del nombre de la pieza. Jamás texto crudo (D-022). */
+  readonly nombre_clave: string;
   /** Clave i18n de la condición, para el padre. NULL en piezas iniciales. */
   readonly condicion_clave: string | null;
+  readonly arte_avif_url: string | null;
+  readonly arte_webp_url: string | null;
   readonly arte_silueta_url: string | null;
   readonly es_inicial: 0 | 1;
   readonly unlocked_at: number | null;
@@ -270,7 +274,10 @@ export interface FilaDeCosmetico {
 
 export interface EntradaDeRoadmap {
   readonly cosmeticoId: string;
+  readonly nombreClave: string;
   readonly condicionClave: string | null;
+  readonly arteAvifUrl: string | null;
+  readonly arteWebpUrl: string | null;
   readonly siluetaUrl: string | null;
   readonly desbloqueado: boolean;
 }
@@ -278,14 +285,17 @@ export interface EntradaDeRoadmap {
 /**
  * El roadmap tal cual sale del catálogo de F7 (0015), sin duplicar reglas:
  * `desbloqueado` es la pieza inicial (la trae puesta todo perfil) o la fila de
- * `child_cosmetics_unlocked`. La condición viaja como CLAVE i18n — la fórmula
- * cruda (`skill_state.mastered_at IS NOT NULL`) no es texto de cara al padre
- * (#284), y el texto autorado ya vive en `i18n/cosmeticos/`.
+ * `child_cosmetics_unlocked`. Nombre y condición viajan como CLAVE i18n — la
+ * fórmula cruda (`skill_state.mastered_at IS NOT NULL`) no es texto de cara
+ * al padre (#284), y el texto autorado ya vive en `i18n/cosmeticos/`.
  */
 export function componerRoadmap(filas: readonly FilaDeCosmetico[]): readonly EntradaDeRoadmap[] {
   return filas.map((f) => ({
     cosmeticoId: f.cosmetic_id,
+    nombreClave: f.nombre_clave,
     condicionClave: f.condicion_clave,
+    arteAvifUrl: f.arte_avif_url,
+    arteWebpUrl: f.arte_webp_url,
     siluetaUrl: f.arte_silueta_url,
     desbloqueado: f.es_inicial === 1 || f.unlocked_at !== null,
   }));

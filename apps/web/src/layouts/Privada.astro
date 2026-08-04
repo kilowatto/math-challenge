@@ -66,9 +66,15 @@ interface Props {
   description: string;
   /** Vacío = sin franja de pestañas (una sola sección no necesita menú). */
   pestanas?: Pestana[];
+  /**
+   * `true` = sin el beacon de RUM. Las páginas del panel del padre (F8) lo
+   * apagan: muestran datos DE UN NIÑO, y la lectura conservadora de D-037
+   * (rendimiento medido, y nunca sobre un niño) es no medir ahí tampoco.
+   */
+  sinRum?: boolean;
 }
 
-const { locale, title, description, pestanas = [] } = Astro.props;
+const { locale, title, description, pestanas = [], sinRum = false } = Astro.props;
 const m = t(locale);
 const plataforma = plataformaDe(Astro.request.headers);
 ---
@@ -306,7 +312,7 @@ const plataforma = plataformaDe(Astro.request.headers);
       footer.pie .salir:focus-visible { outline: 3px solid var(--color-text); outline-offset: 2px; }
     </style>
 
-    <Rum banda="SERIO" locale={locale} />
+    {!sinRum && <Rum banda="SERIO" locale={locale} />}
 
     <script define:vars={{ portada: `/${locale}/` }}>
       document.getElementById("salir-privada")?.addEventListener("click", async (e) => {

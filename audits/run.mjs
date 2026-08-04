@@ -408,6 +408,19 @@ const ACTIVE = [
   // REALES (D-070), nunca archivos inventados.
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
 
+  // F8 #285 (criterio del paraguas #277). El panel del padre lee SOLO D1:
+  // un binding de Analytics Engine en su ruta es la puerta de atrás al
+  // detalle por intento que mc-32 riesgo #1 diseñó para que no se pudiera
+  // consultar. Sus controles negativos son un archivo PLANTADO en la ruta y
+  // una DEGRADACIÓN de la capa de datos real (D-070).
+  ["panel-sin-detalle-de-intento", "el panel del padre nunca toca Analytics Engine", "mc-32 riesgo #1, D-013, #285"],
+
+  // F8 #283. Las notas de diagnóstico van en la voz de Larry (decisión del
+  // dueño): toda causa del CHECK de la 0018 necesita plantilla autorada en
+  // los 7 locales y limpia del MISMO léxico que juzga lo que Larry le dice
+  // al niño. Las causas se leen de la MIGRACIÓN, no del motor (D-070).
+  ["notas-diagnostico-completas", "toda causa de nota tiene plantilla sin vergüenza en 7 locales", "D-020, D-022, LR-7, #283"],
+
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -681,6 +694,14 @@ for (const prueba of [
   // etapas de mc-05/D-018, la curva de XP de D-055, el orden de liga de la
   // 0012.
   "packages/motor/src/diagnostico.prueba.mjs",
+
+  // F8 #279-#285, la capa de datos del panel del padre contra `node:sqlite`.
+  // Ocho lecturas de tablas ajenas compuestas en una pantalla: una consulta
+  // mal escrita no da error, da una posición de liga leída SIN consentimiento
+  // LEADERBOARD (D-040), o una tendencia que suma días de hace un año. Los
+  // valores esperados están escritos a mano (D-070), incluida la ventana de
+  // 56 días y la puerta de consentimiento revocado.
+  "apps/web/src/lib/padre-panel.prueba.mjs",
 
 
 

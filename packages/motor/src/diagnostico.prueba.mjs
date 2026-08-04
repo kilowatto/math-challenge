@@ -197,14 +197,16 @@ caso("BEDTIME también es un corte del padre, no una falla", () => {
 
 caso("inicial o desbloqueada es desbloqueado; la condición viaja como clave", () => {
   const roadmap = componerRoadmap([
-    { cosmetic_id: "a", condicion_clave: null, arte_silueta_url: null, es_inicial: 1, unlocked_at: null },
-    { cosmetic_id: "b", condicion_clave: "cosmetico.b.condicion", arte_silueta_url: "/b.avif", es_inicial: 0, unlocked_at: 99 },
-    { cosmetic_id: "c", condicion_clave: "cosmetico.c.condicion", arte_silueta_url: "/c.avif", es_inicial: 0, unlocked_at: null },
+    { cosmetic_id: "a", nombre_clave: "cosmetico.a.nombre", condicion_clave: null, arte_avif_url: "/a.avif", arte_webp_url: "/a.webp", arte_silueta_url: null, es_inicial: 1, unlocked_at: null },
+    { cosmetic_id: "b", nombre_clave: "cosmetico.b.nombre", condicion_clave: "cosmetico.b.condicion", arte_avif_url: "/b.avif", arte_webp_url: "/b.webp", arte_silueta_url: "/b-sil.avif", es_inicial: 0, unlocked_at: 99 },
+    { cosmetic_id: "c", nombre_clave: "cosmetico.c.nombre", condicion_clave: "cosmetico.c.condicion", arte_avif_url: null, arte_webp_url: null, arte_silueta_url: "/c-sil.avif", es_inicial: 0, unlocked_at: null },
   ]);
   eq(roadmap[0].desbloqueado, true, "inicial siempre desbloqueada");
   eq(roadmap[1].desbloqueado, true, "con fila en unlocked");
   eq(roadmap[2].desbloqueado, false, "bloqueada");
   eq(roadmap[2].condicionClave, "cosmetico.c.condicion", "la clave, nunca la fórmula");
+  eq(roadmap[2].siluetaUrl, "/c-sil.avif", "la silueta viaja para la cuadrícula");
+  eq(roadmap[2].nombreClave, "cosmetico.c.nombre", "el nombre también es clave");
 });
 
 /* ─── componerDiagnostico: la composición entera ────────────────────────────

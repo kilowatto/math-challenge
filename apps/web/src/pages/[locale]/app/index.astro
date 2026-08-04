@@ -56,7 +56,7 @@ import Privada from "../../../layouts/Privada.astro";
 import RecordatorioPush from "../../../components/push/RecordatorioPush.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
-import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo, rutaLiga } from "../../../lib/rutas-app";
+import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo, rutaLiga, rutaPanel } from "../../../lib/rutas-app";
 import { estadoDeParticipacion } from "../../../lib/liga-membresia";
 import { TEXTOS_PADRE } from "../../../components/parent/textos";
 import { TEXTOS_TABLERO } from "../../../components/tablero/textos";
@@ -212,6 +212,15 @@ const vistaPedida = Astro.url.searchParams.get("vista") as ClavePestana | null;
  */
 if (vistaPedida === "cuenta") return Astro.redirect(`/${locale}/app/perfil/`);
 
+/*
+ * `?vista=progreso` tampoco es ya una vista de esta página: «Progreso» es el
+ * panel del padre (F8 #277-#285) y vive en `/app/parent/panel/`. El enlace
+ * viejo sigue en marcadores e historiales — mismo motivo que «cuenta» — y la
+ * tarjeta de «próximamente» que esta vista pintaba quedaría mintiendo:
+ * la pantalla ya existe.
+ */
+if (vistaPedida === "progreso") return Astro.redirect(rutaPanel(locale));
+
 const vista: ClavePestana =
   vistaPedida && vistasDisponibles.includes(vistaPedida)
     ? vistaPedida
@@ -338,13 +347,6 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
           </section>
         )}
       </Fragment>
-    )}
-
-    {vista === "progreso" && (
-      <section class="bloque proximamente">
-        <h2>{m.casaTabProgreso}</h2>
-        <p class="muted">{m.casaProgresoProximamente}</p>
-      </section>
     )}
 
     {vista === "limite" && (

@@ -63,7 +63,12 @@ for (const archivo of fuentes) {
   // El orden. Cualquier ORDER BY sobre el tablero tiene que ser por puntos.
   for (const m of texto.matchAll(/ORDER\s+BY\s+([^\n;`]+)/gi)) {
     const orden = m[1].toLowerCase();
-    if (/theta|habilidad|ability|rt\b|response_time|tiempo|speed|velocidad/.test(orden)) {
+    // `\brt\b` lleva frontera a la IZQUIERDA desde F8 #281: sin ella, la
+    // palabra «response time» abreviada que se quiere cazar (`rt`) la daba
+    // también «week_st**art**» — un ORDER BY semanal legítimo de la liga
+    // bloqueaba como si fuera un orden por velocidad, y ese falso positivo
+    // sí se midió (la consulta de membresía vigente de `padre-panel.ts`).
+    if (/theta|habilidad|ability|\brt\b|response_time|tiempo|speed|velocidad/.test(orden)) {
       problemas.push(
         `${archivo}: ORDER BY «${m[1].trim().slice(0, 60)}» en una consulta de tablero. D-025: se ` +
           "ordena por PUNTOS, nunca por θ ni por velocidad. El tiempo ya está dentro de la " +

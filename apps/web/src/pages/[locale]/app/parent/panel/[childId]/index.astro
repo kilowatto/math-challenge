@@ -1,0 +1,407 @@
+---
+/**
+ * `/{locale}/app/parent/panel/[childId]/` — el panel del padre con
+ * diagnóstico de UN hijo (F8 #280, #281, #282, #283, #285).
+ *
+ * ─── Qué hay aquí, y de dónde sale ───────────────────────────────────────────
+ *
+ * Todo se lee de las tablas de F2/F4/F7/F8-límite y se compone con
+ * `componerDiagnostico()` del motor — esta página no calcula nada:
+ *
+ *  · **Dominio por habilidad** (#280): cuatro estados categóricos con ícono +
+ *    etiqueta (nunca solo color, WCAG 1.4.1; nunca semáforo rojo-verde:
+ *    ningún estado es un fracaso). Lo más avanzado primero, nunca la lista de
+ *    lo que falta. Un perfil sin una sola fila de `skill_state` ve el estado
+ *    de primer uso (#285), no catorce «sin empezar» acusatorios.
+ *  · **Racha, XP/Rango y liga** (#281): tres cards separadas — la separación
+ *    de ejes es estructural, no tipográfica (D-055). La liga muestra la
+ *    posición numérica exacta (decisión del dueño, distinta del tercio que ve
+ *    el niño en kinder) y DESAPARECE entera sin consentimiento LEADERBOARD
+ *    (D-040) — nunca un hueco que insinúe fracaso.
+ *  · **Pantalla** (#282): «hoy» leído de `screen_time_daily_usage`, la
+ *    tendencia de 8 semanas con tres estados que se leen en escala de grises,
+ *    y un ENLACE a la pantalla del límite (#269) — sus controles no se
+ *    duplican aquí. Cuando el día terminó por el límite, se dice que la racha
+ *    cuenta igual (línea roja #6 hecha visible).
+ *  · **Notas de Larry** (#283): plantillas autoradas por locale y por causa,
+ *    en la voz de Larry — la única superficie donde le habla al adulto
+ *    (respuesta del dueño a la pregunta 2 de #277). El sujeto gramatical es
+ *    el patrón o la habilidad, nunca el niño.
+ *
+ * Lo que NO hay: porcentajes, letras, notas escolares, comparaciones con
+ * «el promedio de su edad» ni entre hermanos (#280, D-017, mc-15); el conteo
+ * de ayudas de Larry por hijo (P-17 de F6, mc-10: es un dato que puede
+ * convertirse en regaño en casa); ningún texto que sugiera al padre practicar
+ * más con su hijo; ningún gate de pago (D-057, línea roja #4); puntos de
+ * `score_totals` como cifra propia — el panel muestra XP y puntos de LIGA,
+ * cada uno con su etiqueta, y no un tercer número para distinguir (D-055).
+ *
+ * ─── Autorización y telemetría ──────────────────────────────────────────────
+ *
+ * `hijoDelPadre()` responde la única pregunta (línea roja #2) y un `null`
+ * produce 404 idéntico para inexistente y ajeno. Sin beacon de RUM (`sinRum`):
+ * la página muestra datos de un niño y D-037 se lee en conservador.
+ */
+export const prerender = false;
+
+import Privada from "../../../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../../../lib/sesiones";
+import { pestanasPrivadas } from "../../../../../../lib/pestanas-privadas";
+import { hijoDelPadre } from "../../../../../../lib/padre-limite";
+import { leerDatosDelPanel } from "../../../../../../lib/padre-panel";
+import { zonaDelHogar } from "../../../../../../lib/progreso";
+import { rutaCasa, rutaLimiteHijo, rutaPanelCosmeticos, rutaPanelHijo } from "../../../../../../lib/rutas-app";
+import { ruta } from "../../../../../../i18n/rutas";
+import { TEXTOS_PADRE, rellenarPadre } from "../../../../../../components/parent/textos";
+import { componerDiagnostico, claveDeNota, CLAVE_DE_ESTADO } from "../../../../../../../../../packages/motor/src/diagnostico.ts";
+import { diaEfectivo } from "../../../../../../../../../packages/motor/src/tiempo-local.ts";
+import { formatear } from "../../../../../../../../../packages/motor/src/numeros.ts";
+
+const { locale: raw, childId = "" } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+  .runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+if (!env?.DB) return Astro.redirect(rutaCasa(locale));
+
+const noEncontrado = () =>
+  new Response("404 — perfil desconocido", {
+    status: 404,
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store, private" },
+  });
+
+let hijo: Awaited<ReturnType<typeof hijoDelPadre>> = null;
+try {
+  hijo = await hijoDelPadre(env.DB, sesion.userId, childId);
+} catch (err) {
+  console.error("panel: no se pudo leer el perfil", String(err).slice(0, 200));
+}
+if (!hijo) return noEncontrado();
+
+// Los hermanos, para el selector de arriba — la lista es de puertas, nunca de
+// datos: un perfil a la vez (#285). La misma consulta de siempre, alias y nada más.
+let hermanos: Array<{ id: string; alias: string }> = [];
+try {
+  const r = await env.DB.prepare(
+    "SELECT id, alias FROM child_profiles " +
+      "WHERE parent_user_id = ? AND deleted_at IS NULL ORDER BY created_at",
+  )
+    .bind(sesion.userId)
+    .all<{ id: string; alias: string }>();
+  hermanos = r.results ?? [];
+} catch (err) {
+  console.error("panel: no se pudo leer la lista de hijos", String(err).slice(0, 200));
+}
+
+const zona = await zonaDelHogar(env, { id: sesion.userId, esAdulto: true });
+const diaHoy = diaEfectivo(Date.now(), zona);
+const datos = await leerDatosDelPanel(env.DB, hijo, diaHoy);
+const d = componerDiagnostico(datos.filas);
+
+const textos = TEXTOS_PADRE[locale];
+
+/** Las etiquetas de habilidad son autoradas por locale; una clave desconocida
+ *  (una banda sin catálogo todavía) muestra el identificador — y eso se ve,
+ *  mismo criterio que `mapa.ts` con sus rótulos nulos. */
+const nombreHabilidad = (id: string) => textos[`padre.habilidad.${id}`] ?? id;
+
+const fmtFecha = new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" });
+const fechaDe = (epochSegundos: number) => fmtFecha.format(new Date(epochSegundos * 1000));
+const fechaDeDiaLocal = (dia: string) => fmtFecha.format(new Date(`${dia}T00:00:00Z`));
+const fmtSemana = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", timeZone: "UTC" });
+
+const lead = rellenarPadre(textos["padre.panel.lead"], { alias: hijo.alias });
+const textoHoy = rellenarPadre(textos["padre.limite.hoy"], {
+  alias: hijo.alias,
+  jugados: formatear(d.pantalla.hoyMinutos, locale),
+  limite: formatear(datos.limite.config.daily_minutes, locale),
+});
+
+// La escala de la tendencia: la semana más alta llena la barra. Nunca el
+// límite configurado — una semana «baja» no es una semana mala.
+const topeSemanal = Math.max(1, ...d.pantalla.tendencia.map((s) => s.minutos));
+
+const pestanas = pestanasPrivadas(locale, true, "progreso");
+
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={`${textos["padre.panel.titulo"]} · ${hijo.alias}`} description={lead} pestanas={pestanas} sinRum={true}>
+  <article class="panel">
+    <h1>{textos["padre.panel.titulo"]} · {hijo.alias}</h1>
+
+    {/* ── El selector de hijo: fuera de las pestañas (#285). Una lista de
+        puertas, nunca datos de dos perfiles a la vez. */}
+    {hermanos.length > 1 && (
+      <nav class="selector" aria-label={textos["padre.panel.selector"]}>
+        <ul>
+          {hermanos.map((h) => (
+            <li>
+              {h.id === hijo.id ? (
+                <span class="elegido" aria-current="page">{h.alias}</span>
+              ) : (
+                <a href={rutaPanelHijo(locale, h.id)}>{h.alias}</a>
+              )}
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+
+    {/* ── Las pestañas internas: Progreso y Cosméticos (#284, #285). */}
+    <nav class="pestanas-internas" aria-label={textos["padre.panel.titulo"]}>
+      <span class="activa" aria-current="page">{textos["padre.panel.pestanaProgreso"]}</span>
+      <a href={rutaPanelCosmeticos(locale, hijo.id)}>{textos["padre.panel.pestanaCosmeticos"]}</a>
+    </nav>
+
+    <p class="lead">{lead}</p>
+
+    {/* ── Dominio (#280) — o el primer uso (#285) ─────────────────────────── */}
+    {d.sinDatosDeHabilidades ? (
+      <section class="bloque primer-uso">
+        <h2>{textos["padre.panel.primerUsoTitulo"]}</h2>
+        <p>{rellenarPadre(textos["padre.panel.primerUso"], { alias: hijo.alias })}</p>
+      </section>
+    ) : (
+      <section class="bloque">
+        <h2>{textos["padre.panel.dominioTitulo"]}</h2>
+        <ul class="dominio">
+          {d.dominio.map((e) => (
+            <li class={`estado-${e.estado}`}>
+              {e.estado === "dominado" ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="icono">
+                  <circle cx="12" cy="12" r="9" fill="currentColor" />
+                  <path d="M8 12.5l2.7 2.7L16.5 9" fill="none" stroke="var(--color-surface)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              ) : e.estado === "provisional" ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="icono">
+                  <circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="3.2 2.6" />
+                </svg>
+              ) : e.estado === "practicando" ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="icono">
+                  <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2" />
+                  <path d="M12 3a9 9 0 010 18z" fill="currentColor" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="icono">
+                  <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2" />
+                </svg>
+              )}
+              <span class="habilidad">{nombreHabilidad(e.habilidad)}</span>
+              <span class="etiqueta">{textos[`padre.panel.estado.${e.estado}`]}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {/* ── Racha / XP / Liga (#281): tres cards, tres ejes separados ────────── */}
+    <div class="cards">
+      <section class="bloque card">
+        <h2>{textos["padre.panel.rachaTitulo"]}</h2>
+        <p class="cifra">{rellenarPadre(textos["padre.panel.rachaActual"], { dias: formatear(d.racha.actual, locale) })}</p>
+        <p class="detalle">{rellenarPadre(textos["padre.panel.rachaMejor"], { dias: formatear(d.racha.maxima, locale) })}</p>
+        {d.racha.escudosDisponibles > 0 && (
+          <p class="detalle">{rellenarPadre(textos["padre.panel.rachaEscudos"], { n: formatear(d.racha.escudosDisponibles, locale) })}</p>
+        )}
+        {d.racha.pausaHasta !== null && (
+          <p class="detalle">{rellenarPadre(textos["padre.panel.rachaPausa"], { fecha: fechaDeDiaLocal(d.racha.pausaHasta) })}</p>
+        )}
+      </section>
+
+      <section class="bloque card">
+        <h2>{textos["padre.panel.xpTitulo"]}</h2>
+        <p class="cifra">{rellenarPadre(textos["padre.panel.xpTotal"], { xp: formatear(d.xp.total, locale) })}</p>
+        <p class="detalle">{rellenarPadre(textos["padre.panel.xpRango"], { rango: formatear(d.xp.rango, locale) })}</p>
+      </section>
+
+      {/* Sin consentimiento LEADERBOARD no hay card — ni siquiera vacía (D-040). */}
+      {d.liga !== null && (
+        <section class="bloque card">
+          <h2>{textos["padre.panel.ligaTitulo"]}</h2>
+          <p class="cifra">{rellenarPadre(textos["padre.panel.ligaPosicion"], {
+            posicion: formatear(d.liga.posicion, locale),
+            total: formatear(d.liga.total, locale),
+          })}</p>
+          <p class="detalle">{rellenarPadre(textos["padre.panel.ligaPuntos"], { puntos: formatear(d.liga.puntosSemana, locale) })}</p>
+        </section>
+      )}
+    </div>
+
+    {/* ── Pantalla (#282): hoy, tendencia de 8 semanas, enlace a #269 ─────── */}
+    <section class="bloque">
+      <h2>{textos["padre.panel.pantallaTitulo"]}</h2>
+      {datos.limite.tieneFila ? <p class="hoy">{textoHoy}</p> : (
+        <p>{textos["padre.panel.pantallaSinLimite"]}</p>
+      )}
+      {d.pantalla.terminoPorLimiteHoy && (
+        <p class="continuidad">{textos["padre.panel.pantallaCorteHoy"]}</p>
+      )}
+
+      <h3>{textos["padre.panel.tendenciaTitulo"]}</h3>
+      <ul class="tendencia">
+        {d.pantalla.tendencia.map((s) => (
+          <li class={`semana ${s.estado}`}>
+            <span class="cuando">{fmtSemana.format(new Date(`${s.desde}T00:00:00Z`))}</span>
+            <span class="pista-barra">
+              <span
+                class="barra"
+                style={`inline-size: ${s.minutos === 0 ? 0 : Math.max(4, Math.round((s.minutos / topeSemanal) * 100))}%`}
+              ></span>
+            </span>
+            <span class="minutos">{rellenarPadre(textos["padre.panel.tendenciaMinutos"], { minutos: formatear(s.minutos, locale) })}</span>
+            <span class="sr-only">{rellenarPadre(textos["padre.panel.tendenciaSemana"], {
+              fecha: fmtSemana.format(new Date(`${s.desde}T00:00:00Z`)),
+              minutos: formatear(s.minutos, locale),
+              estado: textos[`padre.panel.tendencia.${s.estado}`],
+            })}</span>
+          </li>
+        ))}
+      </ul>
+      <ul class="leyenda">
+        <li><span class="muestra completa"></span>{textos["padre.panel.tendencia.completa"]}</li>
+        <li><span class="muestra por_limite"></span>{textos["padre.panel.tendencia.por_limite"]}</li>
+        <li><span class="muestra sin_uso"></span>{textos["padre.panel.tendencia.sin_uso"]}</li>
+      </ul>
+
+      <p class="muted honestidad">{textos["padre.limite.honestidad"]}</p>
+      <p>
+        <a class="boton" href={rutaLimiteHijo(locale, hijo.id)}>{textos["padre.panel.pantallaAbrir"]}</a>
+      </p>
+    </section>
+
+    {/* ── Notas de Larry (#283) ────────────────────────────────────────────── */}
+    <section class="bloque">
+      <h2>{textos["padre.panel.notasTitulo"]}</h2>
+      {d.notas.length === 0 ? (
+        <p class="muted">{textos["padre.panel.notasVacia"]}</p>
+      ) : (
+        <ul class="notas">
+          {d.notas.map((n) => (
+            <li class={n.vistaEn === null ? "sin-ver" : "vista"}>
+              <p class="texto-nota">
+                {rellenarPadre(textos[claveDeNota(n.causa)], {
+                  habilidad: n.habilidad !== null ? nombreHabilidad(n.habilidad) : "",
+                  alias: hijo.alias,
+                })}
+              </p>
+              <p class="meta">
+                <span class={n.vistaEn === null ? "punto solido" : "punto hueco"} aria-hidden="true"></span>
+                {n.vistaEn === null && <span class="nueva">{textos["padre.panel.notaNueva"]} · </span>}
+                {fechaDe(n.creadaEn)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  </article>
+
+  <style>
+    .panel { max-width: 40rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    h2 { font-family: var(--font-marca); font-weight: var(--weight-subtitle); font-size: var(--text-lg);
+         margin-block-end: var(--space); }
+    h3 { font-family: var(--font-marca); font-weight: var(--weight-subtitle); font-size: var(--text-base);
+         margin-block: var(--space) 0.5rem; }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm, var(--text-xs)); }
+    .honestidad { margin-block-start: var(--space); line-height: var(--leading-body); }
+    .sr-only { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden;
+               clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* El selector de hijo: ≥44px, nunca lado a lado con datos de otro perfil. */
+    .selector ul { list-style: none; margin: 0 0 var(--space); padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .selector a, .selector .elegido { display: inline-flex; align-items: center; min-height: 44px;
+                                      padding-inline: 1rem; border-radius: var(--radius);
+                                      border: 1px solid var(--color-border); text-decoration: none;
+                                      color: var(--color-text); font-family: var(--font-marca);
+                                      font-weight: var(--weight-subtitle); }
+    .selector .elegido { border-color: var(--color-accent); color: var(--color-text-brand); }
+    .selector a:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+
+    .pestanas-internas { display: flex; gap: 0.5rem; margin-block-end: var(--space); }
+    .pestanas-internas a, .pestanas-internas .activa { display: inline-flex; align-items: center;
+                                                       min-height: 44px; padding-inline: 1rem;
+                                                       border-radius: var(--radius); text-decoration: none;
+                                                       color: var(--color-text); font-size: var(--text-base); }
+    .pestanas-internas .activa { border-block-end: 3px solid var(--color-accent);
+                                 color: var(--color-text-brand); font-weight: var(--weight-subtitle); }
+    .pestanas-internas a:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+
+    /* Dominio: ícono + etiqueta, nunca solo color (WCAG 1.4.1). */
+    .dominio { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+    .dominio li { display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+                  gap: 0.75rem; min-height: 44px; }
+    .icono { inline-size: 1.5rem; block-size: 1.5rem; }
+    .habilidad { font-family: var(--font-sistema); font-size: var(--text-base); }
+    .etiqueta { font-size: var(--text-sm, var(--text-xs)); color: var(--color-text-muted); }
+    .estado-dominado .etiqueta, .estado-dominado .icono { color: var(--color-text-brand); }
+    .estado-provisional .icono, .estado-practicando .icono { color: var(--color-accent); }
+
+    .cards { display: grid; gap: calc(var(--space) * 1.5); }
+    @media (min-width: 744px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+    .cifra { font-family: var(--font-marca); font-weight: var(--weight-subtitle);
+             font-size: var(--text-lg); margin: 0; }
+    .detalle { font-size: var(--text-sm, var(--text-xs)); color: var(--color-text-muted);
+               margin-block: 0.35rem 0; }
+
+    .hoy { font-family: var(--font-marca); font-weight: var(--weight-subtitle);
+           font-size: var(--text-lg); margin-block: 0 var(--space); }
+    .continuidad { font-size: var(--text-sm, var(--text-xs)); color: var(--color-text-brand);
+                   margin-block: 0 var(--space); }
+
+    /* La tendencia: los tres estados se leen en escala de grises — sólido,
+       rayado, contorno punteado (WCAG 1.4.1, #282). */
+    .tendencia { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+    .semana { display: grid; grid-template-columns: 4.5rem 1fr auto; align-items: center; gap: 0.6rem;
+              min-height: 28px; }
+    .cuando { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .pista-barra { block-size: 1rem; border-radius: 0.25rem; }
+    .barra { display: block; block-size: 100%; border-radius: 0.25rem; }
+    .semana.completa .barra { background: var(--color-accent); }
+    .semana.por_limite .barra { background: repeating-linear-gradient(135deg,
+                                var(--color-accent) 0 6px, transparent 6px 11px); }
+    .semana.sin_uso .pista-barra { border: 2px dashed var(--color-border); }
+    .minutos { font-size: var(--text-xs); color: var(--color-text-muted); min-inline-size: 4ch;
+               text-align: end; }
+    .leyenda { list-style: none; margin: 0.6rem 0 0; padding: 0; display: flex; flex-wrap: wrap;
+               gap: 1rem; font-size: var(--text-xs); color: var(--color-text-muted); }
+    .leyenda li { display: flex; align-items: center; gap: 0.4rem; }
+    .muestra { inline-size: 1.5rem; block-size: 0.8rem; border-radius: 0.2rem; }
+    .muestra.completa { background: var(--color-accent); }
+    .muestra.por_limite { background: repeating-linear-gradient(135deg,
+                          var(--color-accent) 0 5px, transparent 5px 9px); }
+    .muestra.sin_uso { border: 2px dashed var(--color-border); }
+
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             color: var(--color-text); font-family: var(--font-sistema); font-size: var(--text-base);
+             text-decoration: none; }
+    .boton:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+
+    .notas { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space); }
+    .notas li { border: 1px solid var(--color-border); border-radius: var(--radius);
+                padding: var(--space); }
+    .texto-nota { margin: 0; line-height: var(--leading-body); }
+    .meta { display: flex; align-items: center; gap: 0.4rem; margin-block: 0.5rem 0;
+            font-size: var(--text-xs); color: var(--color-text-muted); }
+    .punto { inline-size: 0.6rem; block-size: 0.6rem; border-radius: 50%;
+             border: 2px solid var(--color-text-muted); }
+    .punto.solido { background: var(--color-text-muted); }
+    .nueva { font-weight: var(--weight-subtitle); color: var(--color-text-brand); }
+  </style>
+</Privada>

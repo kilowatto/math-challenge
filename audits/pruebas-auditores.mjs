@@ -2195,6 +2195,86 @@ const CASOS = [
 
 
   },
+  {
+    // F8 #285. El fallo que este auditor existe para cazar: un archivo NUEVO
+    // en la ruta del panel que lee el binding de Analytics Engine. Plantado,
+    // no degradado — el archivo real no lo referencia.
+    auditor: "panel-sin-detalle-de-intento",
+    que: "una página del panel leyendo ATTEMPTS_AE",
+    archivo: "apps/web/src/pages/[locale]/app/parent/panel/sonda-ae.astro",
+    contenido:
+      "---\nexport const prerender = false;\n" +
+      "const ae = (Astro.locals as any).runtime?.env?.ATTEMPTS_AE;\n---\n<p>{ae ? 'sí' : 'no'}</p>\n",
+    espera: "ATTEMPTS_AE",
+  },
+  {
+    // F8 #285. La otra mitad, sobre la capa de datos REAL (D-070): un
+    // writeDataPoint en `padre-panel.ts` convertiría cada apertura del panel
+    // en una escritura al dataset de intentos — y la pantalla se vería igual.
+    auditor: "panel-sin-detalle-de-intento",
+    que: "un writeDataPoint en la capa de datos real del panel",
+    archivo: "apps/web/src/lib/padre-panel.ts",
+    parche: (t) =>
+      t.replace(
+        "export async function leerDatosDelPanel(",
+        "const sonda = (env) => env.ATTEMPTS_AE?.writeDataPoint({ blobs: ['panel'] });\n" +
+          "export async function leerDatosDelPanel(",
+      ),
+    espera: "writeDataPoint",
+  },
+  {
+    // F8 #278, criterio explícito: `child_diagnostic_notes` entra a
+    // CHILD_TABLES con su control visto fallar. La columna de texto libre que
+    // la línea roja #3 prohíbe en una tabla de niño, plantada como ALTER.
+    auditor: "child-free-text",
+    que: "una columna de texto libre añadida a child_diagnostic_notes",
+    archivo: "migrations/9998_prueba_notas_texto.sql",
+    contenido: "ALTER TABLE child_diagnostic_notes ADD COLUMN nota TEXT;\n",
+    espera: "sin dominio acotado",
+  },
+  {
+    // F8 #283. La causa sin plantilla, sobre el archivo REAL de mensajes:
+    // si en.json pierde la plantilla de PATRON_INUSUAL_PARA_EDAD, la nota de
+    // D-020 mostraría la clave cruda solo en inglés — el modo de fallo de D-022.
+    auditor: "notas-diagnostico-completas",
+    que: "la plantilla de PATRON_INUSUAL_PARA_EDAD borrada del inglés",
+    archivo: "apps/web/src/i18n/padre/en.json",
+    parche: (t) =>
+      t.replace(
+        /  "padre\.nota\.PATRON_INUSUAL_PARA_EDAD": "[^"]*",\n/,
+        "",
+      ),
+    espera: "PATRON_INUSUAL_PARA_EDAD",
+  },
+  {
+    // F8 #283. La otra dirección, sobre la migración REAL (D-070): una causa
+    // nueva en el CHECK sin plantilla en ningún locale. Las causas se leen de
+    // la migración a mano, así que esto bloquea aunque el motor se sincronice.
+    auditor: "notas-diagnostico-completas",
+    que: "una causa nueva en la 0018 sin plantilla en ningún locale",
+    archivo: "migrations/0018_child_diagnostic_notes.sql",
+    parche: (t) =>
+      t.replace(
+        "'PATRON_INUSUAL_PARA_EDAD'     -- D-020: anti-trampa tier 0",
+        "'PATRON_INUSUAL_PARA_EDAD',     -- D-020: anti-trampa tier 0\n" +
+          "                       'CAUSA_SIN_PLANTILLA'",
+      ),
+    espera: "CAUSA_SIN_PLANTILLA",
+  },
+  {
+    // F8 #283. La voz de Larry degradada, sobre el archivo REAL de mensajes:
+    // una plantilla que humilla («los demás niños», categoría comparación del
+    // léxico de es-MX) tiene que bloquear igual que en la superficie del niño.
+    auditor: "notas-diagnostico-completas",
+    que: "una plantilla de nota que compara con los demás niños",
+    archivo: "apps/web/src/i18n/padre/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        /"padre\.nota\.PATRON_INUSUAL_PARA_EDAD": "[^"]*"/,
+        '"padre.nota.PATRON_INUSUAL_PARA_EDAD": "Te habla Larry. {alias} no responde como los demás niños de su edad."',
+      ),
+    espera: "comparacion",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

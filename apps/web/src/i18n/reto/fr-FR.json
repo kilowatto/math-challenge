@@ -1,23 +1,7 @@
 {
-  "error.multiplico": [
-    "Tu as multiplié au lieu d’ajouter.",
-    "Compte à partir du plus grand nombre."
-  ],
-  "error.resto": [
-    "Tu as enlevé au lieu de réunir.",
-    "Les deux groupes se réunissent\u00a0: compte-les tous."
-  ],
-  "error.conto_el_primero_dos_veces": [
-    "Le premier a été compté deux fois.",
-    "Commence à compter au suivant."
-  ],
   "error.sumo": [
     "Tu les as réunis au lieu d’enlever.",
     "Sors du groupe les canards qui s’envolent."
-  ],
-  "error.resto_al_reves": [
-    "Tu as enlevé le grand au petit.",
-    "Pars de combien il y en avait."
   ],
   "error.conto_el_que_quita": [
     "Un de trop a été enlevé.",
@@ -47,17 +31,13 @@
     "Cette partie est déjà là.",
     "Combien en manque-t-il encore\u202f?"
   ],
-  "error.sumo_en_vez_de_completar": [
-    "Tu as additionné les deux au lieu de compléter.",
-    "Combien en tiennent encore\u202f?"
-  ],
   "error.eligio_el_menor": [
     "Ce groupe en a moins.",
     "Quelle rangée est la plus longue\u202f?"
   ],
-  "error.eligio_al_azar": [
-    "Regarde ce que les autres ont en commun.",
-    "L’un d’eux est différent."
+  "error.mismo_aspecto_global": [
+    "Ils se ressemblent presque tous.",
+    "L’un d’eux a une autre forme — regarde les côtés et les pointes."
   ],
   "acierto": "C’est ça.",
   "inesperada": [

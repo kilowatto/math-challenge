@@ -60,6 +60,8 @@ import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo
 import { estadoDeParticipacion } from "../../../lib/liga-membresia";
 import { TEXTOS_PADRE } from "../../../components/parent/textos";
 import { TEXTOS_TABLERO } from "../../../components/tablero/textos";
+import { TEXTOS_GRUPOS } from "../../../components/grupos/textos";
+import { f9Habilitado } from "../../../lib/grupo-flag";
 import {
   pestanasPrivadas,
   clavesDePestana,
@@ -96,7 +98,7 @@ const locale: Locale = raw;
 const m = t(locale);
 const pPausa = TEXTOS_PAUSA[locale] ?? enPausa;
 
-const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace } } })
+const env = (Astro.locals as { runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace; CONFIG_KV?: KVNamespace } } })
   .runtime?.env;
 
 const cookies = leerCookies(Astro.request.headers.get("cookie"));
@@ -272,6 +274,16 @@ const logrosHoy = (misionesHoy?.entradas ?? [])
  */
 const titulo = tieneHijos ? m.casaTitulo : m.casaTituloSolo;
 const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
+
+/*
+ * La entrada al área de grupos (F9 · #387, D-093/D-094 del reparto). Área
+ * propia del adulto — no una sexta pestaña— y con la bandera de mercado
+ * DELANTE: apagada, la casa no muestra ninguna entrada a F9 (criterio de
+ * #387: la bandera se verifica antes de mostrar cualquier entrada). Sin
+ * nagging (D-026): es un bloque más de la casa, no un aviso que empuja.
+ */
+const gruposHabilitados = await f9Habilitado(env?.CONFIG_KV, locale);
+const gGrupos = TEXTOS_GRUPOS[locale];
 ---
 
 <Privada locale={locale} title={titulo} description={lead} pestanas={pestanas}>
@@ -463,6 +475,20 @@ const lead = tieneHijos ? m.casaLead : m.casaLeadSolo;
       toca; el soft-ask, la puerta de iOS y el silencio permanente son suyos.
     */}
     {(vista === "hijos" || vista === "practicar") && <RecordatorioPush locale={locale} />}
+
+    {/*
+      La entrada a `/app/grupos/` (F9 · #381-#383). Visible solo con la
+      bandera de mercado encendida — en los locales apagados ni siquiera se
+      nombra el área, que es exactamente lo que #387 pide: la interfaz no
+      muestra una entrada rota, muestra nada.
+    */}
+    {gruposHabilitados && (
+      <section class="bloque">
+        <h2>{gGrupos["grupo.casa.titulo"]}</h2>
+        <p class="muted">{gGrupos["grupo.casa.lead"]}</p>
+        <a class="boton" href={`/${locale}/app/grupos/`}>{gGrupos["grupo.casa.entrar"]}</a>
+      </section>
+    )}
 
   </article>
 

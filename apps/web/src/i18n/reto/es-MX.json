@@ -1,23 +1,7 @@
 {
-  "error.multiplico": [
-    "Multiplicaste en vez de sumar.",
-    "Cuenta desde el número más grande."
-  ],
-  "error.resto": [
-    "Quitaste en vez de juntar.",
-    "Los dos grupos se juntan: cuéntalos todos."
-  ],
-  "error.conto_el_primero_dos_veces": [
-    "El primero se contó dos veces.",
-    "Empieza a contar desde el que sigue."
-  ],
   "error.sumo": [
     "Los juntaste en vez de quitar.",
     "Saca del grupo los patos que se van."
-  ],
-  "error.resto_al_reves": [
-    "Le quitaste el grande al chico.",
-    "Empieza por cuántos había."
   ],
   "error.conto_el_que_quita": [
     "Se quitó uno de más.",
@@ -47,17 +31,13 @@
     "Esa parte ya está.",
     "¿Cuántos faltan todavía?"
   ],
-  "error.sumo_en_vez_de_completar": [
-    "Sumaste los dos en vez de completar.",
-    "¿Cuántos más caben?"
-  ],
   "error.eligio_el_menor": [
     "Ese grupo tiene menos.",
     "¿Cuál fila es más larga?"
   ],
-  "error.eligio_al_azar": [
-    "Fíjate en qué tienen igual los otros.",
-    "Uno de ellos es distinto."
+  "error.mismo_aspecto_global": [
+    "Todos se ven casi igual.",
+    "Uno tiene otra forma — mira sus lados y sus puntas."
   ],
   "acierto": "Eso es.",
   "inesperada": [

@@ -530,7 +530,7 @@ const CASOS = [
     auditor: "larry-nunca-averguenza",
     que: "un texto de error que compara al niño con los demás, en es-MX y solo ahí",
     archivo: "apps/web/src/i18n/reto/es-MX.json",
-    parche: (t) => t.replace('"Multiplicaste en vez de sumar.",', '"Los demás niños ya lo lograron.",'),
+    parche: (t) => t.replace('"Se saltó uno.",', '"Los demás niños ya lo lograron.",'),
     espera: "comparacion",
   },
   {
@@ -1627,9 +1627,14 @@ const CASOS = [
     // en silencio de siempre. (El encargo decía 0020; la aritmética del propio
     // mecanismo —sonda = primer hueco no declarado + 1— da 0021, y el arnés lo
     // confirma: con 0020 el caso corre en verde.)
+    // Reapuntado a 0022 cuando la 0020 (arte de los 6 cosméticos que quedaban
+    // sin él, #255) aterrizó: con la 0018 reservada al frente del panel y la
+    // 0020 presente, el primer hueco libre NO declarado es el 0021, y la sonda
+    // que lo caza es el archivo 0022 — la aritmética de siempre: sonda = primer
+    // hueco no declarado + 1.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0021_prueba_hueco.sql",
+    archivo: "migrations/0022_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -2369,8 +2374,88 @@ const CASOS = [
     archivo: "apps/web/src/lib/grupo-roster.ts",
     parche: (t) => t.replace("ORDER BY p.alias ASC, p.id ASC", "ORDER BY r.current_streak DESC"),
     espera: "ORDER BY",
+  },
 
-
+  // ─── `distractores-explicables`: tres casos, y los tres DEGRADAN el
+  // `banco-kinder.ts` REAL (D-070) — ninguno planta un banco inventado,
+  // porque los tres bugs de verdad (el negativo de K12, la colisión del
+  // `.find()`, la causa borrada que vuelve) vivían en ese archivo.
+  {
+    // El bug literal del rezagado §7: `b − a` con b < a siempre era un
+    // número negativo en el 100% de K12, y sobrevivió una ronda de
+    // auditorías porque era un número y no una cadena. Hoy la plantilla se
+    // defiende con un filtro `>= 0`, así que la degradación reproduce el
+    // bug completo: el distractor Y el filtro que lo tragaba.
+    auditor: "distractores-explicables",
+    que: "el distractor negativo de K12 (b − a) reintroducido",
+    archivo: "packages/motor/src/banco-kinder.ts",
+    parche: (t) =>
+      t
+        .replace(
+          '        { valor: a - b + 1, causa: "error.se_salto_uno" },',
+          '        { valor: b - a, causa: "error.se_salto_uno" },',
+        )
+        .replace(
+          "]).filter((e) => e.valor !== a - b && e.valor >= 0),",
+          "]).filter((e) => e.valor !== a - b),",
+        ),
+    espera: "NEGATIVA",
+  },
+  {
+    // La colisión del plan F5 §4.1: dos causas sobre el mismo valor, y el
+    // `.find()` de `calificarRespuesta` devuelve la primera — la segunda es
+    // código muerto que Larry puede usar para explicar lo que no pasó. Las
+    // plantillas de hoy pasan por `sinColision`, así que la degradación
+    // imita a una plantilla NUEVA escrita sin ella: quita el dedupe (que
+    // está primero en K11) y duplica el valor.
+    auditor: "distractores-explicables",
+    que: "dos causas de K11 con el mismo valor",
+    archivo: "packages/motor/src/banco-kinder.ts",
+    parche: (t) =>
+      t
+        .replace("errores: sinColision([", "errores: ([")
+        .replace(
+          '        { valor: a + b + 1, causa: "error.conto_uno_dos_veces" },',
+          '        { valor: a + b - 1, causa: "error.conto_uno_dos_veces" },',
+        ),
+    espera: "mismo valor",
+  },
+  {
+    // La causa borrada que vuelve. La tabla BORRADAS se copió a mano del
+    // plan §3.4j justo para esto: si el comodín `eligio_al_azar` reaparece,
+    // `inesperada` vuelve a apagarse en silencio.
+    auditor: "distractores-explicables",
+    que: "la causa borrada error.eligio_al_azar resucita en K13",
+    archivo: "packages/motor/src/banco-kinder.ts",
+    parche: (t) => t.replace("error.mismo_aspecto_global", "error.eligio_al_azar"),
+    espera: "causa borrada",
+  },
+  // ─── F9 #383 · La pantalla del roster, degradada sobre los archivos REALES ─
+  //
+  // La segunda sección de `grupo-visibilidad-minima` vigila que la pantalla
+  // del dueño no añada datos por su cuenta. Los dos casos DEGRADAN los
+  // archivos REALES de esta superficie (D-070): la página que «solo añade una
+  // consultita» dejando de usar el módulo vigilado, y la vista ordenada que
+  // pierde el filtro de opt-in.
+  {
+    // La página sin el módulo. Si el roster deja de salir de
+    // `rosterDelGrupo`, la consulta que `racha-salones-minima` vigila deja de
+    // ser la que la pantalla pinta — y nadie mira la nueva.
+    auditor: "grupo-visibilidad-minima",
+    que: "la pantalla del roster deja de usar rosterDelGrupo",
+    archivo: "apps/web/src/pages/[locale]/app/grupos/[id].astro",
+    parche: (t) => t.replace("rosterDelGrupo(env.DB, sesion.userId, id)", "[]"),
+    espera: "rosterDelGrupo",
+  },
+  {
+    // El filtro quitado en la vista ordenada. Es una línea, y el síntoma es
+    // invisible: un niño aparece en la tabla de posiciones de su grupo y su
+    // padre nunca activó el ranking (D-087).
+    auditor: "grupo-visibilidad-minima",
+    que: "la vista ordenada del grupo deja de filtrar por opt-in",
+    archivo: "apps/web/src/lib/grupo-tabla.ts",
+    parche: (t) => t.replace(".filter((f) => visibleEnTablaDePosiciones(f.opt_in))", ""),
+    espera: "visibleEnTablaDePosiciones",
   },
 
   // ─── F5b · Los dos auditores de la franja adulta (#159–#167) ─────────────

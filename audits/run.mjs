@@ -446,6 +446,19 @@ const ACTIVE = [
   // filtro de status quitado y el ORDER BY por racha.
   ["racha-salones-minima",    "el grupo ve alias, puntos y current_streak — y nada más", "#208, D-025, D-044, D-106, mc-46 §6"],
 
+  // ─── El de F5 (bancos K07–K14), y por qué nace VERDE ─────────────────────
+  //
+  // Las tres correcciones del plan F5 §3.4j/§4.1 se aplicaron al banco CON
+  // este auditor delante, así que lo que vigila es que no vuelvan: el
+  // distractor negativo de K12 (45 de 45 ítems, rezagados §7), dos causas
+  // sobre el mismo valor (el `.find()` de `calificarRespuesta` devuelve la
+  // primera y Larry explica la que el niño no cometió), y las nueve causas
+  // que el plan manda borrar —copiadas A MANO dentro del auditor como
+  // segunda fuente (D-070)—. Sus controles negativos DEGRADAN el
+  // `banco-kinder.ts` REAL: reintroducen `b − a`, duplican un valor y
+  // resucitan una causa borrada.
+  ["distractores-explicables", "todo distractor se puede tocar y explicar una sola vez", "plan F5 §3.4j/§4.1, rezagados §7, línea roja #7, D-070"],
+
 
   // ─── Los dos de F5b (#159–#167), y por qué nacen VERDES ──────────────────
   //
@@ -767,6 +780,19 @@ for (const prueba of [
   "apps/web/src/lib/grupo-roster.prueba.mjs",
 
 
+  // F9 #381-#383 · La superficie de grupos contra las migraciones REALES. El
+  // flujo entero: la identidad declarada y el gate OwnerProof (su primera
+  // ejecución real — el `declare const marca` que reventaba en runtime y nadie
+  // había visto), la creación con los topes exigidos (uno por día, cinco por
+  // cuenta, tope por origen), el salón afiliado que solo nace con escuela
+  // verificada y maestro activo (y la revocación cortando en el acto), el
+  // atajo de dominio y la revisión humana de la escuela con el assurance
+  // escrito VÍA TRIGGERS y nunca a mano, la tarjeta que no escribe nada, la
+  // decisión del padre con sus tres condiciones y el cupo hecho cumplir por
+  // el trigger, y la vista ordenada excluyendo al niño sin opt-in.
+  "apps/web/src/lib/padre-grupo.prueba.mjs",
+
+
   // F7 #244. El cable del DUELO, contra SQLite de verdad (`node:sqlite`) con el
   // esquema REAL de `league_duel`. Lo que defiende tampoco rompe nada visible:
   // un portón saltado no da error, da un niño de KINDER retado sin que su padre
@@ -791,6 +817,7 @@ for (const prueba of [
   // explica a alguien un error que no cometió (#166).
   "packages/motor/src/banco-adulto.prueba.mjs",
   "apps/web/src/lib/banco-adulto.prueba.mjs",
+
 
 
 

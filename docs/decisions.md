@@ -4776,3 +4776,393 @@ señal de otro.
 `mc-10` (la presión de rendimiento empeora el desempeño: por qué el número de
 nivel no se enseña), `mc-43` (progreso e identidad). Cierra las preguntas Q2 y
 Q3 de `docs/planes/f7-juego.md` §13 y el cuarto criterio de aceptación de #195.
+
+---
+
+## D-162 — Las apps se llaman Teacher, School y Console: inglés neutro, marca, y un bundle por app · 2026-08-03
+
+**Decisión del dueño** (respuesta personalizada: «nombres en inglés y
+neutros por el tema de los diferentes mercados»), cerrando la ola 1 de
+la ronda de las apps de tienda.
+
+- **Math Challenge Teacher** (la del maestro), **Math Challenge School**
+  (la de la escuela), **Math Challenge Console** (la consola de
+  administración). Inglés neutro para todos los mercados; **son marca y
+  no se traducen** (regla del corpus: los nombres propios no se
+  traducen).
+- **Bundle IDs:** `com.kilowatto.mathchallenge.teacher`, `.school`,
+  `.console` — y la app principal queda libre en
+  `com.kilowatto.mathchallenge` para cuando exista. Los bundle IDs no se
+  pueden cambiar después en las tiendas: quedan escritos aquí como la
+  única fuente.
+- **Iconos:** Larry con fondo distinto por app (continuidad Recraft; se
+  distinguen en la pantalla de inicio sin abrir otra línea de arte).
+- **Console se queda como PWA instalada** (sin tienda): su usuario es
+  una persona y el mantenimiento de 4 canales para una herramienta
+  interna no se justifica hoy. Si el equipo de revisión crece, se
+  empaqueta después — la arquitectura lo permite igual.
+
+**Investigación relacionada:** `docs/planes/apps-tienda-investigacion.md`.
+
+---
+
+## D-163 — El modelo de identidad de las tres apps: el maestro es usuario primero, la escuela son sus maestros, la consola es otro set de usuarios · 2026-08-03
+
+**Decisión del dueño** (respuesta personalizada en la ola 2, y
+confirmada en la 36: «el maestro es un usuario antes que nada y puede
+estar solo sin escuela, pero los papás son los que autorizan formar al
+grupo al final con los candados ya establecidos»).
+
+- **Teacher:** el maestro es un **usuario normal del producto primero**
+  (la cuenta de D-082). Puede existir **solo, sin escuela** — con la
+  insignia «sin verificar» de D-086 — y **los padres son quienes
+  autorizan la entrada de cada niño a su grupo**, con los candados de
+  F9 intactos (tarjeta de identidad, aprobación registrada, revocable,
+  D-011/D-110). La escuela es una capa de confianza adicional, nunca la
+  puerta.
+- **School:** la escuela **no es una cuenta aparte — sus maestros son
+  sus accesos**: opera a través de `school_teacher` (la lista viva de
+  quién actúa a nombre de la institución).
+- **Console:** un **set de usuarios distinto** del producto — una lista
+  propia de administradores, no cualquier cuenta registrada — protegida
+  además con **basic auth extra** encima del login.
+
+**Investigación relacionada:** D-082, D-086, D-011, D-110, plan de F9
+§5.2.
+
+---
+
+## D-164 — Las tres apps viven en subdominios propios · 2026-08-03
+
+**Decisión del dueño**, contra la recomendación presentada (mismo
+dominio).
+
+`teacher.kilowatto.com`, `school.kilowatto.com` y
+`console.kilowatto.com` (o el patrón que DNS permita igual). Cada
+subdominio lleva **su propio manifest, su propio `start_url`, su propio
+`assetlinks.json`** y su propia revisión de seguridad — la separación
+real de cookies y superficie que el dueño prefiere sobre la simplicidad
+de un solo dominio. La ruta al contenido compartido (sesión, motores)
+sigue siendo una sola base de código (D-163 no cambia eso).
+
+**Investigación relacionada:** `apps-tienda-investigacion.md` §3.
+
+---
+
+## D-165 — Sesión compartida para Teacher y School; la Console con su set, basic auth y passkey obligatoria · 2026-08-03
+
+**Decisión del dueño** (la 7 se contestó con recomendación propia del
+agente, aceptada).
+
+- **Teacher y School comparten la sesión del producto** (`mc_s`, 30
+  días): los mismos humanos, el mismo login — un segundo alta sería la
+  fricción que D-082 eliminó.
+- **Console:** su set de usuarios distinto (D-163) + **basic auth
+  extra** + **passkey obligatoria sin fallback de contraseña** — la
+  superficie más sensible del producto solo entra con el factor más
+  fuerte disponible (D-038).
+
+**Investigación relacionada:** D-038, D-052.
+
+---
+
+## D-166 — iOS: Capacitor con biometría y push nativo, iPhone e iPad con layout propio, Teacher sale sola primero · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de iOS.
+
+- **Empaquetado Capacitor** con **dos** capacidades nativas desde el
+  día uno: **biometría** (Face ID/Touch ID — WebAuthn ya existe, D-038)
+  y **push nativo (APNs)**. Es la respuesta más fuerte disponible a la
+  guideline 4.2.
+- **iPhone e iPad como dos dispositivos de primera clase, no uno
+  estirado**: layout propio de iPad con Split View/Stage Manager
+  soportados (D-041 aplica también a las apps de adultos).
+- **Teacher sale sola primero** a revisión; School después con la
+  lección aprendida.
+- **Si Apple rechaza por 4.2:** se refuerza lo nativo y se reenvía
+  **una vez**; si cae otra vez, iOS se queda en PWA instalada y queda
+  documentado por qué — la tienda es añadido, nunca requisito (D-179).
+
+**Investigación relacionada:** `apps-tienda-investigacion.md` §2
+(guideline 4.2 verificada), D-041, D-038.
+
+---
+
+## D-167 — Android: Bubblewrap, Play App Signing, track interno → cerrado → producción, y Lighthouse medido · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de Android.
+
+- **Bubblewrap** (GoogleChromeLabs) para generar la TWA.
+- **Google Play App Signing**: Google guarda la llave de firma — el
+  riesgo del keystore perdido desaparece por construcción.
+- **Track interno → cerrado → producción**: el cerrado con maestros y
+  escuelas semilla antes de la producción general.
+- **Lighthouse ≥ 80 medido y registrado** sobre cada superficie antes
+  de subir su ficha, con el resultado pegado en el PR de tienda.
+
+**Investigación relacionada:** `apps-tienda-investigacion.md` §2.
+
+---
+
+## D-168 — Escritorio después del móvil: Windows por PWABuilder/Microsoft Store, macOS por Tauri firmado · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de escritorio.
+
+- El escritorio llega **después** de las dos tiendas móviles.
+- **Windows:** PWABuilder → Microsoft Store (la PWA sin shell, sin
+  binario que mantener).
+- **macOS:** **Tauri**, firmado y notarizado con la cuenta Apple
+  Developer del dueño (la misma de iOS).
+- **La meta del frente son las cuatro tiendas** (Google Play, App
+  Store, Microsoft Store, macOS App Store) — ver D-179.
+
+**Investigación relacionada:** `apps-tienda-investigacion.md` §2.
+
+---
+
+## D-169 — Teacher nace de la semilla de F9, con home de alertas, foto con recorte y push completo · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de Teacher.
+
+- La superficie de F9 (`/app/grupos/`) **es la semilla**: mismo código,
+  `start_url` que aterriza ahí. Cero duplicación del roster.
+- **La home del maestro son alertas y pendientes** (foto por subir,
+  escuela por vincular, miembros nuevos, solicitudes por revisar) — lo
+  accionable primero, el roster un toque después.
+- **La foto del maestro se sube en la app con recorte** (acción
+  explícita del adulto, AVIF/WebP a R2, parte del runbook de borrado —
+  D-136).
+- **Push completo para el maestro:** aprobaciones de padres, reportes
+  resueltos, actividad semanal — todo texto de push pasa por la carta
+  `patrones-oscuros` como cualquier notificación del producto, y
+  **ningún push va jamás a un niño** (la regla de D-105 se mantiene).
+
+**Investigación relacionada:** D-107, D-136, D-105, D-084 (techos).
+
+---
+
+## D-170 — School: creación abierta con revisión, documento subido en la app, y gestión de maestros con sus salones (sin niños) · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de School.
+
+- **Cualquier adulto registrado crea su escuela**, que nace `pending`
+  hasta la revisión (D-089/D-090).
+- **El documento de verificación se sube en la app** (foto del
+  membrete, acción explícita del adulto → R2 → cola de la Consola).
+- La escuela **lista, invita y revoca maestros** (`school_teacher`, con
+  bitácora), y **ve los salones de su escuela en conteos sin datos de
+  niños** (cuántos activos, cuántos miembros — nunca alias de esta
+  vista).
+
+**Investigación relacionada:** D-086, D-089, D-090.
+
+---
+
+## D-171 — School VE datos de alumnos como el maestro: la lista cerrada de D-027, solo personal autorizado, con bitácora de lectura · 2026-08-03
+
+**Decisión del dueño, contra la recomendación presentada** (que era:
+la escuela nunca ve datos de alumnos).
+
+El personal de la escuela ve **exactamente lo que ve el maestro** de
+los salones de su institución: **alias, racha y puntos** — el techo de
+D-027 no se mueve (nunca nombre real, edad exacta ni otros grupos). Con
+tres candados que son la condición de esta decisión, no un añadido:
+
+1. **Solo personal con `school_teacher` activo** en una escuela
+   **verificada** (`verification_status = 'verified'`).
+2. **Bitácora de lectura**: cada consulta de esa vista registra quién
+   miró qué salón y cuándo — el primer dato de acceso a datos de
+   menores que el producto guarda, guardado a propósito porque el
+   círculo se amplía del dueño del salón al personal de la escuela.
+3. La lista cerrada sigue sin poder crecer por esta vía: ningún campo
+   nuevo visible sin una decisión nueva.
+
+**Investigación relacionada:** D-027, D-086, D-089, mc-25.
+
+---
+
+## D-172 — Console v1: las tres colas, cierre de recepción de escuelas con lista de espera, acciones con bitácora, tiempo de respuesta visible, y multi-revisor desde ya · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de la Consola. **Enmienda D-102**
+(que fijaba un solo operador sin infraestructura de equipo).
+
+- **Las tres colas:** escuelas pendientes (D-089/D-090), reportes de
+  grupos (D-116), apelaciones de prendas (D-121).
+- **Cierre de recepción:** la Consola puede cerrar el alta de escuelas
+  nuevas; las que lleguen entran a una **lista de espera** visible.
+- **Acciones con efecto real y bitácora:** aprobar escuela (la
+  transacción de D-086 que eleva `assurance` de sus maestros),
+  rechazar, revocar dueño, cerrar reporte — cada acción con quién y
+  cuándo.
+- **El tiempo de respuesta es visible:** antigüedad del pendiente más
+  viejo y mediana semanal (D-089).
+- **Multi-revisor desde ya** (contra D-102): asignación de pendientes
+  entre revisores, `reviewed_by` siempre lleno. D-102 queda enmendada
+  en su «diseño para uno»; el resto (sin pantalla de admin pública para
+  otros roles, runbook como respaldo) sigue.
+
+**Investigación relacionada:** D-089, D-102, D-116, D-121.
+
+---
+
+## D-173 — Las tres apps salen en los 7 locales desde el día uno, con copy autorado y diccionarios compartidos con prefijos · 2026-08-03
+
+**Decisión del dueño**, contra la recomendación presentada (4 locales
+primero).
+
+Las apps de adultos salen en **los 7 locales desde el día uno** — no
+cargan el acotamiento legal de F9 (D-087), que es sobre superficies con
+menores. El copy se **autora por locale** (D-022), los nombres quedan
+como marca (D-162), y los diccionarios son **los del producto con
+prefijos** (`teacher*`, `school*`, `console*`) — un solo sistema i18n,
+los auditores de locale ya lo miran.
+
+**Investigación relacionada:** D-022, D-087, D-126.
+
+---
+
+## D-174 — Datos de las tres apps: misma D1, telemetría con D-037, documentos en R2, y el runbook de borrado extendido · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de datos.
+
+- **Misma D1** (`math-challenge-db`), tablas nuevas solo cuando haga
+  falta (`school` ya existe de F9; `household_link` de F12).
+- **Telemetría citando D-037** (superficies de adulto, como el panel):
+  embudo de adopción de las apps (¿el maestro termina de crear su
+  salón?).
+- **Documentos de verificación en R2** con retención declarada en el
+  checklist legal (D-126).
+- **El runbook de los 4 sistemas se extiende:** borrar una cuenta borra
+  su escuela (con sus maestros desvinculados), sus documentos, sus
+  membresías y su historial de revisión.
+
+**Investigación relacionada:** D-013, D-037, D-126, mc-32 riesgo #7.
+
+---
+
+## D-175 — Auditores de las tres apps: los existentes con alcance, la frontera de la Consola auditada, matriz manual por app, y auditores de tienda cuando existan · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de auditores.
+
+- Los auditores existentes aplican con **alcance ampliado** a
+  `/teacher/`, `/school/`, `/console/` (el patrón de F9/F10).
+- **`audits/consola-solo-dueno.mjs`**: falla si cualquier ruta de la
+  Consola responde a una cuenta fuera del set de administradores
+  (D-163), o si el set crece sin decisión. Control negativo: cambiar la
+  cuenta de prueba y verlo bloquear (D-070).
+- **La matriz de verificación manual por app y plataforma** (Teacher y
+  School en Android TWA, iPhone, iPad con Split View; Console en PWA de
+  escritorio) — lo que un auditor no ve, se juega a mano (la lección de
+  #451).
+- **Auditores de tienda cuando las envolturas existan:**
+  `assetlinks.json` con el fingerprint correcto, los manifests con su
+  `start_url`, los iconos por app.
+
+**Investigación relacionada:** D-032, D-070, D-163.
+
+---
+
+## D-176 — Operación de tiendas: fichas del agente firmadas por el dueño, capturas reales, clasificación Everyone, privacy labels con borrador · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de operación.
+
+- **Las fichas las redacta el agente** con la voz del sitio
+  (`por-que-existe.md`) **y el dueño las aprueba** antes de subirlas.
+- **Capturas reales** de las apps corriendo (simulador + dispositivo
+  físico) — Apple rechaza capturas que no representan la app.
+- **Clasificación Everyone** (las apps son DE adultos; los datos de
+  menores van con alias). Kids/Family queda descartado por escrito: eso
+  invocaría las reglas de apps usadas POR niños, que no es el caso.
+- **Privacy labels de Apple y Data safety de Google:** borrador del
+  agente desde el mapa real de datos, firma del dueño.
+
+**Investigación relacionada:** `por-que-existe.md`, D-013, D-126.
+
+---
+
+## D-177 — F13 con sub-frentes: webs primero, tiendas después, y la meta son las cuatro tiendas · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de fases.
+
+- **F13 · Apps de adultos y tiendas**, con cuatro sub-frentes:
+  Teacher, School, Console y Envolturas (TWA, Capacitor, Tauri,
+  PWABuilder).
+- **Orden:** webs primero, tiendas después — **ninguna ficha se sube
+  hasta que su web existe y se ha jugado en producción** (la lección de
+  #451).
+- **La meta de cierre son las cuatro tiendas** (Google Play, App Store,
+  Microsoft Store, macOS App Store), no solo las dos móviles.
+- **Prioridad:** después del frente A de F9 (esquema + gate) — Teacher
+  es la superficie de F9 y necesita esa primera piedra.
+
+**Investigación relacionada:** `apps-tienda-investigacion.md` §5.
+
+---
+
+## D-178 — Ante cualquier rechazo o retirada de tienda, la web manda · 2026-08-03
+
+**Decisión del dueño**, cerrando la ola de riesgos.
+
+La web es el producto real; la tienda es un canal añadido, nunca un
+requisito. Una app rechazada se arregla y se reenvía (una vez por la
+regla de D-166); mientras tanto nadie pierde nada. El costo anual de
+tiendas (~$124/año de Apple más el tiempo de revisión de cada versión)
+queda **aceptado por escrito**.
+
+**Investigación relacionada:** D-166, `apps-tienda-investigacion.md`
+§4.
+
+---
+
+## D-179 — El alcance de v1 de F13 no excluye nada — salvo el cobro, que sigue fuera por D-085 · 2026-08-03
+
+**Decisión del dueño** (respuesta personalizada: «nada, sin miedo al
+éxito», a la pregunta de qué queda fuera de la v1 de estas apps).
+
+El alcance de F13 no se recorta: la **mensajería maestro ↔ escuela ↔
+consola** y las **métricas agregadas por escuela** entran al plan
+(donde antes se proponían fuera). Con una frontera que esta decisión
+**no mueve y queda escrita para que nadie la lea de más:** el **cobro
+sigue fuera** — D-085 (todo el producto es gratis para cualquier tipo
+de cuenta) es una decisión vigente que «sin miedo al éxito» no enmienda
+en genérico. Si algún día el cobro entra, es con su propia decisión
+explícita.
+
+**Nota de la mensajería:** entra al alcance de F13 pero **nunca entre
+adulto y niño** — D-027 intacto: solo maestro ↔ escuela ↔ consola,
+entre adultos.
+
+**Investigación relacionada:** D-085, D-027.
+
+---
+
+## D-180 — F14 · Olimpiadas escolares: registrado como frente futuro · 2026-08-03
+
+**Decisión del dueño** (plantada en la ola de la Consola: «las escuelas
+pueden organizar olimpiadas internas y con otras escuelas… este tipo de
+competencia sana es importante»).
+
+Las **olimpiadas escolares** — internas y entre escuelas — son un
+frente propio, no una función de la Consola de v1. Requiere análisis
+profundo y declarado como tal: formato de competencia por equipos,
+elegibilidad, calificación, la revisión legal de D-028 si hay premios,
+y sobre todo **la primera competencia directa niño contra niño entre
+escuelas** — la superficie de menor más delicada del roadmap. Se
+investiga después de F13, con su propia ronda de preguntas.
+
+**Investigación relacionada:** D-028, mc-18, mc-46.
+
+---
+
+## D-181 — La Consola puede cerrar la recepción de escuelas nuevas, y las que lleguen entran a lista de espera · 2026-08-03
+
+**Decisión del dueño** (dicha dentro de la ola de la Consola, registrada
+aparte porque es una operación con consecuencia visible).
+
+La Consola puede **cerrar el alta de escuelas nuevas** (un flag de
+operación, no una ley): las escuelas que se registren mientras tanto
+**no se rechazan — entran a una lista de espera** que la propia Consola
+muestra y de la que salen al reabrirse. Cerrar recepción nunca borra ni
+rechaza lo que ya está dentro.
+
+**Investigación relacionada:** D-089, D-172.

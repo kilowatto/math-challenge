@@ -754,7 +754,13 @@ export const SOURCES_IDS_POR_LOCALE: Record<string, string[]> = {
  * devuelve un objeto vacío, nunca lanza.
  */
 export function loadTranslatedRaw(): Record<string, Record<string, string>> {
-  const raws = import.meta.glob("../../../../docs/research/*/2026-07-31-mc-*.md", {
+  // `2026-*-mc-*`, no `2026-07-31-mc-*`: el corpus creció —mc-49 a mc-52 son
+  // de agosto— y un glob con la fecha clavada dejaba las traducciones nuevas
+  // FUERA del bundle: la página caía al inglés con `inLanguage: "en"` mientras
+  // el manifiesto la declaraba verificada, y `jsonld-valid` bloqueaba con
+  // razón. La fecha del nombre de archivo es la de la investigación, no una
+  // constante del corpus.
+  const raws = import.meta.glob("../../../../docs/research/*/2026-*-mc-*.md", {
     query: "?raw",
     import: "default",
     eager: true,
@@ -778,7 +784,7 @@ export function loadTranslatedBodies(): Record<
   string,
   Record<string, () => Promise<{ compiledContent: () => string | Promise<string> }>>
 > {
-  const mods = import.meta.glob("../../../../docs/research/*/2026-07-31-mc-*.md");
+  const mods = import.meta.glob("../../../../docs/research/*/2026-*-mc-*.md");
   const out: Record<string, any> = {};
   for (const [path, loader] of Object.entries(mods)) {
     const m = /\/docs\/research\/([^/]+)\/([^/]+\.md)$/.exec(path);

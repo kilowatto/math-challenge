@@ -1632,9 +1632,14 @@ const CASOS = [
     // 0020 presente, el primer hueco libre NO declarado es el 0021, y la sonda
     // que lo caza es el archivo 0022 — la aritmética de siempre: sonda = primer
     // hueco no declarado + 1.
+    // Reapuntado a 0023 cuando la 0021 (alias único por padre, #259) aterrizó:
+    // con ella presente, el primer hueco libre NO declarado es el 0022, y la
+    // sonda que lo caza es el archivo 0023. Una sonda en 0022 quedaría contigua
+    // a la 0021 real y correría en verde sin degradar nada — el auditor apagado
+    // en silencio de siempre.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0022_prueba_hueco.sql",
+    archivo: "migrations/0023_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -2457,6 +2462,7 @@ const CASOS = [
     parche: (t) => t.replace(".filter((f) => visibleEnTablaDePosiciones(f.opt_in))", ""),
     espera: "visibleEnTablaDePosiciones",
   },
+
   // ─── F5 · `kinder-enunciados-i18n`, degradando el catálogo REAL (D-070) ──
   //
   // El auditor nació porque al autorar 25 claves en siete archivos a mano,
@@ -2486,6 +2492,106 @@ const CASOS = [
         '"k.recta.saltos": "¿Cuántos saltos hay del {a} hasta el hueco? Piensa en las {llenas}."',
       ),
     espera: "{llenas}",
+  },
+
+  // ─── F5b · Los dos auditores de la franja adulta (#159–#167) ─────────────
+  //
+  // Los seis casos DEGRADAN archivos REALES (D-070): los catálogos de los
+  // locales, la plantilla y el guion de siembra que este PR introduce. Un
+  // archivo inventado solo probaría que el auditor sabe leer un archivo
+  // inventado.
+  {
+    // La de #162 literal: un enunciado de la franja sin plantilla en alemán.
+    // Es el fallo de «seis locales editados y el séptimo quedó atrás».
+    auditor: "banco-adulto-i18n",
+    que: "un enunciado de la franja sin plantilla en de-DE",
+    archivo: "apps/web/src/i18n/reto/de-DE.json",
+    parche: (t) => t.replace('  "a.pct.de": "Wie viel sind {p} % von {n}?",\n', ""),
+    espera: "a.pct.de",
+  },
+  {
+    // La otra punta del mismo cruce: la PLANTILLA nombra una clave que
+    // ningún catálogo tiene. Se degrada la fuente, no el catálogo.
+    auditor: "banco-adulto-i18n",
+    que: "la plantilla A01 apunta a una clave que no existe en ningún locale",
+    archivo: "packages/motor/src/banco-adulto.ts",
+    parche: (t) => t.replace('"a.pct.de"', '"a.pct.inexistente"'),
+    espera: "a.pct.inexistente",
+  },
+  {
+    // El cable de la siembra cortado (#159): el guion siembra la franja con
+    // la banda de primaria — 150 filas en D1, cero visibles para el adulto,
+    // y nada visible se rompe. El auditor tiene que nombrar la banda.
+    auditor: "banco-adulto-i18n",
+    que: "la siembra escribe la franja con banda PRIMARIA",
+    archivo: "scripts/sembrar-banco-adulto.mjs",
+    parche: (t) => t.replace('sql("SERIO")', 'sql("PRIMARIA")'),
+    espera: "SERIO",
+  },
+  {
+    // #161, el barandal principal de D-034: la franja crece a 204 ítems y
+    // «mínima» se convierte en una segunda banda. Se degrada la lista de
+    // parámetros REAL de A01 con una tanda extra plausible.
+    auditor: "franja-adulta",
+    que: "la franja crece por encima de 200 ítems",
+    archivo: "packages/motor/src/banco-adulto.ts",
+    parche: (t) =>
+      t.replace(
+        "      [25, 200], [25, 400], [50, 160], [50, 240], [75, 200], [75, 400],",
+        "      [25, 200], [25, 400], [50, 160], [50, 240], [75, 200], [75, 400],\n" +
+        "      [5, 800], [5, 1000], [10, 300], [10, 500], [20, 350], [20, 450],\n" +
+        "      [25, 300], [25, 500], [50, 180], [50, 260], [75, 240], [75, 280],\n" +
+        "      [5, 1200], [5, 1400], [10, 600], [10, 700], [20, 550], [20, 650],\n" +
+        "      [25, 600], [25, 700], [50, 300], [50, 320], [75, 320], [75, 360],\n" +
+        "      [5, 1600], [5, 1800], [10, 800], [10, 900], [20, 750], [20, 850],\n" +
+        "      [25, 800], [25, 900], [50, 340], [50, 360], [75, 440], [75, 480],\n" +
+        "      [5, 2000], [5, 2200], [10, 1100], [10, 1200], [20, 950], [20, 1050],\n" +
+        "      [25, 1000], [25, 1100], [50, 380], [50, 420], [75, 520], [75, 560],\n" +
+        "      [5, 2400], [5, 2600], [10, 1300], [10, 1400], [20, 1150], [20, 1250],\n" +
+        "      [25, 1200], [25, 1300], [50, 440], [50, 460], [75, 600], [75, 640],",
+      ),
+    espera: "segunda banda",
+  },
+  {
+    // #163: la Sabana colada en la franja. La clave degradada es la real y
+    // el auditor tiene que decir «Sabana» — un ítem del club no puede
+    // referenciar el sendero de kinder.
+    auditor: "franja-adulta",
+    que: "una clave de la franja referencia la Sabana",
+    archivo: "packages/motor/src/banco-adulto.ts",
+    parche: (t) => t.replace('"a.sec.sigue"', '"a.sabana.sigue"'),
+    espera: "Sabana",
+  },
+  {
+    // #162, la notación: de-DE con × es el error de mc-34 en su forma pura —
+    // en un aula alemana el × se lee como la variable x. Se degrada el
+    // catálogo alemán REAL.
+    auditor: "franja-adulta",
+    que: "el catálogo de-DE multiplica con × en vez de ·",
+    archivo: "apps/web/src/i18n/reto/de-DE.json",
+    parche: (t) => t.replace('"a.orden.suma_mult": "Wie viel ist {a} + {b} · {c}?"', '"a.orden.suma_mult": "Wie viel ist {a} + {b} × {c}?"'),
+    espera: "de-DE",
+  },
+
+  // ─── #259 · El índice único del alias, y la forma en que volvería a morir ─
+  //
+  // El bug original fue un índice que nunca existió mientras el código juraba
+  // que sí. La forma en que reaparecería hoy —con la 0006 y la 0021 en el
+  // repo— no es que alguien borre esos archivos (migration-safety lo
+  // bloquea): es una migración NUEVA con un `DROP INDEX`, que es exactamente
+  // lo que este caso planta. El auditor recorre las migraciones en orden y
+  // exige el índice VIVO al final, así que el DROP lo apaga aquí.
+  {
+    auditor: "alias-unico",
+    que: "una migración posterior tira el índice único del alias",
+    archivo: "migrations/9999_prueba_alias.sql",
+    contenido:
+      "-- migration-safety: caso de control negativo del auditor alias-unico —\n" +
+      "-- una migración que tira el índice sin reponerlo, la forma exacta en\n" +
+      "-- que el bug de #259 reaparecería.\n" +
+      "DROP INDEX idx_alias_por_padre;\n",
+    espera: "UNIQUE",
+
   },
 ];
 

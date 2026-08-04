@@ -43,7 +43,18 @@ const BUDGET = {
   //
   // Mismo ~15% de holgura sobre el máximo real que ya usa `htmlCorpus` más
   // abajo (24 sobre 20.8). 12.1 × 1.15 ≈ 13.9 → 14.
-  html: 14,       // por página de producto o marketing
+  //
+  // 14 → 16, 2026-08-03, medido, con la misma disciplina que esa subida. El
+  // contenido i18n creció a propósito en una sola jornada: la franja adulta
+  // (98 claves por locale, #482) y los conteos de kinder (25 claves nuevas,
+  // #484) viajan incrustados en las páginas de producto. Las dos páginas más
+  // pesadas hoy son las de `reto-demo` en de-DE y fr-FR — los dos locales
+  // cuyo texto de la franja es más largo— y miden 14.2 KB gz. El resto de
+  // páginas de producto sigue por debajo del techo anterior. 14.2 × 1.15 ≈
+  // 16.3 → 16. Si mañana alguien recorta el payload del demo (cargar solo las
+  // claves que la página usa en vez del catálogo entero), este número baja
+  // con la misma medición.
+  html: 16,       // por página de producto o marketing
   // Un documento de investigación es legítimamente más pesado que una portada:
   // son ~3,300 palabras de texto, y ese texto ES el activo (D-033, mc-48). El
   // presupuesto de 12 KB se calibró contra páginas de 2 KB, y aplicárselo a un

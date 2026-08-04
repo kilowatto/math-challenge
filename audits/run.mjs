@@ -459,6 +459,7 @@ const ACTIVE = [
   // resucitan una causa borrada.
   ["distractores-explicables", "todo distractor se puede tocar y explicar una sola vez", "plan F5 §3.4j/§4.1, rezagados §7, línea roja #7, D-070"],
 
+
   // ─── El de F5 (conteos K01–K14), y por qué nace VERDE ────────────────────
   //
   // Al completar los conteos de los diez bancos cortos se autoraron 25 claves
@@ -470,6 +471,38 @@ const ACTIVE = [
   // `{variable}` de cada plantilla con las `vars` del ítem. Su control
   // negativo borra una clave del `de-DE.json` REAL (D-070).
   ["kinder-enunciados-i18n", "todo enunciado del banco existe, con sus variables, en los 7 locales", "D-022, #349, #347, línea roja #3, mc-34"],
+
+
+  // ─── Los dos de F5b (#159–#167), y por qué nacen VERDES ──────────────────
+  //
+  // La franja adulta se construyó CON ellos delante, así que lo que vigilan
+  // es que no se erosione: una clave que falta en el séptimo locale, el cable
+  // de la siembra cortado (banda equivocada, techo donde no hay Kalyuga que
+  // aplicar), el enchufe de `/api/jugar` desconectado —la franja entera en
+  // D1 y nadie la ve—, el techo de 200 que impide que «mínima» crezca, la
+  // proporción de plantilla MEDIDA y publicada (#165), la Sabana colada en
+  // una pantalla del club, y la notación de mc-34 ejecutada contra una tabla
+  // escrita A MANO (D-070): de-DE multiplica con · y divide con :, fr-FR
+  // agrupa con el espacio fino insecable, el render real cruzado en los 7
+  // locales. Sus controles negativos son DEGRADACIONES de archivos REALES:
+  // los catálogos, la plantilla y el guion de siembra.
+  ["banco-adulto-i18n",      "la franja adulta no sirve nada que no esté en i18n", "#162, #166, mc-36, mc-11, D-022, D-034, D-070"],
+  ["franja-adulta",          "los barandales de D-034: techo 200, sin Sabana, una autoría siete notaciones", "#161, #163, #164, #165, D-034, mc-34"],
+
+  // ─── El de #259, y por qué nace VERDE ────────────────────────────────────
+  //
+  // El catch de `perfil-nuevo.ts` juraba que el alias tenía índice único «desde
+  // la migración 0003» y era falso: era código muerto. El índice llegó en la
+  // 0006 y la 0021 lo garantiza sobre datos deduplicados. Este auditor recorre
+  // las migraciones EN ORDEN, como D1 las aplica, y exige que al final quede
+  // VIVO un índice UNIQUE sobre child_profiles que cubra alias — un
+  // `DROP INDEX` posterior, la forma exacta en que el bug reaparecería, bloquea
+  // aquí y no en producción. Nace VERDE porque el índice ya existe; lo que
+  // vigila es que nadie lo quite.
+  ["alias-unico",            "el alias del niño tiene índice único por padre, y nadie lo quita", "D-003, #259"],
+
+
+
 
 ];
 
@@ -799,6 +832,29 @@ for (const prueba of [
   // panel escrita a mano (D-070): sin ganador, sin presencia, sin fechas.
   "apps/web/src/lib/duelo-superficie.prueba.mjs",
 
+
+  // F5b #159–#167. La franja adulta (SERIO, N8–N10): las 17 plantillas sobre
+  // 13 habilidades y el cable D1 completo (migración 0016 + las DOS siembras
+  // + lectura, contra SQLite de verdad). Lo que defienden tampoco rompe nada
+  // visible: un distractor que no es ningún error real sigue siendo un número
+  // tocable, una mediana que coincide con la media deja «confundió media con
+  // mediana» sin botón, y un ítem de primaria calificado con banda SERIO
+  // cuenta mal la fórmula de D-010 — todo se descubre cuando Larry le
+  // explica a alguien un error que no cometió (#166).
+  "packages/motor/src/banco-adulto.prueba.mjs",
+  "apps/web/src/lib/banco-adulto.prueba.mjs",
+
+
+  // #259. El alias del niño, único por padre, en las DOS capas: la base (el
+  // índice rechaza, dos familias pueden repetir, el borrado no estorba) y la
+  // ruta (el POST reintenta solo ante un choque, da un 409 honesto al tercero
+  // y no disfraza otros errores). La migración 0021 se ejecuta REAL, leída del
+  // disco, sobre duplicados sembrados de la era del bug: renombra con el
+  // sufijo calculado A MANO (D-070), conserva al más antiguo, no borra ningún
+  // perfil y corre dos veces sin tocar nada. Lo que defiende tampoco rompe
+  // nada visible: sin índice, el catch del endpoint es código muerto y nadie
+  // ve el choque hasta que un padre no sabe cuál de sus dos hijos es cuál.
+  "apps/web/src/lib/alias-unico.prueba.mjs",
 
 
 

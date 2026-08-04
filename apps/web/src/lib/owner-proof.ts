@@ -34,8 +34,8 @@
  * comprobación: en los dos casos es una declaración.
  */
 
-/** Qué tan cierto es lo que sabemos. Coincide con el CHECK de la migración 0005. */
-export type Assurance = "declared" | "school_domain" | "human_reviewed";
+/** Qué tan cierto es lo que sabemos. Coincide con el CHECK de la migración 0017. */
+export type Assurance = "declared" | "school_domain" | "human_reviewed" | "school_verified";
 
 /**
  * La marca. **No se puede construir desde fuera de este módulo.**
@@ -76,7 +76,7 @@ export interface FilaDeIdentidad {
 export function assertCanOwnChildGroup(fila: FilaDeIdentidad | null): OwnerProof | null {
   if (!fila) return null;
   const assurance = fila.assurance as Assurance;
-  if (!["declared", "school_domain", "human_reviewed"].includes(assurance)) return null;
+  if (!["declared", "school_domain", "human_reviewed", "school_verified"].includes(assurance)) return null;
   return {
     [marca]: true,
     userId: fila.user_id,
@@ -92,8 +92,15 @@ export function assertCanOwnChildGroup(fila: FilaDeIdentidad | null): OwnerProof
  * «maestro» a secas sobre alguien a quien nadie comprobó es exactamente lo que
  * el nombre de la tabla evita.
  */
-export function insigniaPara(proof: OwnerProof): "sin_verificar" | "dominio_escolar" | "revisado" {
+export function insigniaPara(proof: OwnerProof): "sin_verificar" | "dominio_escolar" | "revisado" | "escuela_verificada" {
   switch (proof.assurance) {
+    case "school_verified":
+      // Su escuela está verificada y su fila de `school_teacher` sigue activa
+      // (D-086). Lo escriben los triggers de la 0017 — nunca una ruta a mano,
+      // y `audits/school-verification-required.mjs` lo vigila. Es la insignia
+      // POSITIVA del patrón Bark: aparece cuando hay verificación, y su
+      // ausencia es la señal — nunca un sello rojo de alarma.
+      return "escuela_verificada";
     case "school_domain":
       // Prueba que controla ese buzón. **No prueba que dé clases ahí**, y la
       // insignia no debe sugerir lo contrario.

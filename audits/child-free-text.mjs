@@ -22,7 +22,32 @@ const MIGRATIONS = "migrations";
 // Tablas donde un niño es el sujeto. Un campo de texto libre aquí es la
 // violación: lo que el niño elige (alias, avatar) se elige de un conjunto
 // acotado y se guarda como referencia, no como prosa.
-const CHILD_TABLES = ["child_profiles", "child_image_pin", "skill_state"];
+//
+// La lista creció en F9 (issue #401, deuda declarada por F7/F8): las tablas de
+// racha, XP, misiones, liga, compañero, límite de pantalla y las de grupo son
+// TODAS tablas de niño en el sentido de la línea roja #3 — guardan datos de un
+// menor o de su convivencia con un adulto que no es su padre— y ninguna estaba
+// vigilada. El comentario de la migración 0011 que afirmaba que este auditor
+// «escanea por forma de columna» y por eso cubría su tabla sin cambios era
+// falso: el escaneo es sobre ESTA lista, a mano, y se corrigió en el mismo PR.
+const CHILD_TABLES = [
+  "child_profiles",
+  "child_image_pin",
+  "skill_state",
+  // F7/F8 (deuda de #401):
+  "score_totals",
+  "child_streak",
+  "xp_totals",
+  "mission_daily_summary",
+  "league_membership",
+  "companion_state",
+  "screen_time_daily_usage",
+  // F9 (esquema de la 0017):
+  "child_group",
+  "child_group_membership",
+  "child_group_report",
+  "school_teacher",
+];
 
 // Columnas de texto permitidas en esas tablas, con su razón. Todo lo demás que
 // sea TEXT y no esté aquí se reporta.
@@ -39,6 +64,20 @@ const ALLOWED = {
   avatar_parts: "JSON de índices al catálogo de piezas — nunca texto del niño",
   pin_hash: "hash",
   period: "enum",
+  // F7/F8:
+  user_id: "referencia — participante polimórfico (niño O adulto, nunca los dos)",
+  cohort_id: "referencia",
+  local_date: "día local del hogar, YYYY-MM-DD — la fecha de JUEGO, nunca de nacimiento",
+  last_completed_local_date: "día local del último reto — de juego, no de nacimiento",
+  pause_until_local_date: "día local hasta donde corre la pausa — de juego, no de nacimiento",
+  accessory_ids: "JSON de índices al catálogo de accesorios — nunca texto del niño",
+  // F9 (todas referencias o decisiones del padre/adulto, nunca del niño):
+  child_group_id: "referencia",
+  school_id: "referencia",
+  owner_user_id: "referencia",
+  reported_by: "referencia",
+  reviewed_by: "referencia",
+  decided_by: "users.id del padre que decidió — la membresía ES el consentimiento (D-096)",
 };
 
 const problems = [];
@@ -71,21 +110,37 @@ for (const file of files) {
     if (bloques.length === 0) continue;
     checkedTables++;
 
-    for (const rawLine of bloques.join("\n").split("\n")) {
-      const line = rawLine.replace(/--.*$/, "").trim();
-      if (!line || /^(PRIMARY|FOREIGN|UNIQUE|CHECK|CONSTRAINT)\b/i.test(line)) continue;
+    // Una definición de columna puede ocupar varias líneas (el CHECK en la
+    // línea siguiente). Se acumula hasta la coma que la cierra; juzgar línea
+    // a línea marcaría como «libre» cualquier columna con CHECK multi-línea —
+    // pasó al aterrizar la 0017, cuyos enums largos van en dos líneas.
+    let definicion = "";
+    const juzgar = (completa) => {
+      if (/^(PRIMARY|FOREIGN|UNIQUE|CHECK|CONSTRAINT)\b/i.test(completa)) return;
 
-      const col = line.match(/^([a-z_][a-z0-9_]*)\s+(TEXT|VARCHAR)/i);
-      if (!col) continue;
+      const col = completa.match(/^([a-z_][a-z0-9_]*)\s+(TEXT|VARCHAR)/i);
+      if (!col) return;
 
       const name = col[1];
-      if (name in ALLOWED) continue;
+      if (name in ALLOWED) return;
 
-      // Un CHECK ... IN (...) en la misma línea acota el dominio: no es libre.
-      if (/CHECK\s*\(/i.test(line)) continue;
+      // Un CHECK ... IN (...) en la misma definición acota el dominio: no es libre.
+      if (/CHECK\s*\(/i.test(completa)) return;
 
       problems.push(`${file} · ${table}.${name} es TEXT sin dominio acotado`);
+    };
+    for (const rawLine of bloques.join("\n").split("\n")) {
+      const line = rawLine.replace(/--.*$/, "").trim();
+      if (!line) continue;
+      definicion += (definicion ? " " : "") + line;
+      // Los ALTER llegan al bloque SIN su `;` final (el regex los captura hasta
+      // antes de él), así que su definición se juzga al quedar como remanente.
+      if (!line.endsWith(",") && !line.endsWith(";")) continue;
+      const completa = definicion;
+      definicion = "";
+      juzgar(completa);
     }
+    if (definicion) juzgar(definicion);
   }
 }
 

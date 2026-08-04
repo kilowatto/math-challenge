@@ -119,6 +119,18 @@
         // intento crudo, que va a `math-challenge-attempts-ae` (mc-32 riesgo #1).
         "name": "LEAGUE_DO",
         "class_name": "Liga"
+      },
+      {
+        // math-challenge-classroom-do — el estado vivo de UN grupo infantil,
+        // UN OBJETO POR GRUPO (`idFromName(group_id)`). F9, D-098. Ver
+        // `apps/web/src/lib/classroom-do.ts` y docs/infrastructure.md.
+        //
+        // Misma regla que la liga: estado derivado (puntos y racha YA
+        // calculados, alias y avatar para difundir sin ir a D1), jamás el
+        // intento crudo. La vista ordenada excluye a los miembros sin
+        // `leaderboard_opt_in` (D-087) y el filtro vive dentro del objeto.
+        "name": "CLASSROOM_DO",
+        "class_name": "Salon"
       }
     ]
   },
@@ -143,6 +155,11 @@
       // «migration tag mismatch».
       "tag": "v3",
       "new_sqlite_classes": ["Liga"]
+    },
+    {
+      // F9 #379. Misma regla: etiqueta NUEVA, nunca una edición de la v3.
+      "tag": "v4",
+      "new_sqlite_classes": ["Salon"]
     }
   ],
 
@@ -255,8 +272,6 @@
 
   // Pendientes de fases posteriores, deliberadamente ausentes para que wrangler
   // no falle contra objetos que no existen todavía:
-  //   F4  math-challenge-learner-do      (modelo adaptativo por niño)
-  //   F9  math-challenge-classroom-do    (salón y club de papás)
   //   F6  math-challenge-tutor-gateway   (AI Gateway — red de seguridad en
   //                                       dólares del tutor. NO es «delante de
   //                                       Claude»: D-035 quitó ese camino. El

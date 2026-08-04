@@ -92,7 +92,11 @@ export const CARTAS = [
     // la carta no puede señalar con autoridad que `screen_time_daily_usage`
     // retiene más de lo necesario, ni si la fila de `child_consents` para
     // `SCREEN_TIME` se escribe por el gobierno único de consentimientos.
-    cita: ["LR-2", "LR-3", "D-003", "D-012", "D-013", "D-016", "D-027", "D-040", "D-043", "D-051", "mc-25", "mc-27", "mc-30"],
+    // `D-086`/`D-087`/`D-088`/`D-110` se añaden en F9 (#401): sin ellas la
+    // carta no puede citar con autoridad el modelo de escuela verificada, el
+    // ranking opt-in del grupo, el aislamiento de contacto del club de papás
+    // ni la aprobación del padre como tipo de marca.
+    cita: ["LR-2", "LR-3", "D-003", "D-012", "D-013", "D-016", "D-027", "D-040", "D-043", "D-051", "mc-25", "mc-27", "mc-30", "D-086", "D-087", "D-088", "D-110"],
     // `league_|liga|duel|tablero|cohort` porque el subsistema social vive en
     // `packages/motor/` y en `migrations/`, y el alcance heredado llegaba a los
     // dos por casualidad, no por diseño: `MOTOR` filtra por `puntua|scoring` y
@@ -143,7 +147,11 @@ export const CARTAS = [
     // `mc-43` se añade en F7 (#257): sin ella la carta no podía invocar la
     // implicación 10 —«Larry never comments on the child's alias or avatar
     // choice»— que es la fuente de la frontera de apariencia e identidad.
-    cita: ["LR-7", "D-003", "D-004", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-18", "mc-43", "mc-46"],
+    // `D-107`/`D-097`/`mc-28` se añaden en F9 (#401): el «necesita atención»
+    // del roster se muestra como AUSENCIA de una señal positiva, nunca como
+    // alerta sobre el niño — sin estas citas la carta veía el patrón y no
+    // tenía con qué bloquearlo.
+    cita: ["LR-7", "D-003", "D-004", "D-025", "D-027", "D-028", "D-029", "mc-10", "mc-11", "mc-18", "mc-43", "mc-46", "D-107", "D-097", "mc-28"],
     // `explicacion|larry` porque el módulo de explicación vive en
     // `packages/motor/`, que ninguno de los alcances heredados alcanza: sin esta
     // línea, la carta dormía justo sobre el archivo que compone lo que un niño
@@ -165,6 +173,9 @@ export const CARTAS = [
       /packages\/tutor\//,
       /en-vivo|gasto\.ts|lexico/i,
       /cosmetic|avatar|alias/i,
+      // F9 #401: el roster del salón y la tarjeta de identidad del dueño del
+      // grupo — el «necesita atención» sin vergüenza vive ahí.
+      /grupo|salon|classroom/i,
     ],
   },
   {

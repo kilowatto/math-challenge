@@ -1607,9 +1607,15 @@ const CASOS = [
     // Reapuntado otra vez a 0017 cuando la 0015 (cosméticos kinder) aterrizó:
     // con ella presente, una sonda en 0016 queda contigua y el caso corría en
     // verde sin degradar nada — el auditor apagado en silencio de siempre.
+    // Reapuntado a 0019 cuando la 0017 (grupos infantiles, F9) aterrizó: la
+    // 0016 sigue reservada al frente F5c y declarada dentro de la propia 0017,
+    // así que el hueco por cazar es el 0018, y la sonda que lo caza es el
+    // archivo 0019 (verificado contra el auditor: una sonda en 0018 corre en
+    // verde sin degradar nada — el hueco 0016 ya está declarado). El archivo
+    // va siempre UN número por encima del primer hueco libre no declarado.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0017_prueba_hueco.sql",
+    archivo: "migrations/0019_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -1938,6 +1944,87 @@ const CASOS = [
       ),
     espera: "avatar",
 
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // F9 · Grupos infantiles — la superficie (issues #380-#387, #401).
+  //
+  // Dos casos DEGRADAN archivos REALES de este PR —el Durable Object del
+  // grupo— por la misma razón que los del motor (D-070): los auditores
+  // nacieron verdes porque la superficie se construyó con ellos delante, y un
+  // archivo inventado solo probaría que saben leer un archivo inventado. Los
+  // demás plantan la violación mínima: la columna libre en la tabla de
+  // membresía, el compositor de mensajes en la pantalla del grupo, la ruta
+  // que aprueba sin ser el módulo autorizado, el que escribe la insignia a
+  // mano.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  {
+    // La deuda de #401, cerrada: las tablas de grupo están en CHILD_TABLES
+    // desde este PR. La violación es la de siempre en una tabla nueva — un
+    // campo de texto libre donde un adulto convive con datos de niños.
+    auditor: "child-free-text",
+    que: "una columna de texto libre en la tabla de membresía de grupo",
+    archivo: "migrations/9999_prueba_grupo_texto.sql",
+    contenido: "ALTER TABLE child_group_membership ADD COLUMN nota TEXT;\n",
+    espera: "child_group_membership",
+  },
+  {
+    // El compositor. Un `<textarea>` en la pantalla del grupo no es un campo
+    // de formulario — es un chat esperando a que alguien lo lea (línea roja
+    // #3, en cualquier dirección).
+    auditor: "grupo-sin-chat",
+    que: "un <textarea> en una superficie de grupo",
+    archivo: "apps/web/src/components/grupos/PruebaChat.astro",
+    contenido: "---\n---\n<textarea name=\"mensaje\"></textarea>\n",
+    espera: "textarea",
+  },
+  {
+    // La segunda ruta. La que alguien añade dentro de seis meses «solo para
+    // importar», sin las tres condiciones de D-011 — la membresía pending, el
+    // niño de la cuenta, la firma de quién decidió.
+    auditor: "grupo-aprobacion-padre",
+    que: "una ruta que aprueba una membresía fuera del módulo autorizado",
+    archivo: "apps/web/src/pages/api/grupo-aprobar-prueba.ts",
+    contenido:
+      "export async function POST({ request }: any) {\n" +
+      "  const { membership_id } = await request.json();\n" +
+      "  await (globalThis as any).env.DB.prepare(\"UPDATE child_group_membership SET status = 'approved' WHERE id = ?\").bind(membership_id).run();\n" +
+      "  return new Response(null, { status: 204 });\n" +
+      "}\n",
+    espera: "fuera del módulo autorizado",
+  },
+  {
+    // La insignia escrita a mano. `school_verified` es lo que un padre lee
+    // antes de dejar entrar a su hijo; solo lo escriben los triggers de la
+    // 0017 (D-086).
+    auditor: "school-verification-required",
+    que: "un assurance = 'school_verified' escrito fuera de la migración",
+    archivo: "apps/web/src/lib/prueba-assurance.ts",
+    contenido:
+      "export async function subir(db: any, userId: string) {\n" +
+      "  await db.prepare(\"UPDATE group_owner_identity SET assurance = 'school_verified' WHERE user_id = ?\").bind(userId).run();\n" +
+      "}\n",
+    espera: "ESCRIBE",
+  },
+  {
+    // El filtro quitado. Es una línea, y el síntoma es invisible: un niño
+    // aparece en la tabla de posiciones de su salón y su padre nunca activó
+    // el ranking (D-087).
+    auditor: "grupo-visibilidad-minima",
+    que: "la tabla del grupo deja de filtrar por opt-in",
+    archivo: "apps/web/src/lib/classroom-do.ts",
+    parche: (t) => t.replace(".filter((f) => visibleEnTablaDePosiciones(f.opt_in))", ""),
+    espera: "visibleEnTablaDePosiciones",
+  },
+  {
+    // El campo de más. `banda` se almacena para calcular la posición visible;
+    // proyectarla publica a todo el grupo un dato que D-027 no autoriza.
+    auditor: "grupo-visibilidad-minima",
+    que: "la proyección del grupo publica la banda del niño",
+    archivo: "apps/web/src/lib/classroom-do.ts",
+    parche: (t) => t.replace("        puntos: f.puntos,", "        puntos: f.puntos,\n        banda: f.banda,"),
+    espera: "banda",
   },
 ];
 

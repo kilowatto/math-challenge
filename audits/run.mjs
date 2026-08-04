@@ -350,6 +350,21 @@ const ACTIVE = [
   // de que se mantiene — sus controles negativos son DEGRADACIONES de
   // `packages/tutor/src/en-vivo.ts`, del sobre y del i18n REALES (D-070).
   ["larry-sin-cosmeticos",   "Larry nunca comenta avatar, alias ni cosméticos", "#257, línea roja #7, D-004, D-080, mc-43 §10"],
+
+  // ─── F9 · Grupos infantiles (#379-#387, #401) ───────────────────────────
+  //
+  // La superficie de mayor exposición del producto: un adulto que no es el
+  // padre viendo datos de hasta 35 menores. Los cuatro vigilan las cuatro
+  // formas de que eso se pase sin dar ningún error visible: un canal de texto
+  // (línea roja #3), una aprobación que no es del padre (D-011), la insignia
+  // de escuela verificada escrita a mano (D-086), y un campo de más — o el
+  // filtro de opt-in de menos — en lo que el grupo publica de un niño (D-027,
+  // D-087). Cada uno con su caso en `pruebas-auditores.mjs`, visto fallar
+  // sobre el archivo REAL o sobre la violación mínima plantada.
+  ["grupo-sin-chat",          "un grupo infantil no tiene chat ni texto libre", "línea roja #3, D-027, mc-46 §4, #380/#385"],
+  ["grupo-aprobacion-padre",  "la entrada a un grupo la aprueba SU padre",      "D-011, D-096, mc-28, #401"],
+  ["school-verification-required", "la insignia de escuela verificada tiene un solo escritor", "D-086, mc-28, #380/#381"],
+  ["grupo-visibilidad-minima", "el grupo ve de un niño solo lo que D-027 autoriza", "D-027, D-087, #383/#384"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------
@@ -535,6 +550,16 @@ for (const prueba of [
   // pausas del año por pulsar dos veces el mismo botón. Incluye el rechazo al
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
+
+  // F9 #379-#387. El motor puro de grupos (código de unión sin ambiguos,
+  // topes por origen, la regla única del opt-in) y el ESQUEMA contra SQLite
+  // de verdad — las migraciones REALES aplicadas en memoria, no una copia a
+  // mano: que el cupo aborta al niño #31, que revocar al maestro baja su
+  // insignia en la misma transacción, que el `reason_code` libre no entra, y
+  // que borrar al dueño limpia grupo y reportes en cascada. Lo que defienden
+  // tampoco rompe nada visible: un CHECK mal escrito no da error, deja pasar.
+  "packages/motor/src/grupo.prueba.mjs",
+  "apps/web/src/lib/grupo-esquema.prueba.mjs",
 
 
 ]) {

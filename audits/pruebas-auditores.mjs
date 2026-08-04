@@ -530,7 +530,7 @@ const CASOS = [
     auditor: "larry-nunca-averguenza",
     que: "un texto de error que compara al niño con los demás, en es-MX y solo ahí",
     archivo: "apps/web/src/i18n/reto/es-MX.json",
-    parche: (t) => t.replace('"Multiplicaste en vez de sumar.",', '"Los demás niños ya lo lograron.",'),
+    parche: (t) => t.replace('"Se saltó uno.",', '"Los demás niños ya lo lograron.",'),
     espera: "comparacion",
   },
   {
@@ -2369,8 +2369,61 @@ const CASOS = [
     archivo: "apps/web/src/lib/grupo-roster.ts",
     parche: (t) => t.replace("ORDER BY p.alias ASC, p.id ASC", "ORDER BY r.current_streak DESC"),
     espera: "ORDER BY",
+  },
 
-
+  // ─── `distractores-explicables`: tres casos, y los tres DEGRADAN el
+  // `banco-kinder.ts` REAL (D-070) — ninguno planta un banco inventado,
+  // porque los tres bugs de verdad (el negativo de K12, la colisión del
+  // `.find()`, la causa borrada que vuelve) vivían en ese archivo.
+  {
+    // El bug literal del rezagado §7: `b − a` con b < a siempre era un
+    // número negativo en el 100% de K12, y sobrevivió una ronda de
+    // auditorías porque era un número y no una cadena. Hoy la plantilla se
+    // defiende con un filtro `>= 0`, así que la degradación reproduce el
+    // bug completo: el distractor Y el filtro que lo tragaba.
+    auditor: "distractores-explicables",
+    que: "el distractor negativo de K12 (b − a) reintroducido",
+    archivo: "packages/motor/src/banco-kinder.ts",
+    parche: (t) =>
+      t
+        .replace(
+          '        { valor: a - b + 1, causa: "error.se_salto_uno" },',
+          '        { valor: b - a, causa: "error.se_salto_uno" },',
+        )
+        .replace(
+          "]).filter((e) => e.valor !== a - b && e.valor >= 0),",
+          "]).filter((e) => e.valor !== a - b),",
+        ),
+    espera: "NEGATIVA",
+  },
+  {
+    // La colisión del plan F5 §4.1: dos causas sobre el mismo valor, y el
+    // `.find()` de `calificarRespuesta` devuelve la primera — la segunda es
+    // código muerto que Larry puede usar para explicar lo que no pasó. Las
+    // plantillas de hoy pasan por `sinColision`, así que la degradación
+    // imita a una plantilla NUEVA escrita sin ella: quita el dedupe (que
+    // está primero en K11) y duplica el valor.
+    auditor: "distractores-explicables",
+    que: "dos causas de K11 con el mismo valor",
+    archivo: "packages/motor/src/banco-kinder.ts",
+    parche: (t) =>
+      t
+        .replace("errores: sinColision([", "errores: ([")
+        .replace(
+          '        { valor: a + b + 1, causa: "error.conto_uno_dos_veces" },',
+          '        { valor: a + b - 1, causa: "error.conto_uno_dos_veces" },',
+        ),
+    espera: "mismo valor",
+  },
+  {
+    // La causa borrada que vuelve. La tabla BORRADAS se copió a mano del
+    // plan §3.4j justo para esto: si el comodín `eligio_al_azar` reaparece,
+    // `inesperada` vuelve a apagarse en silencio.
+    auditor: "distractores-explicables",
+    que: "la causa borrada error.eligio_al_azar resucita en K13",
+    archivo: "packages/motor/src/banco-kinder.ts",
+    parche: (t) => t.replace("error.mismo_aspecto_global", "error.eligio_al_azar"),
+    espera: "causa borrada",
   },
 ];
 

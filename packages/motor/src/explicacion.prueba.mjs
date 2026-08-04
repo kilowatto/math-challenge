@@ -38,15 +38,18 @@ const CATALOGOS = Object.fromEntries(
 );
 const EN = CATALOGOS.en;
 
-// El mismo ítem que usa `item.prueba.mjs`: 3 + 4, con tres errores nombrados.
+// El ítem que usa `item.prueba.mjs`: 3 + 4, con tres errores nombrados —
+// las causas que el banco produce HOY (las tres anteriores se borraron por
+// el plan F5 §3.4j; aquí el texto sale de los catálogos REALES, así que un
+// fixture con una causa borrada cae al genérico y esta prueba lo nota).
 const ITEM = {
   id: "k11-001", habilidad: "K11", nivel: 2, formato: "toca_la_respuesta",
   enunciado: { clave: "k.suma.patos", vars: { a: 3, b: 4 } },
   respuesta: { valor: 7, tol: 0 },
   errores: [
-    { valor: 12, causa: "error.multiplico" },
-    { valor: 1, causa: "error.resto" },
-    { valor: 8, causa: "error.conto_el_primero_dos_veces" },
+    { valor: 6, causa: "error.se_salto_uno" },
+    { valor: 8, causa: "error.conto_uno_dos_veces" },
+    { valor: 4, causa: "error.dijo_otro_numero_de_la_cuenta" },
   ],
   proposito: "interpretar",
   variacion: null,
@@ -60,14 +63,14 @@ console.log("\n== la explicación pregenerada — F6 #132, #137, D-074 ==\n");
 // --- Lo que hoy se tira: la causa nombrada llega hasta la frase --------------
 
 caso("el error nombrado deja de ser «esta vez no» y pasa a NOMBRAR el error", () => {
-  const e = componerExplicacion(sobreDe(12), EN);
+  const e = componerExplicacion(sobreDe(6), EN);
   es(e.origen, "causa");
-  es(e.titulo, "You multiplied instead of adding.");
-  es(e.siguiente, "Count on from the bigger number.");
+  es(e.titulo, "One got skipped.");
+  es(e.siguiente, "Touch each one once, without hurrying.");
 });
 
 caso("las tres causas del ítem producen tres explicaciones DISTINTAS", () => {
-  const textos = [12, 1, 8].map((v) => componerExplicacion(sobreDe(v), EN).titulo);
+  const textos = [6, 8, 4].map((v) => componerExplicacion(sobreDe(v), EN).titulo);
   es(new Set(textos).size, 3, "tres causas, tres textos");
 });
 
@@ -117,7 +120,7 @@ caso("el sobre NO tiene dónde poner los operandos, la respuesta ni la elección
 
 caso("sellarSobre DESCARTA todo lo que no está en la lista blanca", () => {
   const sobre = sellarSobre({
-    acc: 0, causa: "error.multiplico", habilidad: "K11",
+    acc: 0, causa: "error.se_salto_uno", habilidad: "K11",
     // Todo esto llega desde el Worker de ingesta y NO debe viajar.
     vars: { a: 3, b: 4 }, respuesta: 7, eleccion: 12, rtMs: 4200,
     puntos: 12, racha: 3, childProfileId: "uuid-de-un-niño",
@@ -132,7 +135,7 @@ caso("sellarSobre DESCARTA todo lo que no está en la lista blanca", () => {
 caso("ningún número del ítem aparece en la explicación: no hay de dónde sacarlo", () => {
   // 3, 4 y 7 son los operandos y la respuesta. Ninguno está en el sobre, así que
   // ninguno puede estar en la salida — y esta prueba lo comprueba, no lo supone.
-  for (const eleccion of [7, 12, 1, 8, 99]) {
+  for (const eleccion of [7, 6, 8, 4, 99]) {
     const e = componerExplicacion(sobreDe(eleccion), EN);
     const todo = `${e.titulo} ${e.siguiente}`;
     cierto(!/[0-9]/.test(todo), `salió un dígito: «${todo}»`);
@@ -140,26 +143,26 @@ caso("ningún número del ítem aparece en la explicación: no hay de dónde sac
 });
 
 caso("es PURA: la misma entrada da la misma salida, sin red y sin reloj (#137)", () => {
-  const a = JSON.stringify(componerExplicacion(sobreDe(12), EN));
-  const b = JSON.stringify(componerExplicacion(sobreDe(12), EN));
+  const a = JSON.stringify(componerExplicacion(sobreDe(6), EN));
+  const b = JSON.stringify(componerExplicacion(sobreDe(6), EN));
   es(a, b);
   // Y sin `fetch`: si el módulo lo llamara, esto reventaría.
   const guardado = globalThis.fetch;
   globalThis.fetch = () => { throw new Error("la explicación pregenerada tocó la red"); };
-  try { componerExplicacion(sobreDe(12), EN); } finally { globalThis.fetch = guardado; }
+  try { componerExplicacion(sobreDe(6), EN); } finally { globalThis.fetch = guardado; }
 });
 
 // --- D-074: el juicio por PASO, y dónde Larry deja de dictaminar ------------
 
 const PASOS = [
   { clave: "paso.uno", juicio: "bien" },
-  { clave: "paso.dos", juicio: "mal", causa: "error.multiplico" },
+  { clave: "paso.dos", juicio: "mal", causa: "error.se_salto_uno" },
 ];
 const CON_PASOS = { ...EN, "paso.uno": "the units column", "paso.dos": "the tens column" };
 
 caso("en una materia JUZGABLE, Larry explica cada paso que el motor juzgó", () => {
   const e = componerExplicacion(
-    sellarSobre({ acc: 0, causa: "error.multiplico", habilidad: "K11", materia: "reagrupacion", pasos: PASOS }),
+    sellarSobre({ acc: 0, causa: "error.se_salto_uno", habilidad: "K11", materia: "reagrupacion", pasos: PASOS }),
     CON_PASOS,
   );
   es(e.pasos.length, 2);
@@ -189,7 +192,7 @@ caso("el juicio que el motor NO debió emitir se descarta aquí, no se repite", 
   const e = componerExplicacion(
     sellarSobre({
       acc: 0, habilidad: "M99", materia: "hipotesis_de_riemann",
-      pasos: [{ clave: "paso.uno", juicio: "mal", causa: "error.multiplico" }],
+      pasos: [{ clave: "paso.uno", juicio: "mal", causa: "error.se_salto_uno" }],
     }),
     CON_PASOS,
   );
@@ -211,13 +214,13 @@ caso("un paso que el motor no pudo juzgar se describe aunque la materia sea juzg
 
 caso("el disparador es la MATERIA, no la banda: kinder no recibe pasos jamás", () => {
   const e = componerExplicacion(
-    sellarSobre({ acc: 0, causa: "error.multiplico", habilidad: "K11", materia: "conteo", pasos: PASOS }),
+    sellarSobre({ acc: 0, causa: "error.se_salto_uno", habilidad: "K11", materia: "conteo", pasos: PASOS }),
     CON_PASOS,
   );
   es(e.pasos.length, 0, "contar patos no tiene procedimiento que explicar");
   // Y sin materia declarada, tampoco: el default silencioso es no pronunciarse.
   const sinMateria = componerExplicacion(
-    sellarSobre({ acc: 0, causa: "error.multiplico", habilidad: "K11", pasos: PASOS }),
+    sellarSobre({ acc: 0, causa: "error.se_salto_uno", habilidad: "K11", pasos: PASOS }),
     CON_PASOS,
   );
   es(sinMateria.pasos.length, 0);
@@ -253,7 +256,7 @@ caso("ninguna explicación cuenta las veces que se ha fallado", () => {
 
 caso("un fallo SIEMPRE trae el siguiente paso: nunca un marcador desnudo (Shute)", () => {
   for (const locale of LOCALES) {
-    for (const eleccion of [12, 1, 8, 99]) {
+    for (const eleccion of [6, 8, 4, 99]) {
       const e = explicarEnLocale(sobreDe(eleccion), locale, CATALOGOS);
       cierto(e.siguiente.trim() !== "", `${locale} · ${eleccion}: sin siguiente paso`);
     }

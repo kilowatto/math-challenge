@@ -1,23 +1,7 @@
 {
-  "error.multiplico": [
-    "You multiplied instead of adding.",
-    "Count on from the bigger number."
-  ],
-  "error.resto": [
-    "You took away instead of putting together.",
-    "Both groups join up — count them all."
-  ],
-  "error.conto_el_primero_dos_veces": [
-    "The first one got counted twice.",
-    "Start counting from the next one."
-  ],
   "error.sumo": [
     "You put them together instead of taking away.",
     "Take the ducks that fly off out of the group."
-  ],
-  "error.resto_al_reves": [
-    "That took the big number from the small one.",
-    "Start from how many there were."
   ],
   "error.conto_el_que_quita": [
     "One extra got taken away.",
@@ -47,17 +31,13 @@
     "That part is already there.",
     "How many are still missing?"
   ],
-  "error.sumo_en_vez_de_completar": [
-    "You added the two instead of completing.",
-    "How many more fit?"
-  ],
   "error.eligio_el_menor": [
     "That group has fewer.",
     "Which line is longer?"
   ],
-  "error.eligio_al_azar": [
-    "Look at what the others have in common.",
-    "One of them is different."
+  "error.mismo_aspecto_global": [
+    "They all look almost the same.",
+    "One of them has a different shape — look at the sides and corners."
   ],
   "acierto": "That's it.",
   "inesperada": [

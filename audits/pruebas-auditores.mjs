@@ -1941,6 +1941,68 @@ const CASOS = [
     espera: "avatar",
 
   },
+
+  // ─── F5c · Los dos auditores del banco de PRIMARIA (#358, #359) ──────────
+  //
+  // Los cinco casos DEGRADAN archivos REALES (D-070): los catálogos de los
+  // locales, la plantilla y el guion de siembra que este PR introduce. Un
+  // archivo inventado solo probaría que el auditor sabe leer un archivo
+  // inventado.
+  {
+    // La de #358 literal: una opción cuya plantilla no existe en i18n. Se
+    // borra la clave del catálogo alemán — el fallo exacto de «seis locales
+    // editados y el séptimo quedó atrás».
+    auditor: "banco-primaria-i18n",
+    que: "un enunciado de primaria sin plantilla en de-DE",
+    archivo: "apps/web/src/i18n/reto/de-DE.json",
+    parche: (t) => t.replace('  "p.fluidez.suma": "Was ist {a} + {b}?",\n', ""),
+    espera: "p.fluidez.suma",
+  },
+  {
+    // Y la otra punta del mismo cruce: la PLANTILLA nombra una clave que
+    // ningún catálogo tiene. Se degrada la fuente, no el catálogo.
+    auditor: "banco-primaria-i18n",
+    que: "la plantilla P01 apunta a una clave que no existe en ningún locale",
+    archivo: "packages/motor/src/banco-primaria.ts",
+    parche: (t) => t.replace('"p.fluidez.suma"', '"p.fluidez.suma_inexistente"'),
+    espera: "p.fluidez.suma_inexistente",
+  },
+  {
+    // El cable de Kalyuga cortado en la siembra (#354): el guion deja de
+    // escribir el techo en `hasta_nivel` y el modelo se sirve para siempre
+    // sin que nada visible se rompa. El auditor tiene que nombrar la pieza.
+    auditor: "banco-primaria-i18n",
+    que: "la siembra deja de escribir el techo por nivel en D1",
+    archivo: "scripts/sembrar-banco-primaria.mjs",
+    parche: (t) => t.replace("TECHO_POR_HABILIDAD[item.habilidad]", "null"),
+    espera: "hasta_nivel = 4",
+  },
+  {
+    // #359 en español: «niños» en el copy que sirve primaria. La cadena
+    // degradada es la real, y el auditor tiene que decir la palabra.
+    auditor: "primaria-sin-ninos",
+    que: "«niños» en un enunciado de primaria, en es-MX",
+    archivo: "apps/web/src/i18n/reto/es-MX.json",
+    parche: (t) =>
+      t.replace(
+        '"p.comparar.mayor": "\\u00bfCu\\u00e1l n\\u00famero es el mayor?"',
+        '"p.comparar.mayor": "\\u00bfCu\\u00e1l n\\u00famero es el mayor, ni\\u00f1os?"',
+      ),
+    espera: "niños",
+  },
+  {
+    // #359 en alemán: «Kinder» es la misma palabra y la misma trampa — un
+    // barrido solo en español e inglés dejaría el locale sin vigilancia.
+    auditor: "primaria-sin-ninos",
+    que: "«Kinder» en un enunciado de primaria, en de-DE",
+    archivo: "apps/web/src/i18n/reto/de-DE.json",
+    parche: (t) =>
+      t.replace(
+        '"p.comparar.mayor": "Welche Zahl ist die gr\\u00f6\\u00dfte?"',
+        '"p.comparar.mayor": "Welche Zahl ist die gr\\u00f6\\u00dfte, Kinder?"',
+      ),
+    espera: "Kinder",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

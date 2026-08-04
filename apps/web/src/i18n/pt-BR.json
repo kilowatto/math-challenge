@@ -200,5 +200,11 @@
   "mapaLugarEnCurso": "Lugar em andamento",
   "mapaLugarPorVisitar": "Lugar a visitar",
   "mapaAqui": "O Larry está aqui",
-  "casaMapaCta": "Seu mapa"
+  "casaMapaCta": "Seu mapa",
+  "casaLigaCta": "Sua liga",
+  "casaLigaActiva": "Liga: ativada",
+  "casaLigaApagada": "Liga: desativada",
+  "casaLigaActivar": "Ativar",
+  "casaLigaQuitar": "Desativar",
+  "casaLigaNota": "Na liga, a criança joga com um codinome gerado, nunca com o nome."
 }

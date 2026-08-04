@@ -562,6 +562,7 @@ for (const prueba of [
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
 
+
   // F7 #247, #250. El TABLERO GLOBAL de punta a punta contra SQLite de verdad
   // (`node:sqlite`): un niño sin consentimiento no aparece aunque tenga más
   // puntos que nadie; uno revocado desaparece; PRIMARIA en el puesto 47 recibe
@@ -571,6 +572,17 @@ for (const prueba of [
   // NUNCA DELETE). La tabla de la escalera está escrita a mano (D-070), no
   // importada del motor: si no, aprobaría su propia violación.
   "apps/web/src/lib/padre-tablero.prueba.mjs",
+
+  // F7 #237, #242, #243 · D-040, D-081, D-106. El ALTA, el CABLE de puntos y
+  // la BAJA de la liga, contra SQLite de verdad (`node:sqlite`) con un DO de
+  // mentira que graba las llamadas. Lo que defiende tampoco rompe nada
+  // visible: un default por banda mal leído no da error — da un niño de
+  // KINDER en una liga sin que su padre lo activara; un adulto y un menor en
+  // la misma cohorte; un participante 31 sin cohorte jamás; un cierre semanal
+  // que lee ceros porque nadie escribió el espejo de D1. Las expectativas
+  // están escritas a mano (D-070), no importadas del módulo.
+  "apps/web/src/lib/liga-membresia.prueba.mjs",
+
   // F7 #224. El Durable Object de misiones diarias —uno por niño— y su cable,
   // contra SQLite de verdad (`node:sqlite`) y con la clase del DO de verdad.
   // Lo que defiende tampoco rompe nada visible: un reintento de red que paga
@@ -580,6 +592,20 @@ for (const prueba of [
   // orden. 17 casos: el XP una sola vez, el bono una sola vez, el borrado en
   // cero, y la pantalla leyendo el rollup.
   "apps/web/src/lib/missions-do.prueba.mjs",
+
+
+
+  // F8 #404, la frontera de D-091. El motivo del corte
+  // (`LIMITE_DE_PANTALLA_CORTO_LA_SESION`) llegando a `registrarDia` a través
+  // del cable real, contra SQLite de verdad (`node:sqlite`). Lo que defiende
+  // tampoco rompe nada visible: es la omisión silenciosa que
+  // `limite-no-rompe-el-dia` declara como su punto ciego — nadie reinicia la
+  // racha, sencillamente nadie la registra, y el día del niño no ocurrió. 6
+  // casos: el día sin contar que se registra, los dos motivos de cierre
+  // produciendo el MISMO estado, la idempotencia cuando D-091 ya contó el día
+  // en el ítem, y el corte que no suma XP.
+  "apps/web/src/lib/limite-corte-racha.prueba.mjs",
+
 
 
 

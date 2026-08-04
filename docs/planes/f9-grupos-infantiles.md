@@ -139,7 +139,7 @@ frontera que sí es estructural es la otra: `adult_club` (F10) será una
 estructura **separada**, para que ninguna función social de adultos
 alcance a los niños por omisión (`mc-46` §7).
 
-## 3. Modelo de datos — migración `0015_grupos_infantiles.sql`
+## 3. Modelo de datos — migración `0018_grupos_infantiles.sql`
 
 > **Corrección (2026-08-03) — cuatro cosas que el primer borrador
 > afirmó y el repo contradice:**
@@ -160,9 +160,12 @@ alcance a los niños por omisión (`mc-46` §7).
 >    `CHECK` de `assurance` y actualiza el campo de cada maestro activo
 >    bajo ella en la misma transacción (corrección de D-086, 2026-08-03).
 
-**Numeración: `0015`.** Reparto confirmado por el dueño el 2026-08-03
-(dudas §24.5): `0013` = F8 panel (#278), `0014` = F8 reportes (#287),
-`0015` = F9 (ésta), `0016` = F10. `migration-safety` confirma la serie
+**Numeración: `0018`.** Reparto confirmado por el dueño el 2026-08-03
+(dudas §24.5): otras sesiones tomaron `0013`-`0015` mientras tanto
+(sendero, push, cosméticos — verificado en `d1_migrations` remoto), así
+que el reparto vigente es: `0016` = F8 panel (#278), `0017` = F8
+reportes (#287), `0018` = F9 (ésta), `0019` = F10, `0020` = F11 push,
+`0021` = F12 (`household_link`). `migration-safety` confirma la serie
 0001..0012 sin huecos `[medido]`. Solo AGREGA: cuatro tablas nuevas,
 dos índices, un `ALTER` del `CHECK` de `group_owner_identity.assurance`
 (que es ampliación de dominio, no borrado — **verificar antes del PR
@@ -319,7 +322,7 @@ distintos.
 
 - **Con foto (D-136, 2026-08-03 noche).** Este apartado decía «sin foto
   en v1» porque la migración `0005` no tiene `photo_r2_key`. El dueño
-  decidió lo contrario: D-011 se mantiene y la `0015` añade la columna
+  decidió lo contrario: D-011 se mantiene y la `0018` añade la columna
   `photo_r2_key` a `group_owner_identity`, con su superficie de subida
   (adulto, acción explícita, AVIF/WebP en `math-challenge-media`, parte
   del runbook de borrado). La foto es presentación, **no verificación**:
@@ -374,7 +377,7 @@ siguientes son la lista completa; ninguno acepta texto libre.
    verá tu nombre y tu insignia antes de aprobar».
 6. **La marca `no-chat` se dispara aquí** (D-137, 2026-08-03 noche):
    el mecanismo de marcas de F2 se construye de verdad — lector y
-   `CHECK` ampliado con `NO_CHAT` en la `0015` — y su primer disparo
+   `CHECK` ampliado con `NO_CHAT` en la `0018` — y su primer disparo
    nuevo es este: la primera vez que un adulto termina de crear un
    grupo. *Nota de corrección: este paso decía que F9 no usaría el
    mecanismo y lo diría solo en pantalla; D-137 lo revierte.*
@@ -670,7 +673,7 @@ que el producto envía fuera de la app en esta fase.
 | Objeto | Estado | Renglón |
 |---|---|---|
 | `math-challenge-classroom-do` (clase `Grupo`) | **Se crea en esta fase** (D-112) — el inventario ya lo lista; la bitácora gana su fila en el PR | `docs/infrastructure.md` |
-| `math-challenge-db` · migración `0015_grupos_infantiles.sql` | Nueva, add-only | bitácora, mismo PR |
+| `math-challenge-db` · migración `0018_grupos_infantiles.sql` | Nueva, add-only | bitácora, mismo PR |
 | `math-challenge-config-kv` | Sin objeto nuevo: 7 llaves `f9_enabled_<locale>` | se anota en el renglón existente |
 | `math-challenge-reports` (cron de F8) | Reuso: el barrido diario de `expired` vive ahí (§5.4) | sin renglón nuevo |
 
@@ -686,7 +689,7 @@ del screenshot (D-109) elimina el único candidato a R2 de esta fase.
    lista blanca escrita a mano: `id`, `join_code`, `school.name`,
    `origen_tipo`…), o si aparece un componente/ruta de mensajería bajo
    `app/grupos/`. Cita: LR-3, D-027. Control negativo: degradar la
-   `0015` real quitando un `CHECK`.
+   `0018` real quitando un `CHECK`.
 2. `audits/grupo-aprobacion-padre.mjs` — falla si la ruta de aprobación
    no exige las tres condiciones (membresía `pending` vigente, perfil
    perteneciente a la cuenta de la sesión, `decided_by` = usuario de la
@@ -753,7 +756,7 @@ memoria):**
 **Arnés:** los cuatro auditores nuevos y la extensión de
 `child-free-text` llevan su caso en `audits/pruebas-auditores.mjs` con
 control negativo por **degradación del archivo real** (D-070) — la
-`0015` real, la ruta real de aprobación, la consulta real del roster.
+`0018` real, la ruta real de aprobación, la consulta real del roster.
 
 ## 14. Qué NO incluye este documento
 
@@ -831,9 +834,9 @@ cuerpo; aquí el resumen:
 4. **Borrado en cascada.** Cubierto en §3: las cinco tablas cuelgan de
    `users`/`child_profiles` con CASCADE; `child_group_report` ganó
    CASCADE respecto al primer borrador.
-5. **El número de migración.** `0015`, por reparto confirmado del dueño
+5. **El número de migración.** `0018`, por reparto confirmado del dueño
    (dudas §24.5: `0013`/`0014` son de F8, `0016` de F10). Si otra rama
-   toma `0015` antes, se renumera ANTES de commitear — renumerar
+   toma `0018` antes, se renumera ANTES de commitear — renumerar
    después no existe (lección de la `0008`).
 
 ## 17. Runbook de la cola manual (D-116)
@@ -885,7 +888,7 @@ el proyecto 1, **más 4 nuevas** de esta segunda pasada:
 | # | Issue | Qué cambia en esta pasada |
 |---|---|---|
 | #379 | F9 · Grupos infantiles (paraguas) | decisiones D-107 a D-116 |
-| #380 | Esquema: `school`, `child_group`, `child_group_membership`, `child_group_report` | migración `0015`; sin screenshot; `expired`/`expires_at`; sin `CLASSROOM_JOIN` |
+| #380 | Esquema: `school`, `child_group`, `child_group_membership`, `child_group_report` | migración `0018`; sin screenshot; `expired`/`expires_at`; sin `CLASSROOM_JOIN` |
 | #381 | Verificación de escuela — dominio + revisión humana (D-086) | runbook SQL de §17 como criterio (D-116) |
 | #382 | Tarjeta de identidad del dueño — aprobación del padre | sin foto, sin correo parcial; toggle de ranking integrado (D-115) |
 | #383 | Roster del dueño del grupo — por dispositivo | alias+racha+puntos siempre (D-107); orden alfabético; fuente del chip «activo» por decidir (dudas §24.3) |
@@ -915,14 +918,14 @@ Las reglas son las de `AGENTS.md` §1, aplicadas a estas 13 issues:
 lista de archivos y la lista de los ajenos; los registros compartidos
 se tocan **solo añadiendo al final** y el orquestador resuelve los
 merges; los números de migración ya están repartidos (F8 = `0013`/`0014`,
-F9 = `0015`, F10 = `0016`) así que **ningún frente de F9 toca otro
+F9 = `0018`, F10 = `0016`) así que **ningún frente de F9 toca otro
 número ni edita una migración existente**.
 
 ### Frentes (5 agentes en paralelo tras el esquema, luego 2)
 
 | Frente | Issues | Archivos SUYOS | NO toca |
 |---|---|---|---|
-| **A · Esquema y gate** | #380, #402 | `migrations/0015_grupos_infantiles.sql` (nuevo), `apps/web/src/lib/owner-proof.ts` y `owner-proof.prueba.mjs` (nuevo) | rutas, componentes, i18n, DOs, wrangler |
+| **A · Esquema y gate** | #380, #402 | `migrations/0018_grupos_infantiles.sql` (nuevo), `apps/web/src/lib/owner-proof.ts` y `owner-proof.prueba.mjs` (nuevo) | rutas, componentes, i18n, DOs, wrangler |
 | **B · Escuela** | #381 | `apps/web/src/pages/api/grupos/escuela*.ts`, `pages/[locale]/app/grupos/escuela.astro` | la migración (espera a A), el roster, el DO |
 | **C · Flujo del padre** | #382, #386 | `pages/[locale]/app/grupos/unirse.astro`, `.../bitacora.astro`, `pages/api/grupos/unirse.ts`, `pages/api/grupos/membresia/*.ts`, `components/grupos/Tarjeta*.astro` | el roster del dueño (D), la escuela (B), el mapa (E) |
 | **D · Roster, ranking y DO** | #383, #384, #400 | `pages/[locale]/app/grupos/[id].astro`, `apps/web/src/lib/grupo-do.ts` (nuevo), lectura de `packages/motor/src/tablero.ts` y `liga.ts` | `wrangler.jsonc`, `astro.config.mjs`, `worker.ts` **hasta el paso de integración** (ver abajo), la tarjeta (C) |
@@ -933,7 +936,7 @@ número ni edita una migración existente**.
 **A va primero, solo** (B, C, D, E dependen de la migración). Después
 corren B+C+D+E en paralelo; G entra cuando C y D tienen pantallas; F
 escribe auditores en paralelo con todos — su control negativo degrada
-archivos que YA existen (la `0012`, la `0015` cuando aterrice), nunca
+archivos que YA existen (la `0012`, la `0018` cuando aterrice), nunca
 el trabajo de otro frente vivo.
 
 ### Los cinco archivos que NO se paralelizan
@@ -950,7 +953,7 @@ el trabajo de otro frente vivo.
 
 F9 y F10 pueden correr a la vez: sus rutas no se tocan
 (`/app/grupos/` vs `/app/clubes/`), sus migraciones ya tienen número
-(`0015`/`0016`), y su único punto compartido —la tasa de creación de
+(`0018`/`0016`), y su único punto compartido —la tasa de creación de
 D-114, que cuenta las dos tablas— lo implementa cada quien sobre su
 tabla y quien aterrice segundo añade la del otro al conteo (dicho en
 el plan de F10 §12). El registro de decisiones y `dudas.md` los toca

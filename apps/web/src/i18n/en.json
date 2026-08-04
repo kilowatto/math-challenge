@@ -200,5 +200,11 @@
   "mapaLugarEnCurso": "Place under way",
   "mapaLugarPorVisitar": "Place still to visit",
   "mapaAqui": "Larry is here",
-  "casaMapaCta": "Your map"
+  "casaMapaCta": "Your map",
+  "casaLigaCta": "Your league",
+  "casaLigaActiva": "League: on",
+  "casaLigaApagada": "League: off",
+  "casaLigaActivar": "Turn on",
+  "casaLigaQuitar": "Turn off",
+  "casaLigaNota": "In the league your child plays with a generated alias, never their name."
 }

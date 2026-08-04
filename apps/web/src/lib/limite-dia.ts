@@ -46,6 +46,12 @@
  * que se durmió con la sesión abierta tampoco cuesta más de
  * `TOPE_DE_CHECKPOINT_MIN` — el recorte es del motor, no de aquí.
  *
+ * Se acumulan CON O SIN configuración (D-139): sin fila en
+ * `screen_time_settings` no hay límite y `decidir()` devuelve `SEGUIR`, pero
+ * la fila del día se escribe igual — el «hoy jugó X minutos» de la pantalla
+ * del padre (#269) tiene dato desde antes de que el padre configure nada, y
+ * el día que configure, el tope ya sabe cuánto se jugó hoy.
+ *
  * ─── La línea roja #6, y por qué aquí no hay rama que escribir mal ────────
  *
  * Este módulo NO llama a la racha y no la nombra en una condición. El día ya
@@ -214,8 +220,8 @@ async function leerContexto(
   if (banda !== "KINDER" && banda !== "PRIMARIA" && banda !== "SECUNDARIA") return null;
   if (!tieneLimite(banda)) return null;
 
-  // La fila viaja CRUDA: la vigencia (default de la banda sin fila, rango
-  // corregido, `bedtime_cutoff_min` forzado al de la banda) la resuelve
+  // La fila viaja CRUDA: la vigencia (sin fila = SIN LÍMITE, D-139; rango
+  // corregido; `bedtime_cutoff_min` forzado al de la banda) la resuelve
   // `configuracionVigente` dentro de `decidir()`, en un solo sitio.
   return {
     banda,

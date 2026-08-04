@@ -1074,3 +1074,14 @@ salvo es-MX/fr-FR). Decidir su traducción es tema aparte de este cierre.
 | F6 P-18 medición | Se corre (~$5) | D-144 |
 | F6 bloque de 15 | Ratificadas en bloque | D-145 |
 | §6 redirecciones | Para siempre | D-146 |
+
+### 24.7 SUPERADO el reparto de §24.5 (2026-08-03, noche)
+
+Las 0013-0015 las tomaron otras sesiones mientras tanto
+(`0013_dias_jugados_sendero`, `0014_push_recordatorio_padre`,
+`0015_cosmeticos_kinder_v1` — verificado contra `d1_migrations` remoto
+con `wrangler d1 execute`). **Reparto vigente, confirmado por el
+dueño:** `0016` = F8 panel (#278), `0017` = F8 reportes (#287),
+`0018` = F9 grupos (#380), `0019` = F10 clubs (#412),
+`0020` = F11 push suscripciones (#429), `0021` = F12 `household_link`
+(#445). Los planes ya quedaron renumerados.

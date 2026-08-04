@@ -1,0 +1,107 @@
+---
+/**
+ * La cara de un miembro de la liga — las mismas seis siluetas y los mismos
+ * seis colores que la rejilla de `app/kids`.
+ *
+ * ─── Segunda copia deliberada, y por qué no es un error ─────────────────────
+ *
+ * El dibujo vive inline en `pages/[locale]/app/kids/index.astro`, y una página
+ * `.astro` no se puede importar. Sacarlo a un componente compartido significaría
+ * editar esa pantalla —territorio de otro frente— así que las formas se copian
+ * aquí, con este aviso: **si el dibujo cambia, cambia en los dos sitios**. Es
+ * el precio declarado de no tocar una pantalla de F2 desde F7.
+ *
+ * Las piezas llegan ya validadas como índices (`cara` 0-5, `color` 0-5) dentro
+ * del `avatar_parts` que difunde el DO — piezas de un catálogo, jamás una foto
+ * y jamás una cámara (línea roja #1).
+ *
+ * El color entra como CLASE y no como atributo `fill`: así el valor sale de un
+ * token `--ignia-*` y no hay un solo color escrito en el marcado. Los pares
+ * relleno/tinta son los medidos de la rejilla de caras (contraste en los dos
+ * temas, WCAG 2.2 §1.4.3 y §1.4.11).
+ */
+
+interface Props {
+  /** Índice de silueta, 0-5. */
+  forma: number;
+  /** Índice de color, 0-5. */
+  color: number;
+}
+
+const { forma, color } = Astro.props;
+---
+
+<svg class={`caraLiga c${color}`} viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+  {/* Las orejas van ANTES de la cabeza para que el relleno de la cabeza tape
+      su base y el trazo no se cruce por dentro. */}
+  {forma === 1 && (
+    <g>
+      <path class="relleno" d="M30 44 L26 12 L56 30 Z" stroke-linejoin="round" />
+      <path class="relleno" d="M90 44 L94 12 L64 30 Z" stroke-linejoin="round" />
+    </g>
+  )}
+  {forma === 2 && (
+    <g>
+      <ellipse class="relleno" cx="45" cy="26" rx="10" ry="23" transform="rotate(-13 45 26)" />
+      <ellipse class="relleno" cx="75" cy="26" rx="10" ry="23" transform="rotate(13 75 26)" />
+    </g>
+  )}
+  {forma === 3 && (
+    <g>
+      <circle class="relleno" cx="30" cy="38" r="15" />
+      <circle class="relleno" cx="90" cy="38" r="15" />
+    </g>
+  )}
+  {/* Antena y copete son figuras RELLENAS, no trazos sueltos: un `fill="none"`
+      en el marcado perdería contra la clase y la curva saldría rellena. */}
+  {forma === 4 && (
+    <g>
+      <rect class="relleno" x="56" y="8" width="8" height="26" rx="4" />
+      <circle class="relleno" cx="60" cy="10" r="9" />
+    </g>
+  )}
+  {forma === 5 && (
+    <path class="relleno" d="M60 42 Q40 22 60 2 Q80 22 60 42 Z" stroke-linejoin="round" />
+  )}
+
+  <circle class="relleno" cx="60" cy="68" r="38" />
+  <circle class="tinta" cx="47" cy="62" r="6" />
+  <circle class="tinta" cx="73" cy="62" r="6" />
+  <path class="boca" d="M44 84 Q60 98 76 84" />
+</svg>
+
+<style>
+  /* `aspect-ratio` explícito: un SVG en línea sin él cae a 150 px de alto en
+     el WebView viejo de un Android de gama baja, que es el dispositivo de
+     referencia (`mc-47` §5). */
+  .caraLiga {
+    inline-size: 2.75rem;
+    block-size: auto;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+  }
+
+  /* Los seis pares medidos de la rejilla de caras (app/kids): cada relleno
+     lleva la tinta con la que pasa 4.5:1, y en cada tema o el relleno o el
+     contorno despega del fondo por encima de 3:1. Solo tokens de Ignia: ni un
+     hexadecimal. */
+  .c0 { --cara-relleno: var(--ignia-naranja);        --cara-tinta: var(--ignia-negro);  }
+  .c1 { --cara-relleno: var(--ignia-azul);           --cara-tinta: var(--ignia-blanco); }
+  .c2 { --cara-relleno: var(--ignia-naranja-claro);  --cara-tinta: var(--ignia-negro);  }
+  .c3 { --cara-relleno: var(--ignia-naranja-oscuro); --cara-tinta: var(--ignia-blanco); }
+  .c4 { --cara-relleno: var(--ignia-gris-400);       --cara-tinta: var(--ignia-negro);  }
+  .c5 { --cara-relleno: var(--ignia-gris-900);       --cara-tinta: var(--ignia-blanco); }
+
+  .relleno {
+    fill: var(--cara-relleno);
+    stroke: var(--cara-tinta);
+    stroke-width: 7;
+  }
+  .tinta { fill: var(--cara-tinta); }
+  .boca {
+    fill: none;
+    stroke: var(--cara-tinta);
+    stroke-width: 7;
+    stroke-linecap: round;
+  }
+</style>

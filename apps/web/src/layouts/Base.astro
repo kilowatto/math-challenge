@@ -62,6 +62,18 @@ interface Props {
    */
   contentLang?: string;
   /**
+   * Precargar también el subconjunto latin-ext de Raleway. Issue #327.
+   *
+   * Falso por omisión a propósito: son 27 KB que casi ninguna página usa
+   * (ñ, ç, ü y € los cubre el rango latin). Lo ponen en `true` solo las
+   * páginas que detectaron en el build un glifo de ese rango —hoy, las
+   * investigaciones del corpus con macrones como la ō de «Banshō»— vía
+   * `necesitaLatinExt()` de `lib/latin-ext.ts`. Sin el preload, esa fuente
+   * se descubre al renderizar, y el repaint del swap fecha el LCP a su
+   * llegada: era el diferencial entre la portada y el artículo largo.
+   */
+  preloadLatinExt?: boolean;
+  /**
    * A dónde mandar a quien YA tiene sesión. Issue #339.
    *
    * Solo lo pasa `/entrar/`. Si se omite, la página no redirige a nadie — que
@@ -71,7 +83,7 @@ interface Props {
   siHaySesionIrA?: string;
 }
 
-const { locale, title, description, seccion = null, slug, contentLang, siHaySesionIrA } = Astro.props;
+const { locale, title, description, seccion = null, slug, contentLang, siHaySesionIrA, preloadLatinExt = false } = Astro.props;
 const idiomaDelTexto = contentLang ?? locale;
 const m = t(locale);
 const site = "https://math.kilowatto.com";
@@ -331,7 +343,8 @@ const jsonLd = {
     {/* Raleway autohospedada — ni una petición a un tercero. Ver
         src/styles/fonts.css para el porqué (rendimiento y privacidad).
         Se precarga solo el subconjunto latin: cubre el cuerpo en los siete
-        locales, y latin-ext llega después solo si la página tiene acentos. */}
+        locales, y latin-ext se precarga solo cuando la página declara que
+        tiene un glifo de ese rango (`preloadLatinExt` — ver el prop). */}
     <link
       rel="preload"
       href="/fonts/raleway-var-latin.woff2"
@@ -339,6 +352,15 @@ const jsonLd = {
       type="font/woff2"
       crossorigin
     />
+    {preloadLatinExt && (
+      <link
+        rel="preload"
+        href="/fonts/raleway-var-latin-ext.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      />
+    )}
 
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />

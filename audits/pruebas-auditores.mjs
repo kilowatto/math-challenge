@@ -1627,9 +1627,14 @@ const CASOS = [
     // en silencio de siempre. (El encargo decía 0020; la aritmética del propio
     // mecanismo —sonda = primer hueco no declarado + 1— da 0021, y el arnés lo
     // confirma: con 0020 el caso corre en verde.)
+    // Reapuntado a 0022 cuando la 0020 (arte de los 6 cosméticos que quedaban
+    // sin él, #255) aterrizó: con la 0018 reservada al frente del panel y la
+    // 0020 presente, el primer hueco libre NO declarado es el 0021, y la sonda
+    // que lo caza es el archivo 0022 — la aritmética de siempre: sonda = primer
+    // hueco no declarado + 1.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0021_prueba_hueco.sql",
+    archivo: "migrations/0022_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },

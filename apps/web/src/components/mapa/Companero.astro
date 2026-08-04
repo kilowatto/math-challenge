@@ -2,20 +2,24 @@
 /**
  * El compañero del mapa — **Larry, con accesorios**. D-080, #235.
  *
- * ─── HUECO DE ARTE, marcado a propósito ────────────────────────────────────
+ * ─── El arte, y el hueco que queda como caída ──────────────────────────────
  *
- * Aquí no hay una imagen y no es un olvido. CLAUDE.md § Imágenes: Recraft es la
- * herramienta oficial y **la continuidad del avatar de Larry la mantiene el
- * dueño**. Generar arte nuevo desde aquí es exactamente cómo se pierde esa
- * continuidad — dos Larrys parecidos son peores que uno.
+ * Las dos piezas que el PR #391 describe ya existen, generadas con
+ * `scripts/gen-larry.mjs` en Recraft — la herramienta oficial, porque la
+ * continuidad del avatar ES Larry (D-080):
  *
- * Lo que sí queda hecho es el sitio: del tamaño correcto, con el marco
- * punteado que dice «esto es un hueco» sin una palabra, y con el nombre
- * accesible ya resuelto en los siete locales. Meter la imagen será sustituir
- * este bloque por un `<picture>` con AVIF y respaldo WebP (`mc-47` §5), sin
- * tocar el layout.
+ *   · `larry_caminando` — cuerpo entero, de perfil, para el sendero de KINDER
+ *     (88 px, `--tap-kinder`) y el sendero de la racha (#205).
+ *   · `larry_busto` — la cabeza, neutra, para el nodo del árbol y el tablero
+ *     adulto (~48 px). Neutra a propósito (`mc-37`: el estado `denying` del
+ *     avatar viejo se leía como «estás mal»).
  *
- * **Las piezas que hacen falta están descritas en el PR**, no inventadas aquí.
+ * El manifiesto `arte-larry.json` declara qué piezas existen EN DISCO y el
+ * punto de anclaje de accesorios de cada una (dónde se posa un sombrero,
+ * dónde una bandana), medido a mano sobre la pieza aceptada. Si la pieza
+ * pedida no está en el manifiesto —la corrida se interrumpió, el archivo se
+ * borró— se pinta el hueco marcado de siempre, sin tocar el layout: un hueco
+ * que se ve es un hueco que se llena.
  *
  * ─── Sin estado de vida, sin hambre, sin decaimiento ───────────────────────
  *
@@ -39,6 +43,7 @@
  * distingue que lo están mirando.
  */
 import { t, type Locale } from "../../i18n";
+import manifiesto from "./arte-larry.json";
 
 interface Props {
   locale: Locale;
@@ -48,6 +53,11 @@ interface Props {
    */
   visible: boolean;
   /**
+   * Qué pieza del manifiesto: `caminando` en los senderos (el único sitio
+   * donde Larry se mueve), `busto` en el nodo del árbol y el tablero.
+   */
+  forma?: "busto" | "caminando";
+  /**
    * Ids de accesorios equipados, ya filtrados contra lo desbloqueado por
    * `equipar()`. Se pintan como `data-` para que el arte los pueda usar el día
    * que exista, y para que se vea en el DOM que son ids y no texto de nadie.
@@ -55,26 +65,35 @@ interface Props {
   accesorios?: readonly string[];
 }
 
-const { locale, visible, accesorios = [] } = Astro.props;
+const { locale, visible, forma = "busto", accesorios = [] } = Astro.props;
 const m = t(locale);
+
+const pieza = `larry_${forma}` as keyof typeof manifiesto;
+const conArte = Boolean(manifiesto[pieza]);
 ---
 
 {
   visible && (
     <span
-      class="companero"
+      class={conArte ? "companero" : "companero companero--hueco"}
       role="img"
       aria-label={m.mapaCompaneroNombre}
-      data-hueco-de-arte="larry"
+      data-hueco-de-arte={conArte ? undefined : "larry"}
       data-accesorios={accesorios.join(" ")}
     >
-      {/*
-        El glifo es un marcador de posición legible, no arte. Va con
-        `aria-hidden` porque el nombre accesible ya lo da el `aria-label` del
-        contenedor: sin esto, un lector de pantalla anuncia el emoji además del
-        nombre.
-      */}
-      <span aria-hidden="true">◍</span>
+      {conArte ? (
+        // AVIF con respaldo WebP (`mc-47` §5). `alt` vacío y `aria-hidden`:
+        // el nombre accesible ya lo da el `aria-label` del contenedor.
+        <picture aria-hidden="true">
+          <source srcset={`/mapa/${pieza}.avif`} type="image/avif" />
+          <img src={`/mapa/${pieza}.webp`} alt="" width="512" height="512" loading="lazy" />
+        </picture>
+      ) : (
+        // El glifo es un marcador de posición legible, no arte, con el mismo
+        // `aria-hidden` de siempre: sin él, un lector de pantalla anuncia el
+        // emoji además del nombre.
+        <span aria-hidden="true">◍</span>
+      )}
     </span>
   )
 }

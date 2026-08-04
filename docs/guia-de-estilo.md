@@ -245,7 +245,11 @@ campos y ninguna función del módulo acepta un instante. Sin reloj, el
 Tamagotchi que `mc-43` §6 documenta no está prohibido — es que no se puede
 implementar.
 
-Mientras el arte no exista, el sitio se pinta como **hueco marcado**:
+El arte ya existe — `scripts/gen-larry.mjs`, dos piezas: `larry_caminando`
+(cuerpo entero, de perfil, para los senderos) y `larry_busto` (neutro, para el
+nodo y el tablero — neutro a propósito, `mc-37`), con su manifiesto
+`arte-larry.json` y el punto de anclaje de accesorios medido a mano. Donde una
+pieza falte en el manifiesto, el sitio se pinta como **hueco marcado**:
 `data-hueco-de-arte="larry"`, borde punteado en naranja, del tamaño final. Un
 hueco que se ve es un hueco que se llena; un `<div>` vacío se queda diez meses.
 

@@ -316,14 +316,10 @@
 
 /* ─── El compañero (#235, D-080) ───────────────────────────────────────────
  *
- * HUECO DE ARTE MARCADO. La pieza de Larry no existe todavía y no se genera
- * aquí: CLAUDE.md § Imágenes dice que Recraft es la herramienta oficial y que
- * la continuidad del avatar la mantiene el dueño. Lo que hay es el sitio donde
- * va, del tamaño correcto, para que meter la imagen sea sustituir un bloque y
- * no rehacer el layout.
- *
- * Cuando llegue: AVIF con respaldo WebP (`<picture>`), porque el aparato de
- * referencia es un Android de gama baja (`mc-47` §5).
+ * El arte llegó (scripts/gen-larry.mjs, manifiesto arte-larry.json): AVIF con
+ * respaldo WebP, porque el aparato de referencia es un Android de gama baja
+ * (`mc-47` §5). La clase `--hueco` queda como caída para cuando una pieza no
+ * está en el manifiesto — el sitio, del tamaño correcto, no se mueve.
  */
 .companero {
   display: inline-flex;
@@ -332,13 +328,27 @@
   inline-size: var(--companero-tam, 3rem);
   block-size: var(--companero-tam, 3rem);
   border-radius: 50%;
-  /* El punteado dice, sin una palabra, que esto es un hueco y no una decisión
-     de diseño. Se quita el día que entre la imagen. */
-  border: 2px dashed var(--color-accent);
-  background: var(--color-surface);
   color: var(--color-text-brand-warm);
   font-family: var(--font-sistema);
   font-size: var(--text-xs);
+}
+
+.companero picture,
+.companero img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.companero img {
+  object-fit: contain;
+}
+
+/* El punteado dice, sin una palabra, que esto es un hueco y no una decisión
+   de diseño. Solo se pinta cuando la pieza falta en el manifiesto. */
+.companero--hueco {
+  border: 2px dashed var(--color-accent);
+  background: var(--color-surface);
 }
 
 /* En KINDER camina por el sendero, así que es del tamaño del lugar. */

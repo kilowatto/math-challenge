@@ -254,8 +254,8 @@ multa concreta, o primer contrato escolar que exija papel.
   completa la infraestructura que #207 no cubra y deja el canal listo
   para los reportes de F8 y los avisos de colas. **Ningún push va a un
   niño, nunca.**
-- Migración para suscripciones push: **`0017_push_subscriptions.sql`**
-  (reparto: `0013`/`0014` F8, `0015` F9, `0016` F10, `0017` ésta).
+- Migración para suscripciones push: **`0020_push_subscriptions.sql`**
+  (reparto: `0013`/`0014` F8, `0015` F9, `0016` F10, `0020` ésta).
 
 ## 7. Frente 6 — Interfaz adaptativa: verificación en 4 plataformas
 
@@ -269,7 +269,7 @@ usan F7/F8).
 
 ## 8. Migraciones, infraestructura y auditores
 
-**Migraciones:** `0017_push_subscriptions.sql` (add-only). Nada más en
+**Migraciones:** `0020_push_subscriptions.sql` (add-only). Nada más en
 esta fase — el contenido vive en D1 por el camino que F5c ya abrió
 (D-072), no en una migración de esquema nueva.
 
@@ -340,7 +340,7 @@ issue, con su renglón si entra.
 3. **Campos declarados pero nunca exigidos:** el piso de 6 retos tiene
    auditor propio (§8) precisamente porque «6 por nivel» declarado sin
    auditor es una promesa que se erosiona en silencio.
-4. **El número de migración:** `0017` sigue al reparto confirmado; si
+4. **El número de migración:** `0020` sigue al reparto confirmado; si
    otra rama lo toma antes, se renumera ANTES de commitear.
 
 ## 12. Issues propuestas (1 paraguas + 10)
@@ -354,14 +354,14 @@ issue, con su renglón si entra.
 7. F11 · Auditoría manual WCAG 2.2 AA del producto + VPAT (frente 3)
 8. F11 · Checklist legal interno escrito y fechado (D-126)
 9. F11 · Offline: D-047 completo — modo avión, cola, revalidación
-10. F11 · Web Push: VAPID, SW, suscripciones (`0017`) — completando #207 (D-127)
+10. F11 · Web Push: VAPID, SW, suscripciones (`0020`) — completando #207 (D-127)
 11. F11 · Verificación de interfaz en las 4 plataformas + flota adversarial completa
 
 ## 13. Ejecución en paralelo (swarm) — territorios, y quién no toca qué
 
 Los seis frentes son naturalmente paralelos (no comparten archivos
 casi en nada), con tres excepciones escritas abajo. Migraciones ya
-repartidas: `0017` es de esta fase; el contenido no lleva migración de
+repartidas: `0020` es de esta fase; el contenido no lleva migración de
 esquema.
 
 | Frente | Issues | Archivos SUYOS | NO toca |
@@ -371,11 +371,11 @@ esquema.
 | **C · Anti-trampa** | #6 | `packages/motor/src/` (módulo nuevo de piso/monitoreo), `audits/tiempo-piso-solo-logging.mjs`, `audits/nota-solo-por-velocidad.mjs` | el panel de F8 (la nota se entrega vía #389, no se escribe ahí) |
 | **D · Accesibilidad** | #7 | el informe por pantalla + las correcciones en `apps/web/src` que salgan de él | las pantallas de fases vivas (F8/F9/F10) hasta que aterricen — audita lo que existe |
 | **E · Legal** | #8 | `docs/legal-checklist.md` (nuevo, único dueño) | código — es un frente de documento |
-| **F · Offline + Push** | #9, #10 | `apps/web/public/sw.js`, `migrations/0017_push_subscriptions.sql`, cola IndexedDB en `apps/web/src/lib/`, VAPID vía `wrangler secret` | `wrangler.jsonc` hasta el cierre (registro compartido), #207 de F7 (completa, no reescribe) |
+| **F · Offline + Push** | #9, #10 | `apps/web/public/sw.js`, `migrations/0020_push_subscriptions.sql`, cola IndexedDB en `apps/web/src/lib/`, VAPID vía `wrangler secret` | `wrangler.jsonc` hasta el cierre (registro compartido), #207 de F7 (completa, no reescribe) |
 | **G · Verificación plataformas** | #11 | el informe de recorrido + correcciones menores | corre la flota AL FINAL, cuando A-F hayan aterrizado |
 
 **Los archivos que NO se paralelizan:** `apps/web/public/sw.js` (solo
-F), `migrations/0017*` (solo F), `docs/legal-checklist.md` (solo E),
+F), `migrations/0020*` (solo F), `docs/legal-checklist.md` (solo E),
 `audits/run.mjs` + `audits/pruebas-auditores.mjs` (los registra cada
 frente al final, solo añadiendo; el orquestador resuelve el merge), y
 `content/`: A y B comparten directorio, así que la regla es **un nivel

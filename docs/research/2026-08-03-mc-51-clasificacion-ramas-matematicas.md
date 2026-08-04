@@ -412,22 +412,18 @@ puertas, `VCOM` y `EDOS` dos cada una.
    clasificación de §4 debe revisarse cuando MSC 2030 salga (ciclo decanal
    declarado [2]).
 
-## 6. Preguntas abiertas para el dueño
+## 6. Preguntas abiertas para el dueño — RESUELTAS (2026-08-03)
 
-1. ¿El campo `rama` del banco usa los códigos de §4 (26 ramas) o el MSC de
-   dos dígitos directamente (63, demasiado fino para un producto)?
-2. ¿El auditor del piso exige cobertura mínima por nivel (propuesta: ≥3
-   ramas distintas de las de §4), o solo cuenta retos?
-3. ¿Los huecos `VCOM`/`EDOS` entran como niveles futuros o se declaran
-   fuera del producto hasta que exista un formato auto-calificable para
-   ellos (mc-12 sugiere que sí hay: numérica, CAS)?
-4. ¿La espiral de geometría/estadística se modela como aristas «débiles»
-   (recomendadas, no exigidas) en el adaptativo, o como hilos sin aristas?
-5. ¿El puente de demostración (implicación 4) es un nivel más (¿N11.5?) o
-   una pista transversal visible en el mapa?
-6. ¿Quién revisa este documento contra MSC 2030 cuando salga, y contra los
-   cambios curriculares en curso (México MCCEMS [11], streaming de
-   Singapur)?
+| # | Pregunta | Respuesta | Decisión |
+|---|---|---|---|
+| 1 | ¿Códigos propios o MSC? | **MSC de 2 dígitos, con nombre en lenguaje de personas autorado por locale** (respuesta personalizada del dueño: rigor del estándar, cara de persona) | D-128 |
+| 2 | ¿Cobertura del auditor del piso? | ≥3 ramas MSC distintas por nivel, además de los 6 retos | D-129 |
+| 3 | ¿`VCOM`/`EDOS`? | Entran como niveles futuros — `mc-12` confirma que son auto-calificables | D-130 |
+| 4 | ¿Las espirales como aristas? | Débiles (recomiendan, no bloquean); duras solo las verificadas | D-131 |
+| 5 | ¿El puente de demostración? | Pista transversal visible en el mapa, no un nivel más | D-132 |
+| 6 | ¿Quién lo mantiene al día? | Entradas fechadas en `dudas.md`: 2027 (currículos) y 2030 (MSC) | D-133 |
+| 7 | ¿`FUNC` explícita? | Sí — es la puerta de todo el cálculo y debe ser auditable | D-134 |
+| 8 | ¿Dónde vive el grafo? | Módulo puro `packages/motor/src/ramas.ts` | D-135 |
 
 ## Fuentes
 

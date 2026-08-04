@@ -1632,9 +1632,14 @@ const CASOS = [
     // 0020 presente, el primer hueco libre NO declarado es el 0021, y la sonda
     // que lo caza es el archivo 0022 — la aritmética de siempre: sonda = primer
     // hueco no declarado + 1.
+    // Reapuntado a 0023 cuando la 0021 (alias único por padre, #259) aterrizó:
+    // con ella presente, el primer hueco libre NO declarado es el 0022, y la
+    // sonda que lo caza es el archivo 0023. Una sonda en 0022 quedaría contigua
+    // a la 0021 real y correría en verde sin degradar nada — el auditor apagado
+    // en silencio de siempre.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0022_prueba_hueco.sql",
+    archivo: "migrations/0023_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -2535,6 +2540,26 @@ const CASOS = [
     archivo: "apps/web/src/i18n/reto/de-DE.json",
     parche: (t) => t.replace('"a.orden.suma_mult": "Wie viel ist {a} + {b} · {c}?"', '"a.orden.suma_mult": "Wie viel ist {a} + {b} × {c}?"'),
     espera: "de-DE",
+  },
+
+  // ─── #259 · El índice único del alias, y la forma en que volvería a morir ─
+  //
+  // El bug original fue un índice que nunca existió mientras el código juraba
+  // que sí. La forma en que reaparecería hoy —con la 0006 y la 0021 en el
+  // repo— no es que alguien borre esos archivos (migration-safety lo
+  // bloquea): es una migración NUEVA con un `DROP INDEX`, que es exactamente
+  // lo que este caso planta. El auditor recorre las migraciones en orden y
+  // exige el índice VIVO al final, así que el DROP lo apaga aquí.
+  {
+    auditor: "alias-unico",
+    que: "una migración posterior tira el índice único del alias",
+    archivo: "migrations/9999_prueba_alias.sql",
+    contenido:
+      "-- migration-safety: caso de control negativo del auditor alias-unico —\n" +
+      "-- una migración que tira el índice sin reponerlo, la forma exacta en\n" +
+      "-- que el bug de #259 reaparecería.\n" +
+      "DROP INDEX idx_alias_por_padre;\n",
+    espera: "UNIQUE",
   },
 ];
 

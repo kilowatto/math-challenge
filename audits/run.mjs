@@ -476,6 +476,18 @@ const ACTIVE = [
   ["banco-adulto-i18n",      "la franja adulta no sirve nada que no esté en i18n", "#162, #166, mc-36, mc-11, D-022, D-034, D-070"],
   ["franja-adulta",          "los barandales de D-034: techo 200, sin Sabana, una autoría siete notaciones", "#161, #163, #164, #165, D-034, mc-34"],
 
+  // ─── El de #259, y por qué nace VERDE ────────────────────────────────────
+  //
+  // El catch de `perfil-nuevo.ts` juraba que el alias tenía índice único «desde
+  // la migración 0003» y era falso: era código muerto. El índice llegó en la
+  // 0006 y la 0021 lo garantiza sobre datos deduplicados. Este auditor recorre
+  // las migraciones EN ORDEN, como D1 las aplica, y exige que al final quede
+  // VIVO un índice UNIQUE sobre child_profiles que cubra alias — un
+  // `DROP INDEX` posterior, la forma exacta en que el bug reaparecería, bloquea
+  // aquí y no en producción. Nace VERDE porque el índice ya existe; lo que
+  // vigila es que nadie lo quite.
+  ["alias-unico",            "el alias del niño tiene índice único por padre, y nadie lo quita", "D-003, #259"],
+
 
 
 ];
@@ -818,6 +830,17 @@ for (const prueba of [
   "packages/motor/src/banco-adulto.prueba.mjs",
   "apps/web/src/lib/banco-adulto.prueba.mjs",
 
+
+  // #259. El alias del niño, único por padre, en las DOS capas: la base (el
+  // índice rechaza, dos familias pueden repetir, el borrado no estorba) y la
+  // ruta (el POST reintenta solo ante un choque, da un 409 honesto al tercero
+  // y no disfraza otros errores). La migración 0021 se ejecuta REAL, leída del
+  // disco, sobre duplicados sembrados de la era del bug: renombra con el
+  // sufijo calculado A MANO (D-070), conserva al más antiguo, no borra ningún
+  // perfil y corre dos veces sin tocar nada. Lo que defiende tampoco rompe
+  // nada visible: sin índice, el catch del endpoint es código muerto y nadie
+  // ve el choque hasta que un padre no sabe cuál de sus dos hijos es cuál.
+  "apps/web/src/lib/alias-unico.prueba.mjs",
 
 
 

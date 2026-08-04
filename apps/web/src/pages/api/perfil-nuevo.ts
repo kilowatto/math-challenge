@@ -37,10 +37,10 @@
  * respeta a un menor de uno que lo publica por defecto.
  */
 import type { APIRoute } from "astro";
-import { terminarMal } from "../../lib/respuesta-de-formulario";
-import { rutaPerfilNuevo, rutaCasa } from "../../lib/rutas-app";
-import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../lib/sesiones";
-import { anotarPaso } from "../../lib/embudo";
+import { terminarMal } from "../../lib/respuesta-de-formulario.ts";
+import { rutaPerfilNuevo, rutaCasa } from "../../lib/rutas-app.ts";
+import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../lib/sesiones.ts";
+import { anotarPaso } from "../../lib/embudo.ts";
 import { generarAlias, type LocaleAlias } from "../../../../../packages/motor/src/alias.ts";
 import { temaPorEdad, temaPermitido, edadDesdeAnio, aniosOfrecidos, type TemaVisual } from "../../../../../packages/motor/src/bandas.ts";
 
@@ -158,10 +158,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return error(request, locale, "edad_de_adulto:abre_cuenta_propia", 422);
   }
 
-  // ── El alias lo genera el SERVIDOR ───────────────────────────────────────
+  // ── El alias lo genera el SERVIDOR, y el choque se reintenta AQUÍ ────────
   // Nunca llega del cuerpo. Ver el encabezado: un alias que viene del cliente
   // es un campo de texto libre con otro nombre.
-  const { alias } = generarAlias(locale as LocaleAlias);
+  //
+  // `child_profiles` tiene índice único POR PADRE —`idx_alias_por_padre`,
+  // UNIQUE (parent_user_id, alias) WHERE deleted_at IS NULL— creado en la
+  // migración 0006 y reafirmado en la 0021 sobre datos deduplicados. Este
+  // comentario decía antes «migración 0003» y era FALSO: la 0003 no tiene
+  // ningún índice de alias, así que el catch de abajo era código muerto
+  // (issue #259 — la clase exacta de comentario falso que D-052 señala).
+  //
+  // Un choque es raro —1,080,000 combinaciones por locale— pero no
+  // despreciable: 37% de probabilidad de al menos uno con 1,000 niños en
+  // es-MX (cálculo re-ejecutable en el issue). La respuesta correcta es
+  // reintentar con otro alias, no enseñarle un error a quien está creando el
+  // perfil de su hijo: el generador aleatoriza el sufijo, así que cada
+  // intento es independiente. Acotado a tres — si los tres chocan, algo está
+  // mal en otra parte y el error honesto es mejor que un bucle.
+  const INTENTOS_ALIAS = 3;
 
   const ahora = Math.floor(Date.now() / 1000);
   const childId = crypto.randomUUID();
@@ -176,29 +191,36 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // #4). Cero no es un año, así que no hace falta que la columna sea nullable.
   const ANIO_NO_PREGUNTADO = 0;
 
-  try {
-    await env.DB.batch([
-      env.DB.prepare(
-        "INSERT INTO child_profiles (id, parent_user_id, alias, alias_locale, birth_year, theme_band, locale, created_at, updated_at) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      ).bind(childId, sesion.userId, alias, locale, sinAnio ? ANIO_NO_PREGUNTADO : anio, tema, locale, ahora, ahora),
-      // El consentimiento va en el MISMO batch. O están los dos o no está
-      // ninguno: un perfil sin su fila sería un menor cuyos datos guardamos sin
-      // poder demostrar que alguien lo autorizó (D-013, D-051).
-      env.DB.prepare(
-        "INSERT INTO child_consents (child_profile_id, consent_code, granted_by, granted_at, consent_version) " +
-          "VALUES (?, 'CHILD_PROFILE', ?, ?, (SELECT current_version FROM consent_type_catalog WHERE code = 'CHILD_PROFILE'))",
-      ).bind(childId, sesion.userId, ahora),
-    ]);
-  } catch (e) {
-    // El alias tiene índice único por padre (migración 0003). Un choque es
-    // raro —1,080,000 combinaciones— pero posible, y la respuesta correcta es
-    // reintentar con otro alias, no enseñarle un error a quien está creando el
-    // perfil de su hijo.
-    const msg = String((e as Error)?.message ?? "");
-    if (/UNIQUE/i.test(msg)) return error(request, locale, "alias_repetido:reintenta", 409);
-    throw e;
+  let alias = "";
+  let insertado = false;
+  for (let intento = 0; intento < INTENTOS_ALIAS && !insertado; intento++) {
+    alias = generarAlias(locale as LocaleAlias).alias;
+    try {
+      await env.DB.batch([
+        env.DB.prepare(
+          "INSERT INTO child_profiles (id, parent_user_id, alias, alias_locale, birth_year, theme_band, locale, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ).bind(childId, sesion.userId, alias, locale, sinAnio ? ANIO_NO_PREGUNTADO : anio, tema, locale, ahora, ahora),
+        // El consentimiento va en el MISMO batch. O están los dos o no está
+        // ninguno: un perfil sin su fila sería un menor cuyos datos guardamos sin
+        // poder demostrar que alguien lo autorizó (D-013, D-051).
+        env.DB.prepare(
+          "INSERT INTO child_consents (child_profile_id, consent_code, granted_by, granted_at, consent_version) " +
+            "VALUES (?, 'CHILD_PROFILE', ?, ?, (SELECT current_version FROM consent_type_catalog WHERE code = 'CHILD_PROFILE'))",
+        ).bind(childId, sesion.userId, ahora),
+      ]);
+      insertado = true;
+    } catch (e) {
+      // SOLO el choque de alias reintenta. Cualquier otro error —la base
+      // caída, un CHECK, una llave foránea— sube tal cual: reintentarlo con
+      // otro alias no lo arreglaría y lo escondería.
+      const msg = String((e as Error)?.message ?? "");
+      if (!/UNIQUE/i.test(msg)) throw e;
+    }
   }
+  // Los tres alias chocaron: el error honesto, acotado, y a reintentar desde
+  // la pantalla. Nunca un bucle abierto contra la base en una ruta pública.
+  if (!insertado) return error(request, locale, "alias_repetido:reintenta", 409);
 
   // El embudo: este adulto creó un perfil. **Ningún dato del niño viaja** — ni
   // el id, ni el alias, ni la banda. Que un adulto creó *un* perfil es un hecho

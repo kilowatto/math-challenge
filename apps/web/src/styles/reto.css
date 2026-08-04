@@ -339,6 +339,35 @@
   background: var(--color-surface);
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left);
+
+  /*
+   * ─── Los gestos del navegador no existen dentro de un reto (#451) ────────
+   *
+   * El dueño, jugando un reto, hizo swipe de izquierda a derecha y el
+   * navegador lo sacó de la sesión: el gesto de «volver atrás» disparado con
+   * el pulgar, sin aviso ni confirmación. El mapa completo de gestos por
+   * dispositivo está en `docs/planes/pwa-gestos.md`.
+   *
+   * Estas tres declaraciones cubren Chrome, Firefox y Edge (Baseline 2022):
+   *
+   *  · `overscroll-behavior-x: none` — el swipe de borde izquierdo/derecho ya
+   *    no es «atrás»/«adelante» del navegador. En una pestaña del sitio
+   *    público ese gesto ES comportamiento esperado y no se toca (`Base.astro`
+   *    conserva el suyo); dentro del reto es la salida que nadie pidió.
+   *  · `overscroll-behavior-y: none` — el pull-to-refresh, que a media sesión
+   *    recarga la página y pierde el ítem en curso.
+   *  · `touch-action: manipulation` — quita el doble-tap-zoom sobre las
+   *    opciones. NO toca el pinch-zoom: impedir el zoom viola WCAG 1.4.4 /
+   *    1.4.10, y `manipulation` conserva pan y pinch a propósito.
+   *
+   * Lo que este CSS NO alcanza: Safari en iOS, donde `overscroll-behavior-x`
+   * no deshabilita la navegación de historial (WebKit bug 240183, abierto).
+   * Esa mitad vive en la guardia de borde del script de `Pantalla.astro` —
+   * `audits/gestos-reto.mjs` comprueba las dos.
+   */
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
 }
 /*
   Sin `overflow: hidden`: `clip-path` ya lo esconde, y la pareja

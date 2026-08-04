@@ -548,6 +548,15 @@ for (const prueba of [
   // sexto día retroactivo llegando intacto hasta la base.
   "apps/web/src/lib/pausa.prueba.mjs",
 
+  // F7 #237, #242, #243 · D-040, D-081, D-106. El ALTA, el CABLE de puntos y
+  // la BAJA de la liga, contra SQLite de verdad (`node:sqlite`) con un DO de
+  // mentira que graba las llamadas. Lo que defiende tampoco rompe nada
+  // visible: un default por banda mal leído no da error — da un niño de
+  // KINDER en una liga sin que su padre lo activara; un adulto y un menor en
+  // la misma cohorte; un participante 31 sin cohorte jamás; un cierre semanal
+  // que lee ceros porque nadie escribió el espejo de D1. Las expectativas
+  // están escritas a mano (D-070), no importadas del módulo.
+  "apps/web/src/lib/liga-membresia.prueba.mjs",
   // F7 #224. El Durable Object de misiones diarias —uno por niño— y su cable,
   // contra SQLite de verdad (`node:sqlite`) y con la clase del DO de verdad.
   // Lo que defiende tampoco rompe nada visible: un reintento de red que paga
@@ -557,6 +566,8 @@ for (const prueba of [
   // orden. 17 casos: el XP una sola vez, el bono una sola vez, el borrado en
   // cero, y la pantalla leyendo el rollup.
   "apps/web/src/lib/missions-do.prueba.mjs",
+
+
 
   // F8 #404, la frontera de D-091. El motivo del corte
   // (`LIMITE_DE_PANTALLA_CORTO_LA_SESION`) llegando a `registrarDia` a través
@@ -568,6 +579,7 @@ for (const prueba of [
   // produciendo el MISMO estado, la idempotencia cuando D-091 ya contó el día
   // en el ítem, y el corte que no suma XP.
   "apps/web/src/lib/limite-corte-racha.prueba.mjs",
+
 
 
 

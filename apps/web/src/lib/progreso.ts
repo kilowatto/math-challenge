@@ -121,6 +121,23 @@ export interface Progreso {
   };
 }
 
+/**
+ * Lo que `registrarItem` devuelve: el progreso, y el día que contó.
+ *
+ * `diaLocal` y `diaNuevo` no son de la pantalla: son para quien agrega por día
+ * (la liga cuenta `active_days` con ellos, F7). Salen de aquí y no de una
+ * segunda llamada a `diaEfectivo` en el llamador porque el día YA se calculó
+ * aquí — calcularlo dos veces es cómo dos copias del mismo día terminan
+ * discrepando en el minuto en que cambia.
+ */
+export interface ItemRegistrado {
+  readonly progreso: Progreso;
+  /** El día local del hogar que contó este ítem (`diaEfectivo`). */
+  readonly diaLocal: DiaLocal;
+  /** true si este ítem fue el PRIMERO del día — el que hace contar el día. */
+  readonly diaNuevo: boolean;
+}
+
 interface Env {
   DB?: D1Database;
 }
@@ -295,7 +312,7 @@ export async function registrarItem(
     ahora: number;
     zona: string;
   },
-): Promise<Progreso | null> {
+): Promise<ItemRegistrado | null> {
   if (!env.DB) return null;
 
   try {
@@ -370,12 +387,18 @@ export async function registrarItem(
 
     const total = (filaXp?.total_xp ?? 0) + ganado;
     return {
-      racha: {
-        actual: despues.current_streak,
-        mejor: despues.max_streak,
-        diasJugadosTotal: despues.days_played_total,
+      progreso: {
+        racha: {
+          actual: despues.current_streak,
+          mejor: despues.max_streak,
+          diasJugadosTotal: despues.days_played_total,
+        },
+        xp: { total, rango: rangoDeXp(total), ganado },
       },
-      xp: { total, rango: rangoDeXp(total), ganado },
+      diaLocal: hoy,
+      // La comparación por referencia es la señal exacta: `registrarDia`
+      // devuelve el MISMO objeto cuando el día ya estaba contado.
+      diaNuevo: despues !== antes,
     };
   } catch {
     // Silencio deliberado, misma regla que la telemetría de `/api/jugar`: lo que

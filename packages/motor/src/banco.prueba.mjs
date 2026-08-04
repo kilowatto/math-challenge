@@ -50,18 +50,60 @@ caso("los errores se DERIVAN del parámetro, con su causa nombrada", () => {
   );
   if (!suma) throw new Error("no encontré la suma 3 + 4");
   es(suma.respuesta.valor, 7);
-  es(calificarRespuesta(suma, 12).causa, "error.multiplico", "3×4");
-  es(calificarRespuesta(suma, 1).causa, "error.resto", "4−3");
-  es(calificarRespuesta(suma, 8).causa, "error.conto_el_primero_dos_veces");
+  // Las dos causas con fuente (mc-06 §2): saltarse uno, y contar uno dos veces.
+  es(calificarRespuesta(suma, 6).causa, "error.se_salto_uno", "6 = 7−1");
+  es(calificarRespuesta(suma, 8).causa, "error.conto_uno_dos_veces", "8 = 7+1");
+  // Y las borradas (plan F5 §3.4j) ya no se nombran: un 12 es hoy una
+  // respuesta inesperada, no «multiplicaste» dicho a quien solo contó un montón.
+  const multiplico = calificarRespuesta(suma, 12);
+  es(multiplico.causa, null, "12 = 3×4 ya no tiene causa propia");
+  es(multiplico.inesperada, true, "12 es inesperada");
 });
 
-caso("restar al revés tiene su propia causa", () => {
+caso("restar quitando: sumar tiene su causa, y NINGÚN distractor es negativo", () => {
   const resta = banco.find(
     (i) => i.habilidad === "K12" && i.enunciado.vars.a === 5 && i.enunciado.vars.b === 2,
   );
   if (!resta) throw new Error("no encontré la resta 5 − 2");
   es(resta.respuesta.valor, 3);
   es(calificarRespuesta(resta, 7).causa, "error.sumo");
+  es(calificarRespuesta(resta, 2).causa, "error.conto_el_que_quita");
+  es(calificarRespuesta(resta, 4).causa, "error.se_salto_uno");
+  // `error.resto_al_reves` (b−a) era −3 aquí: un número negativo ofrecido a un
+  // pre-lector en el 100% de la habilidad (rezagados §7, plan F5 §3.4j).
+  const alReves = calificarRespuesta(resta, -3);
+  es(alReves.causa, null, "b−a ya no es un error nombrado");
+  es(alReves.inesperada, true);
+});
+
+caso("ninguna opción del banco es un número negativo (rezagados §7)", () => {
+  // El distractor negativo de K12 sobrevivió una ronda entera de auditorías
+  // porque b−a ES un número y los auditores buscaban cadenas. Este caso mira
+  // los números.
+  for (const i of banco) {
+    const valores = [
+      i.respuesta.valor,
+      ...i.errores.map((e) => e.valor),
+      ...(i.tambienCorrectas ?? []).map((c) => c.valor),
+    ];
+    for (const v of valores) {
+      if (typeof v === "number" && v < 0) throw new Error(`${i.id}: la opción ${v} es negativa`);
+    }
+  }
+});
+
+caso("dos causas no comparten valor dentro de un ítem (plan F5 §4.1)", () => {
+  // `calificarRespuesta` hace `.find()`: con dos causas sobre el mismo valor la
+  // segunda es código muerto, y Larry puede explicar un error que el niño no
+  // cometió (línea roja #7). Estuvo vivo en K05, K06, K08, K09 y K14.
+  for (const i of banco) {
+    const vistos = new Set();
+    for (const e of i.errores) {
+      const k = String(e.valor);
+      if (vistos.has(k)) throw new Error(`${i.id}: dos causas con el valor ${k}`);
+      vistos.add(k);
+    }
+  }
 });
 
 caso("todo ítem declara su eje de variación (mc-02)", () => {

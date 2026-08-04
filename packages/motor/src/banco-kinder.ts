@@ -107,6 +107,23 @@ const id = (h: string, p: Record<string, number>) =>
 /** Rango inclusivo. */
 const rango = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
+/**
+ * Quita las entradas de `errores` cuyo valor ya salió: la PRIMERA gana.
+ *
+ * `calificarRespuesta` hace `.find()` y devuelve la primera causa que coincide,
+ * así que dos causas con el mismo valor significan dos cosas malas a la vez: la
+ * segunda es código muerto que nadie ve, y Larry puede explicar con seguridad
+ * un error que el niño no cometió (línea roja #7). El plan de F5 §4.1 lo midió
+ * en el diseño —39 ítems de K11— y al escribir su auditor apareció vivo en el
+ * banco: K05 con `patos = gorros`, K06 con n=2, K08 con `antes = 1`, K09 con
+ * `llenas = 9` y K14 con núcleo AB, donde los dos errores son la misma figura.
+ *
+ * `validarItem` no lo puede ver: compara cada error contra la respuesta, nunca
+ * contra los otros errores. Por eso existe esta función y su auditor.
+ */
+const sinColision = (errores: Array<{ valor: number | string; causa: string }>) =>
+  errores.filter((e, i, arr) => arr.findIndex((x) => String(x.valor) === String(e.valor)) === i);
+
 // ---------------------------------------------------------------------------
 // K11 — sumar contando
 // ---------------------------------------------------------------------------
@@ -125,11 +142,26 @@ export const K11: Plantilla = {
       respuesta: { valor: a + b, tol: 0 },
       // Los distractores se CALCULAN. Un error escrito a mano puede acabar
       // siendo la respuesta correcta de otro ítem de la misma plantilla.
-      errores: [
-        { valor: a * b, causa: "error.multiplico" },
-        { valor: Math.abs(a - b), causa: "error.resto" },
-        { valor: a + b + 1, causa: "error.conto_el_primero_dos_veces" },
-      ].filter((e) => e.valor !== a + b),
+      //
+      // Las dos causas que quedan son las que la investigación sostiene
+      // (plan F5 §3.2, mc-06 §2 — Gelman y Gallistel): saltarse uno al contar
+      // todos, y contar uno dos veces.
+      //
+      // Las tres que se borraron, y por qué (plan F5 §3.4j, medido sobre el
+      // banco en producción):
+      //
+      //  · `error.multiplico` — un niño de kinder no ha visto una
+      //    multiplicación, y en 9 de 25 ítems a×b valía lo mismo que contar
+      //    un solo grupo: Larry decía «multiplicaste» a quien solo había
+      //    contado un montón.
+      //  · `error.resto` — en 4 ítems más pasaba lo mismo con |a−b|. Entre
+      //    las dos causas, el 44% de la habilidad quedaba mal etiquetada.
+      //  · `error.conto_el_primero_dos_veces` — la clave y el valor no
+      //    coincidían: a+b+1 no es «contó el primero dos veces».
+      errores: sinColision([
+        { valor: a + b - 1, causa: "error.se_salto_uno" },
+        { valor: a + b + 1, causa: "error.conto_uno_dos_veces" },
+      ]).filter((e) => e.valor !== a + b && e.valor >= 1),
       proposito: "interpretar",
       contexto: "los patos del lago de Larry",
       variacion,
@@ -174,11 +206,21 @@ export const K12: Plantilla = {
       formato: "toca_la_respuesta",
       enunciado: { clave: ctx === 0 ? "k.resta.patos" : "k.resta.estrellas", vars: { a, b } },
       respuesta: { valor: a - b, tol: 0 },
-      errores: [
+      // `error.resto_al_reves` se borró (plan F5 §3.4j y el rezagado §7 del
+      // 2026-08-02): como `parametros()` recorre b < a siempre, b−a era
+      // NEGATIVO en el 100% de los ítems —45 de 45— y un número negativo no
+      // es algo que un niño de cuatro años pueda tocar. Sobrevivió a la ronda
+      // de #345–#361 porque b−a ES un número, y los auditores de entonces
+      // buscaban cadenas.
+      //
+      // En su lugar entra `error.se_salto_uno`, de la familia con fuente
+      // (mc-06 §2): quien se salta uno de los que se van quita uno de menos,
+      // y queda uno de más.
+      errores: sinColision([
         { valor: a + b, causa: "error.sumo" },
-        { valor: b - a, causa: "error.resto_al_reves" },
         { valor: a - b - 1, causa: "error.conto_el_que_quita" },
-      ].filter((e) => e.valor !== a - b),
+        { valor: a - b + 1, causa: "error.se_salto_uno" },
+      ]).filter((e) => e.valor !== a - b && e.valor >= 0),
       proposito: "interpretar",
       contexto: "los patos que se van volando",
       variacion,
@@ -365,11 +407,12 @@ export const K10: Plantilla = {
       formato: "arma_el_numero",
       enunciado: { clave: "k.descomponer.marco", vars: { total, parte } },
       respuesta: { valor: total - parte, tol: 0 },
-      errores: [
+      errores: sinColision([
         { valor: total, causa: "error.puso_el_total" },
         { valor: parte, causa: "error.repitio_la_parte" },
-        { valor: total + parte, causa: "error.sumo_en_vez_de_completar" },
-      ].filter((e) => e.valor !== total - parte),
+        // `error.sumo_en_vez_de_completar` se borró (plan F5 §3.4j): exigía
+        // leer dos numerales y sumarlos, y en N2 no se muestran dos numerales.
+      ]).filter((e) => e.valor !== total - parte),
       proposito: "crear",
       variacion,
     };
@@ -543,9 +586,19 @@ export const K13: Plantilla = {
       // en las opciones, así que tocarla salía como «respuesta inesperada» —la
       // señal que `mc-40` reserva para un `errores` incompleto— en un ítem
       // cuyo `errores` estaba completo salvo por esta omisión.
+      //
+      // La causa es `mismo_aspecto_global` y ya no `eligio_al_azar`. La
+      // segunda se borró (plan F5 §3.4j): no es una causa, es la ausencia de
+      // causa, y definida como comodín apagaba `inesperada` —la única señal
+      // que detecta un catálogo incompleto. La que queda es la única de K13
+      // con mecanismo documentado (mc-09 §1, van Hiele nivel 0: a esta edad
+      // las formas se reconocen por el aspecto global, no por sus
+      // propiedades). Ojo: sigue cubriendo todos los fallos del ítem, así que
+      // `inesperada` permanece apagada en K13 hasta que exista el catálogo de
+      // casi-formas — eso es trabajo de investigación (mc-49), no del banco.
       errores: [0, 1, 2, 3]
         .filter((casilla) => casilla !== donde)
-        .map((casilla) => ({ valor: `casilla${casilla}`, causa: "error.eligio_al_azar" }))
+        .map((casilla) => ({ valor: `casilla${casilla}`, causa: "error.mismo_aspecto_global" }))
         .filter((e) => !(laGrandeEsDeLaFamilia && e.valor === `casilla${grande}`)),
       dibujos,
       proposito: "clasificar",
@@ -621,11 +674,14 @@ export const K05: Plantilla = {
         vars: { patos, gorros, glifo: "🦆", glifoB: "🎩" },
       },
       respuesta: { valor: sobran, tol: 0 },
-      errores: [
+      // `sinColision` no es decoración: cuando `patos = gorros` (no sobra
+      // ninguno), «puso el total» y «repitió la parte» valen lo mismo, y la
+      // segunda causa era código muerto (plan F5 §4.1).
+      errores: sinColision([
         { valor: patos + gorros, causa: "error.conto_los_dos_grupos" },
         { valor: patos, causa: "error.puso_el_total" },
         { valor: gorros, causa: "error.repitio_la_parte" },
-      ].filter((e) => e.valor !== sobran),
+      ]).filter((e) => e.valor !== sobran),
       proposito: "analizar",
       contexto: "los patos del lago de Larry",
       variacion,
@@ -675,12 +731,14 @@ export const K06: Plantilla = {
       formato: "toca_la_respuesta",
       enunciado: { clave: "k.cardinalidad.ultimo", vars: { n, cosa } },
       respuesta: { valor: n, tol: 0 },
-      errores: [
+      // Con n=2, «otro número de la cuenta» y «se saltó uno» valen los dos 1:
+      // `sinColision` deja la primera, que es la que distingue la habilidad.
+      errores: sinColision([
         // Un número intermedio de la propia cuenta, no uno cualquiera.
         { valor: Math.max(1, n - 2), causa: "error.dijo_otro_numero_de_la_cuenta" },
         { valor: n - 1, causa: "error.se_salto_uno" },
         { valor: n + 1, causa: "error.conto_uno_dos_veces" },
-      ].filter((e) => e.valor !== n && e.valor > 0),
+      ]).filter((e) => e.valor !== n && e.valor > 0),
       proposito: "interpretar",
       contexto: "los patos del lago de Larry",
       variacion,
@@ -730,11 +788,13 @@ export const K08: Plantilla = {
             ? { clave: "k.recta.antes", vars: { despues: antes + 2 } }
             : { clave: "k.recta.entre", vars: { antes, despues: antes + 2 } },
       respuesta: { valor: falta, tol: 0 },
-      errores: [
+      // Con `antes = 1`, «repitió la parte» y «contó desde uno» valen los dos
+      // 1: `sinColision` deja la primera y la otra no se emite muerta.
+      errores: sinColision([
         { valor: antes, causa: "error.repitio_la_parte" },
         { valor: falta + 1, causa: "error.se_salto_uno" },
         { valor: 1, causa: "error.conto_desde_uno" },
-      ].filter((e) => e.valor !== falta),
+      ]).filter((e) => e.valor !== falta),
       proposito: "interpretar",
       variacion,
     };
@@ -785,11 +845,14 @@ export const K09: Plantilla = {
         ? { clave: "k.marco.faltan", vars: { llenas } }
         : { clave: "k.marco.llenas", vars: { llenas } },
       respuesta: { valor: pregunta === 0 ? faltan : llenas, tol: 0 },
-      errores: (pregunta === 0
+      // `sinColision` muerde con `llenas = 9` y pregunta «cuántas hay»: «puso
+      // el total» y «contó uno dos veces» valen los dos 10.
+      errores: sinColision(pregunta === 0
         ? [
             { valor: 10, causa: "error.puso_el_total" },
             { valor: llenas, causa: "error.repitio_la_parte" },
-            { valor: 10 + llenas, causa: "error.sumo_en_vez_de_completar" },
+            // `error.sumo_en_vez_de_completar` se borró por la misma razón
+            // que en K10 (plan F5 §3.4j): dos numerales que sumar, en N2.
           ]
         : [
             { valor: faltan, causa: "error.repitio_la_parte" },
@@ -881,10 +944,13 @@ export const K14: Plantilla = {
         },
       },
       respuesta: { valor: `figura${sigue}`, tol: 0 },
-      errores: [
+      // Con núcleo AB los dos errores son la MISMA figura —solo hay dos
+      // roles, así que «repitió el último» y «siguió el patrón al revés» son
+      // un solo valor con dos nombres (plan F5 §4.1). `sinColision` deja uno.
+      errores: sinColision([
         { valor: `figura${(sigue + ciclo - 1) % ciclo}`, causa: "error.repitio_el_ultimo" },
         { valor: `figura${(sigue + 1) % ciclo}`, causa: "error.siguio_el_patron_al_reves" },
-      ].filter((e) => e.valor !== `figura${sigue}`),
+      ]).filter((e) => e.valor !== `figura${sigue}`),
       dibujos,
       proposito: "analizar",
       variacion,

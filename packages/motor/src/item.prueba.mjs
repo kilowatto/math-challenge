@@ -16,10 +16,13 @@ const ITEM = {
   id: "k11-001", habilidad: "K11", nivel: 2, formato: "toca_la_respuesta",
   enunciado: { clave: "k.suma.patos", vars: { a: 3, b: 4 } },
   respuesta: { valor: 7, tol: 0 },
+  // Las causas que el banco produce HOY. Las tres anteriores (multiplico,
+  // resto, conto_el_primero_dos_veces) se borraron del banco por el plan F5
+  // §3.4j — mal etiquetaban el 44% de K11— y el fixture las seguía nombrando.
   errores: [
-    { valor: 12, causa: "error.multiplico" },
-    { valor: 1, causa: "error.resto" },
-    { valor: 8, causa: "error.conto_el_primero_dos_veces" },
+    { valor: 6, causa: "error.se_salto_uno" },
+    { valor: 8, causa: "error.conto_uno_dos_veces" },
+    { valor: 4, causa: "error.dijo_otro_numero_de_la_cuenta" },
   ],
   proposito: "interpretar",
   contexto: "los patos del lago de Larry",
@@ -41,9 +44,9 @@ caso("acertar da acc=1 y ninguna causa", () => {
 });
 
 caso("el veredicto NOMBRA el error, no dice solo «mal» (#38, mc-11)", () => {
-  es(calificarRespuesta(ITEM, 12).causa, "error.multiplico", "12 = 3×4");
-  es(calificarRespuesta(ITEM, 1).causa, "error.resto", "1 = 4−3");
-  es(calificarRespuesta(ITEM, 8).causa, "error.conto_el_primero_dos_veces");
+  es(calificarRespuesta(ITEM, 6).causa, "error.se_salto_uno", "6 = 7−1");
+  es(calificarRespuesta(ITEM, 8).causa, "error.conto_uno_dos_veces", "8 = 7+1");
+  es(calificarRespuesta(ITEM, 4).causa, "error.dijo_otro_numero_de_la_cuenta", "4 salió al contar");
 });
 
 caso("una respuesta que el autor no previó se marca como inesperada", () => {
@@ -61,7 +64,7 @@ caso("en «cuál sobra», la segunda respuesta defendible también vale 1 (D-048
     ...ITEM, id: "cs-1", formato: "cual_sobra",
     respuesta: { valor: 8, tol: 0 },
     tambienCorrectas: [{ valor: 9, razon: "razon.no_esta_en_la_tabla_del_2" }],
-    errores: [{ valor: 4, causa: "error.eligio_al_azar" }],
+    errores: [{ valor: 4, causa: "error.mismo_aspecto_global" }],
   };
   const v = calificarRespuesta(sobra, 9);
   es(v.acc, 1, "acc"); es(v.razonAlterna, "razon.no_esta_en_la_tabla_del_2");
@@ -229,7 +232,7 @@ const SOBRA = {
   id: "k13-x", habilidad: "K13", nivel: 1, formato: "cual_sobra",
   enunciado: { clave: "k.formas.cual_sobra", vars: { familia: 0, intruso: 1 } },
   respuesta: { valor: "casilla2", tol: 0 },
-  errores: [{ valor: "casilla0", causa: "error.eligio_al_azar" }],
+  errores: [{ valor: "casilla0", causa: "error.mismo_aspecto_global" }],
   proposito: "clasificar",
   variacion: null,
 };

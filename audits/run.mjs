@@ -446,6 +446,19 @@ const ACTIVE = [
   // filtro de status quitado y el ORDER BY por racha.
   ["racha-salones-minima",    "el grupo ve alias, puntos y current_streak — y nada más", "#208, D-025, D-044, D-106, mc-46 §6"],
 
+  // ─── El de F5 (bancos K07–K14), y por qué nace VERDE ─────────────────────
+  //
+  // Las tres correcciones del plan F5 §3.4j/§4.1 se aplicaron al banco CON
+  // este auditor delante, así que lo que vigila es que no vuelvan: el
+  // distractor negativo de K12 (45 de 45 ítems, rezagados §7), dos causas
+  // sobre el mismo valor (el `.find()` de `calificarRespuesta` devuelve la
+  // primera y Larry explica la que el niño no cometió), y las nueve causas
+  // que el plan manda borrar —copiadas A MANO dentro del auditor como
+  // segunda fuente (D-070)—. Sus controles negativos DEGRADAN el
+  // `banco-kinder.ts` REAL: reintroducen `b − a`, duplican un valor y
+  // resucitan una causa borrada.
+  ["distractores-explicables", "todo distractor se puede tocar y explicar una sola vez", "plan F5 §3.4j/§4.1, rezagados §7, línea roja #7, D-070"],
+
 
 
 ];

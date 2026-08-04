@@ -1,23 +1,7 @@
 {
-  "error.multiplico": [
-    "Você multiplicou em vez de somar.",
-    "Conte a partir do número maior."
-  ],
-  "error.resto": [
-    "Você tirou em vez de juntar.",
-    "Os dois grupos se juntam: conte todos."
-  ],
-  "error.conto_el_primero_dos_veces": [
-    "O primeiro foi contado duas vezes.",
-    "Comece a contar do próximo."
-  ],
   "error.sumo": [
     "Você juntou em vez de tirar.",
     "Tire do grupo os patos que voam."
-  ],
-  "error.resto_al_reves": [
-    "Você tirou o maior do menor.",
-    "Comece por quantos havia."
   ],
   "error.conto_el_que_quita": [
     "Tirou um a mais.",
@@ -47,17 +31,13 @@
     "Essa parte já está.",
     "Quantos ainda faltam?"
   ],
-  "error.sumo_en_vez_de_completar": [
-    "Você somou os dois em vez de completar.",
-    "Quantos mais cabem?"
-  ],
   "error.eligio_el_menor": [
     "Esse grupo tem menos.",
     "Qual fila é mais comprida?"
   ],
-  "error.eligio_al_azar": [
-    "Repare no que os outros têm igual.",
-    "Um deles é diferente."
+  "error.mismo_aspecto_global": [
+    "Todos parecem quase iguais.",
+    "Um deles tem outra forma — olhe os lados e as pontas."
   ],
   "acierto": "É isso.",
   "inesperada": [

@@ -1,0 +1,110 @@
+---
+/**
+ * `/{locale}/app/grupos/identidad` — la declaración de quién dirige (F9 ·
+ * #381/#383, criterio #118 de F2).
+ *
+ * Antes de crear su primer grupo, el adulto escribe quién es. Es el PRIMER
+ * escritor de `group_owner_identity` en el producto: la fila nace con
+ * `assurance = 'declared'` — «lo escribió esta persona y nadie lo comprobó»—
+ * y eso es exactamente lo que la insignia le dirá al padre (D-086). El texto
+ * lo escribe un ADULTO sobre sí mismo (línea roja #3 no se toca: ningún niño
+ * escribe aquí) y se muestra junto a la insignia.
+ *
+ * Sin identidad declarada no hay `OwnerProof`, y sin `OwnerProof`,
+ * `crearGrupo()` no compila: este paso es la puerta real del gate.
+ */
+export const prerender = false;
+
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { ruta } from "../../../../i18n/rutas";
+import { f9Habilitado } from "../../../../lib/grupo-flag";
+import { TEXTOS_GRUPOS } from "../../../../components/grupos/textos";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const g = TEXTOS_GRUPOS[locale];
+
+const env = (
+  Astro.locals as {
+    runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace; CONFIG_KV?: KVNamespace } };
+  }
+).runtime?.env;
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+if (!(await f9Habilitado(env?.CONFIG_KV, locale))) {
+  return Astro.redirect(`/${locale}/app/grupos/`);
+}
+
+const errorEnPantalla = Astro.url.searchParams.get("e") !== null;
+
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={g["grupo.identidad.titulo"]} description={g["grupo.identidad.lead"]}>
+  <article class="identidad">
+    <h1>{g["grupo.identidad.titulo"]}</h1>
+    <p class="lead">{g["grupo.identidad.lead"]}</p>
+
+    <form method="post" action="/api/grupos/identidad" class="bloque">
+      <input type="hidden" name="locale" value={locale} />
+      {errorEnPantalla && <p class="mal" role="alert">{g["grupo.err.generico"]}</p>}
+
+      {/*
+        El único campo de texto libre de todo el subsistema: lo escribe un
+        ADULTO sobre sí mismo y se muestra junto a la insignia de que nadie lo
+        comprobó (misma regla que `declared_context` de la 0005). La línea
+        roja #3 prohíbe el texto libre de un NIÑO; esta es superficie de adulto.
+      */}
+      <div class="campo">
+        <label for="contexto">{g["grupo.identidad.campo"]}</label>
+        <input
+          type="text"
+          id="contexto"
+          name="contexto"
+          required
+          minlength="2"
+          maxlength="160"
+          autocomplete="off"
+        />
+        <p class="pista">{g["grupo.identidad.pista"]}</p>
+      </div>
+
+      <button type="submit" class="boton primario">{g["grupo.identidad.enviar"]}</button>
+    </form>
+  </article>
+
+  <style>
+    .identidad { max-width: 34rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    .lead { font-family: var(--font-marca); font-size: var(--text-lg); line-height: var(--leading-body);
+            margin-block-end: calc(var(--space) * 2); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .campo { display: flex; flex-direction: column; gap: 0.35rem; margin-block-end: var(--space); }
+    label { font-family: var(--font-sistema); font-size: var(--text-base); }
+    input[type="text"] { font-family: var(--font-sistema); font-size: var(--text-base);
+                         min-height: 44px; padding-inline: 0.75rem; color: var(--color-text);
+                         background: var(--color-surface); border: 1px solid var(--color-border);
+                         border-radius: var(--radius); }
+    .pista { font-size: var(--text-xs); color: var(--color-text-muted);
+             line-height: var(--leading-body); margin: 0; }
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             background: transparent; color: var(--color-text); font-family: var(--font-sistema);
+             font-size: var(--text-base); cursor: pointer; text-decoration: none; }
+    .boton.primario { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
+    input:focus-visible, button:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-end: var(--space); }
+  </style>
+</Privada>

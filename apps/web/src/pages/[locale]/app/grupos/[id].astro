@@ -1,0 +1,336 @@
+---
+/**
+ * `/{locale}/app/grupos/[id]` — la pantalla del grupo para su dueño (F9 ·
+ * #383, D-027, D-087, D-107 del reparto).
+ *
+ * ─── Las dos vistas, nunca mezcladas ─────────────────────────────────────────
+ *
+ *  · **Miembros** (default): el roster alfabético de `grupo-roster.ts` —
+ *    alias, racha y puntos de cada miembro aprobado, SIEMPRE (D-107), con o
+ *    sin opt-in. El orden alfabético es el default a propósito: es la regla
+ *    anti-comparación (la racha nunca ordena, D-025).
+ *  · **Tabla** (`?vista=tabla`): la vista ordenada por posición, solo con los
+ *    miembros cuyo padre activó el ranking (`leaderboard_opt_in = 1`, D-087).
+ *    La calcula `grupo-tabla.ts` con las funciones del motor — el filtro de
+ *    opt-in no vive en esta página.
+ *
+ * Son dos pestañas de la misma pantalla, nunca la misma lista con un orden
+ * (F9 §7). `audits/grupo-visibilidad-minima.mjs` vigila en su segunda sección
+ * que esta página NO consulte la base por su cuenta: toda la lectura pasa por
+ * los dos módulos vigilados.
+ *
+ * ─── Lo que NO se muestra, con su decisión ───────────────────────────────────
+ *
+ *  · Ni nombre real, ni edad exacta, ni otros grupos del niño (D-027): la
+ *    consulta ni siquiera los pide.
+ *  · Sin chip «activo esta semana» en esta pasada: su fuente de datos quedó
+ *    por decidir (dudas §24.3) y un `last_seen` está prohibido como categoría
+ *    (D-081). El «necesita atención» será la AUSENCIA de ese chip cuando
+ *    exista — nunca una alerta roja sobre el niño.
+ *  · Sin botón de reporte: el reporte es del PADRE, no del dueño (F9 §6,
+ *    issue #385). Lo del dueño es el código: generar uno nuevo y
+ *    desactivarlo, visibles en la pantalla — nunca escondidos en un menú de
+ *    tres puntos como única vía (D-113 del reparto).
+ *
+ * ─── Dispositivo por dispositivo ─────────────────────────────────────────────
+ *
+ * Teléfono: una columna, blancos de 44px. iPad horizontal (D-041):
+ * list-detail — la lista a la izquierda y a la derecha el detalle del niño
+ * seleccionado con los MISMOS tres datos (no hay más que mostrar, D-027 ya lo
+ * limita; el detalle existe para el foco y para no saltar de página). Un
+ * tercio de Split View y vertical: una columna, igual que teléfono.
+ */
+export const prerender = false;
+
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { ruta } from "../../../../i18n/rutas";
+import { f9Habilitado } from "../../../../lib/grupo-flag";
+import { rosterDelGrupo } from "../../../../lib/grupo-roster";
+import { tablaOrdenadaDelGrupo, posicionComoTexto } from "../../../../lib/grupo-tabla";
+import { gruposDelDuenio } from "../../../../lib/grupo-duenio";
+import { TEXTOS_GRUPOS, rellenarGrupo } from "../../../../components/grupos/textos";
+import { TEXTOS_LIGA } from "../../../../components/liga/textos";
+import { formatear } from "../../../../../../../packages/motor/src/numeros.ts";
+
+const { locale: raw, id = "" } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale: Locale = raw;
+const g = TEXTOS_GRUPOS[locale];
+
+const env = (
+  Astro.locals as {
+    runtime?: { env: { DB?: D1Database; SESSION_KV?: KVNamespace; CONFIG_KV?: KVNamespace } };
+  }
+).runtime?.env;
+
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV
+  ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO])
+  : null;
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+if (!(await f9Habilitado(env?.CONFIG_KV, locale))) {
+  return Astro.redirect(`/${locale}/app/grupos/`);
+}
+
+const noEncontrado = () =>
+  new Response("404 — grupo desconocido", {
+    status: 404,
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store, private" },
+  });
+
+if (!env?.DB) return noEncontrado();
+
+// ─── La puerta: ¿este grupo es de ESTE dueño? (línea roja #2 en su forma de
+// grupo). `null` no distingue «no existe» de «no es tuyo», y el 404 tampoco:
+// quien prueba ids ajenos no aprende cuáles existen. Las DOS lecturas pasan
+// por los módulos vigilados — esta página no ejecuta SQL propio.
+const roster = await rosterDelGrupo(env.DB, sesion.userId, id);
+if (roster === null) return noEncontrado();
+const tabla = await tablaOrdenadaDelGrupo(env.DB, sesion.userId, id);
+
+// La ficha del grupo (tipo, código, estado) sale de la lista del dueño — la
+// autorización ya quedó resuelta arriba.
+const ficha = (await gruposDelDuenio(env.DB, sesion.userId)).find((gr) => gr.id === id);
+if (!ficha) return noEncontrado();
+
+// El selector de grupo, solo si el dueño tiene más de uno (tope por cuenta).
+const otrosGrupos = (await gruposDelDuenio(env.DB, sesion.userId)).filter((gr) => gr.id !== id);
+
+const vista = Astro.url.searchParams.get("vista") === "tabla" ? "tabla" : "roster";
+const gLiga = TEXTOS_LIGA[locale];
+const creado = Astro.url.searchParams.get("creado") === "1";
+const sel = Astro.url.searchParams.get("sel");
+const seleccionado = roster.find((f) => f.alias === sel) ?? roster[0] ?? null;
+
+const tipo =
+  ficha.origen_tipo === "salon"
+    ? ficha.escuela
+      ? rellenarGrupo(g["grupo.tipo.salon"], { escuela: ficha.escuela })
+      : g["grupo.tipo.salonSinEscuela"]
+    : g["grupo.tipo.club"];
+
+const errorEnPantalla = Astro.url.searchParams.get("e") !== null;
+
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("vary", "cookie");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+
+<Privada locale={locale} title={`${g["grupo.indice.titulo"]} · ${tipo}`} description={tipo}>
+  <article class="grupo">
+    <h1>{tipo}</h1>
+
+    {/* ── El código de unión y sus dos acciones, a la vista (D-113) ────────── */}
+    <section class="bloque codigo">
+      <h2>{g["grupo.grupo.codigo"]}</h2>
+      {creado && <p class="ok">{g["grupo.grupo.creado"]}</p>}
+      {errorEnPantalla && <p class="mal" role="alert">{g["grupo.err.generico"]}</p>}
+      {
+        ficha.disabled_at !== null ? (
+          <p class="muted">{g["grupo.grupo.desactivado"]}</p>
+        ) : (
+          <Fragment>
+            <p class="el-codigo" aria-label={g["grupo.grupo.codigo"]}>{ficha.join_code}</p>
+            <p class="muted">{g["grupo.grupo.codigoPista"]}</p>
+          </Fragment>
+        )
+      }
+      <div class="acciones-codigo">
+        <form method="post" action="/api/grupos/codigo">
+          <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="grupo" value={id} />
+          <input type="hidden" name="accion" value="reset" />
+          <button type="submit" class="boton">{g["grupo.grupo.resetear"]}</button>
+        </form>
+        <form method="post" action="/api/grupos/codigo">
+          <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="grupo" value={id} />
+          <input type="hidden" name="accion" value={ficha.disabled_at !== null ? "activar" : "desactivar"} />
+          <button type="submit" class="boton">
+            {ficha.disabled_at !== null ? g["grupo.grupo.reactivar"] : g["grupo.grupo.desactivar"]}
+          </button>
+        </form>
+      </div>
+    </section>
+
+    {/* ── El selector de grupo, solo si hay más de uno ─────────────────────── */}
+    {
+      otrosGrupos.length > 0 && (
+        <nav class="selector" aria-label={g["grupo.indice.titulo"]}>
+          {otrosGrupos.map((gr) => (
+            <a class="boton" href={`/${locale}/app/grupos/${gr.id}/`}>
+              {gr.origen_tipo === "salon"
+                ? gr.escuela
+                  ? rellenarGrupo(g["grupo.tipo.salon"], { escuela: gr.escuela })
+                  : g["grupo.tipo.salonSinEscuela"]
+                : g["grupo.tipo.club"]}
+            </a>
+          ))}
+        </nav>
+      )
+    }
+
+    {/* ── Las dos pestañas: miembros (alfabético) y tabla (opt-in) ─────────── */}
+    <nav class="pestanas-vista" aria-label={g["grupo.grupo.roster"]}>
+      <a
+        class:list={["pestana", { activa: vista === "roster" }]}
+        aria-current={vista === "roster" ? "page" : undefined}
+        href={`/${locale}/app/grupos/${id}/`}
+      >
+        {g["grupo.grupo.roster"]}
+      </a>
+      <a
+        class:list={["pestana", { activa: vista === "tabla" }]}
+        aria-current={vista === "tabla" ? "page" : undefined}
+        href={`/${locale}/app/grupos/${id}/?vista=tabla`}
+      >
+        {g["grupo.grupo.tabla"]}
+      </a>
+    </nav>
+
+    {
+      vista === "roster" &&
+        (roster.length === 0 ? (
+          <p class="muted">{g["grupo.grupo.vacio"]}</p>
+        ) : (
+          <div class="list-detail">
+            <ul class="roster">
+              {roster.map((f) => (
+                <li>
+                  <a
+                    class:list={["fila", { sel: seleccionado?.alias === f.alias }]}
+                    href={`/${locale}/app/grupos/${id}/?sel=${encodeURIComponent(f.alias)}`}
+                  >
+                    <span class="alias">{f.alias}</span>
+                    <span class="dato">
+                      {g["grupo.grupo.colRacha"]}: {formatear(f.current_streak, locale)}
+                    </span>
+                    <span class="dato">
+                      {g["grupo.grupo.colPuntos"]}: {formatear(f.puntos, locale)}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+            {/*
+              El detalle del niño seleccionado (iPad horizontal): los MISMOS
+              tres datos. No hay más que mostrar — D-027 ya fija la lista
+              cerrada, y el detalle existe para el foco y para no saltar de
+              página, no para añadir información.
+            */}
+            {
+              seleccionado && (
+                <aside class="detalle">
+                  <h2 class="alias">{seleccionado.alias}</h2>
+                  <dl>
+                    <div>
+                      <dt>{g["grupo.grupo.colRacha"]}</dt>
+                      <dd>{formatear(seleccionado.current_streak, locale)}</dd>
+                    </div>
+                    <div>
+                      <dt>{g["grupo.grupo.colPuntos"]}</dt>
+                      <dd>{formatear(seleccionado.puntos, locale)}</dd>
+                    </div>
+                  </dl>
+                </aside>
+              )
+            }
+          </div>
+        ))
+    }
+
+    {
+      vista === "tabla" &&
+        ((tabla ?? []).length === 0 ? (
+          <p class="muted">{g["grupo.grupo.tablaVacia"]}</p>
+        ) : (
+          <ol class="tabla">
+            {(tabla ?? []).map((f) => (
+              <li class="fila">
+                <span class="posicion">
+                  {/* La posición llega como TEXTO del módulo de datos (tercio
+                      en la banda más chica, número exacto después — D-081):
+                      esta página no toca la forma, solo pinta el texto. */}
+                  {posicionComoTexto(
+                    f.posicion,
+                    (n) => formatear(n, locale),
+                    {
+                      top: gLiga["liga.tercio.top"] ?? "",
+                      mid: gLiga["liga.tercio.mid"] ?? "",
+                      bottom: gLiga["liga.tercio.bottom"] ?? "",
+                    },
+                  )}
+                </span>
+                <span class="alias">{f.alias}</span>
+                <span class="dato">
+                  {g["grupo.grupo.colRacha"]}: {formatear(f.current_streak, locale)}
+                </span>
+                <span class="dato">
+                  {g["grupo.grupo.colPuntos"]}: {formatear(f.puntos, locale)}
+                </span>
+              </li>
+            ))}
+          </ol>
+        ))
+    }
+  </article>
+
+  <style>
+    .grupo { max-width: 40rem; margin-inline: auto; padding-block: calc(var(--space) * 2); }
+    h1 { font-family: var(--font-marca); font-weight: var(--weight-title); font-size: var(--text-xl);
+         color: var(--color-text-brand); margin-block-end: var(--space); }
+    h2 { font-family: var(--font-sistema); font-size: var(--text-base); font-weight: var(--weight-subtitle);
+         margin: 0 0 calc(var(--space) * 0.5); }
+    .bloque { border: 1px solid var(--color-border); border-radius: var(--radius);
+              padding: var(--space); margin-block-end: calc(var(--space) * 1.5); }
+    .el-codigo { font-family: var(--font-marca); font-weight: var(--weight-title);
+                 font-size: var(--text-xl); letter-spacing: 0.15em; margin: 0 0 0.25rem; }
+    .acciones-codigo { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .acciones-codigo form { margin: 0; }
+    .selector { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-block-end: calc(var(--space) * 1.5); }
+    .pestanas-vista { display: flex; gap: 0.5rem; margin-block-end: var(--space); }
+    .pestana { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 1rem;
+               border-radius: var(--radius); border: 1px solid var(--color-border);
+               color: var(--color-text); font-family: var(--font-sistema); font-size: var(--text-base);
+               text-decoration: none; }
+    .pestana.activa { border-color: var(--color-text-brand); color: var(--color-text-brand);
+                      font-weight: var(--weight-subtitle); }
+    .roster, .tabla { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column;
+                      gap: 0.5rem; }
+    .tabla { counter-reset: fila; }
+    .fila { display: flex; align-items: center; gap: var(--space); min-height: 48px;
+            padding: 0.6rem 0.8rem; border: 1px solid var(--color-border); border-radius: var(--radius);
+            color: var(--color-text); text-decoration: none; }
+    a.fila.sel { border-color: var(--color-text-brand); }
+    .alias { font-family: var(--font-sistema); font-weight: var(--weight-subtitle); flex: 1; }
+    .dato { font-size: var(--text-sm); color: var(--color-text-muted); white-space: nowrap; }
+    .posicion { font-family: var(--font-marca); font-weight: var(--weight-subtitle);
+                min-inline-size: 2.5ch; text-align: end; }
+    .detalle { display: none; }
+    .boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+             padding-inline: 1rem; border-radius: var(--radius); border: 1px solid var(--color-border);
+             background: transparent; color: var(--color-text); font-family: var(--font-sistema);
+             font-size: var(--text-base); cursor: pointer; text-decoration: none; }
+    .boton:focus-visible, .pestana:focus-visible, a.fila:focus-visible {
+      outline: 3px solid var(--color-accent); outline-offset: 2px; }
+    .ok { color: var(--color-text-brand); font-size: var(--text-sm); margin-block-end: var(--space); }
+    .mal { color: var(--color-error); font-size: var(--text-sm); margin-block-end: var(--space); }
+    .muted { color: var(--color-text-muted); font-size: var(--text-sm); line-height: var(--leading-body); }
+
+    /* iPad horizontal (D-041): list-detail. Ninguna regla exige más del tercio
+       de Split View — por debajo, una columna igual que teléfono. */
+    @media (min-width: 694px) {
+      .list-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                     gap: calc(var(--space) * 1.5); align-items: start; }
+      .detalle { display: block; border: 1px solid var(--color-border); border-radius: var(--radius);
+                 padding: var(--space); position: sticky; top: var(--space); }
+      .detalle dl { margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+      .detalle dt { font-size: var(--text-xs); color: var(--color-text-muted); }
+      .detalle dd { margin: 0; font-family: var(--font-marca); font-weight: var(--weight-subtitle);
+                    font-size: var(--text-lg); }
+    }
+  </style>
+</Privada>

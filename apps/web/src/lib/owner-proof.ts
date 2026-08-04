@@ -44,8 +44,18 @@ export type Assurance = "declared" | "school_domain" | "human_reviewed" | "schoo
  * con la misma forma no es asignable, porque no puede tener esa propiedad. Es
  * la única forma en TypeScript de tener un valor que solo una función puede
  * producir.
+ *
+ * Es un `Symbol()` REAL, no un `declare const`: la versión anterior usaba
+ * `declare const marca: unique symbol`, que el compilador borra como
+ * declaración de tipos — y al borrarla, `[marca]` referenciaba un identificador
+ * inexistente y `assertCanOwnChildGroup` reventaba EN EJECUCIÓN con
+ * `ReferenceError: marca is not defined`. Nadie lo vio porque nadie llamaba al
+ * gate (issue #402: sin llamador desde F2); lo encontró
+ * `padre-grupo.prueba.mjs` el 2026-08-04, la primera ejecución real del
+ * módulo. Un `Symbol()` no exportado cumple la misma marca y sí existe en
+ * tiempo de ejecución.
  */
-declare const marca: unique symbol;
+const marca: unique symbol = Symbol("OwnerProof");
 
 export interface OwnerProof {
   readonly [marca]: true;

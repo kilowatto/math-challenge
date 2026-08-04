@@ -2372,6 +2372,33 @@ const CASOS = [
 
 
   },
+  // ─── F9 #383 · La pantalla del roster, degradada sobre los archivos REALES ─
+  //
+  // La segunda sección de `grupo-visibilidad-minima` vigila que la pantalla
+  // del dueño no añada datos por su cuenta. Los dos casos DEGRADAN los
+  // archivos REALES de esta superficie (D-070): la página que «solo añade una
+  // consultita» dejando de usar el módulo vigilado, y la vista ordenada que
+  // pierde el filtro de opt-in.
+  {
+    // La página sin el módulo. Si el roster deja de salir de
+    // `rosterDelGrupo`, la consulta que `racha-salones-minima` vigila deja de
+    // ser la que la pantalla pinta — y nadie mira la nueva.
+    auditor: "grupo-visibilidad-minima",
+    que: "la pantalla del roster deja de usar rosterDelGrupo",
+    archivo: "apps/web/src/pages/[locale]/app/grupos/[id].astro",
+    parche: (t) => t.replace("rosterDelGrupo(env.DB, sesion.userId, id)", "[]"),
+    espera: "rosterDelGrupo",
+  },
+  {
+    // El filtro quitado en la vista ordenada. Es una línea, y el síntoma es
+    // invisible: un niño aparece en la tabla de posiciones de su grupo y su
+    // padre nunca activó el ranking (D-087).
+    auditor: "grupo-visibilidad-minima",
+    que: "la vista ordenada del grupo deja de filtrar por opt-in",
+    archivo: "apps/web/src/lib/grupo-tabla.ts",
+    parche: (t) => t.replace(".filter((f) => visibleEnTablaDePosiciones(f.opt_in))", ""),
+    espera: "visibleEnTablaDePosiciones",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

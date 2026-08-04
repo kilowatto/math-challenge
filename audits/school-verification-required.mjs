@@ -41,11 +41,15 @@ import { archivos, leer, sinComentarios, informar, SOLO_PRODUCTO } from "./lib/r
 const ESCRITORES_DE_ASSURANCE = ["migrations/0017_grupos_infantiles.sql"];
 
 /**
- * Los únicos archivos que pueden crear un grupo afiliado a escuela. Hoy
- * ninguno: la ruta de creación es de la issue #381. Cuando exista, entra aquí
- * — y con ella la obligación de comprobar `verification_status = 'verified'`.
+ * Los únicos archivos que pueden crear un grupo afiliado a escuela.
+ *
+ * `grupo-duenio.ts` (F9 · superficie, #381): la afiliación se comprueba ahí
+ * mismo — `verification_status = 'verified'` Y `school_teacher` activo en la
+ * misma consulta, antes del INSERT— así que revocar a un maestro corta la
+ * creación en el acto. Añadir un segundo archivo a esta lista exige escribir
+ * aquí por qué: es la anulación por escrito de D-032.
  */
-const CREADORES_DE_SALON_AFILIADO = [];
+const CREADORES_DE_SALON_AFILIADO = ["apps/web/src/lib/grupo-duenio.ts"];
 
 /** Escritura del valor: `= 'school_verified'` como asignación, no comparación. */
 const ESCRITURA = [
@@ -86,8 +90,17 @@ for (const archivo of fuentes) {
 
   // Un INSERT en child_group que menciona school_id es la creación de un salón
   // afiliado: solo desde el módulo autorizado.
+  //
+  // El `\b` tras `child_group` NO es decoración: sin él, `INSERT INTO
+  // child_group_membership` —la tabla de membresías, que nada tiene que ver
+  // con afiliar una escuela— también casa, y la ruta de aprobación del padre
+  // (`padre-grupo.ts`, que sí nombra `school_id` al LEER la tarjeta) bloqueaba
+  // el commit sin haber creado ningún grupo. Falso positivo medido el
+  // 2026-08-04, en la primera superficie real: el guion bajo es carácter de
+  // palabra, así que `\b` distingue las dos tablas y el filtro sigue
+  // atrapando `INSERT INTO child_group ` de verdad.
   if (
-    /INSERT\s+INTO\s+child_group/i.test(texto) &&
+    /INSERT\s+INTO\s+child_group\b/i.test(texto) &&
     /school_id/.test(texto) &&
     !CREADORES_DE_SALON_AFILIADO.includes(archivo) &&
     !archivo.startsWith("migrations/")

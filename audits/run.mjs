@@ -322,6 +322,7 @@ const ACTIVE = [
   // texto y comprueba las fronteras (sin `childProfileId` en el camino de
   // envío, `silenciado_at` de una sola vía, la constante de tope por nombre).
   ["recordatorio-sin-culpa",    "el push es al padre, 1/día, sin culpa, silencio permanente", "issue #207, D-014, D-026, D-105, mc-19"],
+  ["legal-checklist",            "checklist legal interno fechado y no certificante", "D-126, F11 #427"],
   // ─── La superficie de F7 · Misiones diarias (#220, #222, #227) ───────────
   //
   // Nace VERDE como los cuatro del motor: la superficie se construyó con él

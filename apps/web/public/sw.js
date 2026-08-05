@@ -168,10 +168,10 @@ self.addEventListener("fetch", (event) => {
 
 /* Lo que este archivo deliberadamente NO hace todavía:
  *
- * · No hay cola de intentos offline. Llega en F3, cuando exista un intento que
- *   encolar. Cuando llegue: IndexedDB con llave de idempotencia y marca de
- *   tiempo del cliente, vaciada en `visibilitychange`/focus — nunca confiando
- *   en Background Sync, que no existe en Safari.
+ * · La cola de intentos offline vive en `src/lib/cola-offline.ts`, no en este
+ *   worker: IndexedDB con llave de idempotencia y marca de tiempo del cliente,
+ *   vaciada en `visibilitychange`/focus — nunca confiando en Background Sync,
+ *   que no existe en Safari. El worker se limita al shell y al push.
  * · No recalcula puntuación. El servidor recalcula desde el registro crudo de
  *   respuestas; un puntaje calculado en el cliente y sincronizado después es el
  *   vector de trampa más obvio que tiene una PWA offline (mc-33 implicación 7).

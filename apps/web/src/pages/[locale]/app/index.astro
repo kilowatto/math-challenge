@@ -56,7 +56,7 @@ import Privada from "../../../layouts/Privada.astro";
 import RecordatorioPush from "../../../components/push/RecordatorioPush.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
-import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo, rutaLiga, rutaPanel, rutaGrupos, rutaGruposNuevo } from "../../../lib/rutas-app";
+import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo, rutaLiga, rutaPanel, rutaGrupos, rutaGruposNuevo, rutaClubes } from "../../../lib/rutas-app";
 import { estadoDeParticipacion } from "../../../lib/liga-membresia";
 import { TEXTOS_PADRE } from "../../../components/parent/textos";
 import { TEXTOS_TABLERO } from "../../../components/tablero/textos";
@@ -454,6 +454,7 @@ const gGrupos = TEXTOS_GRUPOS[locale];
         {gruposHabilitados && (
           <a class="boton" href={rutaGruposNuevo(locale)}>{gGrupos["grupo.indice.crear"]}</a>
         )}
+        <a class="boton" href={rutaClubes(locale)}>{gGrupos["grupo.tipo.club"]}</a>
       </section>
     )}
 

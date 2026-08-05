@@ -286,6 +286,26 @@
   "error.a.sec_duplico": ["Das letzte Glied wurde verdoppelt, und Verdoppeln ist nicht die Regel.", "Prüfe deine Regel an ALLEN gezeigten Gliedern, nicht nur am letzten Schritt."],
   "error.a.sec_vecinos": ["Glieder wurden addiert, die nicht zusammengehören.", "Schau, welche vorherigen Glieder das nächste erzeugen, und wende die Regel genau einmal an."],
   "error.a.div_multiplo_vecino": ["Das ist das Vielfache des Teilers, das direkt daneben liegt.", "Prüfe durch Multiplizieren: Teiler mal Ergebnis muss die Ausgangszahl ergeben."],
-  "error.a.div_cifras": ["Die Ziffern des Ergebnisses kamen verkehrt heraus.", "Multipliziere deine Antwort mit dem Teiler: Es muss genau die Ausgangszahl ergeben."]
+  "error.a.div_cifras": ["Die Ziffern des Ergebnisses kamen verkehrt heraus.", "Multipliziere deine Antwort mit dem Teiler: Es muss genau die Ausgangszahl ergeben."],
+  "cierre.suma": "Wie viel ist {a} + {b}?",
+  "cierre.producto": "Wie viel ist {a} · {b}?",
+  "cierre.fraccion": "Wie viel ist {p}/{q} von {n}?",
+  "cierre.cuadrado": "Wie viel ist {n}²?",
+  "cierre.operaciones": "Wie viel ist {a} · {b} + {c}?",
+  "cierre.secuencia": "Welche Zahl kommt als Nächstes: {a}, {b}, {c}, …?",
+  "cierre.ecuacion": "Wenn {a}x + {b} = {c}, wie groß ist x?",
+  "cierre.potencia": "Wie viel ist {a}^{b}?",
+  "cierre.raiz": "Wie groß ist die Quadratwurzel von {n}?",
+  "cierre.proporcion": "Wenn {a} · ? = {c}, welcher Faktor fehlt?",
+  "cierre.mcd": "Was ist der größte gemeinsame Teiler von {a} und {b}?",
+  "error.cierre.7.1": ["Du hast die Mengen anders verbunden.", "Schreibe die Summanden auf und addiere sie genau einmal."],
+  "error.cierre.7.2": ["Du hast ein benachbartes Produkt verwendet.", "Multipliziere beide Faktoren vollständig."],
+  "error.cierre.7.3": ["Du hast den Bruch auf den falschen Teil angewendet.", "Teile durch den Nenner und multipliziere dann mit dem Zähler."],
+  "error.cierre.11.1": ["Du hast aufgehört, bevor die Unbekannte allein stand.", "Mache zuerst die Addition rückgängig und teile dann durch den Koeffizienten."],
+  "error.cierre.11.2": ["Du hast einen anderen Exponenten verwendet.", "Multipliziere die Basis so oft mit sich selbst, wie der Exponent angibt."],
+  "error.cierre.11.3": ["Du hast ein benachbartes Quadrat gewählt.", "Suche die Zahl, die mit sich selbst multipliziert den Radikanden ergibt."],
+  "error.cierre.12.1": ["Du hast die Gleichung ungleich verändert.", "Halte beide Seiten bei jedem Schritt im Gleichgewicht."],
+  "error.cierre.12.2": ["Du hast eine andere Zweierpotenz verwendet.", "Zähle die Faktoren und multipliziere sorgfältig."],
+  "error.cierre.12.3": ["Du hast geschätzt, ohne genau zu prüfen.", "Setze die Antwort wieder in den Ausdruck ein."]
 
 }

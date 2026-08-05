@@ -69,7 +69,7 @@ const TEXTOS: Record<Locale, Record<string, string>> = {
   "de-DE": deDE,
 };
 
-const RETO: Record<Locale, Record<string, string>> = {
+const RETO: Record<Locale, Record<string, unknown>> = {
   en: retoEn,
   "es-MX": retoEsMX,
   "es-ES": retoEsES,
@@ -102,7 +102,8 @@ const rellenar = (plantilla: string, valores: Record<string, string>): string =>
 
 /** El nombre autorado de una habilidad, o null si el id no tiene texto. */
 function nombreHabilidad(skillId: string, locale: Locale): string | null {
-  return RETO[locale][`habilidad.${skillId}`] ?? null;
+  const value = RETO[locale][`habilidad.${skillId}`];
+  return typeof value === "string" ? value : null;
 }
 
 /** La fecha de una pausa, `YYYY-MM-DD`, en el formato largo del locale. */

@@ -1,0 +1,42 @@
+---
+import { LOCALES, isLocale, t, type Locale } from "../../../i18n";
+import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../../lib/sesiones";
+
+export const prerender = false;
+export function getStaticPaths() { return LOCALES.map((locale) => ({ params: { locale } })); }
+const rawLocale = Astro.params.locale;
+if (!isLocale(rawLocale)) return Astro.redirect("/en/");
+const locale: Locale = rawLocale;
+const env = (Astro.locals as any).runtime?.env;
+const session = env?.SESSION_KV ? await leerSesionAdulto(env.SESSION_KV, leerCookies(Astro.request.headers.get("cookie"))[COOKIE_ADULTO]) : null;
+if (!session) return Astro.redirect(`/${locale}/app/`);
+const m = t(locale);
+---
+<!doctype html>
+<html lang={locale}>
+  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><title>Núcleo familiar · Math Challenge</title></head>
+  <body>
+    <main>
+      <p><a href={`/${locale}/app/`}>← Cuenta</a></p>
+      <h1>Núcleo familiar</h1>
+      <p>Las personas adultas y los perfiles de niños aparecen en listas separadas.</p>
+      <section aria-labelledby="adultos"><h2 id="adultos">Personas adultas</h2><ul id="lista-adultos"><li>Cargando…</li></ul></section>
+      <section aria-labelledby="ninos"><h2 id="ninos">Perfiles de niños</h2><ul id="lista-ninos"><li>Cargando…</li></ul></section>
+      <section aria-labelledby="vinculo"><h2 id="vinculo">Vincular otro padre</h2><button id="crear">Crear código</button><output id="codigo" aria-live="polite"></output><form id="unirse"><label>Código <input name="codigo" inputmode="text" maxlength="6" autocomplete="one-time-code" /></label><button>Unirse</button></form><p id="estado" role="status"></p></section>
+    </main>
+    <script>
+      const estado = document.querySelector("#estado");
+      const cargar = async () => {
+        const r = await fetch("/api/familia", { headers: { accept: "application/json" } });
+        if (!r.ok) return;
+        const data = await r.json() as { adults?: Array<{ alias?: string }>; children?: Array<{ alias: string }>; pending?: { invite_code?: string } };
+        document.querySelector("#lista-adultos")?.replaceChildren(...(data.adults ?? []).map((x) => { const li = document.createElement("li"); li.textContent = x.alias || "Persona adulta"; return li; }));
+        document.querySelector("#lista-ninos")?.replaceChildren(...(data.children ?? []).map((x) => { const li = document.createElement("li"); li.textContent = x.alias; return li; }));
+        if (data.pending?.invite_code) document.querySelector("#codigo").textContent = ` Código: ${data.pending.invite_code}`;
+      };
+      document.querySelector("#crear")?.addEventListener("click", async () => { const r = await fetch("/api/familia-vinculo?accion=crear", { method: "POST" }); const d = await r.json() as { codigo?: string }; const output = document.querySelector("#codigo"); if (output) output.textContent = d.codigo ? ` Código: ${d.codigo}` : " No se pudo crear."; });
+      document.querySelector("#unirse")?.addEventListener("submit", async (event) => { event.preventDefault(); const formulario = event.currentTarget as HTMLFormElement; const codigo = new FormData(formulario).get("codigo"); const r = await fetch("/api/familia-vinculo?accion=unirse", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ codigo }) }); estado.textContent = r.ok ? "Vínculo creado." : "No se pudo aceptar el código."; if (r.ok) cargar(); });
+      cargar();
+    </script>
+  </body>
+</html>

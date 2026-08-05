@@ -286,6 +286,26 @@
   "error.a.sec_duplico": ["Se duplicó el último término, y la regla no es duplicar.", "Comprueba tu regla con todos los términos mostrados, no solo con el último paso."],
   "error.a.sec_vecinos": ["Se sumaron términos que no tocan.", "Fíjate qué términos anteriores producen el siguiente, y aplícalo una sola vez."],
   "error.a.div_multiplo_vecino": ["Ese es el múltiplo del divisor que queda justo al lado.", "Comprueba multiplicando: divisor por cociente debe dar el dividendo."],
-  "error.a.div_cifras": ["Las cifras del cociente salieron al revés.", "Multiplica tu respuesta por el divisor: debe dar el dividendo exacto."]
+  "error.a.div_cifras": ["Las cifras del cociente salieron al revés.", "Multiplica tu respuesta por el divisor: debe dar el dividendo exacto."],
+  "cierre.suma": "¿Cuánto es {a} + {b}?",
+  "cierre.producto": "¿Cuánto es {a} × {b}?",
+  "cierre.fraccion": "¿Cuánto es {p}/{q} de {n}?",
+  "cierre.cuadrado": "¿Cuánto es {n}²?",
+  "cierre.operaciones": "¿Cuánto es {a} × {b} + {c}?",
+  "cierre.secuencia": "¿Qué número sigue: {a}, {b}, {c}, …?",
+  "cierre.ecuacion": "Si {a}x + {b} = {c}, ¿cuánto vale x?",
+  "cierre.potencia": "¿Cuánto es {a}^{b}?",
+  "cierre.raiz": "¿Cuál es la raíz cuadrada de {n}?",
+  "cierre.proporcion": "Si {a} × ? = {c}, ¿cuál es el factor que falta?",
+  "cierre.mcd": "¿Cuál es el máximo común divisor de {a} y {b}?",
+  "error.cierre.7.1": ["Juntaste las cantidades de otra forma.", "Escribe los sumandos y súmalos una sola vez."],
+  "error.cierre.7.2": ["Usaste un producto cercano.", "Multiplica los dos factores completos."],
+  "error.cierre.7.3": ["Aplicaste la fracción a la parte equivocada.", "Divide entre el denominador y luego multiplica por el numerador."],
+  "error.cierre.11.1": ["Te detuviste antes de dejar sola la incógnita.", "Deshaz la suma antes de dividir entre el coeficiente."],
+  "error.cierre.11.2": ["Usaste otro exponente.", "Multiplica la base por sí misma las veces que indica el exponente."],
+  "error.cierre.11.3": ["Elegiste un cuadrado cercano.", "Busca el número que multiplicado por sí mismo da el radicando."],
+  "error.cierre.12.1": ["Cambiaste la ecuación de manera desigual.", "Mantén equilibrados ambos lados en cada paso."],
+  "error.cierre.12.2": ["Usaste otra potencia de dos.", "Cuenta los factores y multiplícalos con cuidado."],
+  "error.cierre.12.3": ["Estimaste sin comprobar con exactitud.", "Sustituye la respuesta en la expresión."]
 
 }

@@ -286,6 +286,26 @@
   "error.a.sec_duplico": ["Le dernier terme a été doublé, et la règle n’est pas de doubler.", "Teste ta règle sur TOUS les termes montrés, pas seulement sur le dernier pas."],
   "error.a.sec_vecinos": ["Des termes qui ne vont pas ensemble ont été additionnés.", "Repère quels termes précédents produisent le suivant, et applique la règle une seule fois."],
   "error.a.div_multiplo_vecino": ["C’est le multiple du diviseur qui se trouve juste à côté.", "Vérifie en multipliant : diviseur fois quotient doit donner le dividende."],
-  "error.a.div_cifras": ["Les chiffres du quotient sont sortis à l’envers.", "Multiplie ta réponse par le diviseur : elle doit donner le dividende exact."]
+  "error.a.div_cifras": ["Les chiffres du quotient sont sortis à l’envers.", "Multiplie ta réponse par le diviseur : elle doit donner le dividende exact."],
+  "cierre.suma": "Combien font {a} + {b} ?",
+  "cierre.producto": "Combien font {a} × {b} ?",
+  "cierre.fraccion": "Combien font {p}/{q} de {n} ?",
+  "cierre.cuadrado": "Combien font {n}² ?",
+  "cierre.operaciones": "Combien font {a} × {b} + {c} ?",
+  "cierre.secuencia": "Quel nombre vient ensuite : {a}, {b}, {c}, … ?",
+  "cierre.ecuacion": "Si {a}x + {b} = {c}, quelle est la valeur de x ?",
+  "cierre.potencia": "Combien font {a}^{b} ?",
+  "cierre.raiz": "Quelle est la racine carrée de {n} ?",
+  "cierre.proporcion": "Si {a} × ? = {c}, quel est le facteur manquant ?",
+  "cierre.mcd": "Quel est le plus grand diviseur commun de {a} et {b} ?",
+  "error.cierre.7.1": ["Tu as combiné les quantités autrement.", "Écris les termes et additionne-les une seule fois."],
+  "error.cierre.7.2": ["Tu as utilisé un produit voisin.", "Multiplie complètement les deux facteurs."],
+  "error.cierre.7.3": ["Tu as appliqué la fraction à la mauvaise partie.", "Divise par le dénominateur, puis multiplie par le numérateur."],
+  "error.cierre.11.1": ["Tu t’es arrêté avant d’isoler l’inconnue.", "Annule l’addition avant de diviser par le coefficient."],
+  "error.cierre.11.2": ["Tu as utilisé un autre exposant.", "Multiplie la base par elle-même autant de fois que l’exposant l’indique."],
+  "error.cierre.11.3": ["Tu as choisi un carré voisin.", "Cherche le nombre qui multiplié par lui-même donne le radicande."],
+  "error.cierre.12.1": ["Tu as modifié l’équation de façon inégale.", "Garde les deux côtés équilibrés à chaque étape."],
+  "error.cierre.12.2": ["Tu as utilisé une autre puissance de deux.", "Compte les facteurs et multiplie-les avec soin."],
+  "error.cierre.12.3": ["Tu as estimé sans vérifier exactement.", "Remplace la réponse dans l’expression pour vérifier."]
 
 }

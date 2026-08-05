@@ -31,7 +31,7 @@ const m = t(locale);
         const r = await fetch("/api/familia-reto", { headers: { accept: "application/json" } });
         if (!r.ok) return;
         const data = await r.json();
-        document.querySelector("#lista-retos")?.replaceChildren(...(data.retos ?? []).map((x) => { const li = document.createElement("li"); li.textContent = `Reto ${x.id.slice(0, 8)} · ${x.participants.length} participantes`; return li; }));
+        document.querySelector("#lista-retos")?.replaceChildren(...(data.retos ?? []).map((x) => { const li = document.createElement("li"); const enlace = document.createElement("a"); enlace.href = `/__LOCALE__/app/familia/reto/${encodeURIComponent(x.id)}`.replace("__LOCALE__", document.documentElement.lang); enlace.textContent = `Abrir reto ${x.id.slice(0, 8)} · ${x.participants.length} participantes`; li.append(enlace); return li; }));
       };
       const cargar = async () => {
         const r = await fetch("/api/familia", { headers: { accept: "application/json" } });

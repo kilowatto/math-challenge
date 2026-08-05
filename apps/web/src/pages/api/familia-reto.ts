@@ -1,7 +1,16 @@
 import type { APIRoute } from "astro";
 import { calificarRespuesta, type Item } from "../../../../../packages/motor/src/item.ts";
+import { presentarItemEstructura } from "../../../../../packages/motor/src/presentar.ts";
+import { LOCALES, type Locale } from "../../../../../packages/motor/src/convenciones.ts";
 import { COOKIE_ADULTO, COOKIE_NINO, leerCookies, leerSesionAdulto, leerSesionNino } from "../../lib/sesiones";
 import { hogarIds } from "../../lib/familia";
+import retoEN from "../../i18n/reto/en.json";
+import retoESMX from "../../i18n/reto/es-MX.json";
+import retoESES from "../../i18n/reto/es-ES.json";
+import retoFRFR from "../../i18n/reto/fr-FR.json";
+import retoPTBR from "../../i18n/reto/pt-BR.json";
+import retoPTPT from "../../i18n/reto/pt-PT.json";
+import retoDEDE from "../../i18n/reto/de-DE.json";
 
 export const prerender = false;
 const DURACION_MS = 72 * 60 * 60 * 1000;
@@ -10,6 +19,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const env = (locals as any).runtime?.env;
   const actor = await leerActor(env, request);
   if (!actor || !env?.DB) return json({ error: "sin_sesion" }, 401);
+  const url = new URL(request.url);
+  const challengeId = url.searchParams.get("challengeId") ?? url.searchParams.get("challenge");
+  const itemId = url.searchParams.get("itemId");
+  if (challengeId && itemId) return presentarItemFamiliar(env.DB, actor, challengeId, itemId, url.searchParams.get("locale") ?? "en");
   const rows = (await env.DB.prepare("SELECT id, created_by_user_id, item_set, opens_at, expires_at FROM family_challenge WHERE expires_at > ? ORDER BY created_at DESC LIMIT 20").bind(Date.now()).all()).results as Array<{ id: string; created_by_user_id: string; item_set: string; opens_at: number; expires_at: number }>;
   const childOwner = actor.childProfileId
     ? await env.DB.prepare("SELECT parent_user_id FROM child_profiles WHERE id = ? AND deleted_at IS NULL").bind(actor.childProfileId).first() as { parent_user_id: string } | null
@@ -18,12 +31,31 @@ export const GET: APIRoute = async ({ request, locals }) => {
   for (const row of rows) {
     const household = await idsDelHogar(env.DB, row.created_by_user_id);
     if ((actor.userId && household.includes(actor.userId)) || (childOwner && household.includes(childOwner.parent_user_id))) {
-      visibles.push({ id: row.id, createdBy: row.created_by_user_id, opensAt: row.opens_at, expiresAt: row.expires_at, participants: Object.keys(JSON.parse(row.item_set)) });
+      const sets = JSON.parse(row.item_set) as Record<string, string[]>;
+      const ownKey = actor.userId ? `adult:${actor.userId}` : `child:${actor.childProfileId}`;
+      visibles.push({ id: row.id, createdBy: row.created_by_user_id, opensAt: row.opens_at, expiresAt: row.expires_at, participants: Object.keys(sets), itemIds: sets[ownKey] ?? [] });
     }
   }
   const resultRows = (await env.DB.prepare("SELECT family_challenge_id, user_id, child_profile_id, correct_count, item_count, completed_at FROM family_challenge_result WHERE user_id = ? OR child_profile_id = ? ORDER BY completed_at DESC LIMIT 20").bind(actor.userId ?? "", actor.childProfileId ?? "").all()).results;
   return json({ retos: visibles, resultados: resultRows });
 };
+
+async function presentarItemFamiliar(db: D1Database, actor: { userId?: string; childProfileId?: string }, challengeId: string, itemId: string, rawLocale: string): Promise<Response> {
+  const challenge = await db.prepare("SELECT item_set, expires_at, created_by_user_id FROM family_challenge WHERE id = ?").bind(challengeId).first() as { item_set: string; expires_at: number; created_by_user_id: string } | null;
+  if (!challenge || challenge.expires_at <= Date.now()) return json({ error: "reto_expirado" }, 410);
+  const household = await idsDelHogar(db, challenge.created_by_user_id);
+  if (!(await actorPerteneceAlHogar(db, actor, household))) return json({ error: "reto_fuera_del_hogar" }, 403);
+  const key = actor.userId ? `adult:${actor.userId}` : `child:${actor.childProfileId}`;
+  let itemIds: unknown;
+  try { itemIds = JSON.parse(challenge.item_set)[key]; } catch { itemIds = null; }
+  if (!Array.isArray(itemIds) || !itemIds.includes(itemId)) return json({ error: "item_fuera_del_reto" }, 403);
+  const row = await db.prepare("SELECT item_json FROM item_bank WHERE id = ?").bind(itemId).first() as { item_json: string } | null;
+  if (!row) return json({ error: "item_no_disponible" }, 404);
+  let item: Item;
+  try { item = JSON.parse(row.item_json) as Item; } catch { return json({ error: "item_ilegible" }, 503); }
+  const locale = (LOCALES as readonly string[]).includes(rawLocale) ? rawLocale as Locale : "en";
+  return json(presentarItemEstructura(item, locale, MENSAJES[locale]));
+}
 
 export const POST: APIRoute = async ({ request, locals, url }) => {
   const env = (locals as any).runtime?.env;
@@ -56,11 +88,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     const challenge = await env.DB.prepare("SELECT item_set, expires_at, created_by_user_id FROM family_challenge WHERE id = ?").bind(body.challengeId).first() as { item_set: string; expires_at: number; created_by_user_id: string } | null;
     if (!challenge || challenge.expires_at <= Date.now()) return json({ error: "reto_expirado" }, 410);
     const household = await idsDelHogar(env.DB, challenge.created_by_user_id);
-    if (actor.userId && !household.includes(actor.userId)) return json({ error: "reto_fuera_del_hogar" }, 403);
-    if (actor.childProfileId) {
-      const childOwner = await env.DB.prepare("SELECT parent_user_id FROM child_profiles WHERE id = ? AND deleted_at IS NULL").bind(actor.childProfileId).first() as { parent_user_id: string } | null;
-      if (!childOwner || !household.includes(childOwner.parent_user_id)) return json({ error: "reto_fuera_del_hogar" }, 403);
-    }
+    if (!(await actorPerteneceAlHogar(env.DB, actor, household))) return json({ error: "reto_fuera_del_hogar" }, 403);
     const key = actor.userId ? `adult:${actor.userId}` : `child:${actor.childProfileId}`;
     let itemIds: string[];
     try { itemIds = JSON.parse(challenge.item_set)[key]; } catch { itemIds = []; }
@@ -105,5 +133,22 @@ async function participantes(db: D1Database, ids: string[]): Promise<Array<{ kin
   const children = (await db.prepare(`SELECT id, theme_band AS band FROM child_profiles WHERE parent_user_id IN (${marks}) AND deleted_at IS NULL`).bind(...ids).all()).results as Array<{ id: string; band: string }>;
   return [...adults.map((row) => ({ kind: "adult" as const, id: row.id })), ...children.map((row) => ({ kind: "child" as const, id: row.id, band: row.band }))];
 }
+
+async function actorPerteneceAlHogar(db: D1Database, actor: { userId?: string; childProfileId?: string }, household: string[]): Promise<boolean> {
+  if (actor.userId) return household.includes(actor.userId);
+  if (!actor.childProfileId) return false;
+  const owner = await db.prepare("SELECT parent_user_id FROM child_profiles WHERE id = ? AND deleted_at IS NULL").bind(actor.childProfileId).first() as { parent_user_id: string } | null;
+  return Boolean(owner && household.includes(owner.parent_user_id));
+}
+
+const MENSAJES: Record<Locale, Record<string, unknown>> = {
+  en: retoEN,
+  "es-MX": retoESMX,
+  "es-ES": retoESES,
+  "fr-FR": retoFRFR,
+  "pt-BR": retoPTBR,
+  "pt-PT": retoPTPT,
+  "de-DE": retoDEDE,
+};
 
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });

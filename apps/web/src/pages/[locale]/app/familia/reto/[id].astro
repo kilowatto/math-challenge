@@ -1,0 +1,110 @@
+---
+import { LOCALES, isLocale, type Locale } from "../../../../../i18n";
+import { COOKIE_ADULTO, COOKIE_NINO, leerCookies, leerSesionAdulto, leerSesionNino } from "../../../../../lib/sesiones";
+
+export const prerender = false;
+const rawLocale = Astro.params.locale;
+if (!isLocale(rawLocale)) return Astro.redirect("/en/");
+const locale: Locale = rawLocale;
+const env = (Astro.locals as any).runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const adulto = env?.SESSION_KV ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]) : null;
+const nino = adulto ? null : env?.SESSION_KV ? await leerSesionNino(env.SESSION_KV, cookies[COOKIE_NINO]) : null;
+if (!adulto && !nino) return Astro.redirect(`/${locale}/app/`);
+const challengeId = Astro.params.id ?? "";
+---
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Reto familiar · Math Challenge</title>
+    <style>
+      :root { font-family: system-ui, sans-serif; color: #1f2937; background: #f8fafc; }
+      main { max-width: 42rem; margin: 0 auto; padding: 1rem; }
+      .item { background: white; border: 1px solid #cbd5e1; border-radius: 1rem; padding: 1.25rem; margin: 1rem 0; }
+      .opciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .75rem; margin-top: 1rem; }
+      button, .opcion { min-height: 3.25rem; border: 2px solid #64748b; border-radius: .75rem; background: white; padding: .75rem; font: inherit; cursor: pointer; }
+      button:focus-visible, .opcion:focus-visible { outline: 4px solid #f59e0b; outline-offset: 2px; }
+      .opcion[aria-pressed="true"] { background: #dbeafe; border-color: #2563eb; }
+      #enviar { background: #1d4ed8; color: white; border-color: #1d4ed8; width: 100%; }
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href={`/${locale}/app/familia`}>← Núcleo familiar</a></p>
+      <h1>Reto familiar</h1>
+      <p id="estado" role="status" aria-live="polite">Cargando el reto…</p>
+      <section id="preguntas" aria-label="Preguntas del reto"></section>
+      <button id="enviar" hidden>Terminar reto</button>
+      <p id="resultado" role="status" aria-live="polite"></p>
+    </main>
+    <script define:vars={{ challengeId, locale }}>
+      const estado = document.querySelector("#estado");
+      const preguntas = document.querySelector("#preguntas");
+      const enviar = document.querySelector("#enviar");
+      const resultado = document.querySelector("#resultado");
+      const respuestas = new Map();
+      let ids = [];
+      const textoError = "No se pudo cargar este reto.";
+
+      const pintar = (item, numero) => {
+        const bloque = document.createElement("article");
+        bloque.className = "item";
+        const titulo = document.createElement("h2");
+        titulo.textContent = `${numero}. ${item.enunciado}`;
+        bloque.append(titulo);
+        const opciones = document.createElement("div");
+        opciones.className = "opciones";
+        opciones.setAttribute("role", "group");
+        opciones.setAttribute("aria-label", `Respuestas de la pregunta ${numero}`);
+        item.opciones.forEach((opcion) => {
+          const boton = document.createElement("button");
+          boton.className = "opcion";
+          boton.type = "button";
+          boton.textContent = opcion.texto;
+          boton.setAttribute("aria-pressed", "false");
+          boton.addEventListener("click", () => {
+            opciones.querySelectorAll("button").forEach((otro) => otro.setAttribute("aria-pressed", "false"));
+            boton.setAttribute("aria-pressed", "true");
+            respuestas.set(item.id, opcion.valor);
+            enviar.hidden = respuestas.size !== ids.length;
+          });
+          opciones.append(boton);
+        });
+        bloque.append(opciones);
+        preguntas.append(bloque);
+      };
+
+      const cargar = async () => {
+        try {
+          const lista = await fetch("/api/familia-reto", { headers: { accept: "application/json" } });
+          if (!lista.ok) throw new Error("lista");
+          const datos = await lista.json();
+          const reto = (datos.retos ?? []).find((x) => x.id === challengeId);
+          ids = reto?.itemIds ?? [];
+          if (ids.length !== 6) throw new Error("participante");
+          for (let indice = 0; indice < ids.length; indice++) {
+            const respuesta = await fetch(`/api/familia-reto?challengeId=${encodeURIComponent(challengeId)}&itemId=${encodeURIComponent(ids[indice])}&locale=${encodeURIComponent(locale)}`);
+            if (!respuesta.ok) throw new Error("item");
+            pintar(await respuesta.json(), indice + 1);
+          }
+          estado.textContent = "Elige una respuesta en cada pregunta.";
+        } catch {
+          estado.textContent = textoError;
+        }
+      };
+
+      enviar.addEventListener("click", async () => {
+        enviar.disabled = true;
+        const response = await fetch("/api/familia-reto?accion=resolver", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ challengeId, answers: ids.map((itemId) => ({ itemId, eleccion: respuestas.get(itemId) })) }) });
+        const data = await response.json();
+        resultado.textContent = response.ok ? `Reto terminado: ${data.correct} de ${data.total}.` : "No se pudo guardar el resultado.";
+        if (response.ok) { enviar.hidden = true; document.querySelectorAll(".opcion").forEach((boton) => { boton.disabled = true; }); }
+        else enviar.disabled = false;
+      });
+      cargar();
+    </script>
+  </body>
+</html>

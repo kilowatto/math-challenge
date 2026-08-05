@@ -95,6 +95,7 @@ import {
   sumarEnLiga,
   type FilaDifundida,
 } from "./liga-do.ts";
+import { olvidarEnSalon, sumarEnGrupo, unirEnSalon } from "./classroom-do.ts";
 
 // ─── La base, estructural (mismo patrón que ciclo-liga.ts) ───────────────────
 //
@@ -116,6 +117,7 @@ export interface BaseDeDatos {
 export interface EnvLiga {
   DB?: BaseDeDatos;
   LEAGUE_DO?: DurableObjectNamespace;
+  CLASSROOM_DO?: DurableObjectNamespace;
 }
 
 /** Quién juega: la misma distinción polimórfica de `progreso.ts` (0007/0012). */
@@ -631,9 +633,65 @@ export async function sumarPuntosDeLiga(
       .bind(entrada.puntos, entrada.diaNuevo ? 1 : 0, m.membershipId)
       .run();
 
+    await sumarPuntosEnGrupos(env, quien, entrada);
+
     return enVivo;
   } catch {
     return false;
+  }
+}
+
+interface FilaGrupoVisible {
+  membership_id: string;
+  child_group_id: string;
+  leaderboard_opt_in: 0 | 1;
+  alias: string;
+  avatar_parts: string;
+  theme_band: Banda;
+  joined_at: number;
+}
+
+/** Replica el cierre calificado en cada grupo aprobado del niño, en modo abierto. */
+export async function sumarPuntosEnGrupos(
+  env: EnvLiga,
+  quien: JugadorDeLiga,
+  entrada: { puntos: number; racha: number; ahora: number },
+): Promise<void> {
+  if (quien.esAdulto || !env.DB || !env.CLASSROOM_DO) return;
+  try {
+    const filas = await env.DB.prepare(
+      "SELECT m.id AS membership_id, m.child_group_id, m.leaderboard_opt_in, " +
+        "p.alias, p.avatar_parts, p.theme_band, COALESCE(m.decided_at, m.requested_at) AS joined_at " +
+        "FROM child_group_membership m " +
+        "JOIN child_profiles p ON p.id = m.child_profile_id " +
+        "WHERE m.child_profile_id = ? AND m.status = 'approved' AND p.deleted_at IS NULL",
+    )
+      .bind(quien.id)
+      .all<FilaGrupoVisible>();
+
+    await Promise.all((filas.results ?? []).map(async (fila) => {
+      if (fila.leaderboard_opt_in !== 1) {
+        await olvidarEnSalon(env.CLASSROOM_DO, fila.child_group_id, fila.membership_id);
+        return;
+      }
+      const unido = await unirEnSalon(env.CLASSROOM_DO, fila.child_group_id, {
+        membership_id: fila.membership_id,
+        alias: fila.alias,
+        avatar_parts: fila.avatar_parts,
+        banda: fila.theme_band,
+        opt_in: 1,
+        joined_at: fila.joined_at,
+      });
+      if (unido) {
+        await sumarEnGrupo(env.CLASSROOM_DO, fila.child_group_id, {
+          membership_id: fila.membership_id,
+          puntos: entrada.puntos,
+          racha: entrada.racha,
+        });
+      }
+    }));
+  } catch {
+    // El grupo es una vista social: perder una actualización no interrumpe el reto.
   }
 }
 

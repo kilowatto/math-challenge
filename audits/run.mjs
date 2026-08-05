@@ -837,6 +837,9 @@ for (const prueba of [
   // F9 #402 · gate focal de OwnerProof: las cuatro assurances, insignias y null.
   "apps/web/src/lib/owner-proof.prueba.mjs",
 
+  // F9 #400 · el cierre solo replica miembros aprobados con opt-in al DO.
+  "apps/web/src/lib/classroom-cable.prueba.mjs",
+
 
   // F7 #244. El cable del DUELO, contra SQLite de verdad (`node:sqlite`) con el
   // esquema REAL de `league_duel`. Lo que defiende tampoco rompe nada visible:

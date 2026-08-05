@@ -175,6 +175,7 @@ interface Env {
   SESSION_KV: KVNamespace;
   LEARNER_DO?: DurableObjectNamespace;
   LEAGUE_DO?: DurableObjectNamespace;
+  CLASSROOM_DO?: DurableObjectNamespace;
   // Las misiones del día (F7 #224): un objeto por niño, dueño del estado del
   // día; `lib/misiones-dia.ts` lo llama en cada ítem que cuenta.
   MISSIONS_DO?: DurableObjectNamespace;

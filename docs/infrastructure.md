@@ -228,4 +228,4 @@ El precio por escritura de Analytics Engine **no pudo confirmarse** contra la
 documentación actual de Cloudflare durante la investigación. Como todo el diseño
 de telemetría descansa en ese servicio, hay que confirmarlo antes de
 comprometerse — está registrado como riesgo #13 en `mc-32`.
-> **Estado verificado el 2026-08-05:** las migraciones `0022_clubs_adultos.sql`, `0023_nucleo_familiar.sql` y `0024_nucleo_conflictos_y_modalidades.sql` ya están aplicadas en `math-challenge-db` remoto. El Worker `math-challenge-web` quedó desplegado con la versión `5b06a22b-f814-4d0d-88bc-09e40f2407d2`; las filas históricas de abajo conservan el contexto de creación.
+> **Estado verificado el 2026-08-05:** las migraciones `0022_clubs_adultos.sql`, `0023_nucleo_familiar.sql` y `0024_nucleo_conflictos_y_modalidades.sql` ya están aplicadas en `math-challenge-db` remoto. El Worker `math-challenge-web` quedó desplegado con la versión `7c0c4d2f-cb88-43a0-acf5-5d40704213b7`; las filas históricas de abajo conservan el contexto de creación.

@@ -814,6 +814,23 @@ const {
       return r.ok ? r.json() : null;
     };
 
+    function activarConToque(elemento, accion) {
+      let ultimaActivacion = 0;
+      const activar = (evento) => {
+        const ahora = Date.now();
+        if (ahora - ultimaActivacion < 500) {
+          if (evento.type !== "click") evento.preventDefault();
+          return;
+        }
+        ultimaActivacion = ahora;
+        if (evento.type !== "click") evento.preventDefault();
+        accion();
+      };
+      elemento.addEventListener("pointerup", activar);
+      elemento.addEventListener("touchend", activar, { passive: false });
+      elemento.addEventListener("click", activar);
+    }
+
     /*
      * El duelo (F7 #244): si la URL trae `?duelo=<id>`, esta serie es el set
      * congelado de un `league_duel`. El id viaja en las dos llamadas y el
@@ -890,7 +907,7 @@ const {
       boton.textContent = rotulos.verlo;
 
       let visto = false;
-      boton.addEventListener("click", () => {
+      activarConToque(boton, () => {
         $escena.replaceChildren();
         $escena.dataset.disposicion = String(v.disposicion ?? "linea");
         for (let i = 0; i < n; i++) {
@@ -961,7 +978,7 @@ const {
             // nombre N veces y quien cuenta con lector no sabe cuál ya tocó.
             b.setAttribute("aria-label", `${rotulos.mirar}: ${i + 1}`);
             b.textContent = glifo;
-            b.addEventListener("click", () => {
+            activarConToque(b, () => {
               b.setAttribute(
                 "aria-pressed",
                 b.getAttribute("aria-pressed") === "true" ? "false" : "true",
@@ -1067,7 +1084,7 @@ const {
         } else {
           b.textContent = o.texto;
         }
-        b.addEventListener("click", () => elegir(o.valor, b));
+        activarConToque(b, () => elegir(o.valor, b));
         $opciones.append(b);
       }
       if ($pista) $pista.hidden = item.opciones.length === 0;

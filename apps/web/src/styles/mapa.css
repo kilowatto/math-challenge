@@ -45,6 +45,30 @@
   font-size: var(--text-base);
 }
 
+.mapa-grupo {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--space) * 0.75);
+  margin-block: 0 calc(var(--space) * 1.5);
+  padding: calc(var(--space) * 0.75) var(--space);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.mapa-grupo__icono {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 50%;
+  color: var(--color-text-brand);
+  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
 /* El hueco honesto: «todavía no estoy midiendo esto». No es un error ni un
    cargando — es el stub declarado de #231, y se lee como lo que es. */
 .mapa__hueco {

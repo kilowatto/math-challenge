@@ -48,6 +48,25 @@ const MODULO = "packages/motor/src/mapa.ts";
 const problemas = [];
 const notas = [];
 let revisados = 0;
+const PAGINA_NINO = "apps/web/src/pages/[locale]/app/kids/mapa.astro";
+
+// F9 #399: la única mención social del niño es una lectura aprobada y neutra.
+const paginaNino = sinComentarios(leer(PAGINA_NINO) ?? "");
+if (!paginaNino.includes("child_group_membership") || !/status\s*=\s*'approved'/.test(paginaNino)) {
+  problemas.push(`${PAGINA_NINO}: la mención de grupo no lee solo membresías aprobadas.`);
+}
+if (!paginaNino.includes("f9Habilitado") || !paginaNino.includes("CONFIG_KV")) {
+  problemas.push(`${PAGINA_NINO}: la mención de grupo no está protegida por la bandera F9 del locale.`);
+}
+for (const campo of ["points", "puntos", "position", "posicion", "leaderboard", "current_streak", "full_name", "owner_user_id"]) {
+  if (new RegExp(`\\b${campo}\\b`, "i").test(paginaNino)) {
+    problemas.push(`${PAGINA_NINO}: menciona ${campo}, prohibido en la mención neutra de #399.`);
+  }
+}
+if (/WebSocket|websocket|sumarEnSalon|tabla/i.test(paginaNino)) {
+  problemas.push(`${PAGINA_NINO}: la superficie del niño no puede abrir standings ni WebSocket.`);
+}
+revisados++;
 
 // ─── 1. El módulo del mapa no escribe ─────────────────────────────────────
 

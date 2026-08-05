@@ -74,6 +74,7 @@ import {
 import { leerModelo } from "../../../../lib/aprendiz";
 import { rutaKids } from "../../../../lib/rutas-app";
 import { destinoDeLugar, fasesDelSendero } from "../../../../lib/mapa-kids";
+import { f9Habilitado } from "../../../../lib/grupo-flag";
 import Mapa from "../../../../components/mapa/Mapa.astro";
 import { construirSendero } from "../../../../../../../packages/motor/src/mapa.ts";
 import { HABILIDADES_KINDER } from "../../../../../../../packages/motor/src/banco-kinder.ts";
@@ -118,6 +119,25 @@ if (!nino) {
   r.headers.set("cache-control", "no-store, private");
   r.headers.set("vary", "cookie");
   return r;
+}
+
+let grupo: { escuela: string | null; club: boolean } | null = null;
+if (env?.DB && await f9Habilitado(env.CONFIG_KV, locale)) {
+  try {
+    grupo = await (env.DB as D1Database).prepare(
+      "SELECT s.name AS escuela, g.origen_tipo " +
+        "FROM child_group_membership m " +
+        "JOIN child_group g ON g.id = m.child_group_id " +
+        "LEFT JOIN school s ON s.id = g.school_id " +
+        "WHERE m.child_profile_id = ? AND m.status = 'approved' " +
+        "ORDER BY m.decided_at DESC, m.id DESC LIMIT 1",
+    )
+      .bind(nino.childProfileId)
+      .first<{ escuela: string | null; origen_tipo: "salon" | "club_papas" }>()
+      .then((fila) => fila ? { escuela: fila.escuela, club: fila.origen_tipo === "club_papas" } : null);
+  } catch {
+    grupo = null;
+  }
 }
 
 // --- El sendero, compuesto de piezas que ya existen -------------------------
@@ -171,6 +191,17 @@ if (env?.DB) {
   <body>
     <main class="mapa-kids">
       <h1 class="mapa-kids__titulo">{m.mapaSenderoNombre}</h1>
+
+      {grupo && (
+        <aside class="mapa-grupo" aria-label={m.mapaGrupoAria}>
+          <span class="mapa-grupo__icono" role="img" aria-label={m.mapaGrupoAria}>♧</span>
+          <span class="mapa-grupo__texto">
+            {grupo.club
+              ? m.mapaGrupoClub
+              : m.mapaGrupoEscuela.replace("{nombre}", grupo.escuela ?? "")}
+          </span>
+        </aside>
+      )}
 
       <Mapa
         locale={locale}

@@ -596,6 +596,7 @@ for (const prueba of [
   "packages/motor/src/offline.prueba.mjs",
   "packages/motor/src/rollup.prueba.mjs",
   "packages/motor/src/banco.prueba.mjs",
+  "packages/motor/src/banco-logi.prueba.mjs",
   "packages/motor/src/historia.prueba.mjs",
   "packages/motor/src/cola.prueba.mjs",
   // La simulación del motor adaptativo (F4). Corre aquí y no a mano porque es

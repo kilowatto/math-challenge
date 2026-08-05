@@ -54,7 +54,7 @@ const { banda = "PUBLICO", locale = "en" } = Astro.props;
     } catch {}
   };
 
-  const observar = (type, fn, opciones) => {
+  const observar = (type, fn, opciones = {}) => {
     try {
       new PerformanceObserver(fn).observe({ type, buffered: true, ...opciones });
     } catch {}

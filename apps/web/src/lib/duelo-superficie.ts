@@ -321,7 +321,7 @@ export async function retarADuelo(
       },
       anio,
     );
-    if (!miElegibilidad.puede) return { ok: false, motivo: miElegibilidad.motivo };
+    if (miElegibilidad.puede === false) return { ok: false, motivo: miElegibilidad.motivo };
 
     // ── El rival: misma cohorte (la propia liga, nunca fuera — D-018) y los ──
     // mismos portones. Su tope de salientes no se mide: el tope es anti-acoso
@@ -352,7 +352,7 @@ export async function retarADuelo(
       },
       anio,
     );
-    if (!rivalElegibilidad.puede) return { ok: false, motivo: rivalElegibilidad.motivo };
+    if (rivalElegibilidad.puede === false) return { ok: false, motivo: rivalElegibilidad.motivo };
 
     // ── El set congelado, el mismo para los dos. ─────────────────────────────
     const set = elegirSet(idsDelBanco, ITEMS_POR_DUELO, dueloId);

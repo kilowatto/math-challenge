@@ -21,11 +21,13 @@ import { llaveDelReto } from "./passkey-reto";
 
 export const prerender = false;
 
+interface Env { DB?: D1Database; SESSION_KV?: KVNamespace; RATE_LIMITER?: DurableObjectNamespace }
+
 const error = (motivo: string, estado = 400) =>
   new Response(JSON.stringify({ ok: false, motivo }), { status: estado, headers: { "content-type": "application/json" } });
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = (locals as any).runtime?.env;
+  const env = (locals as { runtime?: { env?: Env } }).runtime?.env;
   if (!env?.DB || !env?.SESSION_KV) return error("sin_bindings", 503);
   if (request.headers.get("early-data") === "1") return error("reintenta", 425);
 
@@ -68,7 +70,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     signCountGuardado: fila.sign_count,
   });
 
-  if (!r.ok) {
+  if (r.ok === false) {
     if (r.motivo.startsWith("contador_no_subio")) {
       // Se deja rastro. Un intento de clon rechazado y no registrado es un
       // incidente que nadie va a poder mirar después.

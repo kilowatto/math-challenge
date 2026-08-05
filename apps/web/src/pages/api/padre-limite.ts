@@ -186,7 +186,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   });
 
   const volverA = rutaLimiteHijo(locale, hijo.id);
-  if (!resultado.ok) return terminarMal(request, volverA, resultado.motivo);
+  if (resultado.ok === false) return terminarMal(request, volverA, resultado.motivo);
 
   // `?guardado=1` para que la pantalla confirme. 303 si vino de un formulario,
   // JSON si vino de `fetch` — ver `lib/respuesta-de-formulario.ts`.

@@ -74,4 +74,4 @@ const Pagina = PAGINAS[seccion];
   contenido la ignoran; las tres puertas de registro la NECESITAN, porque es lo
   unico que las distingue entre si (D-026: mismo formulario, distinta puerta).
 -->
-<Pagina locale={locale} seccion={seccion} />
+<Pagina {...({ locale, seccion } as any)} />

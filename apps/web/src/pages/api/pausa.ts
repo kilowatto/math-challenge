@@ -106,7 +106,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     ahora: Date.now(),
   });
 
-  if (!resultado.ok) {
+  if (resultado.ok === false) {
     // `sin_permiso` es 403: no es una petición mal formada, es una puerta
     // cerrada. Lo demás es 422 — la petición se entendió y el motor la rechazó
     // con un motivo que el padre puede leer en su idioma.

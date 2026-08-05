@@ -1,0 +1,21 @@
+---
+export const prerender = false;
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale = raw as Locale;
+const env = (Astro.locals as { runtime?: { env?: { DB?: D1Database; SESSION_KV?: KVNamespace } } }).runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]) : null;
+if (!sesion) return Astro.redirect(`/${locale}/app/`);
+const hijos = env?.DB ? (await env.DB.prepare("SELECT id, alias FROM child_profiles WHERE parent_user_id = ? AND theme_band = 'SECUNDARIA' AND deleted_at IS NULL ORDER BY created_at").bind(sesion.userId).all<{ id: string; alias: string }>()).results ?? [] : [];
+---
+<Privada locale={locale} title="Unirme a un club" description="Únete con un código">
+  <main class="formulario"><h1>Unirme a un club</h1><p>El código une a personas que ya se conocen.</p>
+    <form method="post" action="/api/clubes/unirse"><input type="hidden" name="locale" value={locale} /><label for="codigo">Código</label><input id="codigo" name="codigo" maxlength="6" pattern="[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}" required /><button type="submit">Unirme como adulto</button></form>
+    {hijos.length > 0 && <form method="post" action="/api/clubes/unirse"><input type="hidden" name="locale" value={locale} /><label for="codigo-hijo">Código para un adolescente</label><input id="codigo-hijo" name="codigo" maxlength="6" pattern="[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}" required /><label for="child">Adolescente</label><select id="child" name="child_id">{hijos.map((h) => <option value={h.id}>{h.alias}</option>)}</select><p>Un adolescente nunca puede entrar a un reto con prenda.</p><button type="submit">Aprobar entrada</button></form>}
+  </main>
+</Privada>
+<style>.formulario { max-width: 34rem; margin-inline: auto; padding-block: 2rem; } form { display: grid; gap: .65rem; margin-block: 1.5rem; } input, select, button { min-height: 44px; padding: .65rem; } form + form { border-top: 1px solid var(--color-border); padding-top: 1.5rem; }</style>

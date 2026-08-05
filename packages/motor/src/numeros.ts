@@ -27,6 +27,7 @@
 import { MATH_CONVENTIONS, type Locale } from "./convenciones.ts";
 
 export { MATH_CONVENTIONS };
+export type { Locale };
 
 /**
  * Escribe un número con el decimal y los millares del locale.

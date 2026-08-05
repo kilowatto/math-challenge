@@ -52,7 +52,10 @@ const PAGINA_NINO = "apps/web/src/pages/[locale]/app/kids/mapa.astro";
 
 // F9 #399: la única mención social del niño es una lectura aprobada y neutra.
 const paginaNino = sinComentarios(leer(PAGINA_NINO) ?? "");
-if (!paginaNino.includes("child_group_membership") || !/status\s*=\s*'approved'/.test(paginaNino)) {
+const leeMembresiasAprobadas =
+  /status\s*=\s*'approved'/.test(paginaNino) ||
+  (/status\s*=\s*\?/.test(paginaNino) && /\.bind\([\s\S]*?["']approved["']/.test(paginaNino));
+if (!paginaNino.includes("child_group_membership") || !leeMembresiasAprobadas) {
   problemas.push(`${PAGINA_NINO}: la mención de grupo no lee solo membresías aprobadas.`);
 }
 if (!paginaNino.includes("f9Habilitado") || !paginaNino.includes("CONFIG_KV")) {

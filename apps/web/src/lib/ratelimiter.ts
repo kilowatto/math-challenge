@@ -54,6 +54,10 @@ export const LIMITES: Record<string, { intentos: number; ventanaMs: number }> = 
   registro: { intentos: 10, ventanaMs: 10 * 60 * 1000 },
   // Entrada: más estrecho. Aquí sí hay algo que adivinar.
   entrar: { intentos: 8, ventanaMs: 10 * 60 * 1000 },
+  // Cambio de contraseña (#313): se adivina la contraseña ACTUAL, que es lo
+  // mismo que se adivina al entrar — pero detrás de sesión, así que el cupo
+  // es el mismo y la ventana también.
+  clave: { intentos: 8, ventanaMs: 10 * 60 * 1000 },
   // El PIN de imágenes son 504 combinaciones. Sin límite, se agotan en
   // segundos — y aquí el «atacante» realista es un hermano mayor.
   pin: { intentos: 12, ventanaMs: 15 * 60 * 1000 },

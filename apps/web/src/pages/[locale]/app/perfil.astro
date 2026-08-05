@@ -291,6 +291,7 @@ const fecha = (s: number) =>
   <script is:inline define:vars={{ MSG: {
     credenciales: m.formErrCredenciales,
     rango: m.formErrClave,
+    demasiados: m.formErrDemasiados,
     generico: m.formErrGenerico,
   } }}>
     // JavaScript puro: este script es INLINE y los inline no se compilan.
@@ -395,7 +396,7 @@ const fecha = (s: number) =>
       }
       // Tabla cerrada: el servidor devuelve una CLAVE, y pintarla cruda dejaría
       // `credenciales` en pantalla.
-      const TEXTOS = { credenciales: MSG.credenciales, clave_fuera_de_rango: MSG.rango };
+      const TEXTOS = { credenciales: MSG.credenciales, clave_fuera_de_rango: MSG.rango, demasiados_intentos: MSG.demasiados };
       mal.textContent = TEXTOS[r.error] ?? MSG.generico;
       mal.hidden = false;
     });

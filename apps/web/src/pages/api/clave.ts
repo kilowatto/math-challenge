@@ -16,32 +16,46 @@
  * que alguien entró no sirve de nada si la sesión de ese alguien sigue viva —
  * y las de este producto duran un mes.
  *
- * Aquí se hace de la única forma que KV permite sin listar: **se cierra la
- * sesión actual y se abre una nueva**, así que quien está cambiando la clave
- * sigue dentro y cualquier otro token que existiera queda huérfano. Un token
- * huérfano todavía apunta a un valor en KV hasta que expire, y eso es un
- * residuo real: **las otras sesiones no se invalidan al instante**, se quedan
- * hasta 30 días. Cerrarlas de verdad exige guardar la lista de tokens por
- * usuario, que es exactamente el dato que D-052 evita guardar.
+ * KV no permite listar las llaves de un usuario, así que no se pueden borrar
+ * una a una las sesiones que no conocemos. Lo que se hace (ver
+ * `marcarCorteDeSesiones` en `lib/sesiones.ts`): una marca por usuario, y la
+ * lectura de sesión rechaza todo lo abierto antes de la marca. Las sesiones
+ * viejas quedan en KV hasta que expiran, pero ya no abren nada.
  *
- * Está dicho aquí y no escondido, porque la diferencia entre «cerré las otras
- * sesiones» y «abrí una nueva» importa cuando alguien la usa por miedo.
+ * Aquí se marca el corte y ADEMÁS se rota la sesión actual — se cierra el
+ * token viejo y se abre uno nuevo—, así que quien cambia la clave sigue dentro
+ * y cualquier otro aparato queda fuera.
+ *
+ * ─── El límite de tasa ─────────────────────────────────────────────────────
+ *
+ * Este endpoint pregunta por la contraseña actual, o sea que es un oráculo de
+ * «¿es esta?» detrás de sesión. Sin límite, probar contraseñas es gratis
+ * infinitas veces; con el mismo cupo que la entrada (8 en 10 minutos por IP),
+ * adivinar deja de ser una estrategia.
  */
 import type { APIRoute } from "astro";
+// Las importaciones llevan `.ts` explícita porque `clave.prueba.mjs` carga
+// ESTE módulo con `node --experimental-strip-types` (el patrón de
+// `padre-limite.ts`): ese loader no resuelve rutas sin extensión.
 import {
   COOKIE_ADULTO,
   leerCookies,
   leerSesionAdulto,
   cerrarSesionAdulto,
   abrirSesionAdulto,
-} from "../../lib/sesiones";
-import { hashear, verificar, LARGO_MINIMO, LARGO_MAXIMO } from "../../lib/passwords";
+  marcarCorteDeSesiones,
+} from "../../lib/sesiones.ts";
+import { hashear, verificar, LARGO_MINIMO, LARGO_MAXIMO } from "../../lib/passwords.ts";
+import { consultarLimite } from "../../lib/ratelimiter.ts";
 
 export const prerender = false;
 
 interface Env {
   DB?: D1Database;
   SESSION_KV: KVNamespace;
+  /** El limitador de tasa. Sin él el endpoint falla ABIERTO (patrón del repo:
+      `consultarLimite` permite cuando el binding falta). */
+  RATE_LIMITER?: DurableObjectNamespace;
 }
 
 const json = (cuerpo: unknown, status = 200, cookies: string[] = []) => {
@@ -63,6 +77,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const token = leerCookies(request.headers.get("cookie"))[COOKIE_ADULTO];
   const sesion = await leerSesionAdulto(env.SESSION_KV, token);
   if (!sesion) return json({ error: "sin_sesion" }, 401);
+
+  // El límite, ANTES de tocar la contraseña: este endpoint es un oráculo de
+  // «¿es esta la actual?» y sin cupo adivinarla sería gratis (ver encabezado).
+  const ip = request.headers.get("cf-connecting-ip") ?? "sin-ip";
+  const limite = await consultarLimite(env.RATE_LIMITER, "clave", ip);
+  if (!limite.permitido) return json({ error: "demasiados_intentos" }, 429);
 
   let cuerpo: { actual?: unknown; nueva?: unknown };
   try {
@@ -100,8 +120,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     .bind(hash, ahora, sesion.userId)
     .run();
 
-  // La sesión se renueva: el token viejo se borra de KV y se emite otro. Ver el
-  // encabezado sobre qué cubre esto y qué no.
+  // El corte ANTES de abrir la sesión nueva: la marca invalida todo lo abierto
+  // antes de `ahora`, y la sesión nueva nace con `creadaEn = ahora` — justo en
+  // la frontera, del lado de dentro (la comparación es estricta).
+  await marcarCorteDeSesiones(env.SESSION_KV, sesion.userId, ahora);
+
+  // La sesión actual se rota: el token viejo se borra de KV y se emite otro.
   const fuera = await cerrarSesionAdulto(env.SESSION_KV, token);
   const { cookies: nuevas } = await abrirSesionAdulto(env.SESSION_KV, {
     userId: sesion.userId,

@@ -218,6 +218,40 @@ export const llaveAdulto = (token: string) => `s:${token}`;
 export const llaveNino = (token: string) => `k:${token}`;
 
 /**
+ * La llave del CORTE de sesiones de un adulto (issue #313).
+ *
+ * Cambiar la contraseña tiene que cerrar las OTRAS sesiones, y KV no permite
+ * listar las llaves de un usuario — así que no hay forma de borrar una a una
+ * las sesiones que no conocemos. Lo que sí se puede: dejar una MARCA por
+ * usuario (`corte:<userId> → marca de tiempo`) y rechazar en la lectura toda
+ * sesión abierta ANTES de la marca. Las sesiones viejas quedan en KV hasta que
+ * expiran, pero ya no abren nada: son basura inerte, no acceso.
+ *
+ * La marca vive 30 días — la vida de la sesión más vieja que invalida— y se
+ * borra sola. Después de eso ninguna sesión anterior puede existir, así que la
+ * marca ya no hace falta.
+ */
+export const llaveCorteAdulto = (userId: string) => `corte:${userId}`;
+
+/**
+ * Marca el corte: toda sesión de este adulto abierta antes de `ahora` (en
+ * segundos, el mismo reloj que `creadaEn`) queda invalidada.
+ *
+ * La comparación en la lectura es estricta (`creadaEn < corte`), así que la
+ * sesión que se abre EN el mismo segundo del corte —la del que acaba de cambiar
+ * su contraseña— sobrevive. El hueco que queda es de un segundo: otra sesión
+ * abierta en ese mismo segundo también sobreviviría. Es el precio de un reloj
+ * de segundos, y es aceptable: la ventana real de un atacante no es un segundo.
+ */
+export async function marcarCorteDeSesiones(
+  kv: KVNamespace,
+  userId: string,
+  ahora: number,
+): Promise<void> {
+  await kv.put(llaveCorteAdulto(userId), String(ahora), { expirationTtl: VIDA_ADULTO_S });
+}
+
+/**
  * Abre la sesión del adulto. Devuelve la cookie ya armada.
  *
  * El token se genera aquí y **solo aquí** se conoce en claro; lo que se guarda
@@ -254,7 +288,14 @@ export async function leerSesionAdulto(
   const crudo = await kv.get(llaveAdulto(token));
   if (!crudo) return null;
   try {
-    return JSON.parse(crudo) as SesionAdulto;
+    const sesion = JSON.parse(crudo) as SesionAdulto;
+    // El corte de #313: una sesión abierta ANTES del cambio de contraseña ya
+    // no abre nada, aunque su token siga en KV. Cuesta una lectura extra de KV
+    // por lectura de sesión — el precio de poder cerrar las sesiones que no
+    // conocemos sin listar llaves, que KV no permite.
+    const corte = await kv.get(llaveCorteAdulto(sesion.userId));
+    if (corte !== null && sesion.creadaEn < Number(corte)) return null;
+    return sesion;
   } catch {
     return null;
   }
@@ -267,9 +308,13 @@ export async function leerSesionAdulto(
  * eventualmente consistente y un borrado tarda en propagarse entre nodos del
  * borde; hasta que llega, otro nodo puede seguir sirviendo el valor viejo. Para
  * una sesión de adulto en un producto infantil eso es aceptable y hay que
- * decirlo, no esconderlo. El día que haga falta cierre inmediato —revocación
- * tras un robo de cuenta— el mecanismo no es KV: es una lista de revocación en
- * D1 consultada en la misma petición.
+ * decirlo, no esconderlo.
+ *
+ * Cerrar UNA sesión es borrar su llave. Cerrar TODAS las de un adulto —el caso
+ * del cambio de contraseña, #313— no se puede hacer así, porque KV no permite
+ * listar las llaves de un usuario: para eso está la marca de corte
+ * (`marcarCorteDeSesiones`), que invalida en la lectura toda sesión abierta
+ * antes de ella.
  */
 export async function cerrarSesionAdulto(kv: KVNamespace, token: string | undefined): Promise<string[]> {
   if (token && esTokenOpaco(token)) await kv.delete(llaveAdulto(token));

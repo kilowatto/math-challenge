@@ -879,6 +879,14 @@ for (const prueba of [
   // la puerta no da error — da una cuenta que nace en el modo equivocado.
   "apps/web/src/lib/registro.prueba.mjs",
 
+  // F2 #313. El cambio de contraseña, ejecutado de verdad contra `node:sqlite`:
+  // exige la actual (la sesión no basta), la nueva se guarda de verdad, el
+  // cambio CIERRA las demás sesiones del adulto (la marca de corte de
+  // `sesiones.ts`) y el limitador de tasa cubre el endpoint. Lo que defiende
+  // tampoco rompe nada visible: unas sesiones ajenas que sobreviven al cambio
+  // no dan error — dan a un atacante 30 días más dentro.
+  "apps/web/src/lib/clave.prueba.mjs",
+
 ]) {
   const r = spawnSync(
     "node",

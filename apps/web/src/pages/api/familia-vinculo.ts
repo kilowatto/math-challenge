@@ -30,12 +30,15 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     if (!invite || invite.inviter_user_id === session.userId) return json({ error: "codigo_invalido" }, 404);
     const actual = await env.DB.prepare("SELECT id FROM household_link WHERE user_id = ? AND revoked_at IS NULL").bind(session.userId).first();
     if (actual) return json({ error: "hogar_ya_vinculado" }, 409);
-    await env.DB.prepare("UPDATE household_link SET user_id = ?, accepted_at = ? WHERE id = ? AND user_id IS NULL")
+    const updated = await env.DB.prepare("UPDATE household_link SET user_id = ?, accepted_at = ? WHERE id = ? AND user_id IS NULL")
       .bind(session.userId, now, invite.id).run();
+    if ((updated.meta?.changes ?? 0) !== 1) return json({ error: "codigo_ya_usado" }, 409);
     return json({ ok: true });
   }
   if (accion === "revocar") {
-    await env.DB.prepare("UPDATE household_link SET revoked_at = ? WHERE inviter_user_id = ? AND revoked_at IS NULL").bind(now, session.userId).run();
+    const updated = await env.DB.prepare("UPDATE household_link SET revoked_at = ?, revoked_by_user_id = ? WHERE revoked_at IS NULL AND (inviter_user_id = ? OR user_id = ?)")
+      .bind(now, session.userId, session.userId, session.userId).run();
+    if ((updated.meta?.changes ?? 0) !== 1) return json({ error: "vinculo_no_encontrado" }, 404);
     return json({ ok: true });
   }
   return json({ error: "accion_desconocida" }, 400);

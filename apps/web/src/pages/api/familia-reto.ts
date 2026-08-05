@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const challengeId = url.searchParams.get("challengeId") ?? url.searchParams.get("challenge");
   const itemId = url.searchParams.get("itemId");
   if (challengeId && itemId) return presentarItemFamiliar(env.DB, actor, challengeId, itemId, url.searchParams.get("locale") ?? "en");
-  const rows = (await env.DB.prepare("SELECT id, created_by_user_id, item_set, opens_at, expires_at FROM family_challenge WHERE expires_at > ? ORDER BY created_at DESC LIMIT 20").bind(Date.now()).all()).results as Array<{ id: string; created_by_user_id: string; item_set: string; opens_at: number; expires_at: number }>;
+  const rows = (await env.DB.prepare("SELECT id, created_by_user_id, item_set, kind, opens_at, expires_at FROM family_challenge WHERE expires_at > ? ORDER BY created_at DESC LIMIT 20").bind(Date.now()).all()).results as Array<{ id: string; created_by_user_id: string; item_set: string; kind: string; opens_at: number; expires_at: number }>;
   const childOwner = actor.childProfileId
     ? await env.DB.prepare("SELECT parent_user_id FROM child_profiles WHERE id = ? AND deleted_at IS NULL").bind(actor.childProfileId).first() as { parent_user_id: string } | null
     : null;
@@ -33,7 +33,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     if ((actor.userId && household.includes(actor.userId)) || (childOwner && household.includes(childOwner.parent_user_id))) {
       const sets = JSON.parse(row.item_set) as Record<string, string[]>;
       const ownKey = actor.userId ? `adult:${actor.userId}` : `child:${actor.childProfileId}`;
-      visibles.push({ id: row.id, createdBy: row.created_by_user_id, opensAt: row.opens_at, expiresAt: row.expires_at, participants: Object.keys(sets), itemIds: sets[ownKey] ?? [] });
+      visibles.push({ id: row.id, kind: row.kind, createdBy: row.created_by_user_id, opensAt: row.opens_at, expiresAt: row.expires_at, participants: Object.keys(sets), itemIds: sets[ownKey] ?? [] });
     }
   }
   const resultRows = (await env.DB.prepare("SELECT family_challenge_id, user_id, child_profile_id, correct_count, item_count, completed_at FROM family_challenge_result WHERE user_id = ? OR child_profile_id = ? ORDER BY completed_at DESC LIMIT 20").bind(actor.userId ?? "", actor.childProfileId ?? "").all()).results;
@@ -62,10 +62,18 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const actor = await leerActor(env, request);
   if (!actor || !env?.DB) return json({ error: "sin_sesion" }, 401);
   const accion = url.searchParams.get("accion");
-  if (accion === "crear") {
+  if (accion === "crear" || accion === "crear-semanal" || accion === "crear-duelo") {
     if (!actor.userId) return json({ error: "solo_adulto" }, 403);
     const ids = await idsDelHogar(env.DB, actor.userId);
-    const participants = await participantes(env.DB, ids);
+    let participants = await participantes(env.DB, ids);
+    if (accion === "crear-duelo") {
+      let body: { targetKind?: unknown; targetId?: unknown };
+      try { body = await request.json(); } catch { return json({ error: "cuerpo_ilegible" }, 400); }
+      if ((body.targetKind !== "adult" && body.targetKind !== "child") || typeof body.targetId !== "string") return json({ error: "destino_invalido" }, 400);
+      const targetKey = `${body.targetKind}:${body.targetId}`;
+      participants = participants.filter((participant) => [`adult:${actor.userId}`, targetKey].includes(`${participant.kind}:${participant.id}`));
+      if (participants.length !== 2) return json({ error: "destino_fuera_del_hogar" }, 403);
+    }
     if (participants.length === 0) return json({ error: "sin_participantes" }, 422);
     const itemSet: Record<string, string[]> = {};
     for (const participant of participants) {
@@ -76,10 +84,12 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     }
     if (Object.keys(itemSet).length === 0) return json({ error: "banco_no_sembrado" }, 503);
     const now = Date.now();
+    const kind = accion === "crear-duelo" ? "duel" : accion === "crear-semanal" ? "weekly" : "daily";
+    const expiresAt = now + (kind === "weekly" ? 7 * 24 * 60 * 60 * 1000 : DURACION_MS);
     const id = crypto.randomUUID();
-    await env.DB.prepare("INSERT INTO family_challenge (id, created_by_user_id, item_set, opens_at, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)")
-      .bind(id, actor.userId, JSON.stringify(itemSet), now, now + DURACION_MS, now).run();
-    return json({ id, expiresAt: now + DURACION_MS, participants: Object.keys(itemSet) }, 201);
+    await env.DB.prepare("INSERT INTO family_challenge (id, created_by_user_id, item_set, kind, opens_at, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .bind(id, actor.userId, JSON.stringify(itemSet), kind, now, expiresAt, now).run();
+    return json({ id, kind, expiresAt, participants: Object.keys(itemSet) }, 201);
   }
   if (accion === "resolver") {
     let body: { challengeId?: unknown; answers?: unknown };

@@ -1,9 +1,10 @@
 import { generarBancoAdulto } from "../packages/motor/src/banco-adulto.ts";
 import { generarBancoCierre } from "../packages/motor/src/banco-cierre.ts";
+import { generarBancoLogi } from "../packages/motor/src/banco-logi.ts";
 import { generarBancoPrimaria } from "../packages/motor/src/banco-primaria.ts";
 import { validarItem } from "../packages/motor/src/item.ts";
 
-const bancos = [...generarBancoPrimaria(), ...generarBancoAdulto(), ...generarBancoCierre()];
+const bancos = [...generarBancoPrimaria(), ...generarBancoAdulto(), ...generarBancoCierre(), ...generarBancoLogi()];
 const problemas = [];
 for (let nivel = 4; nivel <= 12; nivel++) {
   const items = bancos.filter((item) => item.nivel === nivel);
@@ -13,9 +14,12 @@ for (let nivel = 4; nivel <= 12; nivel++) {
     if (errores.length) problemas.push(`${item.id}: ${errores.join("; ")}`);
   }
 }
+for (let nivel = 4; nivel <= 12; nivel++) {
+  if (!bancos.some((item) => item.nivel === nivel && item.habilidad.startsWith("LOGI-"))) problems.push(`N${nivel}: falta reto LOGI`);
+}
 if (problemas.length) {
   console.error("piso-seis-retos: FAIL");
   for (const problema of problemas) console.error(`- ${problema}`);
   process.exit(1);
 }
-console.log(`piso-seis-retos: PASS (${bancos.length} ítems; N4-N12 ≥ 6)`);
+console.log(`piso-seis-retos: PASS (${bancos.length} ítems; N4-N12 ≥ 6 + LOGI)`);

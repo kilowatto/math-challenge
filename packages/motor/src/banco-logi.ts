@@ -14,6 +14,7 @@ function figuras(
 ): Item {
   return {
     id,
+    rama: "03",
     habilidad,
     nivel,
     formato: "toca_la_respuesta",
@@ -29,6 +30,7 @@ function figuras(
 function numero(id: string, habilidad: string, nivel: number, clave: string, vars: Record<string, number | string>, respuesta: number, errores: number[]): Item {
   return {
     id,
+    rama: "03",
     habilidad,
     nivel,
     formato: "toca_la_respuesta",

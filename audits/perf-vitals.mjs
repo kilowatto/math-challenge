@@ -25,6 +25,17 @@
 // todavía PENDING— existe para eso: nace del beacon RUM (D-037) sobre tráfico
 // real, y hasta que ese beacon lleve semanas de datos, este es el mejor
 // sustituto disponible. Los dos se complementan, no se reemplazan.
+//
+// ─── La medición juzga lo que el repo controla (D-182) ─────────────────────
+//
+// Medido el 2026-08-04: la inyección de ZONA (Zaraz/GA4/DoubleClick — la
+// excepción declarada de D-076, que el dueño no puede apagar) cuesta ~1.0s de
+// LCP en el artículo largo: 2.83s con ella, 1.83s sin ella. Ninguna línea de
+// este repo puede cambiar ese segundo. D-182 fija que el presupuesto juzga el
+// código propio: cada página se mide DOS veces —completa (se reporta como
+// información) y con los patrones de la inyección bloqueados (la que se
+// JUZGA contra el umbral)—. Si algún día Zaraz se apaga, las dos mediciones
+// se juntan y el comentario sobra, no el auditor.
 
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -43,15 +54,22 @@ const PAGINAS = [
 
 const UMBRAL = { lcp: 2500, cls: 0.1, tbt: 200 };
 
+// Los patrones de la inyección de zona que D-182 excluye del presupuesto
+// (ver el comentario de arriba). Se bloquean por URL en la corrida juzgada.
+const INYECCION_ZONA = [
+  "*cdn-cgi/zaraz*",
+  "*googletagmanager.com*",
+  "*google-analytics.com*",
+  "*doubleclick.net*",
+];
+
 const problems = [];
 const ok = [];
+const info = [];
 
-for (const { ruta, nombre } of PAGINAS) {
-  const url = `${ORIGIN}${ruta}`;
+function medir(url, nombre, { bloquearInyeccion }) {
   const dir = mkdtempSync(join(tmpdir(), "mc-lh-"));
   const salida = join(dir, "reporte.json");
-
-  console.log(`Midiendo ${nombre} — ${url} …`);
   try {
     execFileSync(
       "npx",
@@ -63,27 +81,45 @@ for (const { ruta, nombre } of PAGINAS) {
         "--chrome-flags=--headless",
         "--only-categories=performance",
         "--quiet",
+        ...(bloquearInyeccion
+          ? INYECCION_ZONA.flatMap((p) => [`--blocked-url-patterns=${p}`])
+          : []),
       ],
       { stdio: ["ignore", "ignore", "inherit"], timeout: 120_000 },
     );
   } catch (err) {
-    problems.push(`${nombre}: Lighthouse no corrió — ${err.message}`);
     rmSync(dir, { recursive: true, force: true });
-    continue;
+    throw new Error(`Lighthouse no corrió — ${err.message}`);
   }
-
   const reporte = JSON.parse(readFileSync(salida, "utf8"));
   rmSync(dir, { recursive: true, force: true });
-
   const lcp = reporte.audits["largest-contentful-paint"]?.numericValue;
   const cls = reporte.audits["cumulative-layout-shift"]?.numericValue;
   const tbt = reporte.audits["total-blocking-time"]?.numericValue;
-
   if (lcp == null || cls == null || tbt == null) {
-    problems.push(`${nombre}: Lighthouse no devolvió LCP/CLS/TBT — reporte incompleto`);
+    throw new Error("Lighthouse no devolvió LCP/CLS/TBT — reporte incompleto");
+  }
+  return { lcp, cls, tbt };
+}
+
+for (const { ruta, nombre } of PAGINAS) {
+  const url = `${ORIGIN}${ruta}`;
+  console.log(`Midiendo ${nombre} — ${url} …`);
+  let cruda, propia;
+  try {
+    cruda = medir(url, nombre, { bloquearInyeccion: false });
+    propia = medir(url, nombre, { bloquearInyeccion: true });
+  } catch (err) {
+    problems.push(`${nombre}: ${err.message}`);
     continue;
   }
 
+  info.push(
+    `${nombre}: LCP completo ${(cruda.lcp / 1000).toFixed(2)}s ` +
+      `(inyección de zona incluida; la juzgada es la de código propio, D-182)`,
+  );
+
+  const { lcp, cls, tbt } = propia;
   if (lcp <= UMBRAL.lcp) ok.push(`${nombre}: LCP ${(lcp / 1000).toFixed(2)}s (≤2.5s)`);
   else problems.push(`${nombre}: LCP ${(lcp / 1000).toFixed(2)}s, por encima de 2.5s`);
 
@@ -96,6 +132,11 @@ for (const { ruta, nombre } of PAGINAS) {
 
 console.log(`\nPresupuesto de Core Web Vitals (laboratorio) — ${ORIGIN}\n`);
 for (const p of problems) console.error(`  ✗ ${p}`);
+if (info.length > 0) {
+  console.log("  Medición completa (con la inyección de zona, solo informativa):");
+  for (const i of info) console.log(`    ◦ ${i}`);
+  console.log("");
+}
 if (problems.length === 0) {
   console.log(`  ✓ ${ok.length} comprobaciones`);
   for (const o of ok) console.log(`    · ${o}`);

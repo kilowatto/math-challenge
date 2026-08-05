@@ -5166,3 +5166,36 @@ muestra y de la que salen al reabrirse. Cerrar recepción nunca borra ni
 rechaza lo que ya está dentro.
 
 **Investigación relacionada:** D-089, D-172.
+
+---
+
+## D-182 — El presupuesto de Web Vitals juzga el código propio, no la inyección de zona · 2026-08-04
+
+**Decisión del dueño**, tomada sobre la medición de cierre de S0 (#61).
+
+El presupuesto LCP ≤2.5s / CLS ≤0.1 / INP ≤150ms (S0, #61) se mide sobre
+**lo que este repositorio controla**. La inyección de zona de Cloudflare
+(Zaraz/GA4/DoubleClick — la excepción declarada de D-076, que el dueño no
+puede apagar) queda **fuera del presupuesto**, medida y reportada aparte.
+
+Los números que la motivaron, medidos el 2026-08-04 sobre producción con
+Lighthouse (Moto G4, Slow 4G), artículo largo `mc-01`:
+
+    LCP completo (inyección incluida)   2.83s   ✗ sobre 2.5s
+    LCP solo código propio              1.83s   ✓ con 0.67s de holgura
+
+El exceso entero (~1.0s) es la inyección; ninguna línea del repo puede
+bajarlo, y un presupuesto rojo para siempre por una causa intocable es un
+presupuesto que deja de mirarse — el mismo motivo por el que D-076 reescribió
+D-037 en vez de dejarla mentir.
+
+**Cómo se aplica.** `audits/perf-vitals.mjs` mide cada página DOS veces:
+completa (se reporta como información) y con los patrones de la inyección
+bloqueados (la que se juzga contra el umbral). El día que Zaraz se apague,
+las dos mediciones se juntan y esta excepción se retira con un commit.
+
+**Lo que NO cambia.** D-076 sigue escrito: la inyección existe, pone un
+identificador en las páginas de registro, y su exposición de consentimiento
+no se resuelve con esta decisión — se decide cuando el tráfico lo justifique.
+
+**Investigación relacionada:** D-076, D-037, mc-47.

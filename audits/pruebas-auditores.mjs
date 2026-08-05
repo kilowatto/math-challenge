@@ -2200,7 +2200,7 @@ const CASOS = [
     auditor: "gestos-reto",
     que: "Pantalla.astro sin la guardia de borde para iOS",
     archivo: "apps/web/src/components/reto/Pantalla.astro",
-    parche: (t) => t.replace('"touchstart"', '"tocado"'),
+    parche: (t) => t.replaceAll('"touchstart"', '"tocado"'),
     espera: "touchstart",
 
 

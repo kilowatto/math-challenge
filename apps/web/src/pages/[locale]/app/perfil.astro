@@ -149,6 +149,13 @@ const fecha = (s: number) =>
       )}
     </section>
 
+    <section class="bloque" aria-labelledby="actualizar-app-titulo">
+      <h2 id="actualizar-app-titulo">{m.perfilActualizarTitulo}</h2>
+      <p class="muted">{m.perfilActualizarTexto}</p>
+      <button type="button" class="boton" id="actualizar-app">{m.perfilActualizarCta}</button>
+      <p class="ok" id="actualizar-app-ok" hidden>{m.perfilActualizarListo}</p>
+    </section>
+
     {/*
       ── La puerta al modo familia (issue #346) ───────────────────────────
 
@@ -304,6 +311,23 @@ const fecha = (s: number) =>
 
     const bPasskey = document.getElementById("passkey");
     if (bPasskey && "PublicKeyCredential" in window) bPasskey.hidden = false;
+
+    const bActualizar = document.getElementById("actualizar-app");
+    bActualizar?.addEventListener("click", async () => {
+      bActualizar.disabled = true;
+      try {
+        if ("serviceWorker" in navigator) {
+          const registros = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registros.map((registro) => registro.unregister()));
+        }
+        if ("caches" in window) {
+          const nombres = await caches.keys();
+          await Promise.all(nombres.map((nombre) => caches.delete(nombre)));
+        }
+      } finally {
+        location.replace(`${location.pathname}?actualizar=${Date.now()}`);
+      }
+    });
 
     bPasskey?.addEventListener("click", async () => {
       bPasskey.disabled = true;

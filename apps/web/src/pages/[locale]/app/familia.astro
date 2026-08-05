@@ -22,6 +22,7 @@ const m = t(locale);
       <p>Las personas adultas y los perfiles de niños aparecen en listas separadas.</p>
       <section aria-labelledby="adultos"><h2 id="adultos">Personas adultas</h2><ul id="lista-adultos"><li>Cargando…</li></ul></section>
       <section aria-labelledby="ninos"><h2 id="ninos">Perfiles de niños</h2><ul id="lista-ninos"><li>Cargando…</li></ul></section>
+      <section aria-labelledby="tabla-semanal"><h2 id="tabla-semanal">Tabla semanal de adultos</h2><ul id="tabla-adultos"><li>Cargando…</li></ul><h2>Tabla semanal de niños</h2><ul id="tabla-ninos"><li>Cargando…</li></ul></section>
       <section aria-labelledby="retos"><h2 id="retos">Retos familiares</h2><button id="crear-reto">Crear reto del día</button> <button id="crear-semanal">Crear tabla semanal</button><p id="reto-estado" role="status"></p><ul id="lista-retos"><li>Cargando…</li></ul></section>
       <section aria-labelledby="vinculo"><h2 id="vinculo">Vincular otro padre</h2><button id="crear">Crear código</button><output id="codigo" aria-live="polite"></output><form id="unirse"><label>Código <input name="codigo" inputmode="text" maxlength="6" autocomplete="one-time-code" /></label><button>Unirse</button></form><p id="estado" role="status"></p></section>
     </main>
@@ -36,10 +37,12 @@ const m = t(locale);
       const cargar = async () => {
         const r = await fetch("/api/familia", { headers: { accept: "application/json" } });
         if (!r.ok) return;
-        const data = await r.json() as { adults?: Array<{ alias?: string }>; children?: Array<{ alias: string }>; pending?: { invite_code?: string } };
+        const data = await r.json() as { adults?: Array<{ alias?: string }>; children?: Array<{ alias: string }>; pending?: { invite_code?: string }; weeklyAdults?: Array<{ alias?: string; precision: number }>; weeklyChildren?: Array<{ alias?: string; precision: number }> };
         document.querySelector("#lista-adultos")?.replaceChildren(...(data.adults ?? []).map((x) => { const li = document.createElement("li"); li.textContent = x.alias || "Persona adulta"; return li; }));
         document.querySelector("#lista-ninos")?.replaceChildren(...(data.children ?? []).map((x) => { const li = document.createElement("li"); li.textContent = x.alias; return li; }));
         if (data.pending?.invite_code) document.querySelector("#codigo").textContent = ` Código: ${data.pending.invite_code}`;
+        document.querySelector("#tabla-adultos")?.replaceChildren(...(data.weeklyAdults ?? []).map((x) => { const li = document.createElement("li"); li.textContent = `${x.alias || "Persona adulta"} · ${(Number(x.precision) * 100).toFixed(0)}% de precisión`; return li; }));
+        document.querySelector("#tabla-ninos")?.replaceChildren(...(data.weeklyChildren ?? []).map((x) => { const li = document.createElement("li"); li.textContent = `${x.alias} · ${(Number(x.precision) * 100).toFixed(0)}% de precisión`; return li; }));
       };
       document.querySelector("#crear")?.addEventListener("click", async () => { const r = await fetch("/api/familia-vinculo?accion=crear", { method: "POST" }); const d = await r.json() as { codigo?: string }; const output = document.querySelector("#codigo"); if (output) output.textContent = d.codigo ? ` Código: ${d.codigo}` : " No se pudo crear."; });
       document.querySelector("#crear-reto")?.addEventListener("click", async () => { const r = await fetch("/api/familia-reto?accion=crear", { method: "POST" }); const d = await r.json() as { id?: string; error?: string }; const salida = document.querySelector("#reto-estado"); if (salida) salida.textContent = d.id ? "Reto creado para la familia." : `No se pudo crear: ${d.error ?? "error"}.`; if (r.ok) cargarRetos(); });

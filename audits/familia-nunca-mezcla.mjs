@@ -15,6 +15,7 @@ if (!/CREATE TABLE family_challenge/.test(migration)) problems.push("falta famil
 if (!/CREATE TABLE family_challenge_result/.test(migration)) problems.push("falta family_challenge_result");
 if (!/CREATE TABLE family_cheer/.test(migration)) problems.push("falta family_cheer");
 if (/UNION\s+ALL|UNION\s+SELECT/i.test(roster)) problems.push("la vista familiar une las listas con UNION");
+if (!/weeklyAdults/.test(roster) || !/weeklyChildren/.test(roster)) problems.push("la tabla semanal no conserva listas separadas");
 if (/chat|mensaje|texto libre/i.test(migration + roster + link)) problems.push("la superficie familiar contiene canal de texto");
 if (!/REACCIONES_FAMILIA/.test(roster)) problems.push("las porras no usan el conjunto cerrado");
 if (!/invite_code/.test(link) || !/revoked_at/.test(link)) problems.push("el vínculo no tiene código revocable");

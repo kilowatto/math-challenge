@@ -15,7 +15,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const children = (await env.DB.prepare(`SELECT id, alias, theme_band FROM child_profiles WHERE deleted_at IS NULL AND parent_user_id IN (${marks}) ORDER BY alias`).bind(...ids).all()).results;
   const adults = (await env.DB.prepare(`SELECT id, alias, alias_locale, is_learner FROM users WHERE deleted_at IS NULL AND id IN (${marks}) AND is_learner = 1 ORDER BY alias`).bind(...ids).all()).results;
   const pending = (await env.DB.prepare("SELECT invite_code, created_at FROM household_link WHERE inviter_user_id = ? AND user_id IS NULL AND revoked_at IS NULL").bind(session.userId).first());
-  return json({ children, adults, pending });
+  const weekStart = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const weeklyAdults = (await env.DB.prepare(`SELECT r.user_id AS id, u.alias, SUM(CAST(r.correct_count AS REAL) / r.item_count) AS precision, COUNT(*) AS attempts FROM family_challenge_result r JOIN family_challenge c ON c.id = r.family_challenge_id JOIN users u ON u.id = r.user_id WHERE c.kind = 'weekly' AND c.created_by_user_id IN (${marks}) AND c.created_at >= ? AND r.user_id IS NOT NULL GROUP BY r.user_id, u.alias ORDER BY precision DESC, u.alias`).bind(...ids, weekStart).all()).results;
+  const weeklyChildren = (await env.DB.prepare(`SELECT r.child_profile_id AS id, p.alias, SUM(CAST(r.correct_count AS REAL) / r.item_count) AS precision, COUNT(*) AS attempts FROM family_challenge_result r JOIN family_challenge c ON c.id = r.family_challenge_id JOIN child_profiles p ON p.id = r.child_profile_id WHERE c.kind = 'weekly' AND c.created_by_user_id IN (${marks}) AND c.created_at >= ? AND r.child_profile_id IS NOT NULL AND p.deleted_at IS NULL GROUP BY r.child_profile_id, p.alias ORDER BY precision DESC, p.alias`).bind(...ids, weekStart).all()).results;
+  return json({ children, adults, pending, weeklyAdults, weeklyChildren });
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {

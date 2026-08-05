@@ -78,6 +78,7 @@ import {
 } from "../../lib/duelo-superficie";
 import { limiteAlServir, limiteAlResponder } from "../../lib/limite-dia";
 import { registrarAvanceDeHoy } from "../../lib/misiones-dia";
+import { escribirNotaPatronInusual } from "../../lib/nota-anti-trampa";
 import { bancoPrimariaD1 } from "../../lib/banco-primaria";
 import { bancoAdultoD1 } from "../../lib/banco-adulto";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
@@ -139,7 +140,15 @@ interface Ingest {
     /** La banda del ítem calificado. La ingesta no la manda: es KINDER. */
     banda?: "KINDER" | "PRIMARIA" | "SERIO";
   }>;
-  recordAttempt(input: Record<string, unknown>): Promise<{ puntos: number }>;
+  recordAttempt(input: Record<string, unknown>): Promise<{ puntos: number; imposible?: boolean }>;
+  iniciarSesionReto(sesionId: string, banda: "KINDER" | "PRIMARIA" | "SECUNDARIA" | "SERIO" | "JR" | "PRO"): Promise<unknown>;
+  servirSesionReto(sesionId: string, item: { orden: number; itemId: string; nivel: number }): Promise<unknown>;
+  medirRespuestaSesion(
+    sesionId: string,
+    respuesta: { orden: number; eleccion: string },
+    correcta: boolean,
+    contexto: { itemId: string; skillId: string; locale: string },
+  ): Promise<{ rtMs: number; señalPiso: boolean; repetida: boolean }>;
   /**
    * El corte del límite de pantalla llega a la sesión de reto (F8 #404):
    * `puedeCortar()` → `cerrarPorLimite(motivo)` sobre el Durable Object. Ver
@@ -585,9 +594,22 @@ async function servirSiguiente(
   const item = await origen.presentarItem(elegido.id, locale);
   if (!item) return json({ error: "item_desconocido" }, 500);
 
+  const retoSesionId = typeof cuerpo.retoSesionId === "string" && /^[A-Za-z0-9_-]{16,96}$/.test(cuerpo.retoSesionId)
+    ? cuerpo.retoSesionId
+    : crypto.randomUUID();
+  const orden = respondidosEnTotal;
+  try {
+    const bandaSesion = dueloId ? "PRIMARIA" : quien.esAdulto ? "SERIO" : "KINDER";
+    await env.INGEST.iniciarSesionReto(retoSesionId, bandaSesion);
+    await env.INGEST.servirSesionReto(retoSesionId, { orden, itemId: item.id, nivel: item.nivel });
+  } catch {
+    // La sesión mide y deduplica; si falla, el flujo pedagógico no se bloquea.
+  }
+
   return json({
     ok: true,
     item,
+    retoSesionId,
     // El aviso o el descanso, si tocan: la pantalla los muestra sobre el ítem
     // ya servido. `undefined` cuando no hay nada que decir — la ausencia ES el
     // «siga jugando».
@@ -597,6 +619,7 @@ async function servirSiguiente(
     // respuesta correcta.
     contexto: {
       skillId,
+      orden,
       dificultad: elegido.dificultad,
       habilidadAntes: estado.habilidad,
       ubicando: estaUbicando(estado),
@@ -662,6 +685,10 @@ async function recibirRespuesta(
    * que sí pueda subirlo.
    */
   const reintento = cuerpo.reintento === true;
+  const retoSesionId = typeof cuerpo.retoSesionId === "string" && cuerpo.retoSesionId.length <= 96
+    ? cuerpo.retoSesionId
+    : null;
+  const orden = Number.isInteger(cuerpo.orden) ? Number(cuerpo.orden) : null;
 
   /*
    * El turno del duelo se valida ANTES de juzgar el ítem (F7 #244): si no
@@ -671,7 +698,7 @@ async function recibirRespuesta(
    */
   if (dueloId && !reintento) {
     const turno = await validarTurnoDeDuelo(env, quien, dueloId, itemId, Date.now());
-    if (!turno.ok) return json({ error: turno.motivo }, 409);
+    if (turno.ok === false) return json({ error: turno.motivo }, 409);
   }
 
   // ─── El servidor califica. Siempre. ──────────────────────────────────────
@@ -693,6 +720,23 @@ async function recibirRespuesta(
   const { estado } = estadoDe(resumen, veredicto.habilidad, semilla);
   const dificultad = dificultadDeNivel(veredicto.nivel);
   const correcto = veredicto.acc === 1;
+
+  let tiempoServidor = 0;
+  let señalPiso = false;
+  if (!reintento && retoSesionId && orden !== null) {
+    try {
+      const medido = await env.INGEST.medirRespuestaSesion(
+        retoSesionId,
+        { orden, eleccion: String(eleccion) },
+        correcto,
+        { itemId, skillId: veredicto.habilidad, locale },
+      );
+      tiempoServidor = medido.rtMs;
+      señalPiso = medido.señalPiso;
+    } catch {
+      // La sesión es una mejora de medición; si falla, el juego conserva su camino seguro.
+    }
+  }
 
   const kUsado = kPara(estado.respondidos, estaUbicando(estado));
   const despues = actualizar(estado, { dificultad, correcto, nivel: veredicto.nivel });
@@ -743,7 +787,7 @@ async function recibirRespuesta(
         // en una banda que puntúa con tiempo, la ingesta lo marca `piso` —
         // dato honesto, no tiempo medido. Poner aquí un tiempo del cliente
         // sería exactamente lo que F3 prohíbe.
-        responseTimeMs: 0,
+        responseTimeMs: tiempoServidor,
         themeBand: veredicto.banda ?? "KINDER",
         locale,
         authoredDifficulty: undefined,
@@ -758,11 +802,16 @@ async function recibirRespuesta(
         // Sin la etiqueta, una serie por lugar se contaría como selección
         // adaptativa y ensuciaría la recalibración del selector.
         selectionMode: cuerpo.habilidad === veredicto.habilidad ? "mapa" : "adaptativo",
+        antiTrampaSignal: señalPiso,
       });
       puntosCalificados =
         typeof telemetria?.puntos === "number" && Number.isFinite(telemetria.puntos)
           ? telemetria.puntos
           : null;
+
+      if (telemetria?.imposible && !quien.esAdulto && env.DB) {
+        await escribirNotaPatronInusual(env.DB, childProfileId, Date.now());
+      }
     }
   } catch {
     // Silencio a propósito: la telemetría nunca interrumpe a un niño.

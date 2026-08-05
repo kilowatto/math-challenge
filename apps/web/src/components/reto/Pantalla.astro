@@ -424,6 +424,9 @@ const {
       ninguna otra cosa: el modelo es del servidor.
     */
     let ultimoItemId = null;
+    /** Identificador opaco de la sesión server-side que sella el reloj. */
+    let retoSesionId = null;
+    let ordenActual = null;
 
     // ---------------------------------------------------------------------
     // La guardia de borde para iOS (#451, WebKit bug 240183)
@@ -760,7 +763,7 @@ const {
       const r = await fetch(`/api/jugar?accion=${accion}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ locale, ...cuerpo }),
+        body: JSON.stringify({ locale, retoSesionId: cuerpo.retoSesionId ?? retoSesionId, ...cuerpo }),
       });
       if (r.status === 401) {
         // La sesión de niño dura 12 horas y pudo caducar mientras jugaba. Se
@@ -1131,6 +1134,8 @@ const {
         return;
       }
       actual = r.item;
+      retoSesionId = r.retoSesionId ?? retoSesionId;
+      ordenActual = r.contexto?.orden ?? null;
       $enunciado.textContent = actual.enunciado;
       // Se lee el enunciado, no la escena: los patos y los puntos no tienen
       // texto que decir, y describirlos sería redactar algo que el servidor no
@@ -1160,6 +1165,8 @@ const {
         // servidor lo usa solo para etiquetar la telemetría como «mapa».
         habilidad: habilidadFija ?? undefined,
         duelo: dueloId ?? undefined,
+        retoSesionId,
+        orden: ordenActual,
       });
       mandando = false;
       if (!r) {

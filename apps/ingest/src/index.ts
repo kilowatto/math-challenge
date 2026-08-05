@@ -15,7 +15,7 @@
  */
 
 import { WorkerEntrypoint } from "cloudflare:workers";
-import { calificar, pareceImposible, type Veredicto } from "../../../packages/motor/src/puntuacion.ts";
+import { calificar, type Veredicto } from "../../../packages/motor/src/puntuacion.ts";
 import { generarBanco } from "../../../packages/motor/src/banco-kinder.ts";
 import { calificarRespuesta, type VeredictoDeItem } from "../../../packages/motor/src/item.ts";
 import { dificultadDeNivel } from "../../../packages/motor/src/adaptativo.ts";
@@ -105,6 +105,8 @@ export interface AttemptInput {
    * modos.
    */
   selectionMode?: "adaptativo" | "escalera_fija";
+  /** Señal derivada: tres respuestas cronometradas bajo el piso, nunca el flujo crudo. */
+  antiTrampaSignal?: boolean;
 }
 
 export class Ingest extends WorkerEntrypoint<Env> {
@@ -160,7 +162,7 @@ export class Ingest extends WorkerEntrypoint<Env> {
     // El piso de tiempo es SOLO bitácora (mc-29 impl. 3). No resta, no bloquea y
     // no le dice nada al niño — la línea roja #7 es explícita en que Larry no
     // avergüenza. Se guarda para que alguien pueda mirar patrones después.
-    const imposible = esKinder ? false : pareceImposible(input.responseTimeMs);
+    const imposible = !esKinder && input.antiTrampaSignal === true;
 
     this.env.ATTEMPTS_AE.writeDataPoint({
       // Los índices son por lo que se agrupa. El perfil del niño NO va aquí: es
@@ -199,6 +201,36 @@ export class Ingest extends WorkerEntrypoint<Env> {
     });
 
     return { ...veredicto, imposible };
+  }
+
+  async iniciarSesionReto(sesionId: string, banda: "KINDER" | "PRIMARIA" | "SECUNDARIA" | "SERIO" | "JR" | "PRO") {
+    const sesion = this.env.SESION_RETO_DO.get(this.env.SESION_RETO_DO.idFromName(sesionId)) as unknown as {
+      iniciar(b: typeof banda): Promise<{ ok: true; nueva: boolean }>;
+    };
+    return sesion.iniciar(banda);
+  }
+
+  async servirSesionReto(sesionId: string, item: { orden: number; itemId: string; nivel: number }) {
+    const sesion = this.env.SESION_RETO_DO.get(this.env.SESION_RETO_DO.idFromName(sesionId)) as unknown as {
+      servirItem(i: typeof item): Promise<{ servidoEn: number }>;
+    };
+    return sesion.servirItem(item);
+  }
+
+  async medirRespuestaSesion(
+    sesionId: string,
+    respuesta: { orden: number; eleccion: string },
+    correcta: boolean,
+    contexto: { itemId: string; skillId: string; locale: string },
+  ) {
+    const sesion = this.env.SESION_RETO_DO.get(this.env.SESION_RETO_DO.idFromName(sesionId)) as unknown as {
+      medirRespuesta(
+        r: typeof respuesta,
+        c: boolean,
+        x: typeof contexto,
+      ): Promise<unknown>;
+    };
+    return sesion.medirRespuesta(respuesta, correcta, contexto);
   }
 
   /**

@@ -584,6 +584,91 @@ if (!SEMBRAR) {
         }
       }
     }
+
+    // ─── 4. El camino del niño, caminado entero ─────────────────────────────
+    //
+    // Los dos bugs del 2026-08-04 los encontró el dueño con el pulgar, uno
+    // detrás del otro: tocar una cara daba 404 (enlace a mano sin locale) y,
+    // arreglado ése, la pantalla quedaba en BLANCO (ReferenceError de zona
+    // muerta en la rama sin PIN de `pin.astro` — `locale` usado antes de su
+    // `const`). Ninguna de las comprobaciones de arriba los veía porque el
+    // camino del niño nunca se caminó con sesión: exige dispositivo de la casa
+    // (`mc_h`, tabla household_devices) y un perfil sembrado.
+    //
+    // Aquí se siembra un perfil de prueba sobre la cuenta «familia» y se
+    // camina: rejilla → enlace de la cara → PIN → destino. Un niño sin PIN
+    // elegido entra directo (D-012), así que el PIN responde 303 a jugar con
+    // la cookie `mc_k` — y jugar tiene que responder 200 con cuerpo.
+    const familia = sembradas.find((c) => c.intent === "PADRE" && c.userId);
+    if (familia) {
+      const childId = crypto.randomUUID();
+      const aparato = crypto.randomBytes(32).toString("base64url");
+      const ahora = Date.now();
+      try {
+        d1(
+          `INSERT INTO child_profiles (id, parent_user_id, alias, alias_locale, birth_year, theme_band, avatar_parts, locale, created_at, updated_at) ` +
+            `VALUES ('${childId}', '${familia.userId}', 'AuditorNino0000', 'en', 2021, 'KINDER', '{}', 'en', ${ahora}, ${ahora})`,
+        );
+        d1(
+          `INSERT INTO household_devices (device_token, owner_user_id, label, approved_at) ` +
+            `VALUES ('${aparato}', '${familia.userId}', 'auditoría en vivo (se borra sola)', ${ahora})`,
+        );
+
+        // 4a. La rejilla pinta la cara y el enlace LLEVA LOCALE — el primer bug.
+        const rejilla = await fetch(`${ORIGIN}/en/app/kids/`, {
+          headers: { Cookie: `mc_h=${aparato}` },
+        });
+        const htmlKids = rejilla.ok ? await rejilla.text() : "";
+        const cara = htmlKids.match(/href="(\/[^"]*\/app\/kids\/pin\?p=[^"]+)"/);
+        if (!rejilla.ok) {
+          problems.push(`/en/app/kids/ con aparato de la casa devuelve ${rejilla.status}, no la rejilla`);
+        } else if (!cara) {
+          problems.push(
+            "la rejilla no tiene ningún enlace a /{locale}/app/kids/pin?p=… CON locale — " +
+              "el 404 del 2026-08-04 (o una rejilla vacía con un perfil sembrado, que es peor)",
+          );
+        } else {
+          ok.push(`la cara enlaza con locale: ${cara[1].slice(0, 40)}…`);
+
+          // 4b. El PIN responde 303 con sesión de niño — no 404, no 500 en blanco.
+          const pin = await fetch(`${ORIGIN}${cara[1]}`, {
+            headers: { Cookie: `mc_h=${aparato}` },
+            redirect: "manual",
+          });
+          const destinoPin = pin.headers.get("location") ?? "";
+          const cookieNino = (pin.headers.get("set-cookie") ?? "").split(";")[0];
+          if (pin.status !== 303 || !destinoPin.includes("/app/kids/jugar")) {
+            problems.push(
+              `el PIN de un perfil sin PIN elegido devuelve ${pin.status} → "${destinoPin}". ` +
+                "Se esperaba 303 a /app/kids/jugar/. Un 500 aquí es la pantalla en blanco del " +
+                "2026-08-04 (TDZ de `locale` en la rama sin PIN); un 404 es un enlace sin locale.",
+            );
+          } else if (!cookieNino.startsWith("mc_k=")) {
+            problems.push(`el PIN respondió 303 pero sin cookie mc_k — el niño no queda en sesión`);
+          } else {
+            // 4c. El destino responde 200 CON CUERPO — la pantalla en blanco es cero bytes.
+            const jugar = await fetch(`${ORIGIN}${destinoPin}`, {
+              headers: { Cookie: `mc_h=${aparato}; ${cookieNino}` },
+            });
+            const cuerpo = jugar.ok ? await jugar.text() : "";
+            if (!jugar.ok || cuerpo.trim().length === 0) {
+              problems.push(
+                `${destinoPin} devuelve ${jugar.status} con ${cuerpo.length} bytes — la pantalla ` +
+                  "en blanco que el dueño grabó el 2026-08-04",
+              );
+            } else {
+              ok.push(`camino del niño completo: rejilla → PIN → ${destinoPin} 200 (${cuerpo.length} bytes)`);
+            }
+          }
+        }
+      } catch (err) {
+        problems.push(
+          `no se pudo caminar el camino del niño: ${String(err.message ?? err).split("\n")[0]}`,
+        );
+      }
+      // La limpieza es por CASCADE: child_profiles y household_devices cuelgan
+      // de users con ON DELETE CASCADE, y el finally de abajo borra al usuario.
+    }
   } catch (err) {
     problems.push(
       `no se pudo sembrar la sesión de prueba: ${String(err.message ?? err).split("\n")[0]}. ` +

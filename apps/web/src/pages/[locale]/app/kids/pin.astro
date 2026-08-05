@@ -301,6 +301,27 @@ if (!perfil) return salidaHacia(DESTINO_SIN_PERMISO);
  * prefetch, esta rama pasa a abrir sesiones al pasar el dedo por encima** y hay
  * que moverla detrás de un POST.
  */
+/**
+ * El idioma sale del PERFIL, no de la URL ni del navegador.
+ *
+ * Esta ruta no lleva segmento de locale porque no es del sitio público: es
+ * aplicación, no contenido indexable, y no tiene hreflang que cerrar. El idioma
+ * en el que un niño ve su pantalla es un dato del perfil que su padre configuró,
+ * y `Accept-Language` en una tablet compartida diría el idioma del sistema, que
+ * es de la casa y no siempre el del niño.
+ *
+ * VA ANTES de la rama sin PIN, no después — y ese orden se pagó con una
+ * pantalla en blanco en producción (2026-08-04): la rama usa `locale` para
+ * construir el destino, y con `const locale` declarado más abajo el acceso es
+ * un ReferenceError de zona muerta que tumbaba la ruta ENTERA. Ningún perfil
+ * recién creado —o sea todos, porque la pantalla de elegir PIN no existe—
+ * podía entrar: tocar la cara daba una página blanca. `astro check` no lo ve:
+ * los `return` de primer nivel los descarta su generador de TSX (ver la
+ * advertencia sobre `aLaPuertaDelAdulto` en `kids/index.astro`).
+ */
+const locale: Locale = isLocale(perfil.locale) ? perfil.locale : DEFAULT_LOCALE;
+const m = t(locale);
+
 if (!perfil.pin_hash) {
   const { cookie } = await abrirSesionNino(
     env.SESSION_KV,
@@ -310,17 +331,6 @@ if (!perfil.pin_hash) {
   return salidaHacia(destinoTrasEntrar(locale), { "set-cookie": cookie });
 }
 
-/**
- * El idioma sale del PERFIL, no de la URL ni del navegador.
- *
- * Esta ruta no lleva segmento de locale porque no es del sitio público: es
- * aplicación, no contenido indexable, y no tiene hreflang que cerrar. El idioma
- * en el que un niño ve su pantalla es un dato del perfil que su padre configuró,
- * y `Accept-Language` en una tablet compartida diría el idioma del sistema, que
- * es el de la casa y no siempre el del niño.
- */
-const locale: Locale = isLocale(perfil.locale) ? perfil.locale : DEFAULT_LOCALE;
-const m = t(locale);
 
 /**
  * Lee la secuencia de toques que viene en el formulario.

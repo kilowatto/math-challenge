@@ -9,10 +9,19 @@
  * (D-049): `anmeldung-eltern`, `cadastro-responsavel`, `inscription-parent`.
  *
  * **Lo que cambia entre las tres es la URL y el texto. El formulario es el
- * mismo, byte a byte.** `signup_intent` sale de POR DÓNDE entró la persona
- * —intención observada, no declarada— y por eso no hay un tercer campo que
- * pregunte "¿eres papá o maestro?": ese campo costaría una conversión medible a
- * cambio de un dato menos fiable que el que ya tenemos.
+ * mismo, byte a byte, y la cuenta que nace también (D-082).** `signup_intent`
+ * sale de POR DÓNDE entró la persona —intención observada, no declarada— y por
+ * eso no hay un tercer campo que pregunte "¿eres papá o maestro?": ese campo
+ * costaría una conversión medible a cambio de un dato menos fiable que el que
+ * ya tenemos.
+ *
+ * ─── D-082 (#390): la puerta ya no decide nada ─────────────────────────────
+ *
+ * Antes de #390 el `intent` condicionaba el INSERT (`is_learner`) y el
+ * aterrizaje. Ya no: toda cuenta nace con `is_learner = 1` y aterriza en la
+ * casa del adulto, y «agregar un hijo» / «crear un salón» son acciones que se
+ * ofrecen dentro. Las tres URLs se quedan como CTAs de marketing —el `intent`
+ * se conserva como dato de embudo (qué mensaje convierte, D-037)— y nada más.
  *
  * ─── Dos campos, y el segundo desaparece si hay passkey ────────────────────
  *

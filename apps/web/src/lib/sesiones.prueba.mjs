@@ -21,6 +21,7 @@ import {
   marcarDispositivoDelHogar,
   leerDispositivoDelHogar,
   cerrarTodo,
+  marcarCorteDeSesiones,
   COOKIE_ADULTO,
   COOKIE_HOGAR,
   COOKIE_NINO,
@@ -176,6 +177,29 @@ ok(cierres.some((x) => x.startsWith(`${COOKIE_ADULTO}=;`)), "borra mc_s");
 ok(cierres.some((x) => x.startsWith("mc_p=;")), "borra mc_p, o cerrar sesión deja un bucle de redirección");
 ok(cierres.some((x) => x.startsWith(`${COOKIE_NINO}=;`)), "borra mc_k");
 ok(!cierres.some((x) => x.startsWith(`${COOKIE_HOGAR}=;`)), "y NO borra mc_h: el dispositivo sigue siendo de la casa aunque el adulto salga");
+
+// --- el corte de sesiones (#313) ---------------------------------------------
+// Cambiar la contraseña cierra las OTRAS sesiones del adulto. KV no permite
+// listar llaves, así que no se borran una a una: se deja una marca por usuario
+// y la lectura rechaza todo lo abierto antes de ella.
+{
+  const kv2 = kvFalso();
+  const ahora = 1_000_000;
+  const vieja = await abrirSesionAdulto(kv2, { userId: "u-corte", creadaEn: ahora - 3600, intent: null });
+  const delMismoSegundo = await abrirSesionAdulto(kv2, { userId: "u-corte", creadaEn: ahora, intent: null });
+  const deOtro = await abrirSesionAdulto(kv2, { userId: "u-ajeno", creadaEn: ahora - 3600, intent: null });
+
+  ok((await leerSesionAdulto(kv2, vieja.token)) !== null, "antes del corte, la sesión vieja abre");
+
+  await marcarCorteDeSesiones(kv2, "u-corte", ahora);
+
+  ok((await leerSesionAdulto(kv2, vieja.token)) === null, "tras el corte, la sesión abierta ANTES ya no abre");
+  ok((await leerSesionAdulto(kv2, delMismoSegundo.token)) !== null,
+    "la sesión abierta EN el segundo del corte sobrevive (la comparación es estricta)");
+  ok((await leerSesionAdulto(kv2, deOtro.token)) !== null, "el corte de un adulto no toca las sesiones de otro");
+  ok(kv2.m.get("corte:u-corte").ttl === VIDA_ADULTO_S,
+    "la marca vive 30 días: la vida de la sesión más vieja que invalida");
+}
 
 console.log(fallos === 0 ? "\n✓ sesiones — todos los casos" : `\n✗ sesiones — ${fallos} caso(s) fallaron`);
 process.exit(fallos === 0 ? 0 : 1);

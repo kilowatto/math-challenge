@@ -1,6 +1,20 @@
 /**
  * `POST /api/registro` — nace la cuenta de un ADULTO. Criterios #111, #112, #113.
  *
+ * ─── D-082: una sola alta, y siempre nace en modo solo ─────────────────────
+ *
+ * Antes de #390 había tres puertas simétricas y la que usaste decidía dos
+ * cosas: qué se insertaba (`is_learner`) y a dónde aterrizabas. D-082 lo
+ * elimina: **toda cuenta nace con `is_learner = 1`** y aterriza en la casa del
+ * adulto; «agregar un hijo» y «crear un salón» son acciones que se toman
+ * después, desde dentro, nunca una elección en la puerta.
+ *
+ * Lo que la puerta sí deja es `signup_intent`: el `hidden` del formulario dice
+ * por qué CTA de marketing entró la persona. Es **dato de embudo** (D-037) y
+ * nada más — no condiciona el INSERT ni el aterrizaje, y por eso es opcional:
+ * una alta sin `intent` es igual de válida. La escritura vive en
+ * `lib/registro-nucleo.ts`, que es quien tiene la prueba.
+ *
  * ─── Lo que este endpoint no acepta, aunque se lo manden ───────────────────
  *
  * **Nada de un niño.** No hay campo para el nombre del hijo, ni para su edad, ni
@@ -11,13 +25,13 @@
  * **Ningún campo que el formulario no tenga.** Se leen exactamente tres cosas —
  * correo, contraseña e intención— y la intención no la escribe nadie: viene del
  * `hidden` que la puerta puso, y se valida contra la lista cerrada. Un `intent`
- * inventado no crea una cuenta con un rol raro; falla.
+ * inventado no crea una cuenta con un dato raro; falla.
  *
  * ─── Las tres cosas que hace, en orden, y por qué ese orden ────────────────
  *
  *  1. Valida. Barato, y sin tocar la base.
- *  2. **Hashea antes de consultar si el correo existe.** Ver `MISMO_TIEMPO`.
- *  3. Escribe usuario + contraseña, abre sesión, responde con `Set-Cookie`.
+ *  2. Turnstile y el limitador de tasa, en ese orden (abajo, el porqué).
+ *  3. El núcleo escribe usuario + contraseña, abre sesión, anota el embudo.
  *
  * ─── Por qué la respuesta no dice si el correo ya existía ──────────────────
  *
@@ -28,9 +42,9 @@
  *
  * Así que las dos ramas —correo nuevo y correo repetido— devuelven **la misma
  * forma de respuesta**, y las dos pagan el mismo costo de CPU: el hash se
- * calcula SIEMPRE, incluso cuando ya se sabe que no se va a guardar. Sin eso, la
- * rama del correo repetido volvería 36 ms antes y el oráculo seguiría ahí,
- * medible con un cronómetro.
+ * calcula SIEMPRE en el núcleo (`MISMO_TIEMPO`), incluso cuando ya se sabe que
+ * no se va a guardar. Sin eso, la rama del correo repetido volvería 36 ms antes
+ * y el oráculo seguiría ahí, medible con un cronómetro.
  *
  * Lo que sí ocurre es distinto: al correo nuevo se le abre sesión; al repetido,
  * no. Quien ya tiene cuenta recibe la misma pantalla y un correo —cuando el
@@ -38,19 +52,15 @@
  */
 import type { APIRoute } from "astro";
 import { terminarBien, terminarMal } from "../../lib/respuesta-de-formulario";
-import { rutaPerfilNuevo } from "../../lib/rutas-app";
+import { rutaCasa } from "../../lib/rutas-app";
 import { ruta } from "../../i18n/rutas";
 import type { Locale } from "../../i18n";
-import { hashear, largoValido, LARGO_MINIMO, LARGO_MAXIMO } from "../../lib/passwords";
-import { abrirSesionAdulto } from "../../lib/sesiones";
+import { largoValido, LARGO_MINIMO, LARGO_MAXIMO } from "../../lib/passwords";
 import { verificar as verificarTurnstile, CAMPO_TOKEN } from "../../lib/turnstile";
 import { consultarLimite } from "../../lib/ratelimiter";
-import { anotarPaso } from "../../lib/embudo";
+import { intentDeFormulario, registrarCuentaNueva } from "../../lib/registro-nucleo";
 
 export const prerender = false;
-
-/** Las tres puertas de D-026. Cerrada a propósito: coincide con el CHECK de 0003. */
-const INTENCIONES = new Set(["PADRE", "MAESTRO", "ADULTO_APRENDE"]);
 
 /**
  * Validación de correo deliberadamente laxa.
@@ -78,6 +88,11 @@ interface Env {
 /**
  * Respuesta común. Nunca dice si el correo existía (ver el encabezado).
  *
+ * El aterrizaje es la CASA del adulto (D-082): la pantalla del aprendiz solo,
+ * con «agregar un hijo» y «crear un salón» como acciones opcionales. Antes se
+ * aterrizaba en `perfil-nuevo` — crear el perfil del hijo como primer paso—,
+ * que es exactamente la bifurcación que la decisión elimina.
+ *
  * Redirige si vino de un `<form>` y devuelve JSON si vino de `fetch`. Antes
  * devolvía JSON siempre, y el dueño creó una cuenta en su teléfono y se quedó
  * mirando `{"ok":true}` a pantalla completa, sin siguiente paso ni forma de
@@ -85,9 +100,7 @@ interface Env {
  * Ver `lib/respuesta-de-formulario.ts`.
  */
 function respuesta(request: Request, locale: Locale, cookies: string[] = []) {
-  // A crear el perfil del hijo, que es lo único que tiene sentido hacer justo
-  // después de registrarse como padre.
-  return terminarBien(request, rutaPerfilNuevo(locale), cookies);
+  return terminarBien(request, rutaCasa(locale), cookies);
 }
 
 function error(request: Request, locale: Locale, motivo: string, estado = 400) {
@@ -149,7 +162,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   correo = correo.trim().toLowerCase();
   if (!CORREO.test(correo) || correo.length > 254) return error(request, locale, "correo_invalido");
-  if (!INTENCIONES.has(intent)) return error(request, locale, "intencion_invalida");
+  // La intención es opcional (es telemetría, no una elección), pero si viene
+  // tiene que ser de la lista cerrada — ver `lib/registro-nucleo.ts`.
+  const intencion = intentDeFormulario(intent);
+  if (!intencion.ok) return error(request, locale, "intencion_invalida");
   if (!largoValido(clave)) {
     return error(request, locale, `clave_fuera_de_rango:${LARGO_MINIMO}-${LARGO_MAXIMO}`);
   }
@@ -191,74 +207,31 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return terminarMal(request, ruta(locale, "registro-padre"), "demasiados_intentos", 429);
   }
 
-  // ── MISMO_TIEMPO ──────────────────────────────────────────────────────────
-  // El hash se calcula ANTES de mirar si el correo existe, y se calcula siempre.
-  // Es lo que hace que las dos ramas cuesten lo mismo. Invertir estas dos líneas
-  // —consultar primero y hashear solo si hace falta— reabre el oráculo de
-  // enumeración de cuentas con una diferencia de ~36 ms, medible por la red.
-  const hash = await hashear(clave);
-
-  const ya = await env.DB.prepare("SELECT id FROM users WHERE email = ?")
-    .bind(correo)
-    .first<{ id: string }>();
-
-  if (ya) {
-    // Misma forma, mismo costo, ninguna sesión. Quien ya tiene cuenta no
-    // aprende nada nuevo, y quien está probando direcciones tampoco.
-    return respuesta(request, locale);
-  }
-
-  const ahora = Math.floor(Date.now() / 1000);
-  const userId = crypto.randomUUID();
-
   // Los cuatro datos derivados de la petición, ninguno preguntado (migración
   // 0003). Cloudflare ya sabe el país y la zona horaria de quien se registra;
   // preguntárselos sería cobrarle un campo por un dato que ya tenemos.
   const cf = (request as any).cf as { country?: string; timezone?: string } | undefined;
   const pais = typeof cf?.country === "string" ? cf.country : null;
   const zona = typeof cf?.timezone === "string" ? cf.timezone : null;
-  // `EU` manda a la base europea (D-042). Se deriva del país y **una vez escrita
-  // no se cambia sola**: mover datos de menores entre jurisdicciones es un
-  // problema legal, no técnico.
-  const region = pais && PAISES_UE.has(pais) ? "EU" : "GLOBAL";
 
   // El locale sale de la URL de la que vino el formulario, no de
   // `Accept-Language`: si alguien está leyendo la puerta en alemán, su cuenta
   // nace en alemán aunque su teléfono esté en inglés.
-  await env.DB.batch([
-    env.DB.prepare(
-      "INSERT INTO users (id, email, email_verified, locale, is_learner, created_at, updated_at, country, timezone, data_region, signup_intent) " +
-        "VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ).bind(userId, correo, locale, intent === "ADULTO_APRENDE" ? 1 : 0, ahora, ahora, pais, zona, region, intent),
-    env.DB.prepare(
-      "INSERT INTO user_password (user_id, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?)",
-    ).bind(userId, hash, ahora, ahora),
-  ]);
-
-  const { cookies } = await abrirSesionAdulto(env.SESSION_KV, {
-    userId,
-    creadaEn: ahora,
-    intent: intent as "PADRE" | "MAESTRO" | "ADULTO_APRENDE",
+  const alta = await registrarCuentaNueva(env, {
+    correo,
+    clave,
+    locale,
+    intent: intencion.intent,
+    pais,
+    zona,
   });
 
-  // El embudo: un adulto creó una cuenta. Sin identificador de nadie — ver
-  // `lib/embudo.ts`. No lanza, así que no puede impedir el registro.
-  anotarPaso(env.FUNNEL_AE, "registro", { pais, locale, intent });
+  // El correo repetido recibe la misma forma de respuesta y ninguna sesión:
+  // no aprende nada nuevo, y quien está probando direcciones tampoco.
+  if (alta.estado === "duplicado") return respuesta(request, locale);
 
-  return respuesta(request, locale, cookies);
+  return respuesta(request, locale, alta.cookies);
 };
-
-/**
- * Los 27 de la Unión Europea, para `data_region` (D-042).
- *
- * No incluye Reino Unido —salió— ni Suiza ni Noruega, que tienen sus propios
- * regímenes. Es una lista de países, no una geolocalización: `mc-25` distingue
- * las dos cosas, y aquí solo se usa para decidir en qué base vive el dato.
- */
-const PAISES_UE = new Set([
-  "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR",
-  "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK",
-]);
 
 const LOCALES = ["en", "es-MX", "es-ES", "fr-FR", "pt-BR", "pt-PT", "de-DE"] as const;
 const esLocale = (v: string | undefined): v is Locale =>

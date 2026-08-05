@@ -56,7 +56,7 @@ import Privada from "../../../layouts/Privada.astro";
 import RecordatorioPush from "../../../components/push/RecordatorioPush.astro";
 import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
-import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo, rutaLiga, rutaPanel } from "../../../lib/rutas-app";
+import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo, rutaLiga, rutaPanel, rutaGrupos, rutaGruposNuevo } from "../../../lib/rutas-app";
 import { estadoDeParticipacion } from "../../../lib/liga-membresia";
 import { TEXTOS_PADRE } from "../../../components/parent/textos";
 import { TEXTOS_TABLERO } from "../../../components/tablero/textos";
@@ -426,6 +426,38 @@ const gGrupos = TEXTOS_GRUPOS[locale];
     )}
 
     {/*
+      ─── D-082 (#390): la cuenta nace en modo solo y CRECE desde aquí ────────
+
+      Toda cuenta nueva aterriza en esta vista. Las dos acciones que antes eran
+      una elección en la puerta («¿eres papá o maestro?») son ahora botones
+      visibles y opcionales en la casa:
+
+        · «Agregar un hijo» dispara el flujo `setup/child` de siempre, SIN
+          ningún cambio a esas pantallas — lo único que cambió es CUÁNDO se
+          ofrece: después de la cuenta, no en el registro.
+        · «Crear un salón» dispara `owner/identity` (D-011) vía `grupos/nuevo`,
+          que redirige a la identidad declarada cuando falta. Mismo principio
+          de fricción-después-del-registro, extendido al papá.
+
+      Las dos son ACTIVACIONES, no una migración de modo: `esFamilia` sigue
+      derivándose de los datos reales (D-065) y nada aquí lee `signup_intent`.
+
+      El salón se ofrece solo donde la bandera de mercado de F9 está encendida
+      (#387): en los locales apagados no se nombra el área, que es lo que ese
+      criterio manda — la interfaz no muestra una entrada rota, muestra nada.
+    */}
+    {vista === "practicar" && (
+      <section class="bloque">
+        <h2>{m.casaActivarTitulo}</h2>
+        <p class="muted">{m.casaActivarTexto}</p>
+        <a class="boton" href={rutaPerfilNuevo(locale)}>{m.casaNuevoHijo}</a>
+        {gruposHabilitados && (
+          <a class="boton" href={rutaGruposNuevo(locale)}>{gGrupos["grupo.indice.crear"]}</a>
+        )}
+      </section>
+    )}
+
+    {/*
       Las misiones del día, ANTES de entrar al reto (el anuncio del principio de
       la sesión) y el resumen de lo logrado hoy (el cierre, al volver). Ninguno
       de los dos vive dentro del reto activo: #221, §3.6 del diseño.
@@ -486,7 +518,7 @@ const gGrupos = TEXTOS_GRUPOS[locale];
       <section class="bloque">
         <h2>{gGrupos["grupo.casa.titulo"]}</h2>
         <p class="muted">{gGrupos["grupo.casa.lead"]}</p>
-        <a class="boton" href={`/${locale}/app/grupos/`}>{gGrupos["grupo.casa.entrar"]}</a>
+        <a class="boton" href={rutaGrupos(locale)}>{gGrupos["grupo.casa.entrar"]}</a>
       </section>
     )}
 

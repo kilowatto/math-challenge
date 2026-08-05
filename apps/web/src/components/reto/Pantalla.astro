@@ -458,6 +458,10 @@ const {
       (evento) => {
         const toque = evento.touches && evento.touches[0];
         if (!toque) return;
+        const objetivo = evento.target instanceof Element
+          ? evento.target.closest("button, a, input, select, textarea")
+          : null;
+        if (objetivo) return;
         if (toque.pageX <= BORDE_GESTO_PX || toque.pageX >= window.innerWidth - BORDE_GESTO_PX) {
           evento.preventDefault();
         }

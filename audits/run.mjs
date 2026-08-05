@@ -408,6 +408,7 @@ const ACTIVE = [
   // controles negativos son DEGRADACIONES del reto.css y de la Pantalla.astro
   // REALES (D-070), nunca archivos inventados.
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
+  ["reto-opciones-moviles",   "las opciones del reto siguen seleccionables en móvil", "#451, mc-20, D-041"],
 
 
   // F8 #285 (criterio del paraguas #277). El panel del padre lee SOLO D1:

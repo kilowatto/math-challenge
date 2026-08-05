@@ -834,6 +834,9 @@ for (const prueba of [
   // el trigger, y la vista ordenada excluyendo al niño sin opt-in.
   "apps/web/src/lib/padre-grupo.prueba.mjs",
 
+  // F9 #402 · gate focal de OwnerProof: las cuatro assurances, insignias y null.
+  "apps/web/src/lib/owner-proof.prueba.mjs",
+
 
   // F7 #244. El cable del DUELO, contra SQLite de verdad (`node:sqlite`) con el
   // esquema REAL de `league_duel`. Lo que defiende tampoco rompe nada visible:

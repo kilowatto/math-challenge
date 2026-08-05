@@ -20,6 +20,7 @@ import { generarBanco } from "../../../packages/motor/src/banco-kinder.ts";
 import { calificarRespuesta, type VeredictoDeItem } from "../../../packages/motor/src/item.ts";
 import { dificultadDeNivel } from "../../../packages/motor/src/adaptativo.ts";
 import { formatear } from "../../../packages/motor/src/numeros.ts";
+import { LOCALES, type Locale } from "../../../packages/motor/src/convenciones.ts";
 
 // Los textos del reto en los siete locales. Se importan como JSON porque son
 // CONTENIDO, no código: el enunciado de un ítem de kinder se autora, no se
@@ -147,16 +148,14 @@ export class Ingest extends WorkerEntrypoint<Env> {
     // el error diga de dónde vino, en vez de salir del módulo puro sin contexto.
     const esKinder = input.themeBand === "KINDER";
 
-    const veredicto = calificar(
-      esKinder
-        ? { banda: input.themeBand, nivel: input.level, acc: input.correct }
-        : {
-            banda: input.themeBand,
-            nivel: input.level,
-            acc: input.correct,
-            rtMs: input.responseTimeMs,
-          },
-    );
+    const veredicto = esKinder
+      ? calificar({ banda: "KINDER", nivel: input.level, acc: input.correct })
+      : calificar({
+          banda: input.themeBand,
+          nivel: input.level,
+          acc: input.correct,
+          rtMs: input.responseTimeMs,
+        });
 
     // El piso de tiempo es SOLO bitácora (mc-29 impl. 3). No resta, no bloquea y
     // no le dice nada al niño — la línea roja #7 es explícita en que Larry no
@@ -402,10 +401,11 @@ export class Ingest extends WorkerEntrypoint<Env> {
     const item = this.banco().get(itemId);
     if (!item) return null;
 
-    const textos = MENSAJES_DE_RETO[locale] ?? MENSAJES_DE_RETO.en;
+    const localeSeguro: Locale = LOCALES.includes(locale as Locale) ? (locale as Locale) : "en";
+    const textos = MENSAJES_DE_RETO[localeSeguro] ?? MENSAJES_DE_RETO.en;
     const vars: Record<string, string> = {};
     for (const [k, v] of Object.entries(item.enunciado.vars)) {
-      vars[k] = typeof v === "number" ? formatear(v, locale) : String(v);
+      vars[k] = typeof v === "number" ? formatear(v, localeSeguro) : String(v);
     }
     const plantilla = (textos as Record<string, unknown>)[item.enunciado.clave];
     const enunciado =
@@ -476,7 +476,7 @@ export class Ingest extends WorkerEntrypoint<Env> {
       // el NOMBRE ACCESIBLE —autorado en los siete locales—, no el rótulo
       // visible: la pantalla dibuja el glifo.
       opciones: unicas.map((v) => {
-        if (typeof v === "number") return { valor: v, texto: formatear(v, locale) };
+        if (typeof v === "number") return { valor: v, texto: formatear(v, localeSeguro) };
         const dib = item.dibujos?.[String(v)];
         if (!dib) {
           // No debería llegar aquí: `validarItem` bloquea el ítem antes. Si

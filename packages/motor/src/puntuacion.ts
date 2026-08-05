@@ -125,7 +125,7 @@ export interface Veredicto {
   /** La regla aplicada, para que el registro diga por qué salió ese número. */
   regla: "kinder-precision" | "hshs";
   /** Los ingredientes, para poder recalcular a mano sin adivinar. */
-  detalle: { valor: number; acc: 0 | 1; d?: number; a?: number; rtSeg?: number };
+  detalle: { valor: number; acc: 0 | 1; d?: number; a?: number; rtSeg?: number; pesoDificultad?: number };
 }
 
 /**

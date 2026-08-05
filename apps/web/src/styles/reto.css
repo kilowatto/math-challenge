@@ -295,6 +295,8 @@
 
 /* Split View de iPad: el tercio son ~320 px y nada puede exigir más. */
 @media (max-width: 400px) {
+  .opciones { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opciones .opcion { min-inline-size: 0; }
   /* `1fr` a secas tiene mínimo implícito `auto`, así que una casilla con
      contenido ancho vuelve a desbordar. El `0` es lo que lo impide. */
   .marco { grid-template-columns: repeat(5, minmax(0, 1fr)); }

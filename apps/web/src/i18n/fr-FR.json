@@ -139,6 +139,8 @@
   "casaHijos": "Tes enfants",
   "casaSinHijos": "Pas encore de profil. Crée le premier pour commencer à jouer.",
   "casaNuevoHijo": "Ajouter un enfant",
+  "casaActivarTitulo": "Ton compte peut grandir",
+  "casaActivarTexto": "Ajoute un enfant ou crée une classe quand tu veux. C’est facultatif, et ta propre pratique ne change pas.",
   "casaAparatoTitulo": "Cet appareil est celui de la maison ?",
   "casaAparatoTexto": "Tes enfants ne peuvent jouer que sur les appareils que tu marques. Sur un appareil prêté ou public, ne le marque pas.",
   "casaAparatoCta": "Oui, c’est le nôtre",

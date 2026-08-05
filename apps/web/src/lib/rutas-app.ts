@@ -50,6 +50,19 @@ export const rutaSignin = (locale: Locale | string) => `/${locale}/app/signin`;
 export const rutaPerfilNuevo = (locale: Locale | string) => `/${locale}/app/perfil-nuevo/`;
 
 /**
+ * El área de grupos (F9). Detrás de la bandera de mercado (#387): con la
+ * bandera apagada la ruta responde «próximamente», no un error.
+ */
+export const rutaGrupos = (locale: Locale | string) => `/${locale}/app/grupos/`;
+
+/**
+ * Crear un salón o club. Si el adulto no ha declarado su identidad, la propia
+ * ruta redirige a `grupos/identidad` (D-011) — es la acción «Crear un salón»
+ * de D-082: dispara el flujo existente, sin cambiarlo.
+ */
+export const rutaGruposNuevo = (locale: Locale | string) => `/${locale}/app/grupos/nuevo/`;
+
+/**
  * La pantalla del padre para configurar y ver el límite de un hijo (F8 #269).
  *
  * El id viaja en la URL y es aceptable: es un identificador opaco, no un dato

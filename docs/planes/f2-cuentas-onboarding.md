@@ -184,16 +184,32 @@ modales — y las siguientes se pagan en F3-F10.
 
 ## 3. Las tres puertas, paso a paso
 
-> **Enmendado por D-082 (2026-08-02): esto deja de ser tres puertas
-> simétricas.** Lo que sigue describe el modelo original (`?as=learner|parent|teacher`
-> como elección en `/app/join`), que es **código real y desplegado hoy**
-> (`Registro.astro`, `registro.ts`, `DoorPicker.astro`). D-082 fija el
-> destino: una sola alta, que siempre nace `is_learner = 1`; "Puerta B"
-> (agregar un hijo) y "Puerta C" (crear un salón) pasan de ser una elección en
-> la puerta a ser **acciones que el adulto toma después, desde `/app/home`**
-> — sin cambiar en nada sus pantallas internas (`setup/child*`, `owner/identity`
-> siguen exactamente iguales). La issue de F2 que ejecuta este cambio es
-> **#390**.
+> **Enmendado por D-082 (2026-08-02) y EJECUTADO por #390: esto deja de ser
+> tres puertas simétricas.** Lo que sigue describe el modelo original
+> (`?as=learner|parent|teacher` como elección en la puerta), conservado como
+> registro histórico. El flujo real hoy:
+>
+> - **Una sola alta.** `POST /api/registro` inserta SIEMPRE `is_learner = 1`
+>   (literal en `apps/web/src/lib/registro-nucleo.ts`), venga de la puerta que
+>   venga, y aterriza en la casa del adulto (`rutaCasa`) — la pantalla del
+>   aprendiz solo de §3.1. Las tres URLs localizadas
+>   (`registro-padre|registro-maestro|registro-aprendo`) se quedan como CTAs de
+>   marketing con el mismo formulario de 2 campos (D-026 no cambia).
+> - **`signup_intent` es dato de embudo, no bifurcación.** Se conserva (qué CTA
+>   trajo a la persona, D-037), es opcional —una alta sin `intent` es válida y
+>   la columna queda NULL— y no condiciona ni el INSERT ni el aterrizaje.
+> - **«Agregar un hijo» y «Crear un salón» son acciones de la casa**, visibles
+>   y opcionales en la vista «Practicar» de `/{locale}/app/`. Disparan los
+>   flujos ya construidos —`setup/child` (§3.2) y `owner/identity` (§3.3, hoy
+>   `grupos/identidad` vía `grupos/nuevo`)— sin ningún cambio interno. El salón
+>   se ofrece solo donde la bandera de mercado de F9 está encendida (#387).
+> - `esFamilia`/`esSolo` (D-065) siguen derivándose de datos reales
+>   (`hijos.length > 0`), nunca de `signup_intent`.
+>
+> Nota de implementación: el `DoorPicker.astro` y la ruta `join.astro` que el
+> diseño original proponía ya no existían en el código cuando #390 se ejecutó
+> — las tres puertas eran las tres URLs localizadas de arriba— así que no hubo
+> componente que retirar, solo la bifurcación que eliminar.
 
 Las tres comparten **exactamente el mismo formulario de dos campos** (D-026). La
 puerta no cambia el formulario: cambia a dónde aterriza el usuario después. Eso

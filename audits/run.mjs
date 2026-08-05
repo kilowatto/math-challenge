@@ -328,6 +328,7 @@ const ACTIVE = [
   ["prenda-falla-cerrada",        "prendas sin moderación nunca se publican",      "D-028, D-029, F10 #416–#417"],
   ["prenda-aceptacion-adulto",    "solo cuentas adultas aceptan prendas",         "D-028, D-120, F10 #417"],
   ["club-result-isolated",         "resultados de club no entran al tablero global", "D-117, F10 #415"],
+  ["piso-seis-retos",               "seis retos autorados en cada nivel N4-N12",     "D-122, D-123, F11 #421–#423"],
   ["tiempo-piso-solo-logging",    "el piso de tiempo solo deja señal derivada", "D-125, D-020, mc-29"],
   ["nota-solo-por-velocidad",     "la nota F4 solo nace de velocidad sostenida", "D-061, F4 #389, F11 #425"],
   // ─── La superficie de F7 · Misiones diarias (#220, #222, #227) ───────────

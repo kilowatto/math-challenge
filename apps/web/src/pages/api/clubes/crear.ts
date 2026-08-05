@@ -25,6 +25,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return terminarMal(request, rutaClubNuevo(locale), "cuerpo_ilegible");
   }
   const result = await crearClub(env.DB, sesion.userId, nameKey, Math.floor(Date.now() / 1000));
-  if (!result.ok) return terminarMal(request, rutaClubNuevo(locale), result.motivo);
+  if (result.ok === false) return terminarMal(request, rutaClubNuevo(locale), result.motivo);
   return terminarBien(request, `${rutaClub(locale, result.id)}?creado=1`, [], { ok: true, id: result.id, codigo: result.codigo });
 };

@@ -15,8 +15,10 @@ import retoDEDE from "../../i18n/reto/de-DE.json";
 export const prerender = false;
 const DURACION_MS = 72 * 60 * 60 * 1000;
 
+interface Env { DB?: D1Database; SESSION_KV?: KVNamespace }
+
 export const GET: APIRoute = async ({ request, locals }) => {
-  const env = (locals as any).runtime?.env;
+  const env = (locals as { runtime?: { env?: Env } }).runtime?.env;
   const actor = await leerActor(env, request);
   if (!actor || !env?.DB) return json({ error: "sin_sesion" }, 401);
   const url = new URL(request.url);
@@ -58,7 +60,7 @@ async function presentarItemFamiliar(db: D1Database, actor: { userId?: string; c
 }
 
 export const POST: APIRoute = async ({ request, locals, url }) => {
-  const env = (locals as any).runtime?.env;
+  const env = (locals as { runtime?: { env?: Env } }).runtime?.env;
   const actor = await leerActor(env, request);
   if (!actor || !env?.DB) return json({ error: "sin_sesion" }, 401);
   const accion = url.searchParams.get("accion");

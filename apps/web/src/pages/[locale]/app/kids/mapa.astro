@@ -163,7 +163,7 @@ const sendero = construirSendero(orden, fasesDelSendero(resumen));
 let accesorios: string[] = [];
 if (env?.DB) {
   try {
-    const fila = await env.DB.prepare(
+    const fila = await (env.DB as D1Database).prepare(
       "SELECT accessory_ids FROM companion_state WHERE child_profile_id = ?",
     )
       .bind(nino.childProfileId)

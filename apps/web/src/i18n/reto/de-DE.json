@@ -101,6 +101,7 @@
   "juego.vozActivada": "Mit Stimme",
   "juego.vozDesactivada": "Ohne Stimme",
   "juego.sinVoz": "Auf diesem Gerät ist keine Stimme für diese Sprache installiert, deshalb kann Larry hier nicht vorlesen.",
+  "juego.pendiente": "Auf diesem Gerät gespeichert; nach der Verbindung wird die Antwort geprüft.",
   "juego.practicando": "Du übst gerade: {habilidad}",
   "juego.llevas": "{n} bisher",
   "juego.ubicando": "Wir suchen noch den passenden Anfang.",

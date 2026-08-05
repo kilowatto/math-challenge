@@ -101,6 +101,7 @@
   "juego.vozActivada": "Com voz",
   "juego.vozDesactivada": "Sem voz",
   "juego.sinVoz": "Este aparelho não tem uma voz instalada para este idioma, então o Larry não consegue ler em voz alta aqui.",
+  "juego.pendiente": "Foi salvo neste dispositivo; será conferido quando você se conectar novamente.",
   "juego.practicando": "Você está praticando: {habilidad}",
   "juego.llevas": "{n} até agora",
   "juego.ubicando": "Ainda estamos vendo por onde começar.",

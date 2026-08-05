@@ -101,6 +101,7 @@
   "juego.vozActivada": "Avec la voix",
   "juego.vozDesactivada": "Sans la voix",
   "juego.sinVoz": "Cet appareil n’a aucune voix installée pour cette langue, Larry ne peut donc pas lire à voix haute ici.",
+  "juego.pendiente": "La réponse est enregistrée sur cet appareil et sera vérifiée à la reconnexion.",
   "juego.practicando": "Tu t’entraînes à\u202f: {habilidad}",
   "juego.llevas": "{n} pour l’instant",
   "juego.ubicando": "On cherche encore par où commencer.",

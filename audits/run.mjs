@@ -331,6 +331,7 @@ const ACTIVE = [
   ["familia-nunca-mezcla",         "familia con listas separadas",                  "D-155–D-157, F12 #445–#448"],
   ["piso-seis-retos",               "seis retos autorados en cada nivel N4-N12",     "D-122, D-123, F11 #421–#423"],
   ["cierre-runtime",                "runtime del banco de cierre",                    "F11 #421–#423, D-122"],
+  ["offline-ruta-real",              "cola offline conectada a la pantalla",           "F11 #428, D-047"],
   ["tiempo-piso-solo-logging",    "el piso de tiempo solo deja señal derivada", "D-125, D-020, mc-29"],
   ["nota-solo-por-velocidad",     "la nota F4 solo nace de velocidad sostenida", "D-061, F4 #389, F11 #425"],
   // ─── La superficie de F7 · Misiones diarias (#220, #222, #227) ───────────

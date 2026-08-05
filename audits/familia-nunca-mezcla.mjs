@@ -6,6 +6,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const migration = fs.readFileSync(path.join(root, "migrations/0023_nucleo_familiar.sql"), "utf8");
 const roster = fs.readFileSync(path.join(root, "apps/web/src/pages/api/familia.ts"), "utf8");
 const link = fs.readFileSync(path.join(root, "apps/web/src/pages/api/familia-vinculo.ts"), "utf8");
+const challenge = fs.readFileSync(path.join(root, "apps/web/src/pages/api/familia-reto.ts"), "utf8");
 const problems = [];
 if (!/CREATE TABLE household_link/.test(migration)) problems.push("falta household_link");
 if (!/CREATE TABLE family_challenge/.test(migration)) problems.push("falta family_challenge");
@@ -15,6 +16,9 @@ if (/UNION\s+ALL|UNION\s+SELECT/i.test(roster)) problems.push("la vista familiar
 if (/chat|mensaje|texto libre/i.test(migration + roster + link)) problems.push("la superficie familiar contiene canal de texto");
 if (!/REACCIONES_FAMILIA/.test(roster)) problems.push("las porras no usan el conjunto cerrado");
 if (!/invite_code/.test(link) || !/revoked_at/.test(link)) problems.push("el vínculo no tiene código revocable");
+if (!/family_challenge/.test(challenge) || !/calificarRespuesta/.test(challenge)) problems.push("el reto familiar no se resuelve en servidor");
+if (!/reto_fuera_del_hogar/.test(challenge) || !/set_alterado/.test(challenge)) problems.push("el reto familiar no valida hogar y set congelado");
+if (/score|leaderboard|ranking/i.test(challenge)) problems.push("el reto familiar mezcla un tablero global");
 if (problems.length) {
   console.error("✗ familia-nunca-mezcla\n\n  · " + problems.join("\n  · "));
   process.exit(1);

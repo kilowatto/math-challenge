@@ -101,6 +101,7 @@
   "juego.vozActivada": "Voice on",
   "juego.vozDesactivada": "Voice off",
   "juego.sinVoz": "This device has no voice installed for this language, so Larry can’t read out loud here.",
+  "juego.pendiente": "Saved on this device; it will be checked when you reconnect.",
   "juego.practicando": "You're practising: {habilidad}",
   "juego.llevas": "{n} so far",
   "juego.ubicando": "Still working out where to start you.",

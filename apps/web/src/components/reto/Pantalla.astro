@@ -343,7 +343,37 @@ const {
   */}
 
 
-  <script src="../../lib/cola-offline-global.ts"></script>
+  <script>
+    import { encolar, engancharVaciado } from "../../lib/cola-offline";
+
+    const offline = {
+      async encolarRespuesta(solicitud) {
+        try {
+          await encolar({ ...solicitud, contestadoEn: Date.now() });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      arrancar() {
+        engancharVaciado(async (intento) => {
+          if (!intento.payload) return false;
+          try {
+            const respuesta = await fetch(intento.payload.url, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: intento.payload.body,
+            });
+            return respuesta.ok;
+          } catch {
+            return false;
+          }
+        });
+      },
+    };
+
+    window.__mathChallengeOffline = offline;
+  </script>
   <script define:vars={{ locale, rotulos, salirA, habilidades, mostrarContexto, etiquetaVoz, habilidadFija }}>
     /**
      * El bucle. Pide, pinta, ELIGE, confirma, repite.

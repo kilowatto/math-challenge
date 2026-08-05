@@ -326,6 +326,7 @@ const ACTIVE = [
   ["adult-club-schema",           "esquema F10 aislado y con límites estructurales", "D-043, D-117–D-121, F10 #412"],
   ["club-sin-chat",               "clubs sin chat ni mensajería",                  "D-027, línea roja #3, F10 #419"],
   ["prenda-falla-cerrada",        "prendas sin moderación nunca se publican",      "D-028, D-029, F10 #416–#417"],
+  ["prenda-sin-perdedor",         "estructura de prenda sin perdedor y aceptación adulta", "D-028, D-120, F10 #417"],
   ["prenda-aceptacion-adulto",    "solo cuentas adultas aceptan prendas",         "D-028, D-120, F10 #417"],
   ["club-result-isolated",         "resultados de club no entran al tablero global", "D-117, F10 #415"],
   ["familia-nunca-mezcla",         "familia con listas separadas",                  "D-155–D-157, F12 #445–#448"],

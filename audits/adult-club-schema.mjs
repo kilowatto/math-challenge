@@ -32,6 +32,7 @@ for (const ruta of [
   "apps/web/src/pages/api/larry/moderar.ts",
   "apps/web/src/pages/api/clubes/prenda/aceptar.ts",
   "apps/web/src/pages/api/clubes/prenda/apelar.ts",
+  "apps/web/src/pages/api/clubes/revocar.ts",
 ]) {
   if (!existsSync(`${RAIZ}/${ruta}`)) problemas.push(`falta ruta F10 ${ruta}`);
 }

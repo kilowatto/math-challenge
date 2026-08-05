@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones.ts";
+import { rutaClub } from "../../../../lib/rutas-app.ts";
 
 export const prerender = false;
 interface Env { DB: D1Database; SESSION_KV: KVNamespace }
@@ -12,10 +13,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const session = await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]);
   if (!session) return json({ ok: false, motivo: "solo_adultos" }, 403);
   let body: Record<string, unknown>;
-  try { body = (await request.json()) as Record<string, unknown>; } catch { return json({ ok: false, motivo: "cuerpo_ilegible" }, 400); }
+  let esFormulario = false;
+  try {
+    esFormulario = (request.headers.get("content-type") ?? "").includes("form");
+    if (esFormulario) {
+      const form = await request.formData();
+      body = { stakeId: form.get("stakeId"), locale: form.get("locale") };
+    } else body = (await request.json()) as Record<string, unknown>;
+  } catch { return json({ ok: false, motivo: "cuerpo_ilegible" }, 400); }
   const stakeId = typeof body.stakeId === "string" ? body.stakeId : "";
-  const stake = await env.DB.prepare("SELECT s.id FROM club_stake s JOIN club_challenge c ON c.id = s.challenge_id JOIN adult_club_membership m ON m.adult_club_id = c.adult_club_id AND m.user_id = ? AND m.left_at IS NULL WHERE s.id = ? AND s.moderacion = 'aprobada'").bind(session.userId, stakeId).first<{ id: string }>();
+  const stake = await env.DB.prepare("SELECT s.id, c.adult_club_id FROM club_stake s JOIN club_challenge c ON c.id = s.challenge_id JOIN adult_club_membership m ON m.adult_club_id = c.adult_club_id AND m.user_id = ? AND m.left_at IS NULL WHERE s.id = ? AND s.moderacion = 'aprobada'").bind(session.userId, stakeId).first<{ id: string; adult_club_id: string }>();
   if (!stake) return json({ ok: false, motivo: "prenda_desconocida" }, 404);
   await env.DB.prepare("INSERT OR IGNORE INTO club_stake_acceptance (stake_id, user_id, accepted_at) VALUES (?, ?, ?)").bind(stake.id, session.userId, Math.floor(Date.now() / 1000)).run();
+  if (esFormulario) return Response.redirect(rutaClub(typeof body.locale === "string" ? body.locale : "en", stake.adult_club_id), 303);
   return json({ ok: true, stakeId: stake.id });
 };

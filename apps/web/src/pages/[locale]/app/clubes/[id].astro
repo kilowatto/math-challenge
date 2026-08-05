@@ -3,23 +3,122 @@ export const prerender = false;
 import Privada from "../../../../layouts/Privada.astro";
 import { isLocale, type Locale } from "../../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { f10PrendasHabilitadas } from "../../../../lib/club-flag";
+import { rutaCasa, rutaClub, rutaClubes } from "../../../../lib/rutas-app";
+
 const { locale: raw, id = "" } = Astro.params;
 if (!isLocale(raw)) return Astro.redirect("/en/");
 const locale = raw as Locale;
-const env = (Astro.locals as { runtime?: { env?: { DB?: D1Database; SESSION_KV?: KVNamespace } } }).runtime?.env;
+const env = (Astro.locals as { runtime?: { env?: { DB?: D1Database; SESSION_KV?: KVNamespace; CONFIG_KV?: KVNamespace } } }).runtime?.env;
 const cookies = leerCookies(Astro.request.headers.get("cookie"));
 const sesion = env?.SESSION_KV ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]) : null;
-if (!sesion || !env?.DB) return Astro.redirect(`/${locale}/app/`);
-const club = await env.DB.prepare("SELECT c.id, c.name_key, c.join_code, c.max_size FROM adult_club c WHERE c.id = ? AND EXISTS (SELECT 1 FROM adult_club_membership m WHERE m.adult_club_id = c.id AND (m.user_id = ? OR m.child_profile_id IN (SELECT id FROM child_profiles WHERE parent_user_id = ?)) AND m.left_at IS NULL)").bind(id, sesion.userId, sesion.userId).first<{ id: string; name_key: string; join_code: string; max_size: number }>();
+if (!sesion || !env?.DB) return Astro.redirect(rutaCasa(locale));
+
+await env.DB.prepare("UPDATE club_challenge SET status = 'expired' WHERE adult_club_id = ? AND status = 'open' AND expires_at <= ?")
+  .bind(id, Math.floor(Date.now() / 1000)).run();
+
+const club = await env.DB.prepare(
+  "SELECT c.id, c.name_key, c.join_code, c.max_size FROM adult_club c WHERE c.id = ? AND EXISTS (SELECT 1 FROM adult_club_membership m WHERE m.adult_club_id = c.id AND (m.user_id = ? OR m.child_profile_id IN (SELECT id FROM child_profiles WHERE parent_user_id = ?)) AND m.left_at IS NULL)",
+).bind(id, sesion.userId, sesion.userId).first<{ id: string; name_key: string; join_code: string; max_size: number }>();
 if (!club) return new Response("404", { status: 404 });
-const miembros = (await env.DB.prepare("SELECT COALESCE(u.alias, cp.alias) AS alias, m.user_id, m.child_profile_id FROM adult_club_membership m LEFT JOIN users u ON u.id = m.user_id LEFT JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE m.adult_club_id = ? AND m.left_at IS NULL ORDER BY alias").bind(id).all<{ alias: string; user_id: string | null; child_profile_id: string | null }>()).results ?? [];
-const retos = (await env.DB.prepare("SELECT id, nivel AS dificultad, starts_at, expires_at, status FROM club_challenge WHERE adult_club_id = ? ORDER BY starts_at DESC").bind(id).all<{ id: string; dificultad: number; starts_at: number; expires_at: number; status: string }>()).results ?? [];
+
+const miembros = (await env.DB.prepare(
+  "SELECT COALESCE(u.alias, cp.alias) AS alias, m.user_id, m.child_profile_id FROM adult_club_membership m LEFT JOIN users u ON u.id = m.user_id LEFT JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE m.adult_club_id = ? AND m.left_at IS NULL ORDER BY alias",
+).bind(id).all<{ alias: string; user_id: string | null; child_profile_id: string | null }>()).results ?? [];
+const hijosQuePuedeRevocar = (await env.DB.prepare(
+  "SELECT m.child_profile_id AS child_id, cp.alias FROM adult_club_membership m JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE m.adult_club_id = ? AND m.approved_by = ? AND m.left_at IS NULL ORDER BY cp.alias",
+).bind(id, sesion.userId).all<{ child_id: string; alias: string }>()).results ?? [];
+const retos = (await env.DB.prepare(
+  "SELECT id, nivel AS dificultad, starts_at, expires_at, status FROM club_challenge WHERE adult_club_id = ? ORDER BY starts_at DESC",
+).bind(id).all<{ id: string; dificultad: number; starts_at: number; expires_at: number; status: string }>()).results ?? [];
+const resultadosPorReto = new Map<string, Array<{ alias: string; points: number; completed_at: number | null }>>();
+for (const reto of retos) {
+  const resultados = (await env.DB.prepare(
+    "SELECT COALESCE(u.alias, cp.alias) AS alias, r.points, r.completed_at FROM club_challenge_result r JOIN adult_club_membership m ON m.id = r.membership_id LEFT JOIN users u ON u.id = m.user_id LEFT JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE r.challenge_id = ? ORDER BY r.points DESC, alias ASC",
+  ).bind(reto.id).all<{ alias: string; points: number; completed_at: number | null }>()).results ?? [];
+  resultadosPorReto.set(reto.id, resultados);
+}
+const prendasActivas = await f10PrendasHabilitadas(env.CONFIG_KV);
+const prendas = prendasActivas
+  ? (await env.DB.prepare(
+      "SELECT s.id, s.challenge_id, s.forma, s.texto, s.moderacion, l.appealed_at FROM club_stake s LEFT JOIN stake_moderation_log l ON l.stake_id = s.id WHERE s.challenge_id IN (SELECT id FROM club_challenge WHERE adult_club_id = ?) ORDER BY s.created_at DESC",
+    ).bind(id).all<{ id: string; challenge_id: string; forma: string; texto: string; moderacion: string; appealed_at: number | null }>()).results ?? []
+  : [];
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
 ---
 <Privada locale={locale} title={club.name_key} description="Club de adultos">
-  <main class="club"><p><a href={`/${locale}/app/clubes/`}>← Clubs</a></p><h1>{club.name_key}</h1><p class="codigo">Código: <strong>{club.join_code}</strong></p><p>{miembros.length} de {club.max_size} miembros. Los retos no cambian el tablero global.</p>
-    <section><h2>Tabla</h2><ul>{miembros.map((m) => <li>{m.alias}</li>)}</ul></section>
-    <section><h2>Retos</h2><form method="post" action="/api/clubes/reto"><input type="hidden" name="locale" value={locale} /><input type="hidden" name="club_id" value={club.id} /><label for="nivel">Nivel</label><select id="nivel" name="nivel"><option value="8">N8</option><option value="9">N9</option><option value="10">N10</option></select><button type="submit">Crear reto de 72 horas</button></form><ul>{retos.map((r) => <li>N{r.dificultad} · {r.status} · hasta {new Date(r.expires_at * 1000).toLocaleDateString(locale)} · <a href={`/${locale}/app/clubes/${club.id}/reto/${r.id}`}>Jugar</a></li>)}</ul></section>
+  <main class="club">
+    <p><a href={rutaClubes(locale)}>← Clubs</a></p>
+    <h1>{club.name_key}</h1>
+    <p class="codigo">Código: <strong>{club.join_code}</strong></p>
+    <p>{miembros.length} de {club.max_size} miembros. Los retos no cambian el tablero global.</p>
+
+    <section aria-labelledby="tabla-titulo">
+      <h2 id="tabla-titulo">Miembros</h2>
+      <ul class="miembros">{miembros.map((miembro) => <li>{miembro.alias}</li>)}</ul>
+      {hijosQuePuedeRevocar.length > 0 && <div class="revocaciones">
+        <h3>Entradas de adolescentes aprobadas por ti</h3>
+        {hijosQuePuedeRevocar.map((hijo) => <form method="post" action="/api/clubes/revocar">
+          <input type="hidden" name="club_id" value={club.id} />
+          <input type="hidden" name="child_id" value={hijo.child_id} />
+          <input type="hidden" name="locale" value={locale} />
+          <span>{hijo.alias}</span><button type="submit">Revocar entrada</button>
+        </form>)}
+      </div>}
+    </section>
+
+    <section aria-labelledby="retos-titulo">
+      <h2 id="retos-titulo">Retos</h2>
+      <form method="post" action="/api/clubes/reto" class="crear-reto">
+        <input type="hidden" name="locale" value={locale} /><input type="hidden" name="club_id" value={club.id} />
+        <label for="nivel">Nivel del reto</label>
+        <select id="nivel" name="nivel"><option value="8">N8</option><option value="9">N9</option><option value="10">N10</option></select>
+        <button type="submit">Crear reto de 72 horas</button>
+      </form>
+      {retos.length === 0 && <p>Aún no hay retos en este club.</p>}
+      {retos.map((reto) => <article class="reto" aria-labelledby={`reto-${reto.id}`}>
+        <h3 id={`reto-${reto.id}`}>N{reto.dificultad} · {reto.status === "open" ? "Abierto" : reto.status === "expired" ? "Terminado" : "Cerrado"}</h3>
+        <p>Disponible hasta {new Date(reto.expires_at * 1000).toLocaleDateString(locale)}.</p>
+        <p><a class="boton" href={`${rutaClub(locale, club.id)}reto/${reto.id}`}>Jugar este reto</a></p>
+        <table><caption>Tabla de este reto</caption><thead><tr><th scope="col">Alias</th><th scope="col">Puntos</th></tr></thead><tbody>
+          {(resultadosPorReto.get(reto.id) ?? []).map((resultado) => <tr><td>{resultado.alias}</td><td>{resultado.points}</td></tr>)}
+        </tbody></table>
+        {prendasActivas && reto.status === "open" && <form method="post" action="/api/larry/moderar" class="prenda-form">
+          <input type="hidden" name="challengeId" value={reto.id} /><input type="hidden" name="locale" value={locale} />
+          <label for={`forma-${reto.id}`}>Forma de la prenda</label>
+          <select id={`forma-${reto.id}`} name="forma"><option value="colectiva">Colectiva</option><option value="ganador_elige">El ganador elige</option><option value="compromiso_propio">Compromiso propio</option></select>
+          <label for={`texto-${reto.id}`}>Texto de la prenda</label>
+          <textarea id={`texto-${reto.id}`} name="texto" maxlength="140" required placeholder="Una frase breve entre adultos"></textarea>
+          <button type="submit">Pedir a Larry que la lea</button>
+        </form>}
+        {(prendas.filter((prenda) => prenda.challenge_id === reto.id)).map((prenda) => <div class={`prenda prenda-${prenda.moderacion}`}>
+          <p><strong>{prenda.forma}</strong>: {prenda.texto}</p>
+          {prenda.moderacion === "aprobada" && <form method="post" action="/api/clubes/prenda/aceptar"><input type="hidden" name="stakeId" value={prenda.id} /><input type="hidden" name="locale" value={locale} /><button type="submit">Aceptar esta prenda</button></form>}
+          {prenda.moderacion === "rechazada" && !prenda.appealed_at && <form method="post" action="/api/clubes/prenda/apelar"><input type="hidden" name="stakeId" value={prenda.id} /><input type="hidden" name="locale" value={locale} /><button type="submit">Apelar revisión</button></form>}
+          {prenda.appealed_at && <p role="status">Apelación enviada al dueño.</p>}
+        </div>)}
+      </article>)}
+    </section>
+
     <form method="post" action="/api/clubes/salir"><input type="hidden" name="locale" value={locale} /><input type="hidden" name="club_id" value={club.id} /><button type="submit">Salir del club</button></form>
   </main>
 </Privada>
-<style>.club { max-width: 42rem; margin-inline: auto; padding-block: 2rem; } .codigo { font-size: 1.4rem; letter-spacing: .08em; } section { border-top: 1px solid var(--color-border); margin-top: 1.5rem; padding-top: 1rem; } form { display: flex; flex-wrap: wrap; gap: .65rem; align-items: center; } input, select, button { min-height: 44px; padding: .65rem; } li { margin-block: .5rem; }</style>
+<style>
+  .club { max-width: 46rem; margin-inline: auto; padding-block: 2rem; }
+  .codigo { font-size: 1.4rem; letter-spacing: .08em; }
+  section, .reto { border-top: 1px solid var(--color-border); margin-top: 1.5rem; padding-top: 1rem; }
+  .miembros { columns: 2; padding-inline-start: 1.25rem; }
+  form { display: flex; flex-wrap: wrap; gap: .65rem; align-items: center; margin-block: .75rem; }
+  input, select, textarea, button, .boton { min-height: 44px; padding: .65rem; font: inherit; }
+  textarea { min-inline-size: min(100%, 30rem); min-block-size: 5rem; }
+  .prenda-form { display: grid; grid-template-columns: max-content minmax(10rem, 1fr); }
+  .prenda-form textarea, .prenda-form button { grid-column: 1 / -1; }
+  .prenda { border-inline-start: .35rem solid var(--color-border); padding-inline: .75rem; margin-block: 1rem; }
+  .prenda-aprobada { border-color: var(--color-text-brand); }
+  .prenda-rechazada { border-color: var(--color-text-brand-warm); }
+  table { border-collapse: collapse; inline-size: 100%; margin-block: 1rem; }
+  th, td { border-block: 1px solid var(--color-border); padding: .5rem; text-align: start; }
+  button, .boton { display: inline-flex; align-items: center; border: 1px solid var(--color-border); border-radius: var(--radius); color: var(--color-text); background: var(--color-surface); text-decoration: none; }
+  @media (min-width: 760px) { .club { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 2rem; } .club > p:first-child, .club > h1, .club > .codigo, .club > p:nth-of-type(2), .club > form:last-child { grid-column: 1 / -1; } section { margin-top: 0; } }
+</style>

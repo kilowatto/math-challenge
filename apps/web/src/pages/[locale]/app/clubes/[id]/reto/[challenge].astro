@@ -76,7 +76,7 @@ const clubId = Astro.params.id ?? "";
         preguntas.append(bloque);
       };
       const cargar = async () => {
-        const response = await fetch(`/api/clubes/reto?challenge=${encodeURIComponent(challengeId)}`);
+        const response = await fetch(`/api/clubes/reto?challenge=${encodeURIComponent(challengeId)}&locale=${encodeURIComponent(locale)}`);
         if (!response.ok) { estado.textContent = "Este reto no está disponible."; return; }
         const data = await response.json();
         items = data.items ?? [];

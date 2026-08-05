@@ -66,6 +66,7 @@ export const rutaClubes = (locale: Locale | string) => `/${locale}/app/clubes/`;
 export const rutaClubNuevo = (locale: Locale | string) => `/${locale}/app/clubes/nuevo/`;
 export const rutaClubUnirse = (locale: Locale | string) => `/${locale}/app/clubes/unirse/`;
 export const rutaClub = (locale: Locale | string, clubId: string) => `/${locale}/app/clubes/${encodeURIComponent(clubId)}/`;
+export const rutaFamilia = (locale: Locale | string) => `/${locale}/app/familia/`;
 
 /**
  * La pantalla del padre para configurar y ver el límite de un hijo (F8 #269).

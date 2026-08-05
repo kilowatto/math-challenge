@@ -1,6 +1,7 @@
 ---
 import { LOCALES, isLocale, type Locale } from "../../../../../i18n";
 import { COOKIE_ADULTO, COOKIE_NINO, leerCookies, leerSesionAdulto, leerSesionNino } from "../../../../../lib/sesiones";
+import { rutaCasa, rutaFamilia } from "../../../../../lib/rutas-app";
 import "../../../../../styles/tokens.css";
 
 export const prerender = false;
@@ -11,7 +12,7 @@ const env = (Astro.locals as any).runtime?.env;
 const cookies = leerCookies(Astro.request.headers.get("cookie"));
 const adulto = env?.SESSION_KV ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]) : null;
 const nino = adulto ? null : env?.SESSION_KV ? await leerSesionNino(env.SESSION_KV, cookies[COOKIE_NINO]) : null;
-if (!adulto && !nino) return Astro.redirect(`/${locale}/app/`);
+if (!adulto && !nino) return Astro.redirect(rutaCasa(locale));
 const challengeId = Astro.params.id ?? "";
 ---
 <!doctype html>
@@ -34,7 +35,7 @@ const challengeId = Astro.params.id ?? "";
   </head>
   <body>
     <main>
-      <p><a href={`/${locale}/app/familia`}>← Núcleo familiar</a></p>
+      <p><a href={rutaFamilia(locale)}>← Núcleo familiar</a></p>
       <h1>Reto familiar</h1>
       <p id="estado" role="status" aria-live="polite">Cargando el reto…</p>
       <section id="preguntas" aria-label="Preguntas del reto"></section>

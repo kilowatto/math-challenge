@@ -24,7 +24,7 @@
  * el aparato de referencia es un Android de gama baja (`mc-47` §5).
  */
 import { t, type Locale } from "../../i18n";
-import Sendero from "./Sendero.astro";
+import EscenaSabana from "./EscenaSabana.astro";
 import Arbol from "./Arbol.astro";
 import Tablero from "./Tablero.astro";
 import Companero from "./Companero.astro";
@@ -79,7 +79,7 @@ const conInterruptor = accionCompanero !== null && !apareceSolo(tema);
 
 <section class="mapa" data-tema={tema} data-forma={mapa.forma}>
   {mapa.forma === "sendero" && (
-    <Sendero
+    <EscenaSabana
       locale={locale}
       sendero={mapa}
       companeroVisible={companeroVisible}

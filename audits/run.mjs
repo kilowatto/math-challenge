@@ -298,6 +298,7 @@ const ACTIVE = [
   //    estarlo, y ahí está Tamagotchi entero (mc-43 §6).
   ["mapa-lectura-sin-tabla",   "el mapa lee de F4/F3; no tiene tabla propia",     "#231, D-017, D-019"],
   ["mapa-sin-numero-de-nivel", "el número de nivel no se le enseña a nadie",      "D-017, #100, #232, mc-10"],
+  ["mapa-escena",               "la Sabana se presenta como escena navegable",   "F7, #498, D-019"],
   ["companero-sin-decaimiento","el compañero no tiene vida, hambre ni decaimiento","D-080, #235, #234, mc-43 §6"],
   // ─── Los tres de F8, y el cable que sostienen entre los dos motores ──────
   //

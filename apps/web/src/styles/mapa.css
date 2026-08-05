@@ -70,10 +70,8 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space);
+  position: absolute;
+  inset: 0;
 }
 
 .sendero__lugar {
@@ -83,6 +81,152 @@
   border-radius: 50%;
   border: 4px solid var(--color-border);
   background: var(--color-surface);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.sabana {
+  --sabana-ink: var(--ignia-gris-900);
+  --sabana-sky: color-mix(in srgb, var(--ignia-azul) 18%, var(--ignia-blanco));
+  --sabana-hill: color-mix(in srgb, var(--ignia-azul) 42%, var(--ignia-blanco));
+  --sabana-grass: color-mix(in srgb, var(--ignia-naranja-claro) 28%, var(--ignia-blanco));
+  border: 0.25rem solid color-mix(in srgb, var(--sabana-ink) 18%, transparent);
+  border-radius: 2rem;
+  background: var(--sabana-sky);
+  box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--sabana-ink) 16%, transparent);
+  overflow: hidden;
+}
+
+.sabana__viewport {
+  max-block-size: min(78vh, 52rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--sabana-ink) transparent;
+}
+
+.sabana__viewport:focus-visible {
+  outline: 0.25rem solid var(--color-accent);
+  outline-offset: -0.25rem;
+}
+
+.sabana__world {
+  position: relative;
+  min-block-size: 100rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 14%, rgb(255 255 255 / 72%) 0 2.5rem, transparent 2.7rem),
+    radial-gradient(circle at 78% 8%, rgb(255 255 255 / 50%) 0 3rem, transparent 3.2rem),
+    linear-gradient(180deg, var(--sabana-sky) 0 34%, var(--sabana-grass) 34% 100%);
+}
+
+.sabana__cielo,
+.sabana__montanas,
+.sabana__hierba {
+  position: absolute;
+  inset-inline: 0;
+  pointer-events: none;
+}
+
+.sabana__cielo {
+  block-size: 35%;
+  background: linear-gradient(180deg, rgb(255 255 255 / 34%), transparent 70%);
+}
+
+.sabana__montanas {
+  inset-block-start: 21%;
+  block-size: 23%;
+  opacity: 0.78;
+  background:
+    linear-gradient(135deg, transparent 28%, var(--sabana-hill) 28% 43%, transparent 43%) 0 100% / 44% 100% no-repeat,
+    linear-gradient(45deg, transparent 30%, color-mix(in srgb, var(--ignia-azul) 28%, var(--ignia-blanco)) 30% 52%, transparent 52%) 100% 100% / 58% 100% no-repeat;
+}
+
+.sabana__hierba {
+  inset-block-start: 34%;
+  background:
+    radial-gradient(ellipse at 10% 30%, rgb(255 255 255 / 20%) 0 5rem, transparent 5.2rem),
+    radial-gradient(ellipse at 88% 72%, rgb(23 63 56 / 10%) 0 8rem, transparent 8.2rem);
+}
+
+.sabana__camino {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  z-index: 1;
+}
+
+.sabana__camino path {
+  fill: none;
+  stroke: var(--ignia-naranja-claro);
+  stroke-linecap: round;
+  stroke-width: 76;
+  filter: drop-shadow(0 0.25rem 0 rgb(23 63 56 / 12%));
+}
+
+.sabana .sendero__lugar:nth-child(1) { inset: 6% auto auto 50%; }
+.sabana .sendero__lugar:nth-child(2) { inset: 16% auto auto 29%; }
+.sabana .sendero__lugar:nth-child(3) { inset: 22% auto auto 67%; }
+.sabana .sendero__lugar:nth-child(4) { inset: 31% auto auto 47%; }
+.sabana .sendero__lugar:nth-child(5) { inset: 39% auto auto 28%; }
+.sabana .sendero__lugar:nth-child(6) { inset: 45% auto auto 67%; }
+.sabana .sendero__lugar:nth-child(7) { inset: 55% auto auto 52%; }
+.sabana .sendero__lugar:nth-child(8) { inset: 63% auto auto 30%; }
+.sabana .sendero__lugar:nth-child(9) { inset: 69% auto auto 66%; }
+.sabana .sendero__lugar:nth-child(10) { inset: 77% auto auto 51%; }
+.sabana .sendero__lugar:nth-child(11) { inset: 84% auto auto 29%; }
+.sabana .sendero__lugar:nth-child(12) { inset: 89% auto auto 64%; }
+.sabana .sendero__lugar:nth-child(13) { inset: 95% auto auto 51%; }
+.sabana .sendero__lugar:nth-child(14) { inset: 99% auto auto 50%; }
+
+.sabana .sendero__lugar[data-estado="terminado"] {
+  border-color: var(--ignia-azul);
+  box-shadow: 0 0.45rem 0 var(--ignia-azul), 0 0.7rem 1rem rgb(67 69 71 / 18%);
+}
+
+.sabana .sendero__lugar[data-estado="en_curso"] {
+  border-style: solid;
+  border-color: var(--ignia-naranja-oscuro);
+  box-shadow: 0 0 0 0.45rem rgb(243 107 28 / 22%), 0 0.55rem 1rem rgb(67 69 71 / 18%);
+  animation: sabana-pulso 2.4s ease-in-out infinite;
+}
+
+.sabana .sendero__lugar[data-estado="por_visitar"] {
+  background: rgb(255 255 255 / 78%);
+  border-color: var(--ignia-azul);
+  box-shadow: 0 0.35rem 0 rgb(11 106 176 / 48%);
+}
+
+.sabana .sendero__lugar[data-aqui="si"] { outline-color: var(--ignia-naranja-oscuro); }
+
+.sabana__acento {
+  position: absolute;
+  z-index: 1;
+  inline-size: 8rem;
+  block-size: 8rem;
+  border-radius: 50%;
+  opacity: 0.42;
+  background: radial-gradient(circle, var(--ignia-naranja-claro) 0 18%, transparent 19%), radial-gradient(circle, var(--ignia-azul) 0 8%, transparent 9%);
+}
+
+.sabana__acento--izquierda { inset: 48% auto auto 5%; }
+.sabana__acento--derecha { inset: 74% 4% auto auto; transform: scale(0.7); }
+
+@keyframes sabana-pulso {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sabana .sendero__lugar[data-estado="en_curso"] { animation: none; }
+}
+
+@media (max-width: 40rem) {
+  .sabana { border-radius: 1.25rem; }
+  .sabana__viewport { max-block-size: 72vh; }
+  .sabana__world { min-block-size: 86rem; }
+  .sabana .sendero__lugar { inline-size: 5.5rem; block-size: 5.5rem; }
+  .sabana .sendero__enlace { min-block-size: 5.5rem; }
 }
 
 /* Visitado: relleno de marca. Es un gráfico (3:1), no texto. */

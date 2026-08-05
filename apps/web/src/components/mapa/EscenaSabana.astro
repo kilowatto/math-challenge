@@ -1,0 +1,38 @@
+---
+import Sendero from "./Sendero.astro";
+import { t, type Locale } from "../../i18n";
+import type { LugarDelSendero, Sendero as ModeloSendero } from "../../../../../packages/motor/src/mapa.ts";
+
+interface Props {
+  locale: Locale;
+  sendero: ModeloSendero;
+  companeroVisible: boolean;
+  accesorios?: readonly string[];
+  destinoDe?: (lugar: LugarDelSendero) => string | null;
+}
+
+const { locale, sendero, companeroVisible, accesorios = [], destinoDe } = Astro.props;
+const m = t(locale);
+---
+
+<div class="sabana" data-sabana-escena>
+  <div class="sabana__viewport" tabindex="0" aria-label={m.mapaSenderoNombre}>
+    <div class="sabana__world">
+      <div class="sabana__cielo" aria-hidden="true"></div>
+      <div class="sabana__montanas" aria-hidden="true"></div>
+      <div class="sabana__hierba" aria-hidden="true"></div>
+      <svg class="sabana__camino" viewBox="0 0 1000 1600" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M500 92 C250 170 720 250 470 350 S210 535 500 625 S790 810 520 900 S260 1080 470 1180 S740 1350 500 1510" />
+      </svg>
+      <Sendero
+        locale={locale}
+        sendero={sendero}
+        companeroVisible={companeroVisible}
+        accesorios={accesorios}
+        destinoDe={destinoDe}
+      />
+      <span class="sabana__acento sabana__acento--izquierda" aria-hidden="true"></span>
+      <span class="sabana__acento sabana__acento--derecha" aria-hidden="true"></span>
+    </div>
+  </div>
+</div>

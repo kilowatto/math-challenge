@@ -213,7 +213,7 @@ export async function enviarReporteHogar(
   // resolverlo (mismo motivo por el que `cloudflare:workers` no aparece en
   // imports estáticos de este Worker).
   const { EmailMessage } = (await import(/* @vite-ignore */ "cloudflare:email")) as {
-    EmailMessage: new (de: string, para: string, crudo: string) => unknown;
+    EmailMessage: new (de: string, para: string, crudo: ReadableStream | string) => EmailMessage;
   };
   await env.EMAIL.send(new EmailMessage(REMITENTE_REPORTES, usuario.email, crudo));
 

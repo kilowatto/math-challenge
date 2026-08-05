@@ -410,7 +410,7 @@ const CASOS = [
     que: "una opción de cadena que se serviría como su identificador interno",
     archivo: "packages/motor/src/banco-kinder.ts",
     parche: (t) => t.replace("      dibujos,\n", "      dibujos: {},\n"),
-    espera: "K13 · opción servida como su identificador",
+    espera: "banco NO se construye",
   },
   {
     // #347, tal cual ocurrió: un glifo escrito en la pantalla es una segunda
@@ -1639,7 +1639,7 @@ const CASOS = [
     // en silencio de siempre.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0023_prueba_hueco.sql",
+    archivo: "migrations/0030_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -2423,7 +2423,7 @@ const CASOS = [
           '        { valor: a + b + 1, causa: "error.conto_uno_dos_veces" },',
           '        { valor: a + b - 1, causa: "error.conto_uno_dos_veces" },',
         ),
-    espera: "mismo valor",
+    espera: "banco NO se construye",
   },
   {
     // La causa borrada que vuelve. La tabla BORRADAS se copió a mano del

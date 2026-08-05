@@ -27,7 +27,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!s) return error("sin_sesion", 401);
 
   const b = await request.json().catch(() => null) as
-    | { retoId?: string; credentialId?: string; clientDataJSON?: string; authenticatorData?: string; transports?: string[] }
+    | { retoId?: string; credentialId?: string; clientDataJSON?: string; authenticatorData?: string; attestationObject?: string; transports?: string[] }
     | null;
   if (!b?.retoId || !b.credentialId || !b.clientDataJSON || !b.attestationObject) return error("cuerpo_incompleto");
 
@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (guardado.proposito !== "registrar" || guardado.userId !== s.userId) return error("reto_de_otro_proposito");
 
   const cliente = await comprobarCliente(b.clientDataJSON, guardado.reto, "webauthn.create");
-  if (!cliente.ok) return error(cliente.motivo);
+  if (cliente.ok === false) return error(cliente.motivo);
 
   let ad;
   try { ad = leerAuthData(authDataDeAttestation(deB64url(b.attestationObject))); } catch { return error("authData_ilegible"); }

@@ -42,7 +42,7 @@ export function createExports(manifest: ConstructorParameters<typeof App>[0]) {
   return {
     default: {
       fetch: (request: Request, env: never, context: ExecutionContext) =>
-        handle(manifest, app, request, env, context),
+        handle(manifest, app, request as unknown as Parameters<typeof handle>[2], env, context),
       /**
        * DOS crones comparten este manejador (`triggers.crons` de
        * `wrangler.jsonc`), y se distinguen por `event.cron`:

@@ -76,15 +76,15 @@ Astro.response.headers.set("x-robots-tag", "noindex");
 Astro.response.headers.set("cache-control", "no-store, private");
 ---
 
-<Privada locale={locale} title={m.signinTitle} description={m.signinLead}>
+<Privada locale={locale} title={m.signinFormTitle} description={m.signinFormLead}>
   <article class="signin">
-    <h1>{m.signinTitle}</h1>
-    <p class="lead">{m.signinLead}</p>
-    <p class="muted">{m.signinDeviceWhy}</p>
+    <h1>{m.signinFormTitle}</h1>
+    <p class="lead">{m.signinFormLead}</p>
+    <p class="muted">{m.signinChildNote}</p>
 
     <div class="acciones">
-      <a class="boton" href={ruta(locale, "registro-padre")}>{m.signinCreateAccount}</a>
-      <a class="secundario" href={`/${locale}/`}>{m.signinBackHome}</a>
+      <a class="boton" href={ruta(locale, "registro-padre")}>{m.signinNoAccount}</a>
+      <a class="secundario" href={`/${locale}/`}>{m.navHome}</a>
     </div>
   </article>
 

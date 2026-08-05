@@ -55,7 +55,7 @@ export const prerender = false;
 
 interface Env {
   DB?: D1Database;
-  SESSION_KV: KVNamespace;
+  SESSION_KV?: KVNamespace;
 }
 
 const TEXTOS: Record<string, Record<string, string>> = {

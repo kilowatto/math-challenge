@@ -81,7 +81,7 @@ export const GET: APIRoute = async ({ locals, request }) => {
 
   // D1 directo desde web, para distinguir "falla el binding" de "falla el RPC".
   try {
-    const row = await env.DB.prepare("SELECT 1 AS ok").first<{ ok: number }>();
+    const row = await (env.DB as D1Database).prepare("SELECT 1 AS ok").first<{ ok: number }>();
     report.d1 = { ok: row?.ok === 1 };
   } catch (err) {
     report.d1 = { ok: false, error: String(err) };

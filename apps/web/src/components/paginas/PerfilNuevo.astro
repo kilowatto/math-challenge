@@ -689,7 +689,7 @@ for (let i = 0; alias.length < CUANTOS_ALIAS && i < CUANTOS_ALIAS * 4; i++) {
        * comparan cadenas. Es lo que impide que la tabla de bandas tenga una
        * segunda copia, que es como se desincronizan las tablas.
        */
-      const anio = document.getElementById("anio") as HTMLSelectElement | null;
+      const anio = document.getElementById("anio") as unknown as HTMLSelectElement | null;
       const tarjetas = Array.from(document.querySelectorAll<HTMLElement>(".tarjeta"));
 
       function aplicarDerivado() {

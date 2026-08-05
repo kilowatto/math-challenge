@@ -31,6 +31,7 @@ import {
 } from "../../../packages/motor/src/sesion.ts";
 import type { MotivoDeCierre } from "../../../packages/motor/src/limite-pantalla.ts";
 import type { Banda } from "../../../packages/motor/src/puntuacion.ts";
+import { registrarPiso } from "../../../packages/motor/src/anti-trampa.ts";
 
 interface Env {
   ATTEMPTS_AE: AnalyticsEngineDataset;
@@ -122,6 +123,33 @@ export class SesionReto extends DurableObject<Env> {
     correcta: boolean,
     contexto: { itemId: string; skillId: string; locale: string },
   ): Promise<ResultadoDeRespuesta> {
+    return this.responderItemInterno(respuesta, correcta, contexto, true);
+  }
+
+  /** Mide y deduplica sin duplicar la telemetría que escribe el ingestor. */
+  async medirRespuesta(
+    respuesta: { orden: number; eleccion: string },
+    correcta: boolean,
+    contexto: { itemId: string; skillId: string; locale: string },
+  ): Promise<ResultadoDeRespuesta & { señalPiso: boolean }> {
+    const resultado = await this.responderItemInterno(respuesta, correcta, contexto, false);
+    if (resultado.repetida) return { ...resultado, señalPiso: false };
+    const estado = await this.leer();
+    const piso = registrarPiso(
+      { consecutivas: (await this.ctx.storage.get<number>("pisoRapido")) ?? 0 },
+      estado?.banda ?? "KINDER",
+      resultado.rtMs,
+    );
+    await this.ctx.storage.put("pisoRapido", piso.estado.consecutivas);
+    return { ...resultado, señalPiso: piso.señal };
+  }
+
+  private async responderItemInterno(
+    respuesta: { orden: number; eleccion: string },
+    correcta: boolean,
+    contexto: { itemId: string; skillId: string; locale: string },
+    escribirTelemetria: boolean,
+  ): Promise<ResultadoDeRespuesta> {
     const estado = await this.leer();
     if (!estado) throw new Error("la sesión no se ha iniciado");
 
@@ -137,7 +165,7 @@ export class SesionReto extends DurableObject<Env> {
     // que es la peor forma posible de sesgar un dato.
     if (!resultado.repetida) {
       await this.guardar(nuevo);
-      this.env.ATTEMPTS_AE.writeDataPoint({
+      if (escribirTelemetria) this.env.ATTEMPTS_AE.writeDataPoint({
         indexes: [contexto.skillId],
         blobs: [
           contexto.itemId,

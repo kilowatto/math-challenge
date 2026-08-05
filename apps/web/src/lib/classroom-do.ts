@@ -186,6 +186,7 @@ export class Salon {
   }
 
   private async unir(f: Omit<FilaDeMiembro, "puntos" | "current_streak">) {
+    if (f.opt_in !== 1) return { ok: true, nuevo: false, visible: false };
     const llave = PREFIJO + f.membership_id;
     const previa = await this.state.storage.get<FilaDeMiembro>(llave);
     if (previa) return { ok: true, nuevo: false };
@@ -325,6 +326,36 @@ export async function sumarEnSalon(
   try {
     const stub = objetoDe(ns, groupId);
     const r = await stub.fetch("https://salon/sumar", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(entrada),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Nombre de dominio del mismo cable: un grupo, no necesariamente un salón. */
+export const sumarEnGrupo = sumarEnSalon;
+
+/** Une o refresca una membresía visible. Nunca envía miembros sin opt-in. */
+export async function unirEnSalon(
+  ns: DurableObjectNamespace | undefined,
+  groupId: string,
+  entrada: {
+    membership_id: string;
+    alias: string;
+    avatar_parts: string;
+    banda: Banda;
+    opt_in: 0 | 1;
+    joined_at: number;
+  },
+): Promise<boolean> {
+  if (!ns || entrada.opt_in !== 1) return false;
+  try {
+    const stub = objetoDe(ns, groupId);
+    const r = await stub.fetch("https://salon/unir", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(entrada),

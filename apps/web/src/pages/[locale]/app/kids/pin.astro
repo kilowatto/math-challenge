@@ -85,7 +85,7 @@
  * dispositivo del hogar: un `p` de un niño de otra casa no pinta nada.
  */
 import "../../../../styles/fonts.css";
-import { rutaJugar } from "../../../../lib/rutas-app";
+import { rutaJugar, rutaPin } from "../../../../lib/rutas-app";
 import "../../../../styles/tokens.css";
 /**
  * La capa de banda, igual que en `app/kids/index.astro`.
@@ -451,7 +451,10 @@ const NOMBRE: Record<Dibujo, string> = {
  */
 const valorDe = (i: number) => (hechos.includes(i) ? hechos : [...hechos, i]).join(".");
 
-const accion = `/app/kids/pin?p=${encodeURIComponent(perfil.id)}`;
+// Con el locale delante, siempre: escrita a mano como `/app/kids/pin?p=…` esta
+// pantalla se veía perfecta y ENVIAR el PIN caía en el 404 del sitio — medido
+// en producción el 2026-08-04. Las rutas de la app salen de `rutas-app.ts`.
+const accion = `${rutaPin(locale)}?p=${encodeURIComponent(perfil.id)}`;
 const estadoTexto = m.pinProgress.replace("{n}", String(hechos.length));
 
 /**

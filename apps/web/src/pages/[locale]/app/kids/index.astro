@@ -79,6 +79,7 @@ import {
   leerCookies,
   leerDispositivoDelHogar,
 } from "../../../../lib/sesiones";
+import { rutaPin } from "../../../../lib/rutas-app";
 import "../../../../styles/fonts.css";
 import "../../../../styles/tokens.css";
 import "../../../../styles/bandas.css";
@@ -199,8 +200,22 @@ const aLaPuertaDelAdulto = () => {
  * El id viaja en la URL y eso es aceptable: es un identificador opaco, no un
  * dato personal. Línea roja #2 — no hay nombre real ni correo de un niño que
  * pueda filtrarse en una barra de direcciones, porque no existen.
+ *
+ * La ruta la arma `rutaPin()` de `lib/rutas-app.ts`, con el locale delante.
+ * **Medido el 2026-08-04, en producción, por el dueño:** escrita a mano como
+ * `/app/kids/pin?p=…` —sin el segmento de locale— el toque de una cara caía en
+ * el 404 del sitio, en inglés, y ningún niño podía entrar a jugar. Es el mismo
+ * 404 que el bloque de arriba documenta para cualquier ruta sin locale; aquí
+ * además lo enmascaraba que la rejilla SÍ se veía bien. Las rutas de la app se
+ * construyen con los helpers de `rutas-app.ts` o no se construyen.
+ *
+ * La función RECIBE el locale como parámetro, aunque el `locale` resuelto
+ * exista como constante del módulo: este archivo ya pagó dos veces el
+ * «constante que lee algo declarado más abajo», y las dos veces el síntoma fue
+ * un 500 en la única pantalla que un niño abre.
  */
-const rutaDelPin = (id: string) => `/app/kids/pin?p=${encodeURIComponent(id)}`;
+const rutaDelPin = (deLaCasa: Locale, id: string) =>
+  `${rutaPin(deLaCasa)}?p=${encodeURIComponent(id)}`;
 
 // --- La puerta: sin dispositivo de la casa, no hay caras -------------------
 
@@ -593,7 +608,7 @@ const caras = perfiles.map((p) => {
               abajo, que no apunta a nada parecido al problema.) */}
           {caras.map(({ perfil, forma, color }) => (
             <li>
-              <a class="cara" href={rutaDelPin(perfil.id)} aria-label={`${m.kidsPlayAs} ${perfil.alias}`}>
+              <a class="cara" href={rutaDelPin(locale, perfil.id)} aria-label={`${m.kidsPlayAs} ${perfil.alias}`}>
                 {/* El dibujo es decorativo para la tecnología de asistencia: el
                     nombre accesible del enlace ya lo da el `aria-label`, y
                     anunciar «imagen» dos veces sobra. Para el niño que no lee,

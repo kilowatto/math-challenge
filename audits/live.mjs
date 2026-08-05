@@ -170,6 +170,33 @@ for (const [ruta, init] of [
   }
 }
 
+// 4-quater. La ruta del PIN del niño EXISTE en los siete locales.
+//
+// El bug del 2026-08-04 —encontrado por el dueño, con dos perfiles reales—:
+// la rejilla de caras enlazaba `/app/kids/pin?p=…` a mano, sin locale, y el
+// toque caía en el 404 del sitio. Lo que aquí se comprueba NO es el enlace
+// (eso lo vigila `audits/rutas-app-con-locale.mjs` sobre el código, porque
+// seguirlo en vivo exige dispositivo marcado y perfil sembrado): es que la
+// ruta siga existiendo — que la página no se mueva, no se renombre ni salga
+// del segmento `[locale]`, que es la otra forma de que el mismo 404 vuelva.
+// Sin sesión debe dar 303 a la raíz (falla cerrada, D-012); un 404 es la
+// ruta rota.
+for (const l of LOCALES) {
+  try {
+    const res = await fetch(`${ORIGIN}/${l}/app/kids/pin?p=0`, { redirect: "manual" });
+    if (res.status === 303) {
+      ok.push(`/${l}/app/kids/pin responde 303 (existe y falla cerrada)`);
+    } else {
+      problems.push(
+        `/${l}/app/kids/pin devolvió ${res.status} — se esperaba 303; ` +
+          `un 404 es la ruta del PIN rota otra vez (bug del 2026-08-04)`,
+      );
+    }
+  } catch (err) {
+    problems.push(`no se pudo comprobar /${l}/app/kids/pin: ${err.message}`);
+  }
+}
+
 // 5. El camino de RPC nativo está vivo (D-030): web → ingest → D1
 try {
   const health = await (await get("/api/health")).json();

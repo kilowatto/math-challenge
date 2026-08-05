@@ -1,0 +1,25 @@
+---
+export const prerender = false;
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+const { locale: raw, id = "" } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale = raw as Locale;
+const env = (Astro.locals as { runtime?: { env?: { DB?: D1Database; SESSION_KV?: KVNamespace } } }).runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]) : null;
+if (!sesion || !env?.DB) return Astro.redirect(`/${locale}/app/`);
+const club = await env.DB.prepare("SELECT c.id, c.name_key, c.join_code, c.max_size FROM adult_club c WHERE c.id = ? AND EXISTS (SELECT 1 FROM adult_club_membership m WHERE m.adult_club_id = c.id AND (m.user_id = ? OR m.child_profile_id IN (SELECT id FROM child_profiles WHERE parent_user_id = ?)) AND m.left_at IS NULL)").bind(id, sesion.userId, sesion.userId).first<{ id: string; name_key: string; join_code: string; max_size: number }>();
+if (!club) return new Response("404", { status: 404 });
+const miembros = (await env.DB.prepare("SELECT COALESCE(u.alias, cp.alias) AS alias, m.user_id, m.child_profile_id FROM adult_club_membership m LEFT JOIN users u ON u.id = m.user_id LEFT JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE m.adult_club_id = ? AND m.left_at IS NULL ORDER BY alias").bind(id).all<{ alias: string; user_id: string | null; child_profile_id: string | null }>()).results ?? [];
+const retos = (await env.DB.prepare("SELECT id, nivel, starts_at, expires_at, status FROM club_challenge WHERE adult_club_id = ? ORDER BY starts_at DESC").bind(id).all<{ id: string; nivel: number; starts_at: number; expires_at: number; status: string }>()).results ?? [];
+---
+<Privada locale={locale} title={club.name_key} description="Club de adultos">
+  <main class="club"><p><a href={`/${locale}/app/clubes/`}>← Clubs</a></p><h1>{club.name_key}</h1><p class="codigo">Código: <strong>{club.join_code}</strong></p><p>{miembros.length} de {club.max_size} miembros. Los retos no cambian el tablero global.</p>
+    <section><h2>Tabla</h2><ul>{miembros.map((m) => <li>{m.alias}</li>)}</ul></section>
+    <section><h2>Retos</h2><form method="post" action="/api/clubes/reto"><input type="hidden" name="locale" value={locale} /><input type="hidden" name="club_id" value={club.id} /><label for="nivel">Nivel</label><select id="nivel" name="nivel"><option value="8">N8</option><option value="9">N9</option><option value="10">N10</option></select><button type="submit">Crear reto de 72 horas</button></form><ul>{retos.map((r) => <li>N{r.nivel} · {r.status} · hasta {new Date(r.expires_at * 1000).toLocaleDateString(locale)}</li>)}</ul></section>
+    <form method="post" action="/api/clubes/salir"><input type="hidden" name="locale" value={locale} /><input type="hidden" name="club_id" value={club.id} /><button type="submit">Salir del club</button></form>
+  </main>
+</Privada>
+<style>.club { max-width: 42rem; margin-inline: auto; padding-block: 2rem; } .codigo { font-size: 1.4rem; letter-spacing: .08em; } section { border-top: 1px solid var(--color-border); margin-top: 1.5rem; padding-top: 1rem; } form { display: flex; flex-wrap: wrap; gap: .65rem; align-items: center; } input, select, button { min-height: 44px; padding: .65rem; } li { margin-block: .5rem; }</style>

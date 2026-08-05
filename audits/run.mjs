@@ -324,6 +324,7 @@ const ACTIVE = [
   ["recordatorio-sin-culpa",    "el push es al padre, 1/día, sin culpa, silencio permanente", "issue #207, D-014, D-026, D-105, mc-19"],
   ["legal-checklist",            "checklist legal interno fechado y no certificante", "D-126, F11 #427"],
   ["adult-club-schema",           "esquema F10 aislado y con límites estructurales", "D-043, D-117–D-121, F10 #412"],
+  ["club-sin-chat",               "clubs sin chat ni mensajería",                  "D-027, línea roja #3, F10 #419"],
   ["tiempo-piso-solo-logging",    "el piso de tiempo solo deja señal derivada", "D-125, D-020, mc-29"],
   ["nota-solo-por-velocidad",     "la nota F4 solo nace de velocidad sostenida", "D-061, F4 #389, F11 #425"],
   // ─── La superficie de F7 · Misiones diarias (#220, #222, #227) ───────────

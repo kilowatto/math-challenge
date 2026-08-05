@@ -297,7 +297,7 @@
   "cierre.ecuacion": "Si {a}x + {b} = {c}, quelle est la valeur de x ?",
   "cierre.potencia": "Combien font {a}^{b} ?",
   "cierre.raiz": "Quelle est la racine carrée de {n} ?",
-  "cierre.proporcion": "Si {a} × ? = {c}, quel est le facteur manquant ?",
+  "cierre.proporcion": "Si {a} × ? = {c}, quel est le facteur manquant ?",
   "cierre.mcd": "Quel est le plus grand diviseur commun de {a} et {b} ?",
   "error.cierre.7.1": ["Tu as combiné les quantités autrement.", "Écris les termes et additionne-les une seule fois."],
   "error.cierre.7.2": ["Tu as utilisé un produit voisin.", "Multiplie complètement les deux facteurs."],

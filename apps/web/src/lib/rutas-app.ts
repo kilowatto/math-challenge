@@ -62,6 +62,11 @@ export const rutaGrupos = (locale: Locale | string) => `/${locale}/app/grupos/`;
  */
 export const rutaGruposNuevo = (locale: Locale | string) => `/${locale}/app/grupos/nuevo/`;
 
+export const rutaClubes = (locale: Locale | string) => `/${locale}/app/clubes/`;
+export const rutaClubNuevo = (locale: Locale | string) => `/${locale}/app/clubes/nuevo/`;
+export const rutaClubUnirse = (locale: Locale | string) => `/${locale}/app/clubes/unirse/`;
+export const rutaClub = (locale: Locale | string, clubId: string) => `/${locale}/app/clubes/${encodeURIComponent(clubId)}/`;
+
 /**
  * La pantalla del padre para configurar y ver el límite de un hijo (F8 #269).
  *
@@ -119,4 +124,3 @@ export const rutaPanelHijo = (locale: Locale | string, childId: string) =>
  */
 export const rutaPanelCosmeticos = (locale: Locale | string, childId: string) =>
   `/${locale}/app/parent/panel/${encodeURIComponent(childId)}/cosmeticos`;
-

@@ -28,8 +28,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (challenge.status !== "open" || now < challenge.starts_at || now >= challenge.expires_at) return json({ ok: false, motivo: "reto_cerrado" }, 410);
   const existing = await env.DB.prepare("SELECT completed_at FROM club_challenge_result WHERE challenge_id = ? AND membership_id = ?").bind(challengeId, challenge.membership_id).first<{ completed_at: number | null }>();
   if (existing?.completed_at !== null && existing?.completed_at !== undefined) return json({ ok: false, motivo: "reto_ya_resuelto" }, 409);
-  const score = puntuarRespuestas(itemsDelReto(challenge.item_set, generarBancoAdulto()), parsed);
-  if (!score) return json({ ok: false, motivo: "set_incompleto" }, 400);
-  await env.DB.prepare("INSERT INTO club_challenge_result (challenge_id, membership_id, points, completed_at) VALUES (?, ?, ?, ?)").bind(challengeId, challenge.membership_id, score.puntos, now).run();
-  return json({ ok: true, puntos: score.puntos, correctas: score.correctas });
+  const resultado = puntuarRespuestas(itemsDelReto(challenge.item_set, generarBancoAdulto()), parsed);
+  if (!resultado) return json({ ok: false, motivo: "set_incompleto" }, 400);
+  await env.DB.prepare("INSERT INTO club_challenge_result (challenge_id, membership_id, points, completed_at) VALUES (?, ?, ?, ?)").bind(challengeId, challenge.membership_id, resultado.puntos, now).run();
+  return json({ ok: true, puntos: resultado.puntos, correctas: resultado.correctas });
 };

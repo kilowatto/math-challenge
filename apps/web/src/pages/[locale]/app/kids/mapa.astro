@@ -129,10 +129,10 @@ if (env?.DB && await f9Habilitado(env.CONFIG_KV, locale)) {
         "FROM child_group_membership m " +
         "JOIN child_group g ON g.id = m.child_group_id " +
         "LEFT JOIN school s ON s.id = g.school_id " +
-        "WHERE m.child_profile_id = ? AND m.status = 'approved' " +
+        "WHERE m.child_profile_id = ? AND m.status = ? " +
         "ORDER BY m.decided_at DESC, m.id DESC LIMIT 1",
     )
-      .bind(nino.childProfileId)
+      .bind(nino.childProfileId, "approved")
       .first<{ escuela: string | null; origen_tipo: "salon" | "club_papas" }>()
       .then((fila) => fila ? { escuela: fila.escuela, club: fila.origen_tipo === "club_papas" } : null);
   } catch {

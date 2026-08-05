@@ -511,9 +511,14 @@ const ACTIVE = [
   // vigila es que nadie lo quite.
   ["alias-unico",            "el alias del niño tiene índice único por padre, y nadie lo quita", "D-003, #259"],
 
-
-
-
+  // ─── El del bug del 2026-08-04 (kids → pin 404) ──────────────────────────
+  //
+  // La rejilla de caras y la pantalla del PIN se VEÍAN perfectas, y sus dos
+  // enlaces —escritos a mano, sin el segmento de locale— eran un 404 que
+  // ningún niño podía cruzar. Lo encontró el dueño jugando, no una prueba:
+  // el camino completo exige dispositivo marcado y perfil sembrado. Las rutas
+  // de la app se arman con los helpers de `lib/rutas-app.ts` o no se arman.
+  ["rutas-app-con-locale",   "ningún literal /app/… a mano fuera de rutas-app.ts", "bug 2026-08-04, D-012, D-070"],
 ];
 
 // --- Deterministas: esperando la fase que los habilita -------------------

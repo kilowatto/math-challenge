@@ -2613,6 +2613,31 @@ const CASOS = [
     parche: (t) => t.replace('from "./lib/cabeceras-seguridad"', 'from "./lib/ratelimiter"'),
     espera: "no importa cabeceras-seguridad.ts",
   },
+  {
+    // El bug literal, reintroducido: el action del PIN sin el segmento de
+    // locale. Es la cadena exacta que el dueño tocó en producción.
+    auditor: "rutas-app-con-locale",
+    que: "el action del PIN escrito a mano sin locale — el bug del 2026-08-04",
+    archivo: "apps/web/src/pages/[locale]/app/kids/pin.astro",
+    parche: (t) =>
+      t.replace(
+        "const accion = `${rutaPin(locale)}?p=${encodeURIComponent(perfil.id)}`;",
+        "const accion = `/app/kids/pin?p=${encodeURIComponent(perfil.id)}`;",
+      ),
+    espera: "literal",
+  },
+  {
+    // Y en la rejilla: el enlace de la cara vuelve a armarse a mano.
+    auditor: "rutas-app-con-locale",
+    que: "el enlace de la cara sin locale en la rejilla de kids",
+    archivo: "apps/web/src/pages/[locale]/app/kids/index.astro",
+    parche: (t) =>
+      t.replace(
+        "`${rutaPin(deLaCasa)}?p=${encodeURIComponent(id)}`",
+        "`/app/kids/pin?p=${encodeURIComponent(id)}`",
+      ),
+    espera: "literal",
+  },
 ];
 
 const soloEste = process.argv[2] ?? null;

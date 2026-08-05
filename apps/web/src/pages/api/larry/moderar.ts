@@ -44,11 +44,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const now = Math.floor(Date.now() / 1000);
   const stakeId = crypto.randomUUID();
   const log = env.DB.prepare("INSERT INTO stake_moderation_log (id, stake_id, texto, veredicto, modelo, created_at) VALUES (?, ?, ?, ?, ?, ?)").bind(logId, stakeId, texto, verdict, model, now);
-  if (verdict !== "pasa") {
-    await log.run();
-    return json({ ok: true, veredicto: verdict, apelable: true });
-  }
-  const stake = env.DB.prepare("INSERT INTO club_stake (id, challenge_id, forma, texto, propuesto_por, moderacion, created_at) VALUES (?, ?, ?, ?, ?, 'aprobada', ?)").bind(stakeId, challengeId, forma as Forma, texto, session.userId, now);
-  await env.DB.batch([log, stake]);
-  return json({ ok: true, veredicto: "pasa", stakeId });
+  const stake = env.DB.prepare("INSERT INTO club_stake (id, challenge_id, forma, texto, propuesto_por, moderacion, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(stakeId, challengeId, forma as Forma, texto, session.userId, verdict === "pasa" ? "aprobada" : "rechazada", now);
+  await env.DB.batch([stake, log]);
+  return verdict === "pasa"
+    ? json({ ok: true, veredicto: "pasa", stakeId })
+    : json({ ok: true, veredicto: verdict, apelable: true, stakeId });
 };

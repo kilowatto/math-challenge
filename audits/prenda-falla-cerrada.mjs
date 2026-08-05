@@ -3,7 +3,7 @@ const file = fs.readFileSync("apps/web/src/pages/api/larry/moderar.ts", "utf8");
 const required = [
   "if (!env.AI)",
   "moderacion_no_disponible",
-  "if (verdict !== \"pasa\")",
+  "verdict === \"pasa\" ? \"aprobada\" : \"rechazada\"",
   "stake_moderation_log",
   "club_stake",
 ];

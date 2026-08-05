@@ -21,6 +21,7 @@ if (!/REACCIONES_FAMILIA/.test(roster)) problems.push("las porras no usan el con
 if (!/invite_code/.test(link) || !/revoked_at/.test(link)) problems.push("el vínculo no tiene código revocable");
 if (!/revoked_by_user_id/.test(conflictMigration) || !/revoked_by_user_id/.test(link)) problems.push("la revocación no conserva quién resolvió el conflicto");
 if (!/meta\?\.changes/.test(link)) problems.push("la unión o la revocación no son atómicas");
+if (!/household_devices/.test(roster) || !/owner_user_id IN/.test(roster) || !/revoked_at/.test(roster)) problems.push("los dispositivos no están limitados al hogar ni son revocables");
 if (!/family_challenge/.test(challenge) || !/calificarRespuesta/.test(challenge)) problems.push("el reto familiar no se resuelve en servidor");
 if (!/reto_fuera_del_hogar/.test(challenge) || !/set_alterado/.test(challenge)) problems.push("el reto familiar no valida hogar y set congelado");
 if (!/crear-semanal/.test(challenge) || !/kind/.test(challenge) || !/weekly/.test(conflictMigration)) problems.push("faltan modalidad semanal y registro de modalidad");

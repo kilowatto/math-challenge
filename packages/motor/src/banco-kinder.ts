@@ -122,7 +122,7 @@ const rango = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i)
  * `validarItem` no lo puede ver: compara cada error contra la respuesta, nunca
  * contra los otros errores. Por eso existe esta función y su auditor.
  */
-const sinColision = (errores: Array<{ valor: number | string; causa: string }>) =>
+const sinColision = <T extends number | string>(errores: Array<{ valor: T; causa: string }>) =>
   errores.filter((e, i, arr) => arr.findIndex((x) => String(x.valor) === String(e.valor)) === i);
 
 // ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ export const K11: Plantilla = {
     };
   },
   parametros() {
-    const out: Array<{ params: Record<string, number>; variacion: string }> = [];
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
     // El rango va hasta 10 y NO se corta en 5: `1+7` y `7+1` son el mismo
     // resultado y **no la misma tarea** — la estrategia de contar desde el mayor
     // solo se ve cuando el mayor cambia de lado. Con `a,b ≤ 5` esa asimetría no
@@ -237,7 +237,7 @@ export const K12: Plantilla = {
     };
   },
   parametros() {
-    const out: Array<{ params: Record<string, number>; variacion: string }> = [];
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
     for (const a of rango(2, 10)) {
       for (const b of rango(1, a - 1)) {
         for (const ctx of [0, 1, 2]) out.push({
@@ -452,7 +452,7 @@ export const K10: Plantilla = {
     };
   },
   parametros() {
-    const out: Array<{ params: Record<string, number>; variacion: string }> = [];
+    const out: Array<{ params: Record<string, number>; variacion: Variacion }> = [];
     // El 2 también se descompone (1 y 1). Sin él la habilidad empezaba en 3 y
     // se quedaba en 44 ítems, uno por debajo de #153.
     for (const total of rango(2, 10)) {

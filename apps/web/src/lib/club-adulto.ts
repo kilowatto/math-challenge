@@ -60,8 +60,19 @@ export async function solicitarAdolescente(db: D1Database, parentUserId: string,
   if (!adolescentePuedeEntrar(child.theme_band)) return { ok: false as const, motivo: "banda_no_admitida" };
   const count = await db.prepare("SELECT COUNT(*) AS n FROM adult_club_membership WHERE adult_club_id = ? AND left_at IS NULL").bind(club.id).first<{ n: number }>();
   if (Number(count?.n ?? 0) >= club.max_size) return { ok: false as const, motivo: "club_lleno" };
-  await db.prepare("INSERT INTO adult_club_membership (id, adult_club_id, child_profile_id, approved_by, approved_at, joined_at) VALUES (?, ?, ?, ?, ?, ?)")
-    .bind(crypto.randomUUID(), club.id, child.id, parentUserId, ahora, ahora).run();
+  const consent = await db.prepare("SELECT current_version FROM consent_type_catalog WHERE code = 'CHILD_ADULT_CLUB_JOIN'").first<{ current_version: string }>();
+  if (!consent?.current_version) return { ok: false as const, motivo: "consentimiento_no_configurado" };
+  const existingConsent = await db.prepare("SELECT revoked_at FROM child_consents WHERE child_profile_id = ? AND consent_code = 'CHILD_ADULT_CLUB_JOIN'").bind(child.id).first<{ revoked_at: number | null }>();
+  const statements = [];
+  if (existingConsent) {
+    if (existingConsent.revoked_at !== null) {
+      statements.push(db.prepare("UPDATE child_consents SET granted_by = ?, granted_at = ?, consent_version = ?, revoked_at = NULL WHERE child_profile_id = ? AND consent_code = 'CHILD_ADULT_CLUB_JOIN'").bind(parentUserId, ahora, consent.current_version, child.id));
+    }
+  } else {
+    statements.push(db.prepare("INSERT INTO child_consents (child_profile_id, consent_code, consent_version, granted_by, granted_at) VALUES (?, 'CHILD_ADULT_CLUB_JOIN', ?, ?, ?)").bind(child.id, consent.current_version, parentUserId, ahora));
+  }
+  statements.push(db.prepare("INSERT INTO adult_club_membership (id, adult_club_id, child_profile_id, approved_by, approved_at, joined_at) VALUES (?, ?, ?, ?, ?, ?)").bind(crypto.randomUUID(), club.id, child.id, parentUserId, ahora, ahora));
+  await db.batch(statements);
   return { ok: true as const, id: club.id };
 }
 

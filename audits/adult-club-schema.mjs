@@ -4,6 +4,8 @@ import { RAIZ, informar, sqlSinComentarios } from "./lib/repo.mjs";
 
 const archivo = "migrations/0022_clubs_adultos.sql";
 const sql = sqlSinComentarios(readFileSync(`${RAIZ}/${archivo}`, "utf8"));
+const consentMigration = sqlSinComentarios(readFileSync(`${RAIZ}/migrations/0025_consent_club_adolescente.sql`, "utf8"));
+const clubRuntime = readFileSync(`${RAIZ}/apps/web/src/lib/club-adulto.ts`, "utf8");
 const tablas = [
   "adult_club",
   "adult_club_membership",
@@ -24,6 +26,7 @@ if (!/max_size INTEGER NOT NULL DEFAULT 20 CHECK \(max_size BETWEEN 1 AND 20\)/i
 if (!/expires_at - starts_at <= 259200/i.test(sql)) problemas.push("falta el máximo estructural de 72 horas");
 if (!/\(\(user_id IS NOT NULL\) <> \(child_profile_id IS NOT NULL\)\)/i.test(sql)) problemas.push("membresía no es polimórfica XOR");
 if (!/adult_club_membership[\s\S]*approved_by[\s\S]*approved_at/i.test(sql)) problemas.push("falta aprobación parental en membresía");
+if (!/CHILD_ADULT_CLUB_JOIN/.test(consentMigration) || !/child_consents/.test(clubRuntime)) problemas.push("membresía adolescente sin consentimiento D-051");
 for (const ruta of [
   "apps/web/src/pages/api/clubes/crear.ts",
   "apps/web/src/pages/api/clubes/unirse.ts",

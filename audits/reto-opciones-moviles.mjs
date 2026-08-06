@@ -9,6 +9,9 @@ const problemas = [];
 const notas = [];
 
 if (!/closest\(["']button, a, input, select, textarea["']\)/.test(pantalla)) problemas.push("la guardia touchstart no excluye controles interactivos");
+if (!/function activarConToque\s*\(/.test(pantalla) || !/activarConToque\(b,\s*\(\) => elegir\(/.test(pantalla)) {
+  problemas.push("las opciones del reto no tienen una ruta explícita de activación táctil");
+}
 if (!/@media\s*\(max-width:\s*400px\)[\s\S]*?\.opciones\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)/.test(css)) problemas.push("el reto móvil no fija dos columnas para las opciones");
 if (!/\.opciones\s*\.opcion\s*\{[^}]*min-inline-size:\s*0/.test(css)) problemas.push("las opciones móviles no permiten encoger su columna");
 

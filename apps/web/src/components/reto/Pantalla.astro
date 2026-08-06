@@ -598,7 +598,7 @@ const {
     }
 
     if ($descansoSeguir) {
-      $descansoSeguir.addEventListener("click", () => {
+      activarConToque($descansoSeguir, () => {
         $descanso.hidden = true;
         // Volver al juego donde estaba: si el veredicto estaba en pantalla,
         // el foco regresa a «Siguiente»; si no, a la primera opción.
@@ -763,14 +763,14 @@ const {
     }
 
     if ($vozEscuchar) {
-      $vozEscuchar.addEventListener("click", () => {
+      activarConToque($vozEscuchar, () => {
         decir($enunciado.textContent, true);
       });
     }
     if ($vozConmutar) {
       $vozConmutar.textContent = leerSolo ? rotulos.vozActivada : rotulos.vozDesactivada;
       $vozConmutar.setAttribute("aria-pressed", leerSolo ? "true" : "false");
-      $vozConmutar.addEventListener("click", () => {
+      activarConToque($vozConmutar, () => {
         leerSolo = !leerSolo;
         try {
           localStorage.setItem(VOZ_CLAVE, leerSolo ? "1" : "0");
@@ -825,6 +825,38 @@ const {
      * tocarla.
      */
     const dueloId = new URLSearchParams(location.search).get("duelo");
+
+    /**
+     * Activa los controles también en WebKit móvil, donde la síntesis de
+     * `click` puede retrasarse o no llegar después de un gesto táctil.
+     * `pointerdown`/`touchstart` dan respuesta inmediata; la ventana corta
+     * evita que el `pointerup`/`touchend` y el `click` sintético ejecuten la
+     * acción dos veces. El `click` queda como ruta de teclado y ratón.
+     */
+    function activarConToque(elemento, accion) {
+      let ultimaActivacion = 0;
+      const activar = (evento) => {
+        const ahora = Date.now();
+        if (ahora - ultimaActivacion < 500) {
+          if (evento.type !== "click") {
+            evento.preventDefault();
+            evento.stopPropagation();
+          }
+          return;
+        }
+        ultimaActivacion = ahora;
+        if (evento.type !== "click") {
+          evento.preventDefault();
+          evento.stopPropagation();
+        }
+        accion();
+      };
+      elemento.addEventListener("pointerdown", activar, { passive: false });
+      elemento.addEventListener("touchstart", activar, { passive: false });
+      elemento.addEventListener("pointerup", activar);
+      elemento.addEventListener("touchend", activar, { passive: false });
+      elemento.addEventListener("click", activar);
+    }
 
     const cajita = (clase, texto) => {
       const e = document.createElement("span");
@@ -890,7 +922,7 @@ const {
       boton.textContent = rotulos.verlo;
 
       let visto = false;
-      boton.addEventListener("click", () => {
+      activarConToque(boton, () => {
         $escena.replaceChildren();
         $escena.dataset.disposicion = String(v.disposicion ?? "linea");
         for (let i = 0; i < n; i++) {
@@ -961,7 +993,7 @@ const {
             // nombre N veces y quien cuenta con lector no sabe cuál ya tocó.
             b.setAttribute("aria-label", `${rotulos.mirar}: ${i + 1}`);
             b.textContent = glifo;
-            b.addEventListener("click", () => {
+            activarConToque(b, () => {
               b.setAttribute(
                 "aria-pressed",
                 b.getAttribute("aria-pressed") === "true" ? "false" : "true",
@@ -1067,7 +1099,7 @@ const {
         } else {
           b.textContent = o.texto;
         }
-        b.addEventListener("click", () => elegir(o.valor, b));
+        activarConToque(b, () => elegir(o.valor, b));
         $opciones.append(b);
       }
       if ($pista) $pista.hidden = item.opciones.length === 0;
@@ -1358,8 +1390,8 @@ const {
       $opciones.querySelector("button")?.focus();
     }
 
-    $confirmar.addEventListener("click", confirmar);
-    $reintentar.addEventListener("click", reintentar);
-    $siguiente.addEventListener("click", siguiente);
+    activarConToque($confirmar, confirmar);
+    activarConToque($reintentar, reintentar);
+    activarConToque($siguiente, siguiente);
     siguiente();
   </script>

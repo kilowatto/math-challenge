@@ -826,6 +826,33 @@ const {
      */
     const dueloId = new URLSearchParams(location.search).get("duelo");
 
+    // Diagnóstico puntual de interacción: se activa solo con `?debug=touch`
+    // para no llenar la consola ni enviar telemetría del niño en uso normal.
+    const depurarToques = new URLSearchParams(location.search).get("debug") === "touch";
+    if (depurarToques) {
+      const eventos = ["pointerdown", "pointerup", "touchstart", "touchend", "mousedown", "mouseup", "click"];
+      for (const tipo of eventos) {
+        document.addEventListener(tipo, (evento) => {
+          const objetivo = evento.target instanceof Element
+            ? evento.target.closest("button, a, input, select, textarea")
+            : null;
+          if (!objetivo) return;
+          const toque = "touches" in evento && evento.touches?.[0];
+          console.debug("[reto-interaccion]", {
+            tipo,
+            objetivo: `${objetivo.tagName.toLowerCase()}#${objetivo.id || "-"}.${objetivo.className || "-"}`,
+            pointerType: "pointerType" in evento ? evento.pointerType : undefined,
+            botones: "buttons" in evento ? evento.buttons : undefined,
+            defaultPrevented: evento.defaultPrevented,
+            x: toque?.clientX ?? evento.clientX,
+            y: toque?.clientY ?? evento.clientY,
+            timestamp: Math.round(performance.now()),
+          });
+        }, { capture: true, passive: tipo !== "touchstart" && tipo !== "touchend" });
+      }
+      console.info("[reto-interaccion] diagnóstico activo; eventos:", eventos.join(", "));
+    }
+
     /**
      * Activa los controles también en WebKit móvil, donde la síntesis de
      * `click` puede retrasarse o no llegar después de un gesto táctil.

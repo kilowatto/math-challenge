@@ -51,6 +51,11 @@ export default defineConfig({
   site: "https://math.kilowatto.com",
   adapter: cloudflare({
     imageService: "compile",
+    // El sitio se compila como estático y no necesita levantar el proxy local
+    // de bindings durante `astro build`. En CI/entornos sin un puerto local
+    // disponible ese proxy falla con `getaddrinfo ENOTFOUND localhost`; las
+    // rutas dinámicas siguen recibiendo sus bindings en el Worker desplegado.
+    platformProxy: { enabled: false },
     // El limitador de tasa es un Durable Object, y un DO tiene que ser una
     // exportación con nombre del módulo raíz del Worker — no puede vivir dentro
     // de una ruta de Astro. `namedExports` es lo que impide que el empaquetado
@@ -110,6 +115,10 @@ export default defineConfig({
     // La SECRETA no está en esta lista y no debe estarlo: vive en
     // `wrangler secret put` y solo la ve el servidor.
     envPrefix: ["PUBLIC_", "TURNSTILE_SITE_"],
+    // Este entorno no publica `localhost` en DNS; Vite intenta resolverlo al
+    // sincronizar colecciones incluso durante un build estático. Usar el
+    // loopback numérico evita esa dependencia sin exponer el servidor.
+    server: { host: "127.0.0.1" },
     build: {
       // El presupuesto de bundle lo hace cumplir audits/bundle-budget.mjs.
       // Este aviso es la señal temprana, antes de que el auditor bloquee.

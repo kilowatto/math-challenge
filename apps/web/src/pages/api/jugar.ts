@@ -51,6 +51,7 @@ import {
   nivelSemilla,
   nivelDeHabilidad,
   dificultadDeNivel,
+  FALLOS_ANTES_DE_BAJAR,
   type Candidato,
 } from "../../../../../packages/motor/src/adaptativo.ts";
 import {
@@ -78,7 +79,7 @@ import {
 } from "../../lib/duelo-superficie";
 import { limiteAlServir, limiteAlResponder } from "../../lib/limite-dia";
 import { registrarAvanceDeHoy } from "../../lib/misiones-dia";
-import { escribirNotaPatronInusual } from "../../lib/nota-anti-trampa";
+import { escribirNotaPatronInusual, escribirNotaHabilidadPausada } from "../../lib/nota-anti-trampa";
 import { bancoPrimariaD1 } from "../../lib/banco-primaria";
 import { bancoAdultoD1 } from "../../lib/banco-adulto";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "../../i18n";
@@ -375,7 +376,7 @@ function estadoDe(resumen: Resumen[], skillId: string, semilla: number) {
     estado: {
       habilidad: fila.habilidad,
       respondidos: fila.respondidos,
-      fallosSeguidos: 0,
+      fallosSeguidos: fila.fallosSeguidos ?? 0,
       ultimosNiveles: [],
     },
     ubicando: fila.ubicando,
@@ -740,6 +741,11 @@ async function recibirRespuesta(
 
   const kUsado = kPara(estado.respondidos, estaUbicando(estado));
   const despues = actualizar(estado, { dificultad, correcto, nivel: veredicto.nivel });
+  const disparaDescensoLateral =
+    !reintento &&
+    !correcto &&
+    estado.fallosSeguidos < FALLOS_ANTES_DE_BAJAR &&
+    despues.fallosSeguidos >= FALLOS_ANTES_DE_BAJAR;
 
   // ─── El modelo ───────────────────────────────────────────────────────────
   //
@@ -815,6 +821,15 @@ async function recibirRespuesta(
     }
   } catch {
     // Silencio a propósito: la telemetría nunca interrumpe a un niño.
+  }
+  // La nota diagnóstica no depende de Analytics Engine: es un contrato D1
+  // padre→F8 y debe persistir aunque la telemetría falle.
+  if (disparaDescensoLateral && !quien.esAdulto && env.DB) {
+    try {
+      await escribirNotaHabilidadPausada(env.DB, childProfileId, veredicto.habilidad, Date.now());
+    } catch {
+      // El juego sigue; la telemetría y la nota son mejoras no bloqueantes.
+    }
   }
 
   /*

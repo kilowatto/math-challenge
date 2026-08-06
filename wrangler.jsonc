@@ -327,6 +327,11 @@
     // decimal, pt-BR y pt-PT no comparten escala numérica (mc-34, D-022).
     "SUPPORTED_LOCALES": "en,es-MX,es-ES,fr-FR,pt-BR,pt-PT,de-DE",
     "DEFAULT_LOCALE": "en",
+    // F6 #136: cinturón de seguridad en dólares delante de Workers AI. El
+    // límite pedagógico por perfil sigue en el Durable Object; este Gateway
+    // autentica la llamada, no conserva prompts ni respuestas y no cachea
+    // explicaciones de menores.
+    "AI_GATEWAY_ID": "math-challenge-tutor-gateway",
     // La llave PÚBLICA VAPID del recordatorio push (#207). Es pública por
     // diseño — viaja al navegador al suscribirse—; la privada vive en
     // `wrangler secret` (VAPID_PRIVATE_KEY) y jamás en este archivo.

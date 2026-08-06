@@ -102,6 +102,8 @@ export interface Resumen {
    */
   habilidad: number;
   respondidos: number;
+  /** Fallos consecutivos; permite detectar el descenso lateral sin recalcularlo. */
+  fallosSeguidos: number;
 }
 
 const PREFIJO = "hab:";
@@ -199,6 +201,7 @@ export class Aprendiz {
       venceEn: fila.repaso.venceEn,
       habilidad: fila.habilidad.habilidad,
       respondidos: fila.habilidad.respondidos,
+      fallosSeguidos: fila.habilidad.fallosSeguidos,
     };
   }
 }

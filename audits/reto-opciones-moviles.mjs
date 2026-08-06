@@ -5,7 +5,7 @@ import { leer, informar, sinComentarios } from "./lib/repo.mjs";
 
 const pantalla = sinComentarios(leer("apps/web/src/components/reto/Pantalla.astro") ?? "");
 const css = sinComentarios(leer("apps/web/src/styles/reto.css") ?? "");
-const sendero = sinComentarios(leer("apps/web/src/components/racha/SenderoRacha.astro") ?? "");
+const mapaCss = sinComentarios(leer("apps/web/src/styles/mapa.css") ?? "");
 const problemas = [];
 const notas = [];
 
@@ -15,7 +15,7 @@ if (!/function activarConToque\s*\(/.test(pantalla) || !/activarConToque\(b,\s*\
 }
 if (!/@media\s*\(max-width:\s*400px\)[\s\S]*?\.opciones\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)/.test(css)) problemas.push("el reto móvil no fija dos columnas para las opciones");
 if (!/\.opciones\s*\.opcion\s*\{[^}]*min-inline-size:\s*0/.test(css)) problemas.push("las opciones móviles no permiten encoger su columna");
-if (!/\.sendero\s*\{[^}]*position:\s*static[^}]*pointer-events:\s*none/.test(sendero)) {
+if (!/\.sendero-racha\s*>\s*\.sendero\s*\{[^}]*position:\s*static[^}]*pointer-events:\s*none/.test(mapaCss)) {
   problemas.push("el indicador de racha puede cubrir la pantalla y capturar los clics/toques de las opciones");
 }
 

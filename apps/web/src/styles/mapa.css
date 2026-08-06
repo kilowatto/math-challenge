@@ -98,6 +98,29 @@
   inset: 0;
 }
 
+/*
+ * El sendero del MAPA ocupa su escena completa. El de la RACHA reutiliza el
+ * mismo marcado fuera de `.sabana`, en la cabecera del reto, y es solo un
+ * indicador: si conserva el absoluto anterior se vuelve una lámina
+ * transparente sobre toda la pantalla y se come cada clic/toque.
+ */
+.sendero-racha > .sendero {
+  position: static;
+  inset: auto;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: calc(var(--space) / 2);
+  pointer-events: none;
+}
+
+.sendero-racha > .sendero > .sendero__lugar {
+  position: relative;
+  transform: none;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
 .sendero__lugar {
   position: relative;
   inline-size: var(--tap-kinder);

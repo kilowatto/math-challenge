@@ -108,31 +108,3 @@ const pasos: Paso[] =
     ))
   }
 </ol>
-
-<style>
-  /*
-   * `mapa.css` hace que `.sendero` cubra con `position: absolute; inset: 0`
-   * toda la escena de la Sabana. Esta versión vive fuera de `.sabana`, en la
-   * cabecera del reto: si hereda esa geometría, el <ol> transparente cubre la
-   * pantalla completa y recibe los clics/toques destinados a las respuestas.
-   *
-   * Aquí es solo un indicador de racha, nunca un control. Lo devolvemos al
-   * flujo y lo sacamos explícitamente del hit testing.
-   */
-  .sendero {
-    position: static;
-    inset: auto;
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: calc(var(--space) / 2);
-    pointer-events: none;
-  }
-
-  .sendero__lugar {
-    position: relative;
-    transform: none;
-    flex: 0 0 auto;
-    pointer-events: none;
-  }
-</style>

@@ -1,0 +1,34 @@
+---
+export const prerender = false;
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale = raw as Locale;
+const env = (Astro.locals as { runtime?: { env?: { DB?: D1Database; SESSION_KV?: KVNamespace } } }).runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+const sesion = env?.SESSION_KV ? await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]) : null;
+if (!sesion) return Astro.redirect(`/${locale}/app/`);
+const clubs = env?.DB ? (await env.DB.prepare("SELECT c.id, c.name_key, c.join_code, COUNT(m.id) AS members, c.max_size FROM adult_club c JOIN adult_club_membership m ON m.adult_club_id = c.id AND m.left_at IS NULL WHERE EXISTS (SELECT 1 FROM adult_club_membership mine WHERE mine.adult_club_id = c.id AND mine.user_id = ? AND mine.left_at IS NULL) GROUP BY c.id ORDER BY c.created_at").bind(sesion.userId).all<{ id: string; name_key: string; join_code: string; members: number; max_size: number }>()).results ?? [] : [];
+Astro.response.headers.set("cache-control", "no-store, private");
+Astro.response.headers.set("x-robots-tag", "noindex, nofollow");
+---
+<Privada locale={locale} title="Clubs" description="Clubs de adultos">
+  <main class="clubes">
+    <h1>Clubs</h1>
+    <p>Retos entre personas conocidas. Los puntos de estos retos no cambian el tablero global.</p>
+    <nav class="acciones" aria-label="Acciones de clubs">
+      <a href={`/${locale}/app/clubes/nuevo/`}>Crear un club</a>
+      <a href={`/${locale}/app/clubes/unirse/`}>Unirme con un código</a>
+    </nav>
+    <ul>{clubs.map((club) => <li><a href={`/${locale}/app/clubes/${club.id}/`}>{club.name_key} · {club.members}/{club.max_size}</a></li>)}</ul>
+  </main>
+</Privada>
+<style>
+  .clubes { max-width: 42rem; margin-inline: auto; padding-block: 2rem; } h1 { color: var(--color-text-brand); }
+  .acciones { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: 1.5rem; }
+  a { min-height: 44px; display: inline-flex; align-items: center; padding: .65rem 1rem; border: 1px solid var(--color-border); border-radius: var(--radius); color: var(--color-text); }
+  li { margin-block: .75rem; }
+</style>

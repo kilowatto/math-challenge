@@ -307,7 +307,7 @@ export async function verificarAutenticacion(opts: {
   | { ok: false; motivo: string }
 > {
   const cliente = await comprobarCliente(opts.clientDataJSON, opts.retoEsperado, "webauthn.get");
-  if (!cliente.ok) return cliente;
+  if (cliente.ok === false) return { ok: false, motivo: cliente.motivo };
 
   const authData = b64urlABytes(opts.authenticatorData);
   const leido = leerAuthData(authData);
@@ -326,7 +326,7 @@ export async function verificarAutenticacion(opts: {
 
   // Lo firmado es `authData ‖ SHA-256(clientDataJSON)`.
   const hashCliente = new Uint8Array(
-    await crypto.subtle.digest("SHA-256", b64urlABytes(opts.clientDataJSON)),
+    await crypto.subtle.digest("SHA-256", b64urlABytes(opts.clientDataJSON) as unknown as BufferSource),
   );
   const firmado = new Uint8Array(authData.length + hashCliente.length);
   firmado.set(authData, 0);

@@ -410,7 +410,7 @@ const CASOS = [
     que: "una opción de cadena que se serviría como su identificador interno",
     archivo: "packages/motor/src/banco-kinder.ts",
     parche: (t) => t.replace("      dibujos,\n", "      dibujos: {},\n"),
-    espera: "K13 · opción servida como su identificador",
+    espera: "banco NO se construye",
   },
   {
     // #347, tal cual ocurrió: un glifo escrito en la pantalla es una segunda
@@ -1639,7 +1639,7 @@ const CASOS = [
     // en silencio de siempre.
     auditor: "migration-safety",
     que: "un hueco de numeración que nadie declaró",
-    archivo: "migrations/0023_prueba_hueco.sql",
+    archivo: "migrations/0030_prueba_hueco.sql",
     contenido: "CREATE TABLE prueba_hueco (id TEXT PRIMARY KEY);\n",
     espera: "hueco en la numeración",
   },
@@ -2423,7 +2423,7 @@ const CASOS = [
           '        { valor: a + b + 1, causa: "error.conto_uno_dos_veces" },',
           '        { valor: a + b - 1, causa: "error.conto_uno_dos_veces" },',
         ),
-    espera: "mismo valor",
+    espera: "banco NO se construye",
   },
   {
     // La causa borrada que vuelve. La tabla BORRADAS se copió a mano del
@@ -2637,6 +2637,34 @@ const CASOS = [
         "`/app/kids/pin?p=${encodeURIComponent(id)}`",
       ),
     espera: "literal",
+  },
+  {
+    auditor: "prenda-sin-perdedor",
+    que: "la migración añade una columna de perdedor a la prenda",
+    archivo: "migrations/0022_clubs_adultos.sql",
+    parche: (t) => t.replace("  created_at INTEGER NOT NULL\n);", "  created_at INTEGER NOT NULL,\n  loser_membership_id TEXT\n);"),
+    espera: "perdedor",
+  },
+  {
+    auditor: "prenda-sin-perdedor",
+    que: "la aceptación deja de estar limitada a users.id",
+    archivo: "migrations/0022_clubs_adultos.sql",
+    parche: (t) => t.replace("  user_id TEXT NOT NULL REFERENCES users(id)", "  user_id TEXT NOT NULL"),
+    espera: "users.id",
+  },
+  {
+    auditor: "prenda-falla-cerrada",
+    que: "Larry publica aunque el modelo no existe",
+    archivo: "apps/web/src/pages/api/larry/moderar.ts",
+    parche: (t) => t.replace("if (!env.AI)", "if (false)"),
+    espera: "if (!env.AI)",
+  },
+  {
+    auditor: "club-sin-chat",
+    que: "la pantalla de club añade una superficie de chat",
+    archivo: "apps/web/src/pages/[locale]/app/clubes/index.astro",
+    parche: (t) => `${t}\n<p>chat</p>\n`,
+    espera: "superficie de mensajería",
   },
 ];
 

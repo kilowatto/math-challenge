@@ -1,0 +1,76 @@
+---
+import { LOCALES, isLocale, t, type Locale } from "../../../i18n";
+import { leerSesionAdulto, COOKIE_ADULTO, leerCookies } from "../../../lib/sesiones";
+import { rutaCasa, rutaFamilia } from "../../../lib/rutas-app";
+
+export const prerender = false;
+export function getStaticPaths() { return LOCALES.map((locale) => ({ params: { locale } })); }
+const rawLocale = Astro.params.locale;
+if (!isLocale(rawLocale)) return Astro.redirect("/en/");
+const locale: Locale = rawLocale;
+const env = (Astro.locals as any).runtime?.env;
+const session = env?.SESSION_KV ? await leerSesionAdulto(env.SESSION_KV, leerCookies(Astro.request.headers.get("cookie"))[COOKIE_ADULTO]) : null;
+if (!session) return Astro.redirect(rutaCasa(locale));
+const m = t(locale);
+---
+<!doctype html>
+<html lang={locale}>
+  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><title>Núcleo familiar · Math Challenge</title></head>
+  <body>
+    <main>
+      <p><a href={rutaCasa(locale)}>← Cuenta</a></p>
+      <h1>Núcleo familiar</h1>
+      <p>Las personas adultas y los perfiles de niños aparecen en listas separadas.</p>
+      <section aria-labelledby="adultos"><h2 id="adultos">Personas adultas</h2><ul id="lista-adultos"><li>Cargando…</li></ul></section>
+      <section aria-labelledby="ninos"><h2 id="ninos">Perfiles de niños</h2><ul id="lista-ninos"><li>Cargando…</li></ul></section>
+      <section aria-labelledby="dispositivos"><h2 id="dispositivos">Dispositivos del hogar</h2><ul id="lista-dispositivos"><li>Cargando…</li></ul><p id="dispositivo-estado" role="status"></p></section>
+      <section aria-labelledby="tabla-semanal"><h2 id="tabla-semanal">Tabla semanal de adultos</h2><ul id="tabla-adultos"><li>Cargando…</li></ul><h2>Tabla semanal de niños</h2><ul id="tabla-ninos"><li>Cargando…</li></ul></section>
+      <section aria-labelledby="retos"><h2 id="retos">Retos familiares</h2><button id="crear-reto">Crear reto del día</button> <button id="crear-semanal">Crear tabla semanal</button><label for="duelo-destino">Duelo contra</label><select id="duelo-destino"><option value="">Elige una persona</option></select><button id="crear-duelo">Crear duelo 1:1</button><p id="reto-estado" role="status"></p><ul id="lista-retos"><li>Cargando…</li></ul></section>
+      <section aria-labelledby="vinculo"><h2 id="vinculo">Vincular otro padre</h2><button id="crear">Crear código</button><output id="codigo" aria-live="polite"></output><form id="unirse"><label>Código <input name="codigo" inputmode="text" maxlength="6" autocomplete="one-time-code" /></label><button>Unirse</button></form><p id="estado" role="status"></p></section>
+      <section aria-labelledby="porras"><h2 id="porras">Porras en casa</h2><p>Elige una reacción cerrada para animar a otra persona del hogar.</p><div id="lista-porras"><p>Cargando…</p></div><p id="porra-estado" role="status"></p></section>
+    </main>
+    <script>
+      const estado = document.querySelector("#estado");
+      const cargarRetos = async () => {
+        const r = await fetch("/api/familia-reto", { headers: { accept: "application/json" } });
+        if (!r.ok) return;
+        const data = await r.json() as { retos?: Array<{ id: string; kind: string; participants: string[] }> };
+        document.querySelector("#lista-retos")?.replaceChildren(...(data.retos ?? []).map((x) => { const li = document.createElement("li"); const enlace = document.createElement("a"); enlace.href = `/__LOCALE__/app/familia/reto/${encodeURIComponent(x.id)}`.replace("__LOCALE__", document.documentElement.lang); enlace.textContent = `Abrir ${x.kind === "weekly" ? "tabla semanal" : "reto"} ${x.id.slice(0, 8)} · ${x.participants.length} participantes`; li.appendChild(enlace); return li; }));
+      };
+      const cargar = async () => {
+        const r = await fetch("/api/familia", { headers: { accept: "application/json" } });
+        if (!r.ok) return;
+        const data = await r.json() as { adults?: Array<{ id: string; alias?: string }>; children?: Array<{ id: string; alias: string }>; pending?: { invite_code?: string }; linkActivo?: { id: string }; householdDevices?: Array<{ device_token: string; label: string; owner_user_id: string }>; currentDeviceToken?: string; weeklyAdults?: Array<{ alias?: string; precision: number }>; weeklyChildren?: Array<{ alias?: string; precision: number }> };
+        document.querySelector("#lista-adultos")?.replaceChildren(...(data.adults ?? []).map((x) => { const li = document.createElement("li"); li.textContent = x.alias || "Persona adulta"; return li; }));
+        document.querySelector("#lista-ninos")?.replaceChildren(...(data.children ?? []).map((x) => { const li = document.createElement("li"); li.textContent = x.alias; return li; }));
+        document.querySelector("#lista-dispositivos")?.replaceChildren(...(data.householdDevices ?? []).map((x) => { const li = document.createElement("li"); const label = document.createElement("span"); label.textContent = `${x.label}${x.device_token === data.currentDeviceToken ? " · este dispositivo" : ""}`; li.appendChild(label); const boton = document.createElement("button"); boton.type = "button"; boton.textContent = "Revocar"; boton.addEventListener("click", async () => { const respuesta = await fetch("/api/familia", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "revocar-dispositivo", deviceToken: x.device_token }) }); document.querySelector("#dispositivo-estado").textContent = respuesta.ok ? "Dispositivo revocado." : "No se pudo revocar."; if (respuesta.ok) cargar(); }); li.appendChild(boton); return li; }));
+        if (data.pending?.invite_code) document.querySelector("#codigo").textContent = ` Código: ${data.pending.invite_code}`;
+        const vinculo = document.querySelector("#vinculo");
+        if (data.linkActivo && vinculo && !vinculo.querySelector("[data-revocar]")) {
+          const boton = document.createElement("button"); boton.type = "button"; boton.dataset.revocar = "1"; boton.textContent = "Revocar vínculo";
+          boton.addEventListener("click", async () => { const respuesta = await fetch("/api/familia-vinculo?accion=revocar", { method: "POST" }); document.querySelector("#estado").textContent = respuesta.ok ? "Vínculo revocado." : "No se pudo revocar."; if (respuesta.ok) cargar(); });
+          vinculo.appendChild(boton);
+        }
+        document.querySelector("#tabla-adultos")?.replaceChildren(...(data.weeklyAdults ?? []).map((x) => { const li = document.createElement("li"); li.textContent = `${x.alias || "Persona adulta"} · ${(Number(x.precision) * 100).toFixed(0)}% de precisión`; return li; }));
+        document.querySelector("#tabla-ninos")?.replaceChildren(...(data.weeklyChildren ?? []).map((x) => { const li = document.createElement("li"); li.textContent = `${x.alias} · ${(Number(x.precision) * 100).toFixed(0)}% de precisión`; return li; }));
+        const destino = document.querySelector("#duelo-destino");
+        if (destino) destino.replaceChildren(new Option("Elige una persona", ""), ...(data.adults ?? []).filter((x) => x.id !== undefined).map((x) => new Option(x.alias || "Persona adulta", `adult:${x.id}`)), ...(data.children ?? []).map((x) => new Option(x.alias, `child:${x.id}`)));
+        const porras = document.querySelector("#lista-porras");
+        if (porras) {
+          porras.replaceChildren(...[...(data.adults ?? []), ...(data.children ?? [])].map((target) => {
+            const fila = document.createElement("div"); const nombre = document.createElement("strong"); nombre.textContent = target.alias || "Persona"; fila.appendChild(nombre);
+            for (const reaction of [["animo", "Ánimo"], ["bien_hecho", "Bien hecho"], ["vamos", "Vamos"]]) { const boton = document.createElement("button"); boton.type = "button"; boton.textContent = reaction[1]; boton.addEventListener("click", async () => { const kind = data.children?.some((child) => child.id === target.id) ? "child" : "adult"; const respuesta = await fetch("/api/familia", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ targetKind: kind, targetId: target.id, reaction: reaction[0] }) }); document.querySelector("#porra-estado").textContent = respuesta.ok ? "Porra enviada." : "No se pudo enviar."; }); fila.appendChild(boton); }
+            return fila;
+          }));
+        }
+      };
+      document.querySelector("#crear")?.addEventListener("click", async () => { const r = await fetch("/api/familia-vinculo?accion=crear", { method: "POST" }); const d = await r.json() as { codigo?: string }; const output = document.querySelector("#codigo"); if (output) output.textContent = d.codigo ? ` Código: ${d.codigo}` : " No se pudo crear."; });
+      document.querySelector("#crear-reto")?.addEventListener("click", async () => { const r = await fetch("/api/familia-reto?accion=crear", { method: "POST" }); const d = await r.json() as { id?: string; error?: string }; const salida = document.querySelector("#reto-estado"); if (salida) salida.textContent = d.id ? "Reto creado para la familia." : `No se pudo crear: ${d.error ?? "error"}.`; if (r.ok) cargarRetos(); });
+      document.querySelector("#crear-semanal")?.addEventListener("click", async () => { const r = await fetch("/api/familia-reto?accion=crear-semanal", { method: "POST" }); const d = await r.json() as { id?: string; error?: string }; const salida = document.querySelector("#reto-estado"); if (salida) salida.textContent = d.id ? "Tabla semanal creada para la familia." : `No se pudo crear: ${d.error ?? "error"}.`; if (r.ok) cargarRetos(); });
+      document.querySelector("#crear-duelo")?.addEventListener("click", async () => { const valor = (document.querySelector("#duelo-destino") as unknown as HTMLSelectElement | null)?.value ?? ""; const [targetKind, targetId] = valor.split(":"); const r = await fetch("/api/familia-reto?accion=crear-duelo", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ targetKind, targetId }) }); const d = await r.json() as { id?: string; error?: string }; const salida = document.querySelector("#reto-estado"); if (salida) salida.textContent = d.id ? "Duelo creado para la familia." : `No se pudo crear: ${d.error ?? "error"}.`; if (r.ok) cargarRetos(); });
+      document.querySelector("#unirse")?.addEventListener("submit", async (event) => { event.preventDefault(); const formulario = event.currentTarget as HTMLFormElement; const codigo = new FormData(formulario).get("codigo"); const r = await fetch("/api/familia-vinculo?accion=unirse", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ codigo }) }); estado.textContent = r.ok ? "Vínculo creado." : "No se pudo aceptar el código."; if (r.ok) cargar(); });
+      cargar();
+      cargarRetos();
+    </script>
+  </body>
+</html>

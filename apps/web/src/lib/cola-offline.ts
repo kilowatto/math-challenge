@@ -45,6 +45,7 @@ export interface IntentoPendiente {
   contestadoEn: number;
   /** Cuántas veces se ha intentado sincronizar. Para no reintentar para siempre. */
   intentos: number;
+  payload?: { url: string; body: string };
 }
 
 function abrir(): Promise<IDBDatabase> {

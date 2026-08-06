@@ -244,7 +244,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return json({ error: "eleccion_larga" }, 400);
   }
 
-  const locale: Locale = isLocale(cuerpo.locale) ? (cuerpo.locale as Locale) : DEFAULT_LOCALE;
+  const locale: Locale = typeof cuerpo.locale === "string" && isLocale(cuerpo.locale) ? cuerpo.locale : DEFAULT_LOCALE;
   const toques = typeof cuerpo.toques === "number" ? cuerpo.toques : 1;
 
   // ─── El servidor califica. Otra vez, y contra el banco ───────────────────

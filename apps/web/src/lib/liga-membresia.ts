@@ -664,9 +664,9 @@ export async function sumarPuntosEnGrupos(
         "p.alias, p.avatar_parts, p.theme_band, COALESCE(m.decided_at, m.requested_at) AS joined_at " +
         "FROM child_group_membership m " +
         "JOIN child_profiles p ON p.id = m.child_profile_id " +
-        "WHERE m.child_profile_id = ? AND m.status = 'approved' AND p.deleted_at IS NULL",
+        "WHERE m.child_profile_id = ? AND m.status = ? AND p.deleted_at IS NULL",
     )
-      .bind(quien.id)
+      .bind(quien.id, "approved")
       .all<FilaGrupoVisible>();
 
     await Promise.all((filas.results ?? []).map(async (fila) => {

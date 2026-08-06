@@ -343,6 +343,37 @@ const {
   */}
 
 
+  <script>
+    import { encolar, engancharVaciado } from "../../lib/cola-offline";
+
+    const offline = {
+      async encolarRespuesta(solicitud) {
+        try {
+          await encolar({ ...solicitud, contestadoEn: Date.now() });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      arrancar() {
+        engancharVaciado(async (intento) => {
+          if (!intento.payload) return false;
+          try {
+            const respuesta = await fetch(intento.payload.url, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: intento.payload.body,
+            });
+            return respuesta.ok;
+          } catch {
+            return false;
+          }
+        });
+      },
+    };
+
+    window.__mathChallengeOffline = offline;
+  </script>
   <script define:vars={{ locale, rotulos, salirA, habilidades, mostrarContexto, etiquetaVoz, habilidadFija }}>
     /**
      * El bucle. Pide, pinta, ELIGE, confirma, repite.
@@ -759,12 +790,20 @@ const {
     // que puede hacer una web.
     window.addEventListener("pagehide", () => sintesis?.cancel());
 
+    setTimeout(() => window.__mathChallengeOffline?.arrancar(), 0);
     const pedir = async (accion, cuerpo) => {
-      const r = await fetch(`/api/jugar?accion=${accion}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ locale, retoSesionId: cuerpo.retoSesionId ?? retoSesionId, ...cuerpo }),
-      });
+      const url = `/api/jugar?accion=${accion}`;
+      const body = JSON.stringify({ locale, retoSesionId: cuerpo.retoSesionId ?? retoSesionId, ...cuerpo });
+      let r;
+      try {
+        r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body });
+      } catch {
+        if (accion === "responder" && typeof cuerpo.itemId === "string" && Number.isInteger(cuerpo.orden) && typeof (cuerpo.retoSesionId ?? retoSesionId) === "string") {
+          const guardado = await window.__mathChallengeOffline?.encolarRespuesta({ sesionId: cuerpo.retoSesionId ?? retoSesionId, orden: cuerpo.orden, itemId: cuerpo.itemId, eleccion: cuerpo.eleccion, payload: { url, body } });
+          if (guardado) return { offline: true };
+        }
+        return null;
+      }
       if (r.status === 401) {
         // La sesión de niño dura 12 horas y pudo caducar mientras jugaba. Se
         // vuelve a la rejilla de caras, que es donde sabe volver a entrar —
@@ -1169,6 +1208,14 @@ const {
         orden: ordenActual,
       });
       mandando = false;
+      if (r?.offline) {
+        juzgado = true;
+        $veredictoQue.textContent = rotulos.pendiente;
+        $veredictoSiguiente.textContent = "";
+        $veredicto.hidden = false;
+        $siguiente.hidden = false;
+        return;
+      }
       if (!r) {
         // En duelo, una llamada fallida —incluido el 409 del turno que ya no
         // es— no se reintenta en pantalla: el progreso quedó en el servidor y

@@ -66,12 +66,6 @@ const siteKey =
           id="correo"
           name="correo"
           required
-          {/*
-            `username webauthn`, los dos valores separados por espacio, es lo que
-            le dice al navegador que puede ofrecer una passkey DENTRO de este
-            campo — en la misma lista donde ofrece los correos guardados. Sin el
-            `webauthn` no aparece, y no hay ningún otro modo de pedirlo.
-          */}
           autocomplete="username webauthn"
           inputmode="email"
           autocapitalize="none"

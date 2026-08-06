@@ -1,0 +1,23 @@
+---
+export const prerender = false;
+import Privada from "../../../../layouts/Privada.astro";
+import { isLocale, type Locale } from "../../../../i18n";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { nombresDeClub } from "../../../../../../../packages/motor/src/club-adulto.ts";
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+const locale = raw as Locale;
+const env = (Astro.locals as { runtime?: { env?: { SESSION_KV?: KVNamespace } } }).runtime?.env;
+const cookies = leerCookies(Astro.request.headers.get("cookie"));
+if (!env?.SESSION_KV || !(await leerSesionAdulto(env.SESSION_KV, cookies[COOKIE_ADULTO]))) return Astro.redirect(`/${locale}/app/`);
+---
+<Privada locale={locale} title="Crear un club" description="Crea un club de adultos">
+  <main class="formulario"><h1>Crear un club</h1><p>Elige un nombre generado. No se permite texto libre en el nombre.</p>
+    <form method="post" action="/api/clubes/crear">
+      <input type="hidden" name="locale" value={locale} />
+      <fieldset><legend>Nombre del club</legend>{nombresDeClub(locale).map((name, i) => <label><input type="radio" name="name_key" value={name} checked={i === 0} /> {name}</label>)}</fieldset>
+      <button type="submit">Crear club</button>
+    </form>
+  </main>
+</Privada>
+<style>.formulario { max-width: 34rem; margin-inline: auto; padding-block: 2rem; } fieldset { display: grid; gap: .75rem; border: 0; padding: 0; margin-block: 1.5rem; } label, button { min-height: 44px; } button { padding: .65rem 1rem; }</style>

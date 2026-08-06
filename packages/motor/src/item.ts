@@ -98,6 +98,7 @@ export interface OpcionDibujada {
 
 export interface Item {
   id: string;
+  rama?: string;
   /** La habilidad de la escalera: K01…K14 en kinder (plan §9). */
   habilidad: string;
   /** 1 a 12, la escalera de D-017. */

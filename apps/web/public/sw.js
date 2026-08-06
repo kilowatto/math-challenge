@@ -22,7 +22,7 @@
 // Subir esta versión invalida todo el caché anterior. Es deliberadamente
 // manual: un hash automático invalidaría en cada build aunque nada cambiara,
 // y en 4G lento eso son megabytes que el usuario vuelve a pagar sin razón.
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `shell-${VERSION}`;
 const RUNTIME = `runtime-${VERSION}`;
 
@@ -115,7 +115,11 @@ self.addEventListener("fetch", (event) => {
   // Nunca cachear rutas autenticadas ni API: un tablero o un perfil servidos
   // desde caché a la persona equivocada en un dispositivo compartido es un
   // problema de privacidad, no de rendimiento.
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/app/")) return;
+  // Las rutas privadas llevan locale (`/{locale}/app/...`), así que comprobar
+  // solo `/app/` dejaba que el service worker guardara HTML autenticado y,
+  // después de un despliegue, podía devolver una pantalla de reto vieja.
+  const esRutaPrivada = /^(?:\/app\/|\/[^/]+\/app(?:\/|$))/.test(url.pathname);
+  if (url.pathname.startsWith("/api/") || esRutaPrivada) return;
 
   if (isHTML(request)) {
     // Network-first: el contenido cambia y queremos el fresco cuando hay red.

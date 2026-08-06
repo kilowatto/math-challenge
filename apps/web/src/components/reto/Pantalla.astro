@@ -877,32 +877,23 @@ const {
     }
 
     /**
-     * Activa los controles también en WebKit móvil, donde la síntesis de
-     * `click` puede retrasarse o no llegar después de un gesto táctil.
-     * `pointerdown`/`touchstart` dan respuesta inmediata; la ventana corta
-     * evita que el `pointerup`/`touchend` y el `click` sintético ejecuten la
-     * acción dos veces. El `click` queda como ruta de teclado y ratón.
+     * Activa los controles también en WebKit móvil sin cancelar el gesto antes
+     * de tiempo. `pointerup`/`touchend` son la ruta táctil explícita y `click`
+     * queda para teclado y ratón; la ventana corta evita que ambos caminos
+     * ejecuten la acción dos veces. No usamos `preventDefault()` en la primera
+     * activación: Safari necesita poder sintetizar su `click` nativo.
      */
     function activarConToque(elemento, accion) {
       let ultimaActivacion = 0;
       const activar = (evento) => {
         const ahora = Date.now();
         if (ahora - ultimaActivacion < 500) {
-          if (evento.type !== "click") {
-            evento.preventDefault();
-            evento.stopPropagation();
-          }
+          if (evento.type !== "click") evento.preventDefault();
           return;
         }
         ultimaActivacion = ahora;
-        if (evento.type !== "click") {
-          evento.preventDefault();
-          evento.stopPropagation();
-        }
         accion();
       };
-      elemento.addEventListener("pointerdown", activar, { passive: false });
-      elemento.addEventListener("touchstart", activar, { passive: false });
       elemento.addEventListener("pointerup", activar);
       elemento.addEventListener("touchend", activar, { passive: false });
       elemento.addEventListener("click", activar);

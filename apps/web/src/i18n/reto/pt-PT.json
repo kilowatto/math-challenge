@@ -52,6 +52,7 @@
   "k.resta.patos": "Havia {a} patos. Foram-se {b}. Quantos ficam?",
   "k.formas.cual_sobra": "Qual é que não vai com os outros?",
   "juego.bien": "É isso!",
+  "juego.aciertos": ["Sim!", "Muito bem!", "Encontraste!", "Exactamente!", "Acertaste!", "Boa ideia!", "Está certo!", "Vamos continuar!"],
   "juego.otra": "Desta vez não. Vamos tentar outra vez.",
   "juego.siguiente": "Seguinte",
   "juego.salir": "Já terminei",

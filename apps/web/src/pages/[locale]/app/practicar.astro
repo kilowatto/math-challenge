@@ -90,6 +90,8 @@ const CATALOGOS: Record<string, Record<string, unknown>> = {
 const c = CATALOGOS[locale] ?? en;
 const texto = (clave: string, respaldo: string) =>
   typeof c[clave] === "string" ? (c[clave] as string) : respaldo;
+const lista = (clave: string, respaldo: string[]) =>
+  Array.isArray(c[clave]) ? (c[clave] as string[]) : respaldo;
 
 // Los mismos rótulos que el niño: es el mismo reto. Solo cambia «terminar»,
 // que aquí devuelve a la casa y no a la reja de caras.
@@ -119,6 +121,7 @@ const rotulos = {
   sinVoz: texto("juego.sinVoz", "This device has no voice installed for this language, so Larry can\u2019t read out loud here."),
   pendiente: texto("juego.pendiente", "Saved on this device; it will be checked when you reconnect."),
 };
+const aciertos = lista("juego.aciertos", ["Yes!", "You got it!"]);
 
 /**
  * El nombre de cada habilidad, resuelto en el SERVIDOR.
@@ -186,6 +189,7 @@ const progreso = progresoLeido
     <Pantalla
       locale={locale}
       rotulos={rotulos}
+      aciertos={aciertos}
       salirA={rutaCasa(locale)}
       habilidades={habilidades}
       mostrarContexto={true}

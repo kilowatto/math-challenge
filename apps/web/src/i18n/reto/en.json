@@ -52,6 +52,7 @@
   "k.resta.patos": "There were {a} ducks. {b} swam away. How many are left?",
   "k.formas.cual_sobra": "Which one does not belong?",
   "juego.bien": "That's it!",
+  "juego.aciertos": ["Yes!", "Nicely done!", "You found it!", "Exactly!", "You got it!", "Good thinking!", "That is correct!", "On we go!"],
   "juego.otra": "Not this time. Have another go.",
   "juego.siguiente": "Next",
   "juego.salir": "Done for now",

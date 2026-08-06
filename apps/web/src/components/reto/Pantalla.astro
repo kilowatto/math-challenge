@@ -58,7 +58,9 @@ import type { Locale } from "../../i18n";
 interface Props {
   locale: string;
   /** Los rótulos ya resueltos por locale. Los arma la página. */
-  rotulos: Record<string, string>;
+  rotulos: Omit<Record<string, string>, "aciertos"> & { aciertos?: string[] };
+  /** Frases de acierto autoradas por locale; se rotan solo al acertar. */
+  aciertos?: string[];
   /** A dónde lleva «terminar»: la reja de caras, o la casa. */
   salirA: string;
   /**
@@ -168,6 +170,7 @@ interface Props {
 const {
   locale,
   rotulos,
+  aciertos = [],
   salirA,
   habilidades = {},
   mostrarContexto = false,
@@ -374,7 +377,7 @@ const {
 
     window.__mathChallengeOffline = offline;
   </script>
-  <script define:vars={{ locale, rotulos, salirA, habilidades, mostrarContexto, etiquetaVoz, habilidadFija }}>
+  <script define:vars={{ locale, rotulos, aciertos, salirA, habilidades, mostrarContexto, etiquetaVoz, habilidadFija }}>
     /**
      * El bucle. Pide, pinta, ELIGE, confirma, repite.
      *
@@ -412,6 +415,22 @@ const {
     const $confirmar = document.getElementById("confirmar");
     const $reintentar = document.getElementById("reintentar");
     const $siguiente = document.getElementById("siguiente");
+    let aciertosSesion = 0;
+
+    function fraseDeAcierto() {
+      const frases = Array.isArray(aciertos) ? aciertos.filter((frase) => typeof frase === "string" && frase.trim()) : [];
+      if (!frases.length) return rotulos.bien;
+      const frase = frases[aciertosSesion % frases.length];
+      aciertosSesion += 1;
+      return frase;
+    }
+
+    function celebrarAcierto() {
+      $veredicto.classList.remove("celebrando");
+      // Fuerza un nuevo ciclo CSS incluso cuando dos aciertos llegan seguidos.
+      void $veredicto.offsetWidth;
+      $veredicto.classList.add("celebrando");
+    }
     /*
       El XP. `null` en la pantalla del niño, donde el bloque entero no se pinta
       (D-060, criterio #100, #206).
@@ -1260,8 +1279,8 @@ const {
       /*
        * El XP, ya escrito por el servidor (#192, #219).
        *
-       * Se sustituye el texto y nada más: ni animación, ni sonido, ni «+10»
-       * flotando. `mc-17` §11 mide que la recompensa **informativa** —la que
+       * Se actualiza el texto y se da una señal visual breve: sin sonido
+       * inesperado, sin «+10» flotando ni bloqueo. `mc-17` §11 mide que la recompensa **informativa** —la que
        * confirma competencia— no daña la motivación intrínseca y la
        * **controladora** sí, con efecto más severo en niños que en
        * universitarios. Un número que sube es lo primero; una celebración que
@@ -1304,10 +1323,14 @@ const {
        * genérico en vez del identificador (#349).
        */
       const exp = r.explicacion || {};
-      $veredictoQue.textContent = exp.titulo || (r.correcto ? rotulos.bien : rotulos.otra);
+      const titulo = r.correcto && (exp.origen === "acierto" || !exp.titulo)
+        ? fraseDeAcierto()
+        : (exp.titulo || (r.correcto ? rotulos.bien : rotulos.otra));
+      $veredictoQue.textContent = titulo;
       $veredictoSiguiente.textContent = exp.siguiente || "";
       $veredicto.dataset.acierto = r.correcto ? "1" : "0";
       $veredicto.hidden = false;
+      if (r.correcto) celebrarAcierto();
 
       /*
        * Y aquí es donde la voz vale lo que cuesta.

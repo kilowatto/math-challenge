@@ -52,6 +52,7 @@
   "k.resta.patos": "Il y avait {a} canards. {b} sont partis. Combien en reste-t-il\u202f?",
   "k.formas.cual_sobra": "Lequel ne va pas avec les autres\u202f?",
   "juego.bien": "C’est ça\u202f!",
+  "juego.aciertos": ["Oui\u202f!", "Bravo\u202f!", "Tu l’as trouvé\u202f!", "Exactement\u202f!", "Bien joué\u202f!", "Bonne réflexion\u202f!", "C’est correct\u202f!", "On continue\u202f!"],
   "juego.otra": "Pas cette fois. On réessaie.",
   "juego.siguiente": "Suivant",
   "juego.salir": "J’ai fini",

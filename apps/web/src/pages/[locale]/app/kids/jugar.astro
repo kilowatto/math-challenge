@@ -120,6 +120,8 @@ const CATALOGOS: Record<string, Record<string, unknown>> = {
 const c = CATALOGOS[locale] ?? en;
 const texto = (clave: string, respaldo: string) =>
   typeof c[clave] === "string" ? (c[clave] as string) : respaldo;
+const lista = (clave: string, respaldo: string[]) =>
+  Array.isArray(c[clave]) ? (c[clave] as string[]) : respaldo;
 
 const rotulos = {
   bien: texto("juego.bien", "That's it!"),
@@ -150,6 +152,7 @@ const rotulos = {
   sinVoz: texto("juego.sinVoz", "This device has no voice installed for this language, so Larry can\u2019t read out loud here."),
   pendiente: texto("juego.pendiente", "Saved on this device; it will be checked when you reconnect."),
 };
+const aciertos = lista("juego.aciertos", ["Yes!", "You got it!"]);
 
 /**
  * Al terminar se vuelve al MAPA, no a la reja de caras (D-152): el mapa es la
@@ -259,7 +262,7 @@ const pasosCaminados = progreso?.racha.diasJugadosTotal ?? null;
        `salirA` es el mapa (D-152): al terminar, el niño vuelve a la Sabana y
        puede rejugar cualquier lugar terminado. `habilidadFija` solo viaja
        cuando se viene de tocar un lugar del mapa. */}
-    <Pantalla locale={locale} rotulos={rotulos} salirA={rutaDelMapa} etiquetaVoz={ETIQUETA_DE_VOZ[locale]} habilidadFija={habilidadFija} />
+    <Pantalla locale={locale} rotulos={rotulos} aciertos={aciertos} salirA={rutaDelMapa} etiquetaVoz={ETIQUETA_DE_VOZ[locale]} habilidadFija={habilidadFija} />
 
     <style>
       /* La franja del sendero: centrada sobre la pantalla del reto, sin

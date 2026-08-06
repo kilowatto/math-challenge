@@ -261,6 +261,40 @@
 
 .veredicto[data-acierto="1"] { border-inline-start-color: var(--color-accent); }
 
+/* Celebración breve: hace visible el acierto sin interrumpir el siguiente
+   reto. Se apaga por completo cuando el sistema pide menos movimiento. */
+.veredicto[data-acierto="1"].celebrando {
+  position: relative;
+  animation: veredicto-acierto 420ms ease-out;
+}
+
+.veredicto[data-acierto="1"].celebrando::after {
+  content: "✦";
+  position: absolute;
+  inset-block-start: 0.35rem;
+  inset-inline-end: 0.75rem;
+  color: var(--color-accent);
+  font-size: 1.35rem;
+  animation: chispa-acierto 420ms ease-out;
+}
+
+@keyframes veredicto-acierto {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 55%, transparent); }
+  45% { transform: scale(1.025); box-shadow: 0 0 0 0.65rem color-mix(in srgb, var(--color-accent) 0%, transparent); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent); }
+}
+
+@keyframes chispa-acierto {
+  0% { opacity: 0; transform: scale(0.4) rotate(-20deg); }
+  45% { opacity: 1; transform: scale(1.15) rotate(8deg); }
+  100% { opacity: 0; transform: scale(0.8) rotate(20deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .veredicto[data-acierto="1"].celebrando,
+  .veredicto[data-acierto="1"].celebrando::after { animation: none; }
+}
+
 /* El error no se pinta de rojo. Larry nunca avergüenza (línea roja #7), y el
    rojo de error es la señal cultural de "hiciste algo malo". */
 .veredicto[data-acierto="0"] {

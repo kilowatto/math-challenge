@@ -826,56 +826,6 @@ const {
      */
     const dueloId = new URLSearchParams(location.search).get("duelo");
 
-    // Diagnóstico puntual de interacción: se activa solo con `?debug=touch`
-    // para no llenar la consola ni enviar telemetría del niño en uso normal.
-    const depurarToques = new URLSearchParams(location.search).get("debug") === "touch";
-    if (depurarToques) {
-      const eventos = ["pointerdown", "pointerup", "touchstart", "touchend", "mousedown", "mouseup", "click"];
-      const panel = document.createElement("pre");
-      panel.id = "debug-interaccion";
-      panel.setAttribute("aria-live", "polite");
-      Object.assign(panel.style, {
-        position: "fixed",
-        inset: "auto 0 0",
-        zIndex: "2147483647",
-        margin: "0",
-        padding: "0.5rem",
-        maxHeight: "9rem",
-        overflow: "auto",
-        background: "#111c",
-        color: "#fff",
-        font: "12px/1.35 monospace",
-        pointerEvents: "none",
-      });
-      panel.textContent = "[reto-interaccion] esperando eventos…";
-      document.body.append(panel);
-      const historial = [];
-      for (const tipo of eventos) {
-        document.addEventListener(tipo, (evento) => {
-          const objetivo = evento.target instanceof Element
-            ? evento.target.closest("button, a, input, select, textarea")
-            : null;
-          if (!objetivo) return;
-          const toque = "touches" in evento && evento.touches?.[0];
-          const registro = {
-            tipo,
-            objetivo: `${objetivo.tagName.toLowerCase()}#${objetivo.id || "-"}.${objetivo.className || "-"}`,
-            pointerType: "pointerType" in evento ? evento.pointerType : undefined,
-            botones: "buttons" in evento ? evento.buttons : undefined,
-            defaultPrevented: evento.defaultPrevented,
-            x: toque?.clientX ?? evento.clientX,
-            y: toque?.clientY ?? evento.clientY,
-            timestamp: Math.round(performance.now()),
-          };
-          historial.push(JSON.stringify(registro));
-          while (historial.length > 8) historial.shift();
-          panel.textContent = historial.join("\n");
-          console.debug("[reto-interaccion]", registro);
-        }, { capture: true, passive: tipo !== "touchstart" && tipo !== "touchend" });
-      }
-      console.info("[reto-interaccion] diagnóstico activo; eventos:", eventos.join(", "));
-    }
-
     /**
      * Activa los controles también en WebKit móvil sin cancelar el gesto antes
      * de tiempo. `pointerup`/`touchend` son la ruta táctil explícita y `click`

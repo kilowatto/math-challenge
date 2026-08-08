@@ -115,7 +115,10 @@ export class MapScene extends Phaser.Scene {
 
     // D-190: el ícono de bocina, fijo en pantalla (setScrollFactor(0) — el
     // mapa se arrastra debajo, el botón no). Mismo control que MenuScene.
-    new BotonSonido(this, this.scale.width - 44, 44).setDepth(10).setScrollFactor(0);
+    // Arriba a la IZQUIERDA — la derecha es del botón ✕ de salida (D-189,
+    // `.mapa-historia-completa__salida`, 88px, z-index 10): un bug real,
+    // encontrado probando en un simulador real, los tenía superpuestos.
+    new BotonSonido(this, 44, 44).setDepth(10).setScrollFactor(0);
   }
 
   update(time: number): void {

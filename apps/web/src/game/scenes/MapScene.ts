@@ -22,6 +22,7 @@ import { capituloPorId, type WorldChapter } from "../data/story";
 import { VegetationManager } from "../managers/VegetationManager";
 import { LevelNode } from "../objects/LevelNode";
 import { LarryAvatar } from "../objects/LarryAvatar";
+import { BotonSonido } from "../objects/BotonSonido";
 import { ProgressManager } from "../managers/ProgressManager";
 import type { NodoDelArbol } from "../../../../../packages/motor/src/mapa.ts";
 
@@ -111,6 +112,10 @@ export class MapScene extends Phaser.Scene {
     // congelado. Documentado en README-modo-historia.md como decisión, no
     // como olvido.
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.scene.setVisible(true));
+
+    // D-190: el ícono de bocina, fijo en pantalla (setScrollFactor(0) — el
+    // mapa se arrastra debajo, el botón no). Mismo control que MenuScene.
+    new BotonSonido(this, this.scale.width - 44, 44).setDepth(10).setScrollFactor(0);
   }
 
   update(time: number): void {

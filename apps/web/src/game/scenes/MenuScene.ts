@@ -23,6 +23,7 @@
 import Phaser from "phaser";
 import { ProgressManager } from "../managers/ProgressManager";
 import { capituloPorId } from "../data/story";
+import { BotonSonido } from "../objects/BotonSonido";
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -56,6 +57,11 @@ export class MenuScene extends Phaser.Scene {
 
     this.construirBoton(width / 2, letrero.y - 34, progreso.rotulos.menuHistoria, () => this.irAModoHistoria());
     this.construirBoton(width / 2, letrero.y + 34, progreso.rotulos.menuRetos, () => this.irARetos(progreso));
+
+    // El ícono de bocina (D-190): control de experiencia, no de cuenta — es
+    // lo único del lado adulto que SÍ le corresponde al niño (D-065 sigue
+    // intacto para todo lo demás: ajustes, club, escuela, siguen del otro lado).
+    new BotonSonido(this, width - 44, 44).setDepth(5);
   }
 
   /** Un ligero rebote — Larry no se queda "congelado" en el menú. */

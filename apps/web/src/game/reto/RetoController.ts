@@ -33,6 +33,7 @@
  *    cualquiera de las dos vistas — ES ese gesto.
  */
 import { encolar, engancharVaciado } from "../../lib/cola-offline";
+import { leerVozActivada, escribirVozActivada } from "../../lib/preferencia-voz";
 
 export interface RotulosDeReto {
   bien: string;
@@ -131,7 +132,6 @@ export class RetoController extends Emisor {
   private itemsHechos = 0;
 
   // --- voz --------------------------------------------------------------
-  private readonly VOZ_CLAVE = "mc:voz";
   private readonly sintesis = typeof window !== "undefined" ? window.speechSynthesis : null;
   private vozElegida: SpeechSynthesisVoice | null = null;
   private leerSolo = true;
@@ -147,11 +147,7 @@ export class RetoController extends Emisor {
     this.etiquetaVoz = datos.etiquetaVoz;
     this.salirDestino = datos.salirA;
 
-    try {
-      this.leerSolo = localStorage.getItem(this.VOZ_CLAVE) !== "0";
-    } catch {
-      // Safari en privado lanza al escribir. Sin memoria, pero con voz.
-    }
+    this.leerSolo = leerVozActivada();
     if (this.sintesis) {
       this.revisarVoz();
       this.sintesis.addEventListener?.("voiceschanged", () => this.revisarVoz());
@@ -227,11 +223,7 @@ export class RetoController extends Emisor {
 
   alternarVoz(): void {
     this.leerSolo = !this.leerSolo;
-    try {
-      localStorage.setItem(this.VOZ_CLAVE, this.leerSolo ? "1" : "0");
-    } catch {
-      // Sin memoria, el ajuste dura lo que la pantalla.
-    }
+    escribirVozActivada(this.leerSolo);
     if (!this.leerSolo) this.sintesis?.cancel();
     else if (this.actual) this.decir(this.actual.enunciado, true);
   }

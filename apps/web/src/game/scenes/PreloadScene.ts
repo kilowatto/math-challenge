@@ -17,6 +17,7 @@
  * la clase de mentira que un dispositivo lento deja en evidencia primero.
  */
 import Phaser from "phaser";
+import { ProgressManager } from "../managers/ProgressManager";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -77,6 +78,15 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.scene.start("MapScene", { chapterId: "primaria-1" });
+    // D-190: MenuScene (Larry aplaudiendo, dos botones) solo existe para
+    // "camino" (KINDER/PRIMARIA). SECUNDARIA sigue exactamente como antes:
+    // directo al árbol, sin menú — no tiene un "modo historia" separado de
+    // "retos" que valga la pena elegir.
+    const progreso = this.registry.get("progressManager") as ProgressManager;
+    if (progreso.modo === "camino") {
+      this.scene.start("MenuScene");
+    } else {
+      this.scene.start("MapScene", { chapterId: "primaria-1" });
+    }
   }
 }

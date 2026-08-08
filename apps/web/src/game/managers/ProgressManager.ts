@@ -41,6 +41,7 @@ export const REGISTRY_ROTULOS = "historia:rotulos";
 export const REGISTRY_ROTULOS_RETO = "historia:rotulosReto";
 export const REGISTRY_ETIQUETA_VOZ = "historia:etiquetaVoz";
 export const REGISTRY_SALIR_A = "historia:salirA";
+export const REGISTRY_RUTA_RETOS = "historia:rutaRetos";
 
 /**
  * Los textos, YA RESUELTOS por el locale de la página — mismo patrón que
@@ -56,6 +57,9 @@ export interface RotulosDeHistoria {
   nivelMedio: string;
   nivelDificil: string;
   jugar: string;
+  /** D-190: los dos botones de MenuScene — solo se pintan en modo "camino". */
+  menuHistoria: string;
+  menuRetos: string;
 }
 
 export interface DatosDeArranque {
@@ -76,6 +80,8 @@ export interface DatosDeArranque {
   etiquetaVoz: string;
   /** A dónde vuelve un `401` de sesión caducada — nunca un formulario (línea roja #2). */
   salirA: string;
+  /** D-190: a dónde lleva el botón "Retos" de MenuScene. `undefined` en modo "arbol". */
+  rutaRetos?: string;
 }
 
 export class ProgressManager {
@@ -92,6 +98,7 @@ export class ProgressManager {
     this.registry.set(REGISTRY_ROTULOS_RETO, datos.rotulosReto);
     this.registry.set(REGISTRY_ETIQUETA_VOZ, datos.etiquetaVoz);
     this.registry.set(REGISTRY_SALIR_A, datos.salirA);
+    this.registry.set(REGISTRY_RUTA_RETOS, datos.rutaRetos ?? null);
   }
 
   get grupos(): readonly GrupoDelArbol[] {
@@ -125,6 +132,10 @@ export class ProgressManager {
 
   get salirA(): string {
     return this.registry.get(REGISTRY_SALIR_A) as string;
+  }
+
+  get rutaRetos(): string | null {
+    return this.registry.get(REGISTRY_RUTA_RETOS) as string | null;
   }
 
   buscarNodo(habilidad: string): NodoDelArbol | null {

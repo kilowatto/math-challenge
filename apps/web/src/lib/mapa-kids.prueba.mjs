@@ -134,8 +134,11 @@ caso("las fases traducidas alimentan un sendero válido de los 14 lugares", () =
   // Larry está en el primer lugar sin terminar, y solo en uno.
   igual(sendero.lugares.filter((l) => l.aqui).length, 1, "un solo «aquí»");
   igual(sendero.lugares[2].aqui, true, "Larry en K03");
-  // El modelo del sendero sigue sin un solo campo numérico (#232).
-  cierto(!/:"?\d/.test(JSON.stringify(sendero)), "sin números en el modelo");
+  // D-190: el modelo del sendero SOLO lleva `secuencia` (posición en el
+  // camino) — ningún otro número se cuela (#232 sigue vivo para todo lo
+  // demás: nunca un porcentaje, nunca una cifra de dominio).
+  const soloSecuencia = JSON.stringify(sendero).replace(/"secuencia":\d+/g, '"secuencia":N');
+  cierto(!/:"?\d/.test(soloSecuencia), "solo `secuencia` lleva número en el modelo");
 });
 
 caso("todo terminado: Larry se queda en el último lugar, que se puede rejugar", () => {

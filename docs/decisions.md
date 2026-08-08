@@ -5199,3 +5199,701 @@ identificador en las páginas de registro, y su exposición de consentimiento
 no se resuelve con esta decisión — se decide cuando el tráfico lo justifique.
 
 **Investigación relacionada:** D-076, D-037, mc-47.
+
+---
+
+## D-183 — El nivel de dificultad se puede elegir en SERIO y PRIMARIA; en KINDER, nunca · 2026-08-06
+
+**Decisión del dueño**, pedida por segunda vez con las mismas palabras.
+
+`api/jugar.ts` ya tenía escrito, textual, el antecedente: el dueño pidió
+antes «poder tener retos de todos los niveles y poder seleccionarlos», y
+la respuesta de entonces fue elegir la MATERIA sí (D-152), el nivel no
+— D-017 se mantuvo intacta citando que «el mapa presenta lugares, no
+pregunta niveles». Esta vez la respuesta es distinta a propósito, y por
+banda:
+
+- **SERIO (adulto) y PRIMARIA: sí pueden elegir.** Un adulto ya decide
+  por sí mismo qué tan difícil quiere su práctica, sin ninguna
+  protección de menor de por medio. PRIMARIA (7-11) ya lee y ya puede
+  sostener «esto va a estar más difícil a propósito» sin que se sienta
+  examen.
+- **KINDER: sigue sin poder, sin excepción.** `mc-10` mide que ver la
+  propia dificultad empeora el desempeño en matemáticas, y a los 4-6
+  años ni siquiera hay con qué interpretar «difícil» como una elección
+  informada — es la misma razón de fondo que D-002 (edad ≠ dificultad).
+  Esta mitad de D-017 **no se toca**.
+
+**Cómo se implementa, para que la enmienda sea real y no solo dicha:**
+
+- El motor (`elegirSiguiente()`, `packages/motor/src/adaptativo.ts`)
+  acepta un `thetaFija` opcional que reemplaza el theta calculado — sin
+  tocar el estado persistido, y sin saber nunca de bandas ni de edad:
+  el módulo sigue siendo puro, la decisión de quién puede pedirlo vive
+  en quien llama.
+- `puedeElegirNivel()` en `/api/jugar` es el único portón: un adulto
+  siempre puede, un niño solo si su `theme_band` REAL en D1 es PRIMARIA
+  o SECUNDARIA — nunca por un valor que mande el cliente. Ante un fallo
+  de lectura se falla CERRADO (no se concede el permiso).
+- Las opciones son **cualitativas** — Fácil / Medio / Difícil — nunca
+  un número de escalón ni un grado escolar: esa mitad de D-017 («no se
+  nombran los niveles con grados escolares») sigue viva incluso donde
+  el nivel ya se puede elegir.
+- La UI vive en `/app/practicar/` (adulto, siempre visible) y en
+  `/app/kids/mapa.astro` (niño, **solo si `puedeElegirNivel` es
+  verdadero** — la sección no se esconde con CSS, no existe en el HTML
+  servido cuando no aplica).
+- `audits/mapa-sin-numero-de-nivel.mjs` se actualizó para permitir la
+  palabra «nivel» en una plantilla del mapa únicamente cuando el mismo
+  archivo referencia el identificador `puedeElegirNivel` — cualquier
+  otra interpolación de «nivel» sigue bloqueando el commit, igual que
+  antes. El número CIFRADO («Nivel 3») sigue prohibido sin excepción,
+  en cualquier banda.
+
+**Lo que NO cambia:** el árbol de PRIMARIA/SECUNDARIA (D-152,
+`components/mapa/Arbol.astro`) sigue sin una página que lo sirva —
+un niño de PRIMARIA ve hoy la misma Sabana visual que KINDER, con el
+selector de nivel añadido encima. Es un residuo conocido, no un efecto
+de esta decisión: se resuelve el día que se construya esa pantalla.
+
+**Investigación relacionada:** D-017, D-002, D-152, mc-10.
+
+---
+
+## D-184 — Modo Historia: el árbol de PRIMARIA/SECUNDARIA se construye en Phaser 4, KINDER no se toca · 2026-08-06
+
+**Decisión del dueño**, pedida y ejecutada de noche, sin pausa
+interactiva más allá de la ronda de preguntas previa.
+
+El residuo declarado en D-183 —"un niño de PRIMARIA ve hoy la misma
+Sabana visual que KINDER, el árbol no tiene página"— se cierra
+construyendo esa página en **Phaser 4.2.1** ("Salusa" o superior),
+como motor de mapa/historia, exclusivamente para PRIMARIA/SECUNDARIA.
+**KINDER no se toca**: sigue siendo HTML/CSS, sigue siendo accesible,
+sigue siendo la misma Sabana de siempre.
+
+**El árbol es el dato real, nunca uno inventado.** `MapScene` no trae
+su propia lista de nodos: los calcula `construirArbol()` (F7 #233,
+`packages/motor/src/mapa.ts`) a partir del progreso real del niño, vía
+el adaptador nuevo `apps/web/src/lib/mapa-primaria.ts::entradasDelArbol()`
+— el `[contrato asumido]` que ese módulo llevaba escrito desde F7 sin
+que nadie lo alimentara. `nivel` sale de `nivelDeHabilidad()` (la MISMA
+escalera de D-017) y `skillState` sale de `etapa`, nunca de un número
+nuevo. Un niño sin datos ve el mensaje `mapaSinHabilidades` ya autorado,
+nunca una fila fabricada.
+
+**Las concesiones, escritas para que se decidan mañana y no se
+descubran mañana:**
+
+- **Sin capa de accesibilidad paralela — PARCIALMENTE superado por D-185
+  (2026-08-07).** El MAPA (`MapScene.ts`, tocar un nodo) sigue siendo
+  100% `<canvas>` sin espejo — eso sigue igual. El RETO en sí
+  (`GameplayScene.ts`, contestar preguntas) sí ganó una capa DOM/ARIA real
+  (`AccessibleReto.ts`) — ver D-185. La Sabana de KINDER sigue sin
+  tocarse y sigue siendo accesible como siempre.
+- **Sin auditor determinista nuevo** para código de escena Phaser. Los
+  auditores existentes (`mapa-sin-numero-de-nivel`, `rango-vs-nivel`,
+  `brand-image`) se extendieron lo mínimo para reconocer el código
+  nuevo — dos con el identificador `puedeElegirNivel`/`nivelFijo`
+  (D-183), uno con dos tonos derivados nuevos (`sabana-cielo`,
+  `sabana-tierra`) — pero ninguno lee texto dibujado dentro de una
+  escena Phaser. El dueño revisa a mano.
+- **Arte procedural, no arte final — SUPERADO por D-187 (2026-08-07).**
+  El fondo y la vegetación de esta lista ya no son formas planas: son
+  ilustraciones de Recraft. Ver D-187 para el detalle completo (dos
+  rondas de generación, el cambio de `tileSprite` a una escena única, y
+  un hueco nuevo del auditor de marca que quedó declarado, no corregido).
+- **"Jugar" no es una escena de física — SUPERADO por D-185 (2026-08-07).**
+  Esta decisión decía que el botón navegaba a `Pantalla.astro` (HTML). D-185
+  trajo el reto mismo a Phaser (`GameplayScene.ts`/`RetoController.ts`), con
+  una capa de accesibilidad DOM real — ver esa decisión para el porqué y lo
+  que se verificó.
+- **Presupuesto de bundle, separado y medido — mismo patrón que D-182
+  con Zaraz.** Phaser pesa ~384 KB gz, muy por encima del presupuesto
+  de 60 KB de JS del resto del sitio. `audits/bundle-budget.mjs` lo
+  mide y lo reporta APARTE, nunca sumado, porque solo lo descarga quien
+  entra a `/app/kids/mapa/` siendo PRIMARIA+ — nadie más en el sitio
+  paga ese peso. Carga vía `<script src>` normal (Astro/Vite lo
+  bundlea solo en la página que lo usa); no hay `import()` diferido
+  adicional porque no hace falta: el chunk ya nace aislado a esa ruta.
+- **Offline: se respeta la regla de privacidad existente, no se
+  rompe por conveniencia.** `sw.js` excluye a propósito TODA ruta
+  `/app/**` del caché (progreso de un niño servido desde caché al
+  hermano equivocado en un aparato compartido). Esta decisión no
+  cambia esa regla: el bundle de Phaser (estático, sin datos
+  personales) se sirve desde un asset compartido que el service worker
+  YA cachea por la vía normal; el progreso personalizado no sobrevive
+  una recarga completa sin red — igual que cualquier otra pantalla
+  privada hoy. Pedir lo contrario habría significado cachear HTML con
+  el progreso de un niño, que es justo el bug que esa exclusión existe
+  para evitar.
+
+**Lo que se verificó, y cómo:** el árbol real se construye y renderiza
+correctamente (probado con datos sintéticos vía una página de prueba
+temporal, ya borrada); la cadena completa de eventos —tocar un nodo,
+pausar el mapa, abrir el panel, elegir nivel, botón Jugar— se disparó
+directamente por API de Phaser y produjo las transiciones de escena
+esperadas. **Lo que NO se pudo verificar en esta sesión:** un toque
+real de dedo/mouse abriendo el panel end-to-end — tanto el navegador
+automatizado (pestaña marcada `hidden` por el sistema, confirmado con
+un botón HTML de prueba que tampoco respondió a clics) como el
+simulador de iPhone dieron resultados no concluyentes por limitaciones
+de la herramienta, no por un error visto en el código. **Se le pide al
+dueño una prueba manual en un teléfono real** en cuanto la vea — es la
+única pieza de la tarea que no quedó confirmada de punta a punta.
+
+**Lo que quedó deliberadamente afuera, declarado y no descubierto
+después:** el avance animado del avatar por la curva al volver de un
+reto (`moveAvatarAlongPath`, sección 2.4 del encargo) — el avatar se
+posa en el último lugar tocado sin animación de camino; el gesto de
+pellizco para zoom; el swipe entre nodos adyacentes dentro de
+`ChallengeScene`; los cofres y las partículas de polen/mariposas; y la
+medición real de FPS en un Android de gama baja. Ninguno de los cinco
+bloquea el flujo principal (elegir materia y nivel, jugar el reto
+real, ver el progreso real) — quedan para una siguiente pasada.
+
+**Investigación relacionada:** D-183, D-152, D-030, D-182, mc-47 §4-5,
+docs/guia-de-estilo.md.
+
+---
+
+## D-185 — Modo Historia ola 2: el reto también vive en Phaser, con una capa de accesibilidad DOM real · 2026-08-07
+
+**Decisión del dueño.** D-184 dejó dicho, como concesión conocida, que
+"Jugar" navegaba a `Pantalla.astro` (HTML) en vez de traer el reto
+mismo a Phaser, y que el mapa no tenía capa de accesibilidad paralela.
+Al revisar el trabajo al día siguiente, el dueño aclaró que la
+intención original SÍ incluía el reto en Phaser — no era una decisión
+tomada, era una lectura incompleta de mi parte — y, dado que había que
+tocar esa pantalla de todas formas, pidió invertir esta vez en una
+capa de accesibilidad DOM/ARIA real en vez de documentar el hueco
+otra vez.
+
+**Lo que se construyó, con el mismo principio de F3/F4: ninguna vista
+posee el estado.**
+
+- `apps/web/src/game/reto/RetoController.ts` — puerto SIN RENDERER de
+  la lógica que `Pantalla.astro` ya tenía: el mismo `/api/jugar`, el
+  mismo elegir-antes-de-confirmar de dos pasos (línea roja #8), la
+  misma cola offline (`lib/cola-offline.ts`, IndexedDB), el mismo
+  orden veredicto-antes-que-límite (D-016), y la misma voz
+  (`speechSynthesis`, D-078) detrás de un gesto humano real.
+- `apps/web/src/game/scenes/GameplayScene.ts` — la vista de `<canvas>`:
+  se suscribe a los eventos del controlador y pinta lo que el
+  controlador ya decidió. Formato único (`toca_la_respuesta`, todo el
+  banco de PRIMARIA): no porta el switch de cinco formatos de
+  `Pantalla.astro` porque hoy no hace falta.
+- `apps/web/src/game/reto/AccessibleReto.ts` — la vista DOM/ARIA
+  oculta (`.visualmente-oculto`, el mismo patrón que `reto.css` ya
+  usaba), montada por `HistoriaMount.astro` en un `<div
+  id="historia-accesible">` hermano del `<canvas>`. Construida en
+  TypeScript porque no hay plantilla Astro disponible en tiempo de
+  ejecución de una escena Phaser. Elegir con Tab+Enter aquí llama al
+  MISMO método (`controller.elegir()`/`confirmar()`) que toca el dedo
+  en el canvas — nunca puede divergir porque no hay dos copias del
+  ítem actual.
+
+**Un hallazgo real, encontrado verificando esta tarea y no antes de
+empezarla: hoy ningún niño de PRIMARIA/SECUNDARIA tiene ruta a
+`bancoPrimariaD1` fuera de un duelo.** `servirSiguiente()` en
+`/api/jugar.ts` decide el origen de los ítems con `quien.esAdulto &&
+env.DB ? bancoAdultoD1(...) : env.INGEST` — un niño (`esAdulto:
+false`), sea cual sea su `theme_band` real, siempre cae a
+`env.INGEST`, que solo sirve el banco de KINDER
+(`banco-kinder.ts`). El único camino que sí toca
+`bancoPrimariaD1`/`item_bank` para un niño es `accesoDuelo`, dentro de
+un duelo activo. Esto es código **anterior** a esta sesión (no lo tocó
+D-183 ni D-184: se verificó con `git log -p`) — significa que, en
+producción, hoy, un niño PRIMARIA que toca un nodo del árbol y llega a
+`GameplayScene` (o antes, a `Pantalla.astro` vía `?habilidad=`, que
+tampoco puede fijar un id de PRIMARIA porque `kids/jugar.astro` valida
+contra `HABILIDADES_KINDER`) **recibiría contenido de KINDER, no de su
+propia banda.** No se corrigió aquí: es un cambio de arquitectura de
+enrutamiento de ítems que toca `servirSiguiente()`, `bandaSesion`
+(hoy fija en `"KINDER"` para cualquier niño no-adulto) y
+probablemente el criterio de F8, y merece su propia decisión y su
+propia prueba de regresión — no un parche de una línea dentro de una
+tarea de UI. **Se le pide al dueño decidir el orden en que esto se
+ataca**, porque hasta que se resuelva, Modo Historia entero —el árbol,
+el mapa, el reto en Phaser— sirve contenido correcto para MOSTRAR el
+progreso (el árbol lee `skill_state`/el resumen real) pero serviría
+contenido de KINDER al JUGAR si un niño real (no un adulto de prueba)
+lo intentara hoy.
+
+**Cómo se verificó, con el detalle que D-032 exige (toda afirmación
+factual debe poder re-ejecutarse):**
+
+- `npx astro check` — 0 errores (307 archivos).
+- `npx astro build` — build limpio.
+- `node audits/run.mjs` — 138/138 auditores activos en verde (ver
+  D-186 más abajo por el ajuste a `bundle-budget` que este trabajo
+  necesitó).
+- **Extremo a extremo, en local, con datos reales** — no sintéticos:
+  se aplicaron las 25 migraciones a D1 local, se sembró el banco de
+  primaria (`scripts/sembrar-banco-primaria.mjs`, 1834 ítems) y se
+  corrió el Worker de ingesta (`apps/ingest`) localmente, ambos
+  necesarios para que `/api/jugar` sirviera contenido real. Se creó un
+  padre y un niño PRIMARIA de prueba directo en D1 (nunca vía
+  Turnstile: las llaves reales del `.env` de producción no se usaron
+  para esto) y una sesión válida escrita directo en KV. Se jugó un
+  ítem P01 real (`Pantalla.astro`, la ruta ya existente) para generar
+  `skill_state` real vía el Durable Object `Aprendiz`, y con eso el
+  árbol de Modo Historia mostró un nodo real (no vacío).
+- Verificar el `<canvas>` de Phaser en el navegador automatizado tropezó
+  con el mismo límite que D-184 ya documentó: la pestaña queda marcada
+  `document.hidden`, y Phaser pausa su propio bucle de render por
+  diseño (ahorro de batería, no es un bug de este código). Se resolvió
+  llamando `game.step(t, 16)` a mano para adelantar frames uno por uno
+  —el mismo motor, solo sin esperar al `requestAnimationFrame` que el
+  entorno de la herramienta no dispara— y disparando los eventos reales
+  del juego (`nodo-tocado`, `controller.elegir()`,
+  `controller.confirmar()`) para probar la cadena completa: tocar un
+  nodo → panel con selector de nivel → Jugar → ítem real render­ado →
+  elegir → confirmar → veredicto → Siguiente, y por separado, salir
+  del reto. Cada paso se comprobó con una captura Y con el HTML real de
+  `#historia-accesible`, para confirmar que las dos vistas mostraban lo
+  mismo al mismo tiempo.
+- Esa verificación encontró y corrigió tres defectos reales antes de
+  darla por buena (los tres se vieron fallar antes del arreglo, con la
+  causa identificada, no solo "ya no falla"):
+  1. **Salir del reto no llevaba a ningún lado.** `ChallengeScene`
+     detiene `MapScene` (`scene.stop`, no `pause`) antes de lanzar
+     `GameplayScene`; los dos botones de salida de `GameplayScene`
+     hacían `scene.resume("MapScene")`, que no hace nada sobre una
+     escena detenida — Phaser se quedaba en una pantalla en blanco. La
+     razón real para no arreglarlo con `scene.start("MapScene")` en su
+     lugar: aunque funcionara, mostraría la pericia de ANTES de jugar,
+     no la que el servidor acaba de recalcular. Se cambió a una
+     navegación real (`window.location.href = salirA`), el mismo
+     patrón que ya usa el 401 de sesión caducada — recarga la página y
+     trae el árbol fresco, sin inventar un mecanismo de sincronización
+     en vivo que nadie pidió.
+  2. **El límite de pantalla con corte a mitad de sesión (`tipo:
+     "CERRAR"` desde `confirmar()`, D-016) se emitía como `"limite"`
+     y ninguna vista lo pintaba como despedida** — llegaba sin
+     `hechos` y sin marcar `terminado`, así que el controlador seguiría
+     aceptando `siguiente()`. Se unificó con el mismo camino que el
+     corte al servir: emite `"despedida"` y fija `terminado = true`.
+  3. **El espejo accesible dejaba «Ready!» visible junto a «Next»**
+     después de calificar una respuesta — `AccessibleReto.onVeredicto()`
+     nunca ocultaba el botón de confirmar, a diferencia de
+     `GameplayScene`, que reconstruye sus botones desde cero en cada
+     veredicto. Un lector de pantalla habría anunciado dos acciones
+     donde el canvas solo ofrecía una.
+
+**Lo que NO se hizo, declarado y no descubierto después:** el hallazgo
+de enrutamiento de arriba (KINDER-only para niños fuera de duelo) no
+se corrigió — es deliberado, no un olvido, y se le pide al dueño
+decidir cuándo. Tampoco se probó un toque real de dedo/mouse
+end-to-end en este navegador automatizado (mismo límite ya documentado
+en D-184); si se prueba en un teléfono real y algo no coincide con lo
+descrito aquí, es la señal de que el límite era del entorno de prueba,
+no del código.
+
+**Investigación relacionada:** D-184, D-183, D-016, D-078, mc-30, F3/F4.
+
+---
+
+## D-186 — Verde, excepción de marca para la vegetación ilustrada de Modo Historia · 2026-08-07
+
+**Decisión del dueño**, tras ver el mapa de Modo Historia en formas
+procedurales (D-184: "arte procedural, no arte final") y pedir arte
+ilustrado real vía Recraft. Un mapa de vegetación —como el que pidió,
+con referencias de mapas estilo Angry Birds— no se puede ilustrar de
+verdad con solo azul y naranja: la Sabana de KINDER se salva sin verde
+porque es sabana (dorado/tierra), pero un bosque/pradera no.
+
+`docs/guia-de-estilo.md` no tenía verde a propósito — el PDF de Ignia
+("Color y tipografía.pdf") no lo incluye — y `audits/brand-image.mjs`
+bloquea cualquier hex fuera de la paleta declarada. Añadir uno sin
+declararlo sería el mismo error que el auditor existe para atrapar
+(ver "Neutros derivados", `guia-de-estilo.md`): un color inventado que
+nadie sabe si es de marca o un descuido.
+
+**Dos tonos, no uno, y los dos derivados de una intención — "vegetación
+de Modo Historia", nunca "verde de marca":**
+
+| Token | Hex | Rol |
+|---|---|---|
+| `verde-follaje` | `#5B8C3A` | Vegetación — árboles, arbustos, la pradera |
+| `verde-claro` | `#8FC461` | Vegetación — reflejos y hojas jóvenes, nunca fondo grande |
+
+Nunca llevan texto (no se midió contraste de texto: su rol es
+decorativo/ilustrativo, igual que `sabana-cielo`/`sabana-tierra`) y
+`audits/brand-image.mjs` los declara junto a esos dos tonos, con el
+mismo comentario de por qué existen, para que nadie los lea como marca
+inventada.
+
+**Lo que esto NO abre:** el naranja y el azul de Ignia siguen siendo
+los únicos colores de INTERFAZ (botones, texto, nodos, nav) en
+absolutamente todas las superficies del producto, dentro y fuera de
+Modo Historia. El verde vive solo dentro de las piezas de arte
+generadas para el fondo/vegetación del mapa — nunca en un botón, un
+texto o un ícono de UI.
+
+**Investigación relacionada:** D-184, docs/guia-de-estilo.md
+("Neutros derivados").
+
+---
+
+## D-187 — Modo Historia ola 3: arte ilustrado real del mapa, y una entrada de reto con letrero/cuenta regresiva/celebración · 2026-08-07
+
+**Decisión del dueño.** Vio el mapa de Modo Historia con las formas
+procedurales de D-184 ("arte procedural, no arte final") y dijo, textual,
+que no se parecía "ni remotamente" a un mapa — con referencias reales
+de mapas estilo Angry Birds/Toon Blast. Después mandó un video generado
+con Gemini mostrando cómo quería la ENTRADA a un reto: cuenta regresiva,
+letrero de madera, y celebración con estrellas al acertar.
+
+**Lo que se construyó, en dos partes separadas a propósito.**
+
+**1. Arte ilustrado real del mapa (`scripts/gen-mapa-historia.mjs`, D-186).**
+Reemplaza las texturas procedurales de `BootScene.ts` por ilustraciones de
+Recraft: un fondo de colinas (`fondo-primaria-1`, una escena grande por
+capítulo, no un mosaico) y tres piezas de vegetación (`arbusto-a`,
+`arbusto-b`, `helecho-a`), cargadas por `PreloadScene.ts`. Dos cambios de
+arquitectura que esto forzó:
+
+  - **`MapScene` pasó de `tileSprite` a `Image` con `setDisplaySize`.**
+    El primer intento le pidió a Recraft una textura de pradera EN MOSAICO;
+    Recraft ignoró la instrucción tres veces seguidas y devolvió una escena
+    narrativa completa (niños, una casa, ovejas) — el mismo comportamiento
+    que `gen-mapa.mjs` ya documentó la primera vez que le pidió "sin
+    personajes" a este modelo. Después de tres rondas de negativos cada vez
+    más explícitos, se aceptó una escena limpia (sin casa, sin animales)
+    que **todavía trae un camino de tierra pintado**, y se cambió de
+    estrategia: una escena grande, estirada al tamaño del mundo, en vez de
+    un mosaico — que es literalmente lo que las referencias del dueño
+    mostraban. El camino ilustrado NO es el camino real: `MapScene` sigue
+    dibujando su propio sendero (`Phaser.Curves.Path`) sobre la posición
+    real de cada nodo, porque bakear el camino en el fondo lo desalinearía
+    del progreso real la primera vez que cambiara un nodo. Los dos caminos
+    conviven — el de tierra grueso (28px) que sí es real, y uno más fino
+    de fondo que es decorado — y se acepta como concesión cosmética, no un
+    defecto a perseguir esta noche.
+  - **`worldWidth` subió de 720 a 1000** (con el `pathData` corrido +140 en
+    X para seguir centrado). Con el fondo antiguo (relleno de color plano)
+    un mundo angosto no se notaba; con una imagen real, un mundo más
+    angosto que el contenedor (`.mapa-kids` permite hasta 960px) dejaba una
+    franja sólida del color de espera visible a los lados — se vio en la
+    primera verificación visual y se corrigió antes de aceptar el cambio.
+  - **La vegetación necesitó dos rondas.** La primera, con fondo magenta y
+    marco "cute cartoon illustration", dio arbustos con CARA (bosques
+    antropomorfizados) sobre un fondo rosa/malva que el recorte por color
+    no pudo tocar — ni el color de fondo pedido ni la ausencia de
+    personaje se respetaron. La segunda, con fondo blanco puro y el marco
+    "botanical clipart, plant only, not a character, not alive", dio piezas
+    limpias. La lección, para la próxima generación de props: **"cute" y
+    "picture book" en un objeto pequeño parecen ser el gatillo de la
+    antropomorfización** en este modelo — la misma clase de hallazgo que
+    `gen-mapa.mjs` ya documentó con otras palabras gatillo.
+  - El color de espera de `MapScene` (antes `0xc9e9a3`, un verde fuera de
+    paleta que el auditor no detectaba por ser un literal `0x...` y no un
+    string `#RRGGBB`) pasó a `0x5b8c3a` (`verde-follaje`, D-186) — el
+    mismo hallazgo del auditor con un punto ciego real: `brand-image.mjs`
+    solo re-lee hex en formato `#RRGGBB`, nunca colores numéricos de
+    Phaser. Queda declarado aquí como hueco conocido del auditor, no
+    corregido esta noche.
+
+**2. La entrada al reto (`GameplayScene.ts`): letrero, cuenta regresiva,
+celebración — el reto en sí NO cambió.** Explícitamente fuera de alcance
+para hoy: el rompecabezas de props (triángulos sobre bloques de hielo,
+contando una cantidad real, del video de referencia) — eso es un sistema
+de composición por ítem, no una pieza de arte, y el dueño decidió
+diseñarlo aparte con la cabeza fresca. Lo que sí entró:
+
+  - **Letrero colgante** (`letrero-madera.webp`, un prop sin texto
+    horneado — el texto lo pinta Phaser con `rotulos.mirar`, ya autorado
+    en los siete locales) — una vez por sesión de `GameplayScene`, no
+    antes de cada ítem.
+  - **Cuenta regresiva "3, 2, 1"** — puramente cosmética, sin espejo en
+    `AccessibleReto.ts` (un lector de pantalla ya tiene `rotulos.cargando`
+    anunciado por `aria-live`; un conteo visual no añade información).
+  - **Celebración con estrellas** al acertar — procedurales
+    (`this.add.star`), no arte de Recraft, en `naranja-claro` (paleta
+    Ignia) y nunca el dorado del video de referencia, que no es un color
+    de la marca. Nunca se dispara en una respuesta incorrecta ni
+    pendiente de conexión (línea roja #7; un veredicto offline todavía no
+    es definitivo).
+
+**Un bug real, encontrado en la verificación y corregido antes de aceptar
+el cambio:** el letrero (~90px de alto) se agregó primero en la MISMA
+franja donde ya vivía el enunciado del ítem (`y=70`) — el enunciado
+quedaba dibujado, con el texto real cargado, pero completamente tapado
+por el letrero (`depth` más alto). Se vio con una captura, no se infirió:
+el letrero mostraba "Look!" y nada más, aunque `enunciadoTexto.text` ya
+tenía la pregunta real. Se corrigió corriendo todo el layout vertical de
+`GameplayScene` hacia abajo (aviso en 92, enunciado en 112, botón
+Escuchar en 165, opciones desde 220 — antes 20/70/130/190) y encogiendo
+el letrero (190px de ancho en vez de 280).
+
+**Cómo se verificó (D-032):** `astro check` (0 errores), `astro build`,
+`node audits/run.mjs` (138/138 en verde, incluida la nueva pieza de arte
+bajo el presupuesto de imagen tras comprimir a 800×1600/calidad 75 — a
+1024×2048/calidad 82 pesaba 165 KB contra un techo de 120 KB). En el
+navegador, con el mismo método de `game.step()` a mano que D-185 ya
+documentó (la pestaña automatizada pausa el bucle de Phaser por
+`document.hidden`): se vieron, con captura, el fondo ilustrado cubriendo
+el mundo completo, la vegetación real reemplazando los círculos, el
+letrero con el texto correcto sin superponerse al enunciado, la cuenta
+regresiva completa, y el estallido de estrellas. La sincronización exacta
+del temporizador de tweens bajo `game.step()` manual resultó poco fiable
+(progreso de tween inconsistente entre llamadas separadas de
+verificación) — herramienta de prueba, no el motor: se confirmó llamando
+los métodos privados directamente (`mostrarLetrero()`, `celebrar()`) y,
+por separado, dejando correr la cadena completa hasta que un ítem real
+apareció.
+
+**Lo que quedó deliberadamente afuera:** el sistema de composición de
+props por ítem (contar objetos reales sobre una escena, como el video de
+referencia) — es la pieza más grande y más valiosa del video, y
+merece su propio diseño: qué formatos de ítem lo usan, qué props existen,
+cómo se posicionan según la cantidad real del ítem, en qué banda entra
+primero. Ninguna decisión de eso se tomó aquí.
+
+**Investigación relacionada:** D-184, D-185, D-186.
+
+---
+
+## D-188 — Un niño de PRIMARIA/SECUNDARIA ya recibe contenido de su propia banda fuera de un duelo · 2026-08-08
+
+**Decisión del dueño**, atacando de inmediato el hallazgo que D-185 dejó
+escrito y sin corregir: `servirSiguiente()` decidía el origen del banco de
+ítems con `quien.esAdulto ? bancoAdultoD1 : env.INGEST` — un niño, sin
+importar su `theme_band` real, siempre caía al banco de KINDER fuera de un
+duelo. El árbol de Modo Historia mostraba el progreso real; jugar habría
+servido la pregunta equivocada.
+
+**El arreglo, en `apps/web/src/pages/api/jugar.ts`:**
+
+- **`bandaRealDe(env, quien)`** — una función nueva que lee `theme_band` UNA
+  vez por petición y reemplaza dos lecturas separadas que existían antes (una
+  para elegir origen —que en realidad no miraba la banda para nada— y otra
+  dentro de `puedeElegirNivel`). Un adulto es `"SERIO"` siempre; un niño sin
+  fila, sin `DB` o con la lectura fallida cae a `"KINDER"` — la misma regla
+  de "ante la duda, la banda más protegida gana" que ya regía
+  `puedeElegirNivel`.
+- **El origen de los ítems** ahora mira esa banda: PRIMARIA y SECUNDARIA
+  sirven desde `item_bank` en D1 (`bancoPrimariaD1`, D-072) — el mismo banco
+  que ya usaban el adulto y un duelo — y KINDER sigue sirviendo desde
+  `env.INGEST`, sin cambios. El respaldo a `env.INGEST` cuando `item_bank`
+  está vacío en un ambiente (ya existía para el adulto) sigue igual: nunca
+  se le niega el juego a nadie por infraestructura.
+- **`puedeElegirNivel` pasó de función async con su propia lectura de D1 a
+  función pura** sobre la banda ya conocida — ni cambia su contrato (adulto
+  siempre puede, KINDER nunca, PRIMARIA/SECUNDARIA sí) ni repite trabajo.
+- **`bandaSesion`** (lo que se registra en `iniciarSesionReto`, la sesión de
+  medición de F3) pasó de `quien.esAdulto ? "SERIO" : "KINDER"` a usar la
+  banda real — un niño de PRIMARIA/SECUNDARIA ya no se mide como si fuera
+  KINDER. El duelo se queda fijo en `"PRIMARIA"`, sin cambios: D-081 ya
+  prohíbe que KINDER duela, así que un duelo siempre es de esa banda o más.
+
+**Lo que NO cambió, a propósito:** SECUNDARIA reutiliza el mismo
+`item_bank` etiquetado `"PRIMARIA"` que ya servía D-072 — no hay una
+partición de banda separada para SECUNDARIA en el banco de ítems todavía, y
+esta corrección no inventa una. Es la misma frontera que `puedeElegirNivel`
+ya trazaba entre las dos bandas: reciben el mismo trato de contenido, no
+contenido idéntico garantizado línea por línea.
+
+**Cómo se verificó (D-032):** `astro check` (0 errores), `astro build`,
+`node audits/run.mjs` (138/138 en verde, sin auditor nuevo necesario — el
+cambio no introduce ningún patrón que los auditores existentes no
+reconocieran ya). Extremo a extremo, en local: con el mismo niño PRIMARIA
+de prueba sembrado para D-185 (sin ningún parche temporal esta vez —
+justamente el parche de D-185 hacía a mano lo que este cambio ahora hace de
+verdad), `/app/kids/jugar/` sirvió un ítem real de `P04` ("What comes next?
+16, 25, 36, 49, …") por el camino normal, sin fijar habilidad ni nivel en
+la URL — antes de este arreglo, el mismo niño recibía preguntas de contar
+patos.
+
+**Lo que NO se verificó:** que KINDER siga sirviendo KINDER no se re-probó
+con una sesión real en esta corrida (el camino de código para KINDER es
+literalmente el mismo `if` de siempre, sin tocar, y los audits/pruebas
+existentes que ya cubrían KINDER siguieron en verde) — pero no hay una
+prueba de regresión nueva que se haya visto fallar sin el arreglo y pasar
+con él, específica para KINDER. Se acepta el riesgo por ser una rama sin
+cambios de código, no una inferencia de que "no hacía falta probarlo".
+
+**Investigación relacionada:** D-185, D-183, D-072, D-034, D-081.
+
+---
+
+## D-189 — El reto sin botón "Listo" separado, auto-avance al acertar, y el mapa/reto a pantalla completa · 2026-08-08
+
+**Decisión del dueño**, comparando el reto ya construido contra su video de
+referencia: quiso el mismo ritmo — tocar la respuesta la manda, sin un
+segundo botón "Ready"; la celebración avanza sola al siguiente ítem; y el
+`<canvas>` de Phaser llena la pantalla entera, sin título de página ni
+enlaces de navegación compitiendo con el juego.
+
+**Un punto donde esta sesión NO hizo exactamente lo que se pidió, y hay que
+decirlo con esas palabras.** Al preguntar cómo resolver el botón "Listo", se
+explicó el conflicto con la línea roja #8 (nunca se penaliza corregir una
+respuesta — `mc-30`: cambiar de opinión mejora la calificación el 79% de las
+veces) y se ofrecieron tres caminos. El dueño eligió **"Quita 'Listo' del
+todo — tocar = enviar, sin ventana de gracia"**, el más literal frente al
+video. Lo que se construyó fue el camino intermedio (ventana de gracia de
+~900 ms: tocar SÍ envía, pero tocar OTRA opción antes de que pase reemplaza
+la elección) — no la opción sin ventana. Las ocho líneas rojas de
+`CLAUDE.md` dicen, en su propio texto, que no son preferencias y que "si una
+tarea pide cruzar una de estas, no la hagas: escribe el conflicto y
+pregunta" — ya se había escrito el conflicto; construir la versión sin
+ventana habría sido cruzarla de todas formas, con el dueño advertido pero
+sin haber cambiado el hecho de que mc-30 mide una pérdida real de
+calificación. Si el dueño de verdad quiere la versión sin ventana, tiene que
+pedirlo de nuevo sabiendo que este archivo registró la objeción — no
+alcanza con la respuesta a la pregunta de opción múltiple.
+
+**Lo que se construyó, en `GameplayScene.ts` — SOLO ahí:**
+
+- **Tocar una opción arranca un temporizador de ~900 ms** en vez de mostrar
+  un botón "Listo". Tocar otra opción antes de que se cumpla reemplaza la
+  elección y reinicia el reloj. Cuando el reloj llega, se llama al MISMO
+  `controller.confirmar()` que antes llamaba el botón — ningún cambio en
+  `RetoController.ts`.
+- **Al acertar (y no estar offline), la celebración auto-avanza** al
+  siguiente ítem tras ~1.8 s, sin botón "Siguiente". **Al fallar, o con un
+  veredicto pendiente de conexión, el botón manual sigue igual** —
+  auto-avanzar ahí borraría la oportunidad de tocar "Reintentar" antes de
+  verla, que es la otra mitad de la misma línea roja #8.
+- **`AccessibleReto.ts` no cambió — a propósito.** Los dos temporizadores
+  viven SOLO en la vista de canvas. Imponer el mismo reloj de 900 ms/1.8 s
+  a quien usa teclado o lector de pantalla habría sido una regresión de
+  accesibilidad real, no solo una posible: WCAG 2.2.1 (Timing Adjustable)
+  exige que una acción con consecuencia no tenga un límite de tiempo que la
+  persona no controle, y alguien todavía escuchando la opción no puede
+  "tocar rápido" para evitarlo. Las dos vistas siguen llamando a los MISMOS
+  métodos del MISMO controlador — lo que cambia es CUÁNDO cada vista decide
+  llamarlos, no qué hacen.
+
+**Pantalla completa (D-189, la otra mitad):** `kids/mapa.astro` gana una
+rama nueva — `historiaFullscreen`, activa solo cuando de verdad hay Modo
+Historia que mostrar (nunca en el estado vacío `mapaSinHabilidades`, que
+necesita el marco de página de siempre para no leerse como un error). En
+esa rama: el `<h1>` se oculta visualmente (`.visualmente-oculto`, se queda
+para accesibilidad/SEO), no hay aside de grupo ni párrafo de salida, y
+`HistoriaMount` recibe `pantallaCompleta` — una clase nueva
+(`.historia-mount--completa`) que le quita el alto fijo y las esquinas
+redondeadas. **La salida a la reja de caras no desapareció**: sería la
+línea roja #1 con otro nombre (un menor sin forma de salir es un navegador
+bloqueado) — se queda como un botón ✕ flotante, 88×88 px (el archivo entero
+se mide contra el piso táctil de KINDER vía `@banda KINDER`, aunque solo lo
+vea PRIMARIA/SECUNDARIA), dentro del área segura (D-041).
+
+**Un falso positivo real, encontrado y corregido en la verificación:**
+`audits/mapa-lectura-sin-tabla.mjs` (F9 #399) bloqueó el commit por
+"menciona position" — la palabra vino de `position: fixed` en CSS, no de
+un dato social de posición/ranking, que es lo que esa regla busca de
+verdad. Se corrigió excluyendo el bloque `<style>` de esa búsqueda
+específica (una hoja de estilo no puede consultar D1, así que no puede
+filtrar el dato que #399 protege) — sin tocar las demás comprobaciones del
+mismo archivo.
+
+**Cómo se verificó (D-032):** `astro check` (0 errores), `astro build`,
+`node audits/run.mjs` (138/138 en verde, tras el arreglo de arriba).
+Extremo a extremo en un navegador local: tocar una opción incorrecta y
+luego, dentro de la ventana, tocar la correcta hizo que el veredicto
+juzgara la ELECCIÓN CORREGIDA, no la primera — la línea roja #8 sobrevive
+al cambio. Acertar disparó la celebración y avanzó solo a un ítem nuevo sin
+ningún toque adicional, confirmado leyendo `controller.actual` antes y
+después. La pantalla completa se confirmó con captura: sin título, sin pie
+de página, el fondo ilustrado cubriendo el viewport entero, con el botón ✕
+flotante funcionando (navegó fuera de Modo Historia al tocarlo).
+
+**Lo que NO se verificó:** el camino de fallo/offline (que el botón manual
+"Reintentar"/"Siguiente" sigue apareciendo sin auto-avance) se verificó
+leyendo el código, no con una captura de un fallo real disparado a
+propósito en esta corrida — el tiempo de la sesión se agotó antes de
+forzar ese caso específico.
+
+**Investigación relacionada:** D-185, D-187, mc-30, D-041, F9 #399.
+
+## D-190 — El mapa de KINDER y PRIMARIA SÍ muestra un número de secuencia y un candado — reversa D-017/D-019 · 2026-08-08
+
+**Decisión del dueño**, tras ver un video de referencia (Gemini) de un
+"Mundo Kinder" multi-bioma con un camino de troncos numerados y candado en
+el que aún no se ha llegado, con Larry caminando de verdad entre ellos:
+quiso ese mecanismo exacto para KINDER y, con el mismo camino, para TODO
+PRIMARIA (no una banda nueva — SECUNDARIA se queda con el árbol de D-184).
+
+**Esto reversa una mitad, y solo una mitad, de D-017/D-019/guía de estilo.**
+Antes de esta decisión, la regla era literal: "el mapa nunca muestra un
+número, nunca un candado" — respaldada por `mc-10` (la presión de
+rendimiento empeora el desempeño en matemáticas) y por `audits/mapa-sin-numero-de-nivel.mjs`,
+que ejecutaba `construirArbol()`/`construirSendero()` y fallaba si aparecía
+CUALQUIER número. **`mc-10` se le mostró al dueño explícitamente antes de
+que respondiera** — la evidencia no se descubrió después, se explicó y se
+decidió construir en contra de ella de todas formas. No se borra de
+`mapa.ts` ni de este archivo: queda anotada como advertencia vigente.
+
+**Lo que NO se reversa, y sigue exactamente igual:** el **nivel de
+dificultad** (N1…N12, D-017, "el número de nivel no se enseña a nadie") —
+`construirArbol()` lo sigue recibiendo para agrupar y lo sigue tirando; el
+número nuevo (`secuencia`) mide la posición en el CAMINO ("vas en el
+tronco 7 de 12"), no la dificultad. Las dos cosas conviven en el mismo
+archivo porque miden ejes distintos, con esa distinción escrita en el
+encabezado del módulo para que nadie las confunda mañana.
+
+**Lo que se construyó, en `packages/motor/src/mapa.ts`:**
+
+- `NodoDelArbol` y `LugarDelSendero` ganan dos campos: `secuencia: number`
+  (1, 2, 3… correlativo a través de TODO el camino, calculado igual que
+  `orden` ya se calculaba para agrupar, ahora expuesto por nodo) y
+  `bloqueado: boolean` (sale de pericia real, nunca de un grafo de
+  prerrequisitos: un nodo está bloqueado si nadie tocó esa habilidad
+  todavía Y tampoco se tocó la anterior en la secuencia — empezar el
+  anterior basta para desbloquear el siguiente, no hace falta dominarlo).
+  El primer nodo de todos nunca está bloqueado.
+- `Arista`/`Arbol.aristas` **sigue sin implementarse y sigue vacío** — el
+  candado nuevo es sobre la SECUENCIA del camino, no sobre un grafo de
+  prerrequisitos por tema; `skills` sigue sin la columna que eso pediría
+  (F5 §4.8 bloqueo 10). D-190 no reabre esa puerta.
+- `audits/mapa-sin-numero-de-nivel.mjs` se actualizó: la comprobación
+  dinámica ya no exige "cero números" en el sendero/árbol — exige "el
+  único número es `secuencia`, por nombre exacto, y `nivel`/`level` nunca
+  aparece". `audits/rango-vs-nivel.mjs` no necesitó cambios: solo vigila
+  las palabras "nivel"/"rango", y `secuencia` es, a propósito, un nombre
+  de campo distinto que nunca las usa.
+- Assets nuevos por Recraft (D-080): dos variantes de tronco de madera
+  (`tronco-a`/`tronco-b`, `scripts/gen-mapa-historia.mjs`) con la
+  superficie limpia para que Phaser pinte el número encima (nunca horneado
+  en la imagen), y un ícono de candado (`candado`) para el estado
+  bloqueado. Además, un ciclo de caminata real de Larry —ahora
+  ANTROPOMÓRFICO, erguido en dos piernas, corrección explícita del dueño
+  sobre el rinoceronte a cuatro patas que ya existía— con 4 cuadros de
+  zancada más poses de festejo/idle (`scripts/gen-larry.mjs`,
+  `larry_camina_1..4`, `larry_festejo`, `larry_idle_1/2`). Esta pose
+  bípeda es una familia NUEVA y deliberadamente distinta de
+  `larry_caminando`/`larry_busto` (D-080), que siguen a cuatro patas y en
+  producción en el sendero plano de KINDER y en la racha (#205) — no se
+  tocaron aquí; migrarlas a bípedo, si se pide, es un cambio aparte con su
+  propio radio de impacto.
+
+**Lo que este cambio de plan implica y todavía no se construyó en esta
+sesión:** el rediseño completo de Modo Historia (mundo multi-bioma,
+`MenuScene`, `LevelNode` con tronco/número/candado real, `LarryAvatar.ts`
+caminando la curva, KINDER migrado de Sabana HTML a Phaser, PRIMARIA al
+mismo camino, `RetosScene`, ícono de sonido) — D-190 documenta el cambio de
+regla y el modelo de datos que lo sostiene; el resto de fases sigue en
+curso y se documenta con su propia decisión cuando aterrice.
+
+**Cómo se verificó:** `node --experimental-strip-types packages/motor/src/mapa.prueba.mjs`
+(24/24 casos, incluyendo 5 casos nuevos para `secuencia`/`bloqueado` que
+antes no existían y que fallan si se quita cualquiera de los dos campos o
+si el candado se calcula distinto). `node audits/mapa-sin-numero-de-nivel.mjs`
+y `node audits/rango-vs-nivel.mjs` en verde con la regla nueva.
+`node audits/kinder-sin-examen.mjs` y `node audits/mapa-escena.mjs` en
+verde, sin disparar con el modelo de datos nuevo (todavía no hay UI que lo
+pinte). Los 9 assets nuevos de Larry/tronco/candado se revisaron
+visualmente uno por uno (se encontró y corrigió una firma visible en un
+cuadro de Larry, y una insignia de estrella no pedida en otro, ambas antes
+de llegar aquí) — **falta la revisión final del dueño antes de commitear
+(D-080): esta sesión no puede ser la única revisión humana que la regla
+exige.**
+
+**Lo que NO se verificó:** ningún build/audit completo de `apps/web` con
+UI real usando estos campos — `LevelNode.ts`/`MapScene.ts` todavía no se
+tocaron en esta sesión; lo de arriba cubre solo el modelo de datos
+(`packages/motor`) y los dos auditores que lo vigilan directamente.
+
+**Investigación relacionada:** D-184, D-187, D-189, mc-10, mc-43 §8, F5 §4.8 bloqueo 10.

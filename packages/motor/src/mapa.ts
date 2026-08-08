@@ -54,6 +54,34 @@
  * independientes (D-070): mira los tipos por dentro, y EJECUTA el módulo para
  * comprobar que ningún objeto devuelto lleva el nivel de entrada.
  *
+ * ─── D-190 — reversa deliberada: SÍ hay un número, y SÍ hay candado ────────
+ *
+ * El dueño vio el video de referencia del mundo multi-bioma (troncos
+ * numerados, candado en el que no se ha alcanzado) y pidió ese mecanismo
+ * para KINDER y PRIMARIA, con `mc-10` ya explicado y aceptado por encima.
+ * Lo de arriba NO se borra: sigue siendo cierto que el **nivel de
+ * dificultad** (N1…N12, D-017) nunca se enseña. Lo que D-190 agrega es
+ * `secuencia` — la posición en el CAMINO, no en la dificultad ("vas en el
+ * tronco 7 de 12") — y `bloqueado` — si el niño puede pisar ese tronco
+ * todavía. Las dos cosas conviven porque miden ejes distintos:
+ *
+ *   nivel      (N1…N12, D-017)   → NUNCA se devuelve. Sigue tirado en
+ *                                  `construirArbol()`, igual que siempre.
+ *   secuencia  (1, 2, 3…, D-190) → SÍ se devuelve. Es el mismo correlativo
+ *                                  que `orden` ya calculaba para agrupar,
+ *                                  ahora expuesto por nodo, no por grupo.
+ *
+ * `audits/mapa-sin-numero-de-nivel.mjs` se actualiza para distinguir las
+ * dos: sigue bloqueando cualquier aparición de `nivel`, y deja pasar
+ * `secuencia` por nombre exacto — no por "ya no hay ningún número".
+ *
+ * `bloqueado` sale de pericia real, nunca de un grafo de prerrequisitos:
+ * un nodo está bloqueado si nadie ha tocado esa habilidad TODAVÍA (pericia
+ * "asomando") y tampoco se ha tocado la anterior en la secuencia. En cuanto
+ * el niño mete un solo ítem en el nodo anterior (pericia sube a
+ * "en_camino"), el siguiente se desbloquea — no hace falta dominarlo. El
+ * primer nodo de todos nunca está bloqueado: no tiene anterior.
+ *
  * ─── Lo que este módulo NO hace ────────────────────────────────────────────
  *
  *  · No escribe. Ninguna función de aquí acepta una conexión, un `env` ni un
@@ -185,6 +213,15 @@ export interface LugarDelSendero {
   readonly estado: "por_visitar" | "en_curso" | "terminado";
   /** Dónde está el compañero. Exactamente uno del sendero lo tiene en `true`. */
   readonly aqui: boolean;
+  /** 1, 2, 3… la posición en EL CAMINO (D-190). Nunca un nivel de dificultad. */
+  readonly secuencia: number;
+  /**
+   * `true` si el niño no puede pisar este tronco todavía (D-190). Sale de
+   * `estado`, nunca de un grafo de prerrequisitos: bloqueado es "por_visitar"
+   * Y el lugar anterior en el camino TAMBIÉN es "por_visitar". El primero de
+   * todos nunca está bloqueado.
+   */
+  readonly bloqueado: boolean;
 }
 
 export interface Sendero {
@@ -220,7 +257,12 @@ export function construirSendero(
     const aqui = !plantado && estado !== "terminado";
     if (aqui) plantado = true;
 
-    lugares.push({ lugar, estado, aqui });
+    // D-190: bloqueado si nadie ha pisado este lugar Y tampoco el anterior.
+    // El primero de todos (i === 0) nunca está bloqueado.
+    const anterior = i > 0 ? lugares[i - 1] : null;
+    const bloqueado = estado === "por_visitar" && anterior !== null && anterior.estado === "por_visitar";
+
+    lugares.push({ lugar, estado, aqui, secuencia: i + 1, bloqueado });
   }
 
   // Todo terminado: el compañero se queda en el último lugar, no en ninguno.
@@ -242,6 +284,19 @@ export interface NodoDelArbol {
   readonly pericia: Pericia;
   /** `skill_state` tal cual, para el relleno de la barra. Nunca es un nivel. */
   readonly relleno: number;
+  /**
+   * 1, 2, 3… la posición en EL CAMINO (D-190), contada a través de TODOS los
+   * grupos en el orden en que `construirArbol()` los deja — nunca el nivel
+   * de dificultad (`nivel`, D-017), que sigue sin devolverse.
+   */
+  readonly secuencia: number;
+  /**
+   * `true` si el niño no ha tocado esta habilidad (`pericia === "asomando"`)
+   * Y tampoco tocó la anterior en la secuencia (D-190). No es un grafo de
+   * prerrequisitos — `Arista`/`aristas` sigue vacío, ver más abajo. El
+   * primer nodo de todo el árbol nunca está bloqueado.
+   */
+  readonly bloqueado: boolean;
 }
 
 /**
@@ -296,17 +351,32 @@ export function construirArbol(entradas: readonly EntradaDeHabilidad[]): Arbol {
   }
 
   const niveles = [...porNivel.keys()].sort((a, b) => a - b);
+
+  // D-190: la secuencia y el bloqueo se calculan sobre el camino COMPLETO
+  // (todos los grupos, en orden), no dentro de cada grupo por separado — un
+  // niño no ve "grupo 2, tronco 1 de 3": ve "tronco 7 de 12".
+  let contador = 0;
+  let periciaAnterior: Pericia | null = null;
+
   const grupos: GrupoDelArbol[] = niveles.map((nivel, i) => ({
     // `i + 1`, no `nivel`. Aquí es donde el número de nivel deja de existir.
     orden: i + 1,
     nodos: [...(porNivel.get(nivel) ?? [])]
       .sort((a, b) => (a.habilidad < b.habilidad ? -1 : a.habilidad > b.habilidad ? 1 : 0))
-      .map((e) => ({
-        habilidad: e.habilidad,
-        rotulo: e.rotulo,
-        pericia: periciaDe(e.skillState),
-        relleno: e.skillState,
-      })),
+      .map((e) => {
+        contador++;
+        const pericia = periciaDe(e.skillState);
+        const bloqueado = pericia === "asomando" && periciaAnterior === "asomando";
+        periciaAnterior = pericia;
+        return {
+          habilidad: e.habilidad,
+          rotulo: e.rotulo,
+          pericia,
+          relleno: e.skillState,
+          secuencia: contador,
+          bloqueado,
+        };
+      }),
   }));
 
   return { forma: "arbol", grupos, aristas: [] };

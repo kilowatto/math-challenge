@@ -399,11 +399,19 @@ export function elegirSiguiente(
   estado: EstadoDeHabilidad,
   yaVistos: ReadonlySet<string>,
   aleatorio: () => number,
+  /**
+   * Un theta elegido por la PERSONA en vez del que da `habilidadParaElegir()`
+   * (enmienda de D-017 para SERIO y PRIMARIA — nunca KINDER, ese gateo vive en
+   * quien llama, no aquí). Sigue sin ser la banda: es un número que el
+   * llamador decide pasar o no, y este módulo no sabe ni pregunta por qué. El
+   * estado persistido no se toca — la elección afecta solo esta selección.
+   */
+  thetaFija?: number,
 ): Candidato | null {
   const disponibles = candidatos.filter((c) => !yaVistos.has(c.id));
   if (disponibles.length === 0) return null;
 
-  const theta = habilidadParaElegir(estado);
+  const theta = thetaFija ?? habilidadParaElegir(estado);
   // Mientras ubica se apunta a 0.50 —máxima información— y en cuanto la
   // ubicación cierra, al 0.75 de Math Garden. El porqué está arriba, en
   // `ACIERTO_UBICANDO`, con las cifras medidas.

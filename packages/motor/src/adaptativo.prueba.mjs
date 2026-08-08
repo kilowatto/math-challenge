@@ -197,6 +197,26 @@ ok(dificil.habilidad - e0.habilidad > facil.habilidad - e0.habilidad,
     "con la ventana ideal vacía sirve el más cercano: el motor NUNCA dice «vuelve mañana» (criterio #94)");
 }
 
+// --- theta fijo por elección de la persona (enmienda de D-017 para SERIO y
+// PRIMARIA — ver decisions.md). El gateo de quién puede pasar `thetaFija` es
+// de quien llama; aquí solo se prueba que, pasado, gana sobre el estado. -----
+{
+  const banco = [];
+  for (let i = 0; i < 40; i++) banco.push({ id: `j${i}`, dificultad: -3 + (i / 39) * 6 });
+  const estBajo = estadoInicial(1);
+
+  const sinFija = elegirSiguiente(banco, estBajo, new Set(), () => 0);
+  const conFija = elegirSiguiente(banco, estBajo, new Set(), () => 0, 3);
+  ok(conFija.dificultad > sinFija.dificultad,
+    "thetaFija cambia qué ítem sale aunque el estado (habilidad estimada) sea el mismo");
+
+  // Sin ella, el comportamiento de siempre no cambia ni un poco: `undefined`
+  // toma la misma rama que antes de que este parámetro existiera.
+  const otraVezSinFija = elegirSiguiente(banco, estBajo, new Set(), () => 0, undefined);
+  ok(cerca(otraVezSinFija.dificultad, sinFija.dificultad),
+    "sin thetaFija (u omitido) el resultado es idéntico al de antes de este parámetro");
+}
+
 // --- el cierre de la ubicación (criterio #91) ------------------------------
 {
   let est = estadoInicial(6);

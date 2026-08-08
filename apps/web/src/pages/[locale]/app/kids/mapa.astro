@@ -57,13 +57,25 @@
  *    accesible de cada lugar viaja en `aria-label` para el lector de pantalla
  *    y para el adulto que mira por encima del hombro.
  *
- * ─── La forma es el sendero para toda banda de niño, hoy ────────────────────
+ * ─── D-184: PRIMARIA/SECUNDARIA ya tienen su propia pantalla ────────────────
  *
- * El banco autorado es el de kinder (653 ítems, 14 habilidades, F5) y es el
- * principio de la escalera para todos (D-034): un niño de PRIMARIA recorre los
- * mismos catorce lugares. El día que haya contenido de PRIMARIA/SECUNDARIA, la
- * forma sale de `formaDeMapa(tema)` y el árbol ya sabe enrutarse — la propiedad
- * `destinoDeNodo` de `Mapa.astro` está hecha y sin llamador, a propósito.
+ * El banco autorado kinder (653 ítems, 14 habilidades, F5) sigue siendo el
+ * principio de la escalera para todos, y esta página sigue siendo la Sabana
+ * — sin cambios — para cualquier niño cuya `theme_band` real sea KINDER.
+ *
+ * Para PRIMARIA/SECUNDARIA, esta página ahora monta **Modo Historia**: el
+ * `Arbol` real (`construirArbol()`, F7 #233) sobre un mapa de Phaser en vez
+ * del sendero HTML de kinder. `entradasDelArbol` vive en
+ * `lib/mapa-primaria.ts`, hermano de `lib/mapa-kids.ts`. La banda se lee UNA
+ * vez de D1 y decide TODO — cuál rama de este archivo corre, nunca un `if`
+ * repetido más abajo.
+ *
+ * Ola 2 de D-184: el reto en sí (no solo el mapa y el panel de nivel) vive
+ * ahora en Phaser también (`GameplayScene.ts`), con un espejo DOM/ARIA real
+ * (`AccessibleReto.ts`) para lector de pantalla y teclado — a diferencia del
+ * mapa, que sigue siendo 100% canvas sin esa capa (hueco documentado en
+ * `README-modo-historia.md` y D-184). La Sabana de KINDER, que esta rama NO
+ * toca, sigue siendo accesible como siempre.
  */
 import { isLocale, t, type Locale } from "../../../../i18n";
 import {
@@ -73,11 +85,22 @@ import {
 } from "../../../../lib/sesiones";
 import { leerModelo } from "../../../../lib/aprendiz";
 import { rutaKids } from "../../../../lib/rutas-app";
-import { destinoDeLugar, fasesDelSendero } from "../../../../lib/mapa-kids";
+import { destinoDeLugar, fasesDelSendero, rutaMapaKids } from "../../../../lib/mapa-kids";
+import { entradasDelArbol } from "../../../../lib/mapa-primaria";
 import { f9Habilitado } from "../../../../lib/grupo-flag";
 import Mapa from "../../../../components/mapa/Mapa.astro";
-import { construirSendero } from "../../../../../../../packages/motor/src/mapa.ts";
+import HistoriaMount from "../../../../components/mapa/HistoriaMount.astro";
+import { construirSendero, construirArbol } from "../../../../../../../packages/motor/src/mapa.ts";
 import { HABILIDADES_KINDER } from "../../../../../../../packages/motor/src/banco-kinder.ts";
+import { ETIQUETA_DE_VOZ } from "../../../../../../../packages/tutor/src/voz.ts";
+
+import enReto from "../../../../i18n/reto/en.json";
+import esMXReto from "../../../../i18n/reto/es-MX.json";
+import esESReto from "../../../../i18n/reto/es-ES.json";
+import frFRReto from "../../../../i18n/reto/fr-FR.json";
+import ptBRReto from "../../../../i18n/reto/pt-BR.json";
+import ptPTReto from "../../../../i18n/reto/pt-PT.json";
+import deDEReto from "../../../../i18n/reto/de-DE.json";
 
 import "../../../../styles/fonts.css";
 import "../../../../styles/tokens.css";
@@ -121,6 +144,28 @@ if (!nino) {
   return r;
 }
 
+/**
+ * La banda REAL de este niño, leída UNA vez. Decide qué pantalla entera se
+ * sirve más abajo (D-184) y si puede elegir nivel (enmienda de D-017 para
+ * PRIMARIA/SECUNDARIA — ver `decisions.md`). `null`/fallo de lectura cae a
+ * KINDER: ante cualquier duda, gana la banda más protegida, nunca al revés.
+ */
+let banda: string | null = null;
+if (env?.DB) {
+  try {
+    const fila = await (env.DB as D1Database).prepare(
+      "SELECT theme_band FROM child_profiles WHERE id = ?",
+    )
+      .bind(nino.childProfileId)
+      .first<{ theme_band: string }>();
+    banda = fila?.theme_band ?? null;
+  } catch {
+    banda = null;
+  }
+}
+const esPrimariaOMas = banda === "PRIMARIA" || banda === "SECUNDARIA";
+const puedeElegirNivel = esPrimariaOMas;
+
 let grupo: { escuela: string | null; club: boolean } | null = null;
 if (env?.DB && await f9Habilitado(env.CONFIG_KV, locale)) {
   try {
@@ -140,90 +185,207 @@ if (env?.DB && await f9Habilitado(env.CONFIG_KV, locale)) {
   }
 }
 
-// --- El sendero, compuesto de piezas que ya existen -------------------------
+// --- El progreso, compuesto de piezas que ya existen -------------------------
 
 /**
  * El resumen del aprendiz (F4). `leerModelo` falla ABIERTO —devuelve `[]`— y
- * aquí eso significa un sendero entero por visitar, que es honesto: si no se
- * pudo leer el progreso, no se puede enseñar. El juego nunca se niega por esto:
- * el primer lugar sigue siendo enlace, porque lo decide `construirSendero()`.
+ * aquí eso significa un mapa entero por visitar, que es honesto: si no se
+ * pudo leer el progreso, no se puede enseñar. El juego nunca se niega por
+ * esto — es el MISMO resumen para las dos ramas, KINDER y PRIMARIA+.
  */
 const resumen = await leerModelo(env?.LEARNER_DO, nino.childProfileId);
 
-/** Los catorce lugares de la Sabana, en el orden en que se recorren (D-019). */
-const orden = Object.keys(HABILIDADES_KINDER);
-
-const sendero = construirSendero(orden, fasesDelSendero(resumen));
-
-/**
- * Lo que Larry lleva puesto (#235, D-080). Una preferencia, no progreso: si la
- * tabla no está en este entorno o la lectura falla, Larry sale sin accesorios,
- * que es degradar y no reventar.
- */
+let sendero: ReturnType<typeof construirSendero> | null = null;
 let accesorios: string[] = [];
-if (env?.DB) {
-  try {
-    const fila = await (env.DB as D1Database).prepare(
-      "SELECT accessory_ids FROM companion_state WHERE child_profile_id = ?",
-    )
-      .bind(nino.childProfileId)
-      .first<{ accessory_ids: string }>();
-    if (fila) {
-      const leidos = JSON.parse(fila.accessory_ids);
-      if (Array.isArray(leidos)) accesorios = leidos.filter((x) => typeof x === "string");
+let arbol: ReturnType<typeof construirArbol> | null = null;
+/**
+ * Los mismos rótulos que `Pantalla.astro`/`jugar.astro` resuelven para el
+ * reto en HTML (`i18n/reto/{locale}.json`, claves `juego.*`) — ver
+ * `RetoController.ts`. `GameplayScene` y `AccessibleReto` los reciben ya
+ * escritos por el mismo motivo que allá: ningún catálogo de siete locales
+ * viaja al cliente (`mc-47` §5).
+ */
+let rotulosReto: {
+  bien: string; otra: string; siguiente: string; salir: string; cargando: string;
+  mirar: string; confirmar: string; reintentar: string; elige: string;
+  escuchar: string; vozActivada: string; vozDesactivada: string; sinVoz: string; pendiente: string;
+} | null = null;
+
+if (esPrimariaOMas) {
+  // --- D-184: el árbol real de PRIMARIA/SECUNDARIA, para Modo Historia -----
+  const CATALOGOS_RETO: Record<string, Record<string, unknown>> = {
+    en: enReto, "es-MX": esMXReto, "es-ES": esESReto, "fr-FR": frFRReto,
+    "pt-BR": ptBRReto, "pt-PT": ptPTReto, "de-DE": deDEReto,
+  };
+  const catalogoReto = CATALOGOS_RETO[locale] ?? enReto;
+  const habilidades: Record<string, string> = {};
+  for (const clave of Object.keys(catalogoReto)) {
+    if (clave.startsWith("habilidad.") && typeof catalogoReto[clave] === "string") {
+      habilidades[clave.slice("habilidad.".length)] = catalogoReto[clave] as string;
     }
-  } catch {
-    accesorios = [];
+  }
+  arbol = construirArbol(entradasDelArbol(resumen, habilidades));
+
+  const textoReto = (clave: string, respaldo: string) =>
+    typeof catalogoReto[clave] === "string" ? (catalogoReto[clave] as string) : respaldo;
+  rotulosReto = {
+    bien: textoReto("juego.bien", "That's it!"),
+    otra: textoReto("juego.otra", "Not this time. Have another go."),
+    siguiente: textoReto("juego.siguiente", "Next"),
+    salir: textoReto("juego.salir", "Done for now"),
+    cargando: textoReto("juego.cargando", "Here it comes…"),
+    mirar: textoReto("juego.mirar", "Look!"),
+    confirmar: textoReto("juego.confirmar", "Ready!"),
+    reintentar: textoReto("juego.reintentar", "Try it again"),
+    elige: textoReto("juego.elige", "Tap one, then Ready."),
+    escuchar: textoReto("juego.escuchar", "Listen"),
+    vozActivada: textoReto("juego.vozActivada", "Voice on"),
+    vozDesactivada: textoReto("juego.vozDesactivada", "Voice off"),
+    sinVoz: textoReto("juego.sinVoz", "This device has no voice installed for this language, so Larry can’t read out loud here."),
+    pendiente: textoReto("juego.pendiente", "Saved on this device; it will be checked when you reconnect."),
+  };
+} else {
+  // --- KINDER: exactamente el mismo código de siempre, sin tocar ----------
+
+  /** Los catorce lugares de la Sabana, en el orden en que se recorren (D-019). */
+  const orden = Object.keys(HABILIDADES_KINDER);
+  sendero = construirSendero(orden, fasesDelSendero(resumen));
+
+  /**
+   * Lo que Larry lleva puesto (#235, D-080). Una preferencia, no progreso: si
+   * la tabla no está en este entorno o la lectura falla, Larry sale sin
+   * accesorios, que es degradar y no reventar.
+   */
+  if (env?.DB) {
+    try {
+      const fila = await (env.DB as D1Database).prepare(
+        "SELECT accessory_ids FROM companion_state WHERE child_profile_id = ?",
+      )
+        .bind(nino.childProfileId)
+        .first<{ accessory_ids: string }>();
+      if (fila) {
+        const leidos = JSON.parse(fila.accessory_ids);
+        if (Array.isArray(leidos)) accesorios = leidos.filter((x) => typeof x === "string");
+      }
+    } catch {
+      accesorios = [];
+    }
   }
 }
+
+/**
+ * Pantalla completa (D-189) solo cuando de verdad hay Modo Historia que
+ * mostrar — no en el estado vacío (`mapaSinHabilidades` necesita el título
+ * y el marco de siempre para no verse como un error). `arbol!`/`rotulosReto!`
+ * más abajo son seguros por esto: TypeScript no encadena la comprobación a
+ * través de una variable separada, pero este booleano ya la hizo.
+ */
+const historiaFullscreen = Boolean(esPrimariaOMas && arbol && arbol.grupos.length > 0 && rotulosReto);
+
+/**
+ * D-190: PRIMARIA usa el mismo camino de troncos que KINDER (reemplaza el
+ * árbol de D-184); SECUNDARIA se queda con el árbol de habilidades, sin
+ * número ni candado. Decidido aquí, con la banda REAL ya leída de D1 arriba
+ * — nunca en el cliente (`LevelNode.ts` solo dibuja el modo que le llega).
+ */
+const modoDelMapa: "arbol" | "camino" = banda === "SECUNDARIA" ? "arbol" : "camino";
 ---
 
 <!doctype html>
-<html lang={locale} dir="ltr" data-band="KINDER">
+<html lang={locale} dir="ltr" data-band={esPrimariaOMas ? banda : "KINDER"}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     {/* Pantalla autenticada de un menor: fuera del índice, siempre. */}
     <meta name="robots" content="noindex, nofollow" />
-    <title>{m.mapaSenderoNombre}</title>
+    <title>{esPrimariaOMas ? m.mapaTitulo : m.mapaSenderoNombre}</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <main class="mapa-kids">
-      <h1 class="mapa-kids__titulo">{m.mapaSenderoNombre}</h1>
+    {historiaFullscreen ? (
+      /*
+        Modo Historia a pantalla completa (D-189): el dueño pidió el mismo
+        nivel de inmersión que el video de referencia — el `<canvas>` de
+        Phaser llena la pantalla entera, sin título ni enlaces de la página
+        compitiendo con el juego. El `<h1>` sigue existiendo para
+        accesibilidad/SEO (un lector de pantalla y un buscador SÍ lo
+        necesitan) pero se oculta visualmente con `.visualmente-oculto` — el
+        mismo patrón que ya usa `reto.css`.
 
-      {grupo && (
-        <aside class="mapa-grupo" aria-label={m.mapaGrupoAria}>
-          <span class="mapa-grupo__icono" role="img" aria-label={m.mapaGrupoAria}>♧</span>
-          <span class="mapa-grupo__texto">
-            {grupo.club
-              ? m.mapaGrupoClub
-              : m.mapaGrupoEscuela.replace("{nombre}", grupo.escuela ?? "")}
-          </span>
-        </aside>
-      )}
+        La salida a la reja de caras NO desaparece: sería el mismo error que
+        la línea roja #1 prohíbe con otro nombre (un menor sin forma de
+        salir es un navegador bloqueado). Se queda, pero como un botón
+        flotante pequeño en vez de un párrafo de página — mismo destino,
+        mismo nombre accesible (`m.kidsTitle`), otro tratamiento visual. El
+        archivo entero se mide contra el piso táctil de KINDER (88 px,
+        `audits/touch-targets.mjs` vía el marcador `@banda KINDER` de
+        arriba) aunque este botón solo lo vea PRIMARIA/SECUNDARIA — por eso
+        mide 88×88, no un ícono chico.
+      */
+      <main class="mapa-historia-completa">
+        <h1 class="visualmente-oculto">{m.mapaTitulo}</h1>
+        <HistoriaMount
+          arbol={arbol!}
+          modo={modoDelMapa}
+          locale={locale}
+          puedeElegirNivel={puedeElegirNivel}
+          rotulos={{
+            eligeNivel: m.practicarEligeNivel,
+            nivelFacil: m.practicarNivelFacil,
+            nivelMedio: m.practicarNivelMedio,
+            nivelDificil: m.practicarNivelDificil,
+            jugar: m.historiaJugar,
+          }}
+          rotulosReto={rotulosReto!}
+          etiquetaVoz={ETIQUETA_DE_VOZ[locale]}
+          salirA={rutaMapaKids(locale)}
+          pantallaCompleta
+        />
+        <a class="mapa-historia-completa__salida" href={rutaKids(locale)} aria-label={m.kidsTitle}>
+          ✕
+        </a>
+      </main>
+    ) : (
+      <main class="mapa-kids">
+        <h1 class="mapa-kids__titulo">{esPrimariaOMas ? m.mapaTitulo : m.mapaSenderoNombre}</h1>
 
-      <Mapa
-        locale={locale}
-        tema="KINDER"
-        mapa={sendero}
-        companeroVisible={true}
-        accesorios={accesorios}
-        sinFuenteDeHabilidades={false}
-        accionCompanero={null}
-        destinoDeLugar={(l) => destinoDeLugar(locale, l.lugar, l.estado)}
-      />
+        {grupo && (
+          <aside class="mapa-grupo" aria-label={m.mapaGrupoAria}>
+            <span class="mapa-grupo__icono" role="img" aria-label={m.mapaGrupoAria}>♧</span>
+            <span class="mapa-grupo__texto">
+              {grupo.club
+                ? m.mapaGrupoClub
+                : m.mapaGrupoEscuela.replace("{nombre}", grupo.escuela ?? "")}
+            </span>
+          </aside>
+        )}
 
-      {/*
-        La salida hacia la reja de caras. Va al final, chica, dentro de un
-        párrafo — la excepción «Inline» de WCAG 2.2 §2.5.8, la misma forma que
-        la salida del adulto en la reja. Un enlace de 88 px aquí competiría con
-        los lugares, que es justo lo contrario de lo que esta pantalla quiere.
-      */}
-      <p class="mapa-kids__salida">
-        <a href={rutaKids(locale)}>{m.kidsTitle}</a>
-      </p>
-    </main>
+        {esPrimariaOMas ? (
+          <p class="mapa-kids__vacio">{m.mapaSinHabilidades}</p>
+        ) : (
+          <Mapa
+            locale={locale}
+            tema="KINDER"
+            mapa={sendero}
+            companeroVisible={true}
+            accesorios={accesorios}
+            sinFuenteDeHabilidades={false}
+            accionCompanero={null}
+            destinoDeLugar={(l) => destinoDeLugar(locale, l.lugar, l.estado)}
+          />
+        )}
+
+        {/*
+          La salida hacia la reja de caras. Va al final, chica, dentro de un
+          párrafo — la excepción «Inline» de WCAG 2.2 §2.5.8, la misma forma que
+          la salida del adulto en la reja. Un enlace de 88 px aquí competiría con
+          los lugares, que es justo lo contrario de lo que esta pantalla quiere.
+        */}
+        <p class="mapa-kids__salida">
+          <a href={rutaKids(locale)}>{m.kidsTitle}</a>
+        </p>
+      </main>
+    )}
 
     <style>
       /* Solo tokens que existen — un `var()` sin definir invalida la
@@ -259,6 +421,67 @@ if (env?.DB) {
       }
 
       .mapa-kids__salida a { color: var(--color-text-brand); }
+
+      .mapa-kids__vacio {
+        font-family: var(--font-sistema);
+        color: var(--color-text-muted);
+        text-align: center;
+        padding: calc(var(--space) * 3) var(--space);
+      }
+
+      /* Idéntica a `.visualmente-oculto` en reto.css/HistoriaMount.astro —
+         duplicada porque los estilos de esta página son scoped y esos
+         archivos no se importan aquí. */
+      .visualmente-oculto {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      /*
+        Modo Historia a pantalla completa (D-189): el `<canvas>` de Phaser
+        llena TODO el viewport, sin el `max-inline-size`/padding de
+        `.mapa-kids` — el dueño pidió el mismo nivel de inmersión que su
+        video de referencia, sin título ni enlaces de página compitiendo
+        con el juego.
+      */
+      .mapa-historia-completa {
+        position: fixed;
+        inset: 0;
+        block-size: 100dvh;
+        inline-size: 100vw;
+        background: var(--color-surface);
+      }
+
+      /* El botón de salida flotante — mismo destino que "Who is playing?"
+         en el layout normal, tratado como ícono en vez de párrafo. 88 px:
+         este archivo entero se mide contra el piso táctil de KINDER
+         (`@banda KINDER` arriba, `audits/touch-targets.mjs`), aunque solo
+         lo vea PRIMARIA/SECUNDARIA. Dentro del área segura (D-041): nunca
+         bajo el indicador de inicio ni la muesca. */
+      .mapa-historia-completa__salida {
+        position: fixed;
+        inset-block-start: calc(var(--space) + env(safe-area-inset-top));
+        inset-inline-end: calc(var(--space) + env(safe-area-inset-right));
+        z-index: 10;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: var(--tap-kinder, 88px);
+        block-size: var(--tap-kinder, 88px);
+        border-radius: 999px;
+        background: rgb(255 255 255 / 0.85);
+        color: var(--color-text-muted);
+        font-size: var(--text-lg);
+        text-decoration: none;
+        box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+      }
+      .mapa-historia-completa__salida:focus-visible {
+        outline: 4px solid var(--color-accent);
+        outline-offset: 3px;
+      }
     </style>
   </body>
 </html>

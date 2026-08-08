@@ -174,6 +174,18 @@ const habilidadFija =
   pedido !== null && pedido in HABILIDADES_KINDER ? pedido : null;
 
 /**
+ * El nivel elegido por la PERSONA (enmienda de D-017 para PRIMARIA y
+ * SECUNDARIA — ver `decisions.md`). Esta página la sirve a cualquier banda de
+ * niño, así que aquí solo se valida la FORMA del valor; quién puede usarlo de
+ * verdad lo decide `puedeElegirNivel()` en `/api/jugar` contra la banda real
+ * del niño — un KINDER con `?nivel=` en la URL a mano simplemente lo ve
+ * ignorado ahí, igual que un `?habilidad=` inventado se ignora arriba.
+ */
+const nivelesValidos = new Set(["facil", "medio", "dificil"]);
+const nivelPedido = Astro.url.searchParams.get("nivel");
+const nivelFijo = nivelPedido !== null && nivelesValidos.has(nivelPedido) ? nivelPedido : null;
+
+/**
  * El enlace a la liga (F7 #242). Va en la franja de ARRIBA, junto al sendero
  * y nunca dentro del reto activo — #221 §3.6: los anuncios viven al principio
  * o al final de la sesión, no en medio de un ítem.
@@ -262,7 +274,7 @@ const pasosCaminados = progreso?.racha.diasJugadosTotal ?? null;
        `salirA` es el mapa (D-152): al terminar, el niño vuelve a la Sabana y
        puede rejugar cualquier lugar terminado. `habilidadFija` solo viaja
        cuando se viene de tocar un lugar del mapa. */}
-    <Pantalla locale={locale} rotulos={rotulos} aciertos={aciertos} salirA={rutaDelMapa} etiquetaVoz={ETIQUETA_DE_VOZ[locale]} habilidadFija={habilidadFija} />
+    <Pantalla locale={locale} rotulos={rotulos} aciertos={aciertos} salirA={rutaDelMapa} etiquetaVoz={ETIQUETA_DE_VOZ[locale]} habilidadFija={habilidadFija} nivelFijo={nivelFijo} />
 
     <style>
       /* La franja del sendero: centrada sobre la pantalla del reto, sin

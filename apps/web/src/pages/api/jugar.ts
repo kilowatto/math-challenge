@@ -256,20 +256,38 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   if (!quien) return json({ error: "sin_sesion" }, 401);
 
   /**
+   * ─── La banda REAL, leída una vez (D-185) ─────────────────────────────────
+   *
+   * Antes esta lectura pasaba dos veces por el mismo `SELECT theme_band` —una
+   * para elegir el origen del banco (nunca existía, un niño siempre caía a
+   * `env.INGEST`) y otra dentro de `puedeElegirNivel()`—. Ahora se lee UNA vez
+   * aquí y las dos decisiones —qué banco sirve, y si puede elegir nivel— la
+   * reutilizan. Un adulto es "SERIO" siempre; un niño sin fila o sin lectura
+   * posible cae a "KINDER" — ante la duda, la banda más protegida gana.
+   */
+  const banda = await bandaRealDe(env, quien);
+
+  /**
    * ─── El origen de los ítems (F5c #356, D-072; F5b #159, D-034) ───────────
    *
-   * Un NIÑO juega KINDER, servido por la ingesta desde `banco-kinder.ts`, como
-   * hasta hoy — ese comportamiento no cambia. Un ADULTO que practica juega la
-   * franja SERIO (N8–N10) desde `item_bank` en D1, que es donde D-072 manda
-   * que viva ese banco y la razón de ser de F5b. El motor es el MISMO para
-   * todos (D-034: sin ubicación adaptativa propia — la franja no trae uno
-   * «para adultos»). Si la siembra SERIO de este ambiente no corre todavía,
-   * `bancoAdultoD1` cae a PRIMARIA; sin `DB` —o con las dos siembras vacías,
-   * ver `servirSiguiente`— el adulto cae al banco de kinder: nunca se le
-   * niega el juego a nadie por infraestructura.
+   * Hasta el 2026-08-07 esto decía «un niño siempre juega KINDER» — y era
+   * literal: `quien.esAdulto ? bancoAdultoD1 : env.INGEST` no miraba la banda
+   * del niño para nada, así que un niño de PRIMARIA/SECUNDARIA recibía
+   * contenido de KINDER fuera de un duelo. Se encontró verificando Modo
+   * Historia (D-185) — el árbol mostraba el progreso real, pero jugar
+   * hubiera servido la pregunta equivocada. Ahora el niño de PRIMARIA o
+   * SECUNDARIA juega desde `item_bank` en D1 (D-072), igual que el adulto y
+   * que un duelo — mismo motor para todos (D-034). Si la siembra de este
+   * ambiente no corre todavía o `item_bank` está vacío, el respaldo de abajo
+   * (`servirSiguiente`) cae a `env.INGEST`: nunca se le niega el juego a
+   * nadie por infraestructura.
    */
   const origen: OrigenDeItems =
-    quien.esAdulto && env.DB ? bancoAdultoD1(env.DB, RETO) : env.INGEST;
+    quien.esAdulto && env.DB
+      ? bancoAdultoD1(env.DB, RETO)
+      : (banda === "PRIMARIA" || banda === "SECUNDARIA") && env.DB
+        ? bancoPrimariaD1(env.DB, RETO)
+        : env.INGEST;
 
   const accion = url.searchParams.get("accion");
   let cuerpo: Record<string, unknown>;
@@ -320,7 +338,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const semilla = await nivelSemillaDe(env, quien.id, quien.esAdulto);
 
   if (accion === "siguiente") {
-    return servirSiguiente(env, quien, locale, semilla, cuerpo, origen, dueloId, accesoDuelo.presentar);
+    return servirSiguiente(env, quien, locale, semilla, banda, cuerpo, origen, dueloId, accesoDuelo.presentar);
   }
   if (accion === "responder") {
     return recibirRespuesta(env, quien, locale, semilla, cuerpo, origen, dueloId, accesoDuelo.calificarContraBanco);
@@ -353,6 +371,69 @@ async function nivelSemillaDe(env: Env, childProfileId: string, esAdulto = false
   } catch {
     return nivelSemilla(0, new Date().getUTCFullYear());
   }
+}
+
+/**
+ * ─── El nivel elegido por la PERSONA (enmienda de D-017, ver decisions.md) ──
+ *
+ * D-017 seguía diciendo «el mapa presenta lugares, no pregunta niveles» — la
+ * materia sí se elige (arriba, `lugarPedido`), la dificultad la elegía siempre
+ * el motor. El dueño pidió otra vez, con nombre, poder elegir también el
+ * nivel — y esta vez la respuesta no es la misma para todas las bandas.
+ *
+ * **KINDER nunca.** `mc-10` mide que ver la propia dificultad empeora el
+ * desempeño en matemáticas, y a los 4-6 años ni siquiera hay con qué
+ * interpretar «difícil» como una elección informada — es la misma razón por
+ * la que D-002 separa edad de dificultad. `audits/mapa-sin-numero-de-nivel.mjs`
+ * ya vigila que ninguna superficie de kinder interpole un nivel; esto no le
+ * abre una puerta nueva porque kinder nunca llega a `NIVEL_FIJO_A_ESCALON`.
+ *
+ * **SERIO (adulto) y PRIMARIA sí.** Un adulto ya decide por sí mismo qué tan
+ * difícil quiere su práctica, y PRIMARIA (7-11) ya lee y ya puede sostener la
+ * idea de «esto va a estar más difícil a propósito» sin que sea un examen.
+ *
+ * Las tres opciones son CUALITATIVAS y no un número de escalón — ni una
+ * calificación ni un grado escolar (D-017 sigue viva en esa parte): se
+ * traducen a un escalón fijo de la escalera de `dificultadDeNivel()` y de ahí
+ * a un theta, nunca al revés.
+ */
+const NIVEL_FIJO_A_ESCALON: Record<string, number> = { facil: 2, medio: 6, dificil: 10 };
+
+type Banda = "KINDER" | "PRIMARIA" | "SECUNDARIA" | "SERIO";
+
+/**
+ * La banda REAL de quien juega — nunca un supuesto (D-185). Un adulto es
+ * "SERIO" siempre. Un niño sin fila, sin base de datos o con la lectura
+ * fallida cae a "KINDER": ante la duda, la banda más protegida gana, la
+ * misma regla que ya usaba `puedeElegirNivel` antes de fusionarse con esta
+ * función.
+ *
+ * Se lee UNA vez por petición y decide DOS cosas que antes se resolvían por
+ * separado con dos lecturas de D1: qué banco de ítems sirve (`origen`, en el
+ * handler principal) y si la persona puede fijar su propio nivel
+ * (`puedeElegirNivel` más abajo, ahora una función pura sobre este valor).
+ */
+async function bandaRealDe(env: Env, quien: Jugador): Promise<Banda> {
+  if (quien.esAdulto) return "SERIO";
+  if (!env.DB) return "KINDER";
+  try {
+    const fila = await env.DB.prepare("SELECT theme_band FROM child_profiles WHERE id = ?")
+      .bind(quien.id)
+      .first<{ theme_band: string }>();
+    if (fila?.theme_band === "PRIMARIA" || fila?.theme_band === "SECUNDARIA") return fila.theme_band;
+    return "KINDER";
+  } catch {
+    return "KINDER";
+  }
+}
+
+/**
+ * ¿Puede ESTE jugador fijar su propio nivel? Un adulto, siempre. Un niño,
+ * solo si su banda real es PRIMARIA o SECUNDARIA — nunca KINDER. Pura sobre
+ * `bandaRealDe()`: ya no repite la lectura de D1.
+ */
+function puedeElegirNivel(banda: Banda): boolean {
+  return banda === "SERIO" || banda === "PRIMARIA" || banda === "SECUNDARIA";
 }
 
 /**
@@ -420,6 +501,7 @@ async function servirSiguiente(
   quien: Jugador,
   locale: string,
   semilla: number,
+  banda: Banda,
   cuerpo: Record<string, unknown>,
   origen: OrigenDeItems,
   dueloId: string | null,
@@ -589,7 +671,19 @@ async function servirSiguiente(
   // este endpoint todavía no abre. Está dicho en el PR como residuo conocido: la
   // pieza que falta es abrir esa sesión aquí, no cambiar el motor.
   const evitar = new Set(typeof cuerpo.ultimoItemId === "string" ? [cuerpo.ultimoItemId] : []);
-  const elegido = elegirSiguiente(candidatos, estado, evitar, Math.random);
+
+  /*
+   * El nivel elegido por la persona (enmienda de D-017 — ver `puedeElegirNivel`
+   * y `decisions.md`). `banda` ya se leyó una vez en el handler principal —
+   * ver `bandaRealDe()` — así que esto es una función pura, sin otra lectura
+   * a D1.
+   */
+  const nivelPedido = typeof cuerpo.nivel === "string" ? cuerpo.nivel : null;
+  const escalonPedido = nivelPedido ? NIVEL_FIJO_A_ESCALON[nivelPedido] : undefined;
+  const thetaFija =
+    escalonPedido !== undefined && puedeElegirNivel(banda) ? dificultadDeNivel(escalonPedido) : undefined;
+
+  const elegido = elegirSiguiente(candidatos, estado, evitar, Math.random, thetaFija);
   if (!elegido) return json({ error: "sin_items" }, 503);
 
   const item = await origen.presentarItem(elegido.id, locale);
@@ -600,7 +694,14 @@ async function servirSiguiente(
     : crypto.randomUUID();
   const orden = respondidosEnTotal;
   try {
-    const bandaSesion = dueloId ? "PRIMARIA" : quien.esAdulto ? "SERIO" : "KINDER";
+    /*
+     * Antes decía `quien.esAdulto ? "SERIO" : "KINDER"` — un niño de
+     * PRIMARIA/SECUNDARIA se registraba como sesión KINDER en la ingesta
+     * (D-185). `banda` ya es la real; el duelo sigue fijo en "PRIMARIA" a
+     * propósito (D-081: KINDER no duela nunca, así que un duelo siempre es
+     * de esa banda o más, y el set congelado siempre sale de `item_bank`).
+     */
+    const bandaSesion = dueloId ? "PRIMARIA" : banda;
     await env.INGEST.iniciarSesionReto(retoSesionId, bandaSesion);
     await env.INGEST.servirSesionReto(retoSesionId, { orden, itemId: item.id, nivel: item.nivel });
   } catch {

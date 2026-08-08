@@ -39,6 +39,32 @@
 //    («Nivel 4 · fracciones»). Ese texto es contenido y lo revisa una persona.
 //  · Si una cifra correcta está mal explicada. Eso es léxico y le toca a la
 //    flota adversarial.
+//
+// ─── La enmienda de D-183 (2026-08-06) ─────────────────────────────────────
+//
+// SERIO y PRIMARIA ya pueden elegir su propio nivel — cualitativo (Fácil /
+// Medio / Difícil), nunca un número — y KINDER sigue exactamente donde
+// estaba: la mitad de D-017 que este auditor existe para vigilar NO se tocó
+// para esa banda. Lo que cambió es que la palabra «nivel» ya puede aparecer,
+// una vez, en una plantilla del mapa — siempre que el mismo archivo también
+// referencie `puedeElegirNivel`, el identificador que D-183 fija como el
+// único portón (real, contra la banda en D1, nunca contra lo que mande el
+// cliente). Cualquier interpolación de «nivel» SIN esa palabra al lado sigue
+// bloqueando el commit, tal como antes de D-183 — y el número CIFRADO sigue
+// prohibido sin excepción, en cualquier banda, con o sin la marca.
+//
+// ─── La enmienda de D-190 (2026-08-08) ─────────────────────────────────────
+//
+// El dueño pidió el mecanismo del video de referencia (troncos numerados,
+// candado) para KINDER y PRIMARIA — con `mc-10` visto y aceptado por encima.
+// Esto reversa la mitad de #232/#233 que decía "ni un número": ahora
+// `construirSendero()`/`construirArbol()` SÍ devuelven un campo `secuencia`
+// (la posición en el camino, nunca la dificultad). Lo que este auditor sigue
+// vigilando, sin cambio, es que **el número de NIVEL** (`nivel`, D-017) siga
+// sin salir — la comprobación dinámica de la sección 1 ya no exige "cero
+// números": exige "el único número es `secuencia`, por nombre exacto, y
+// `nivel`/`level` nunca aparece". Un número que se cuele con otro nombre
+// (un porcentaje, un `skillState` crudo) sigue bloqueando igual que antes.
 
 import { archivos, leer, informar, sinComentarios } from "./lib/repo.mjs";
 import { construirArbol, construirSendero } from "../packages/motor/src/mapa.ts";
@@ -100,7 +126,8 @@ if (arbol.aristas.length > 0) {
   );
 }
 
-// El sendero de KINDER: ni un `number` a ninguna profundidad (#232).
+// El sendero de KINDER: ningún `number` a ninguna profundidad SALVO
+// `secuencia` (D-190) — el candado del camino, no un porcentaje de progreso.
 const sendero = construirSendero(["K01", "K02"], { K01: "terminado" });
 const numeros = [];
 const mirar = (v, ruta) => {
@@ -109,12 +136,13 @@ const mirar = (v, ruta) => {
   else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) mirar(x, `${ruta}.${k}`);
 };
 mirar(sendero, "sendero");
-if (numeros.length > 0) {
+const numerosFueraDeSecuencia = numeros.filter((n) => !/\.secuencia = /.test(n));
+if (numerosFueraDeSecuencia.length > 0) {
   problemas.push(
-    `el modelo del sendero de KINDER lleva ${numeros.length} campo(s) numérico(s) ` +
-      `(${numeros[0]}). #232 pide que la pantalla no muestre ningún número, y la forma de ` +
-      "garantizarlo es que la plantilla no tenga de dónde sacarlo. El usuario tiene cuatro años " +
-      "y no lee (D-019).",
+    `el modelo del sendero de KINDER lleva ${numerosFueraDeSecuencia.length} campo(s) numérico(s) ` +
+      `fuera de \`secuencia\` (${numerosFueraDeSecuencia[0]}). D-190 permite el número de posición ` +
+      "en el camino (`secuencia`) y nada más: ningún porcentaje ni cifra de progreso — el usuario " +
+      "tiene cuatro años y no lee (D-019).",
   );
 }
 revisados++;
@@ -137,11 +165,19 @@ for (const f of PLANTILLAS) {
         "se enseña a nadie; se dice qué se está practicando.",
     );
   }
-  // Interpolar `nivel` en la plantilla es la otra vía, y la más probable.
-  if (/\{[^}]*\bnivel\b[^}]*\}/i.test(texto)) {
+  /*
+   * Interpolar `nivel` en la plantilla es la otra vía, y la más probable —
+   * PERO D-183 (2026-08-06) la permite para SERIO/PRIMARIA, cualitativa y
+   * gateada por banda real. La marca de que este archivo ya pasó por esa
+   * revisión es que también referencie `puedeElegirNivel`: sin esa palabra
+   * al lado, cualquier `nivel` sigue siendo la fuga que este auditor busca.
+   */
+  if (/\{[^}]*\bnivel\b[^}]*\}/i.test(texto) && !/\bpuedeElegirNivel\b/.test(texto)) {
     problemas.push(
-      `${f} interpola algo llamado \`nivel\`. El modelo de vista del mapa no trae el nivel ` +
-        "(D-017, #100): si aquí hay uno, salió de otra parte y va a llegar a una pantalla.",
+      `${f} interpola algo llamado \`nivel\` sin pasar por \`puedeElegirNivel\` (D-183). El ` +
+        "modelo de vista del mapa no trae el nivel por su cuenta (D-017, #100): si aquí hay uno " +
+        "sin ese portón, salió de otra parte y va a llegar a una pantalla sin que nadie haya " +
+        "comprobado la banda.",
     );
   }
 }
@@ -192,13 +228,13 @@ for (const loc of LOCALES) {
 }
 
 notas.push(`${PLANTILLAS.length} plantilla(s) del mapa y ${LOCALES.length} locales revisados`);
-notas.push("ejecutado: N5+N7 → grupos 1 y 2, y el sendero sin un solo campo numérico");
+notas.push("ejecutado: N5+N7 → grupos 1 y 2, y el sendero solo con `secuencia` (D-190), nunca `nivel`");
 
 informar({
   nombre: "mapa-sin-numero-de-nivel",
   problemas,
   notas,
-  cita: "D-017, criterio #100, #232, #233, mc-10, mc-43 §8",
+  cita: "D-017, D-190, criterio #100, #232, #233, mc-10, mc-43 §8",
   revisados,
   resumen: `${revisados} archivo(s) y 2 modelos ejecutados`,
   porQueBloquea:

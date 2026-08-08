@@ -53,6 +53,18 @@
 //    y los nombres hablados de los números (`i18n/voz/`): no son cadenas de la
 //    interfaz de juego.
 //  · Que «Rango 12» se muestre con buena tipografía. Eso es la guía de estilo.
+//
+// ─── La enmienda de D-183 (2026-08-06) ─────────────────────────────────────
+//
+// SERIO y PRIMARIA ya pueden elegir su nivel — cualitativo, nunca un número —
+// y KINDER no se tocó: sigue exactamente donde estaba. El chequeo 4 (las
+// plantillas) reconoce esa enmienda por DOS identificadores, escritos a mano
+// y no derivados: `puedeElegirNivel` (el portón real contra la banda en D1,
+// en las páginas que ofrecen el selector) y `nivelFijo` (el prop que
+// `Pantalla.astro` reenvía tal cual, sin saber de bandas — la gatea siempre
+// quien la llama, nunca ella). Un archivo que interpola «nivel» sin ninguno
+// de los dos al lado sigue bloqueando el commit, igual que antes de D-183.
+// El número CIFRADO sigue prohibido sin excepción, con o sin marca.
 
 import { archivos, leer, informar, sinComentarios, sqlSinComentarios, conFronteraUnicode } from "./lib/repo.mjs";
 
@@ -307,11 +319,14 @@ for (const f of PLANTILLAS) {
         "se enseña a nadie; se dice qué se está practicando.",
     );
   }
-  if (/\{[^}]*\b(nivel|level)\b[^}]*\}/i.test(texto)) {
+  const interpolaNivel = /\{[^}]*\b(nivel|level)\b[^}]*\}/i.test(texto);
+  const gateadoPorEnmiendaD183 = /\b(puedeElegirNivel|nivelFijo)\b/.test(texto);
+  if (interpolaNivel && !gateadoPorEnmiendaD183) {
     problemas.push(
-      `${f} interpola algo llamado \`nivel\`/\`level\`. Ningún modelo de vista de las pantallas de ` +
-        "juego trae el nivel (D-017, #100): si aquí hay uno, salió de otra parte y va a llegar a " +
-        "una pantalla del niño.",
+      `${f} interpola algo llamado \`nivel\`/\`level\` sin pasar por \`puedeElegirNivel\`/\`nivelFijo\` ` +
+        "(D-183). Ningún modelo de vista de las pantallas de juego trae el nivel por su cuenta " +
+        "(D-017, #100): si aquí hay uno sin ese portón, salió de otra parte y va a llegar a una " +
+        "pantalla sin que nadie haya comprobado la banda.",
     );
   }
 }

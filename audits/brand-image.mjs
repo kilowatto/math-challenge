@@ -40,6 +40,26 @@ export const PALETTE = {
   "fondo-oscuro":     { hex: "#16181A", rol: "derivado · fondo en tema oscuro" },
   "superficie-oscura":{ hex: "#1F2224", rol: "derivado · superficie en tema oscuro" },
   "texto-oscuro":     { hex: "#ECEDEE", rol: "derivado · texto en tema oscuro" },
+
+  // --- D-184 (2026-08-06): los dos tonos de la Sabana, para Modo Historia -
+  // La paleta Ignia no tiene verde, y un mundo de vegetación necesita cielo y
+  // tierra. Son la MISMA mezcla que ya usa `styles/mapa.css` para la Sabana
+  // de KINDER —nunca un verde nuevo—: azul-ignia 18% sobre blanco (cielo) y
+  // naranja-claro 28% sobre blanco (tierra). Documentados aquí para que
+  // `apps/web/src/game/scenes/BootScene.ts` los pueda citar en un comentario
+  // sin que este auditor los lea como marca inventada.
+  "sabana-cielo":  { hex: "#D3E4F1", rol: "derivado · azul-ignia 18% sobre blanco (mapa.css)" },
+  "sabana-tierra": { hex: "#FDE5C7", rol: "derivado · naranja-claro 28% sobre blanco (mapa.css)" },
+
+  // --- D-186 (2026-08-07): verde, excepción de marca — SOLO vegetación -----
+  // El PDF de Ignia no tiene verde. Un mapa de vegetación ilustrado (Modo
+  // Historia, D-184) no se puede resolver solo en azul/naranja como la
+  // Sabana de KINDER — así que el dueño autorizó estos dos tonos, con
+  // candado: nunca en un botón, texto o ícono de interfaz, en ninguna
+  // banda. Viven solo dentro de las piezas de arte generadas
+  // (scripts/gen-mapa-historia.mjs) para el fondo y la vegetación del mapa.
+  "verde-follaje": { hex: "#5B8C3A", rol: "excepción D-186 · vegetación de Modo Historia, nunca UI" },
+  "verde-claro":   { hex: "#8FC461", rol: "excepción D-186 · vegetación de Modo Historia, nunca UI" },
 };
 
 const HEXES = new Set(Object.values(PALETTE).map((c) => c.hex.toUpperCase()));

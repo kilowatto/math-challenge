@@ -83,6 +83,24 @@ marcó cuatro hex fuera de paleta en `tokens.css` — eran estos. La respuesta
 correcta no era relajar el auditor sino declarar los colores y justificar su
 contraste, que es lo que está arriba.
 
+### Verde — excepción de marca, solo para vegetación ilustrada (D-186)
+
+El PDF de Ignia no tiene verde, y esa ausencia era intencional hasta que Modo
+Historia (D-184) necesitó ilustrar un mapa de vegetación de verdad — la Sabana
+de KINDER se resuelve en dorado/azul porque es sabana, pero un bosque no.
+
+| Token | Hex | Para qué |
+|---|---|---|
+| `verde-follaje` | `#5B8C3A` | Vegetación — árboles, arbustos, la pradera |
+| `verde-claro` | `#8FC461` | Vegetación — reflejos y hojas jóvenes, nunca un fondo grande |
+
+**Nunca en un botón, un texto o un ícono de interfaz — en ninguna banda, en
+ninguna pantalla.** Vive exclusivamente dentro de las piezas de arte generadas
+para el fondo y la vegetación de Modo Historia (`scripts/gen-mapa-historia.mjs`).
+El naranja y el azul de Ignia siguen siendo los únicos colores de UI del
+producto entero. `audits/brand-image.mjs` declara estos dos tonos junto a
+`sabana-cielo`/`sabana-tierra` para que nadie los lea como marca inventada.
+
 ---
 
 ## Tipografía
@@ -205,8 +223,8 @@ mismo dato, ¿por qué tres pantallas?». Porque no es el mismo lector.
 
 | Banda | Forma | Qué se ve | Qué NUNCA se ve |
 |---|---|---|---|
-| KINDER | **Sendero** — el camino de la Sabana (D-019) | Círculos grandes (`--tap-kinder`, 88 px), llenos o vacíos, y Larry caminando | **Ni un número.** Ni porcentaje, ni cifra, ni contador |
-| PRIMARIA · SECUNDARIA | **Árbol** de habilidades por temas nombrados | Nodos agrupados, con barra de relleno y la pericia dicha en palabra | **Ni una arista de prerrequisito**: flecha, línea o candado «desbloqueado por X» |
+| KINDER · PRIMARIA | **Sendero** — camino de troncos numerados (D-190) | Troncos de madera con número de **secuencia** de camino, candado en el que no se ha llegado, Larry caminando de verdad entre ellos | **El número de NIVEL** (D-017): la secuencia mide posición en el camino, nunca dificultad |
+| SECUNDARIA | **Árbol** de habilidades por temas nombrados | Nodos agrupados, con barra de relleno y la pericia dicha en palabra | **Ni una arista de prerrequisito**: flecha, línea o candado «desbloqueado por X» |
 | SERIO · JR · PRO | **Tablero** de cifras planas | XP, días seguidos y dominio por tema, formateados por locale | Mapa espacial, y el compañero **apagado por defecto** |
 
 Las tres reglas que las sostienen, y por qué cada una:
@@ -221,16 +239,23 @@ Las tres reglas que las sostienen, y por qué cada una:
    agrupa por nivel y devuelve un `orden` correlativo, así que un alumno con
    habilidades de N5 y N7 ve grupos 1 y 2 — y ese 1 y ese 2 tampoco se pintan.
 
-2. **KINDER no lleva cifras porque el usuario no lee** (D-019). El modelo del
-   sendero no tiene un solo campo numérico, así que no hay porcentaje que una
-   plantilla pueda pintar por descuido. Lo que distingue un lugar de otro es
-   relleno y borde; el nombre accesible va en `aria-label` para el lector de
-   pantalla y para el adulto que mira por encima del hombro.
+2. **KINDER y PRIMARIA SÍ llevan un número — de secuencia, no de nivel
+   (D-190, reversa deliberada de la regla original de D-019).** El dueño
+   pidió el mecanismo de un video de referencia (troncos numerados,
+   candado) para los dos, con `mc-10` ya visto y aceptado por encima —
+   `mc-10` no se borra de aquí ni de `mapa.ts`: queda como advertencia
+   vigente, y la decisión de construir en contra de ella está en D-190 con
+   fecha y con quién la pidió. Lo que SIGUE prohibido, sin excepción: un
+   porcentaje, una cifra de dominio, o el número de dificultad —
+   `secuencia` es el único número que el modelo de vista expone, y mide
+   "vas en el tronco 7 de 12", nunca "qué tan bien te va".
 
 3. **Nada se tacha y nada regresa.** Perder una racha no borra ni retrocede
    visualmente el mapa (`mc-43` implicación 7): un lugar por visitar es un
    círculo vacío, no un fracaso. Es la misma regla que la línea roja #6, movida
-   del contador al dibujo.
+   del contador al dibujo. El candado de D-190 no contradice esto: se
+   desbloquea con solo EMPEZAR el tronco anterior, nunca por dominarlo, y
+   nunca se vuelve a bloquear un tronco ya alcanzado.
 
 ### El compañero es Larry, y su arte se pide, no se genera (D-080)
 
@@ -252,6 +277,16 @@ nodo y el tablero — neutro a propósito, `mc-37`), con su manifiesto
 pieza falte en el manifiesto, el sitio se pinta como **hueco marcado**:
 `data-hueco-de-arte="larry"`, borde punteado en naranja, del tamaño final. Un
 hueco que se ve es un hueco que se llena; un `<div>` vacío se queda diez meses.
+
+**Dos familias de pose, a propósito (D-190).** `larry_caminando`/`larry_busto`
+son un rinoceronte a CUATRO patas — el canon original, todavía en producción
+en el sendero plano de KINDER y en la racha (#205). El mundo multi-bioma de
+Modo Historia usa un Larry ANTROPOMÓRFICO — erguido en dos piernas, brazos
+que se mueven al caminar, como el video de referencia — en `larry_camina_1..4`
+(ciclo de caminata real), `larry_festejo` y `larry_idle_1/2`. Las dos
+familias conviven mientras el rediseño no llegue a todas las pantallas donde
+Larry aparece hoy; migrar las piezas viejas a bípedo es una decisión aparte,
+con su propio radio de impacto, y no se toma calladamente con esta.
 
 Y la frontera de #257, que con D-080 importa más y no menos: **Larry nunca
 comenta el avatar, el alias ni los cosméticos de un niño.** Un bot que felicita

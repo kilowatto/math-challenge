@@ -69,20 +69,71 @@ const llave = () => process.env.RECRAFT_API_KEY;
 // `worldWidth:worldHeight` real (720:2400 ≈ 1:3.33, ver `data/story.ts`) —
 // Phaser estira el sprite al tamaño del mundo, así que la proporción exacta
 // del archivo importa menos que tener suficiente detalle vertical.
-const FONDO = {
-  clave: "fondo-primaria-1",
-  size: "1024x2048",
-  prompt:
-    "wide vertical panorama of empty rolling green hills for a children's picture book game map, " +
-    "soft grassy terrain in green (#5B8C3A) with lighter green highlights (#8FC461), " +
-    "distant clusters of trees and bushes near the edges, small clouds in a pale sky at the very top, " +
-    "gentle top-down/isometric game map perspective, completely empty open meadow in the center for game pieces to sit on, " +
-    "the hills are bare and untouched by any trail or structure, pure untouched grassland, " +
-    "no dirt path of any kind, no paved path, no road, no trail, no track, no walkway, no stepping stones, " +
-    "no water, no river, no pond, no buildings, no houses, no huts, no cabins, no roofs, no fences, no farms, " +
-    "no characters, no people, no faces, no animals, no creatures, no sheep, no birds, no livestock, " +
-    "no text, no numbers, no digits, no letters, no signs, no logos, no watermarks, no signatures",
-};
+// D-190: el "Mundo Kinder" del video de referencia es multi-bioma, no una
+// sola escena — `fondo-primaria-1` (bosque/colinas) sigue siendo el primer
+// capítulo; estos tres se suman para desierto/nieve/costa, MISMA regla de
+// "escena sin camino ni personajes" que ya se peleó y ganó con el bosque.
+const FONDOS = [
+  {
+    clave: "fondo-primaria-1",
+    size: "1024x2048",
+    prompt:
+      "wide vertical panorama of empty rolling green hills for a children's picture book game map, " +
+      "soft grassy terrain in green (#5B8C3A) with lighter green highlights (#8FC461), " +
+      "distant clusters of trees and bushes near the edges, small clouds in a pale sky at the very top, " +
+      "gentle top-down/isometric game map perspective, completely empty open meadow in the center for game pieces to sit on, " +
+      "the hills are bare and untouched by any trail or structure, pure untouched grassland, " +
+      "no dirt path of any kind, no paved path, no road, no trail, no track, no walkway, no stepping stones, " +
+      "no water, no river, no pond, no buildings, no houses, no huts, no cabins, no roofs, no fences, no farms, " +
+      "no characters, no people, no faces, no animals, no creatures, no sheep, no birds, no livestock, " +
+      "no text, no numbers, no digits, no letters, no signs, no logos, no watermarks, no signatures",
+  },
+  {
+    clave: "fondo-desierto-1",
+    size: "1024x2048",
+    prompt:
+      "flat cartoon illustration for a children's picture book game map, not photorealistic, " +
+      "no dramatic lighting, no cinematic shot, simple flat shapes and flat colors, " +
+      "wide vertical panorama of empty smooth sandy hills, " +
+      "warm sandy terrain in tan and orange tones (#D9A066 base, #E8C48A highlights) with soft rounded shapes, " +
+      "a few small simple cloud shapes in a warm pale flat-colored sky at the very top, " +
+      "gentle top-down/isometric game map perspective like a mobile game level map, " +
+      "completely empty open sand in the center for game pieces to sit on, bare untouched sand, " +
+      "no dirt path, no paved path, no road, no trail, no track, no walkway, no stepping stones, " +
+      "no water, no oasis, no buildings, no huts, no tents, no ruins, no pyramids, no cliffs, no canyons, no mesas, " +
+      "no characters, no people, no faces, no animals, no camels, no birds, no snakes, " +
+      "no text, no numbers, no letters, no signs, no logos, no watermarks, no signatures",
+  },
+  {
+    clave: "fondo-nieve-1",
+    size: "1024x2048",
+    prompt:
+      "wide vertical panorama of empty snowy mountains for a children's picture book game map, " +
+      "soft white snow terrain with pale blue-white shading and gentle sparkle, " +
+      "distant snow-capped peaks and pine tree clusters near the edges, a pale winter sky at the very top, " +
+      "gentle top-down/isometric game map perspective, completely empty open snowfield in the center for game pieces to sit on, " +
+      "the snow is bare and untouched by any trail or structure, pure untouched snowfield, " +
+      "no dirt path of any kind, no paved path, no road, no trail, no track, no walkway, no stepping stones, no footprints, " +
+      "no water, no frozen lake, no buildings, no houses, no cabins, no igloos, no roofs, no fences, " +
+      "no characters, no people, no faces, no animals, no creatures, no penguins, no birds, no polar bears, " +
+      "no text, no numbers, no digits, no letters, no signs, no logos, no watermarks, no signatures",
+  },
+  {
+    clave: "fondo-costa-1",
+    size: "1024x2048",
+    prompt:
+      "wide vertical panorama of empty grassy hills next to the ocean for a children's picture book game map, " +
+      "soft green terrain (#5B8C3A base, #8FC461 highlights) on one side, calm flat turquoise water on the other, " +
+      "a pale sky with a few simple clouds at the very top, " +
+      "gentle top-down/isometric game map perspective, completely empty open grassy patch in the center for game pieces to sit on, " +
+      "the hills are bare and untouched by any trail or structure, pure untouched grassland, " +
+      "no dirt path of any kind, no paved path, no road, no trail, no track, no walkway, no stepping stones, no bridge, " +
+      "no boats, no ships, no sailboats, no canoes, no rafts, no docks, no piers, no anchors, no sails, " +
+      "no buildings, no houses, no huts, no cabins, no lighthouse, no tower, no roofs, no fences, no village, no civilization, " +
+      "no characters, no people, no faces, no animals, no creatures, no fish, no birds, no seagulls, no crabs, " +
+      "no text, no numbers, no digits, no letters, no signs, no logos, no watermarks, no signatures",
+  },
+];
 
 // ─── La vegetación: piezas aisladas, blanco puro para recortar alfa ─────────
 //
@@ -93,7 +144,7 @@ const FONDO = {
 // palabra "cute"/"picture book" en un objeto pequeño parece ser el gatillo de
 // la antropomorfización, igual que "children's math app" lo era para las
 // insignias numéricas en gen-mapa.mjs.
-const BLANCO = "isolated on a pure flat solid white (#FFFFFF) background, nothing else in the frame, no shadow, no ground, no gradient background";
+const BLANCO = "isolated on a pure flat solid white (#FFFFFF) background, nothing else in the frame, no shadow, no ground, no gradient background, no scenery, no landscape, no background scene, no other objects, no second item, no extra plants, no additional elements";
 const ESTILO_VEGETACION =
   "simple flat vector botanical clipart, plant illustration only, not a character, not alive, no personality, " +
   "side view game asset, clean simple shape that reads well at small size, " +
@@ -105,6 +156,48 @@ const VEGETACION = [
   ["arbusto-a", `a single rounded leafy bush plant, ${BLANCO}, ${ESTILO_VEGETACION}`, 220, 240],
   ["arbusto-b", `a single small round shrub plant, ${BLANCO}, ${ESTILO_VEGETACION}`, 180, 200],
   ["helecho-a", `a single tall clump of grass blades, ${BLANCO}, ${ESTILO_VEGETACION}`, 140, 220],
+];
+
+// Mismo marco "clipart, plant/rock only, not alive" que ya funcionó para el
+// bosque — solo cambian los tonos por bioma (D-190).
+const ESTILO_DESIERTO =
+  "simple flat vector clipart illustration, object only, not a character, not alive, no personality, " +
+  "side view game asset, clean simple shape that reads well at small size, growing directly out of the ground with no pot, " +
+  "warm sand and terracotta tones (#D9A066 base, #E8C48A highlights) " +
+  "absolutely no face, no eyes, no mouth, no smile, no cheeks, no limbs, no people, no characters, " +
+  "no animals, no creatures, no camel, no lizard, no snake, no bird, no pot, no planter, no vase, no container, " +
+  "no text, no numbers, no letters, no logos, no watermarks, no signatures";
+// `cactus-a` (saguaro alto) se intentó tres veces y las tres Recraft coló
+// una mini-escena de fondo (montañas, cactus chicos) pese al recorte "extreme
+// close-up" — se deja fuera en vez de seguir gastando llamadas; dos piezas de
+// vegetación alcanzan igual que en el bosque original (D-190).
+const VEGETACION_DESIERTO = [
+  ["cactus-b", `extreme close-up crop of a small round barrel cactus plant filling the entire frame, ${BLANCO}, ${ESTILO_DESIERTO}`, 160, 160],
+  ["roca-desierto", `extreme close-up crop of a smooth rounded stone filling the entire frame, ${BLANCO}, ${ESTILO_DESIERTO}`, 200, 150],
+];
+
+const ESTILO_NIEVE =
+  "simple flat vector clipart illustration, object only, smooth solid-color surface with completely plain unmarked texture, " +
+  "side view game asset, clean simple shape that reads well at small size, " +
+  "cool white and pale blue tones (#EAF3F7 base, #BFDCE8 highlights), a little snow cap allowed " +
+  "no people, no characters, no animals, " +
+  "no text, no numbers, no letters, no logos, no watermarks, no signatures";
+const VEGETACION_NIEVE = [
+  ["pino-nevado", `extreme close-up crop of a snow-covered pine tree filling the entire frame, ${BLANCO}, ${ESTILO_NIEVE}`, 200, 260],
+  ["roca-nieve", `extreme close-up crop of an angular frost-covered mineral formation filling the entire frame, geological crystal shape, ${BLANCO}, ${ESTILO_NIEVE}`, 200, 160],
+  ["cristal-hielo", `a single small ice crystal cluster, ${BLANCO}, ${ESTILO_NIEVE}`, 140, 180],
+];
+
+const ESTILO_COSTA =
+  "simple flat vector clipart illustration, object only, not a character, not alive, no personality, " +
+  "side view game asset, clean simple shape that reads well at small size, " +
+  "tropical green and sandy tones (#5B8C3A base, #E8D9A8 highlights) " +
+  "absolutely no face, no eyes, no mouth, no smile, no cheeks, no limbs, no people, no characters, no animals, " +
+  "no text, no numbers, no letters, no logos, no watermarks, no signatures";
+const VEGETACION_COSTA = [
+  ["palmera", `a single tropical palm tree, ${BLANCO}, ${ESTILO_COSTA}`, 200, 280],
+  ["roca-costa", `a single smooth beach rock, ${BLANCO}, ${ESTILO_COSTA}`, 200, 150],
+  ["concha", `a single seashell, ${BLANCO}, ${ESTILO_COSTA}`, 140, 120],
 ];
 
 // ─── El letrero del reto: un prop, no un ser vivo — mucho más seguro que la
@@ -196,21 +289,24 @@ mkdirSync(RAW, { recursive: true });
 
 let hechas = 0;
 
-if (!solo || FONDO.clave.includes(solo)) {
-  const destino = join(OUT, `${FONDO.clave}.webp`);
+for (const fondo of FONDOS) {
+  if (solo && !fondo.clave.includes(solo)) continue;
+  const destino = join(OUT, `${fondo.clave}.webp`);
   if (existsSync(destino) && !forzar) {
-    console.log(`· ${FONDO.clave} — ya existe, se salta (--forzar para regenerar)`);
-  } else {
-    process.stdout.write(`… ${FONDO.clave} — generando`);
-    const img = await generar(FONDO.prompt);
-    writeFileSync(join(RAW, `${FONDO.clave}.webp`), img);
-    convertirFondo(FONDO.clave, FONDO.ancho, FONDO.alto);
-    hechas++;
-    console.log(`\r✓ ${FONDO.clave} — ${(img.length / 1024).toFixed(0)} KB crudo, WebP en ${OUT}`);
+    console.log(`· ${fondo.clave} — ya existe, se salta (--forzar para regenerar)`);
+    continue;
   }
+  process.stdout.write(`… ${fondo.clave} — generando`);
+  const img = await generar(fondo.prompt, fondo.size);
+  writeFileSync(join(RAW, `${fondo.clave}.webp`), img);
+  convertirFondo(fondo.clave);
+  hechas++;
+  console.log(`\r✓ ${fondo.clave} — ${(img.length / 1024).toFixed(0)} KB crudo, WebP en ${OUT}`);
 }
 
-for (const [clave, prompt, w, h] of [...VEGETACION, ...PROPS]) {
+for (const [clave, prompt, w, h] of [
+  ...VEGETACION, ...VEGETACION_DESIERTO, ...VEGETACION_NIEVE, ...VEGETACION_COSTA, ...PROPS,
+]) {
   if (solo && !clave.includes(solo)) continue;
   const destino = join(OUT, `${clave}.webp`);
   if (existsSync(destino) && !forzar) {

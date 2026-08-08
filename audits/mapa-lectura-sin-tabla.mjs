@@ -61,8 +61,17 @@ if (!paginaNino.includes("child_group_membership") || !leeMembresiasAprobadas) {
 if (!paginaNino.includes("f9Habilitado") || !paginaNino.includes("CONFIG_KV")) {
   problemas.push(`${PAGINA_NINO}: la mención de grupo no está protegida por la bandera F9 del locale.`);
 }
+/*
+ * Sin el `<style>`: "position" es tanto la propiedad CSS `position: fixed`
+ * (Modo Historia a pantalla completa, D-189) como la mención social que
+ * este bloque busca de verdad — un ranking o un "estás en el lugar N". El
+ * léxico no distingue las dos; el CSS no puede filtrar datos de un niño
+ * (no hay forma de que una hoja de estilo consulte D1), así que excluirlo
+ * de ESTA búsqueda no abre la puerta que #399 cierra.
+ */
+const paginaNinoSinEstilos = paginaNino.replace(/<style>[\s\S]*?<\/style>/g, " ");
 for (const campo of ["points", "puntos", "position", "posicion", "leaderboard", "current_streak", "full_name", "owner_user_id"]) {
-  if (new RegExp(`\\b${campo}\\b`, "i").test(paginaNino)) {
+  if (new RegExp(`\\b${campo}\\b`, "i").test(paginaNinoSinEstilos)) {
     problemas.push(`${PAGINA_NINO}: menciona ${campo}, prohibido en la mención neutra de #399.`);
   }
 }

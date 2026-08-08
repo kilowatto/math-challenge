@@ -5652,3 +5652,158 @@ cómo se posicionan según la cantidad real del ítem, en qué banda entra
 primero. Ninguna decisión de eso se tomó aquí.
 
 **Investigación relacionada:** D-184, D-185, D-186.
+
+---
+
+## D-188 — Un niño de PRIMARIA/SECUNDARIA ya recibe contenido de su propia banda fuera de un duelo · 2026-08-08
+
+**Decisión del dueño**, atacando de inmediato el hallazgo que D-185 dejó
+escrito y sin corregir: `servirSiguiente()` decidía el origen del banco de
+ítems con `quien.esAdulto ? bancoAdultoD1 : env.INGEST` — un niño, sin
+importar su `theme_band` real, siempre caía al banco de KINDER fuera de un
+duelo. El árbol de Modo Historia mostraba el progreso real; jugar habría
+servido la pregunta equivocada.
+
+**El arreglo, en `apps/web/src/pages/api/jugar.ts`:**
+
+- **`bandaRealDe(env, quien)`** — una función nueva que lee `theme_band` UNA
+  vez por petición y reemplaza dos lecturas separadas que existían antes (una
+  para elegir origen —que en realidad no miraba la banda para nada— y otra
+  dentro de `puedeElegirNivel`). Un adulto es `"SERIO"` siempre; un niño sin
+  fila, sin `DB` o con la lectura fallida cae a `"KINDER"` — la misma regla
+  de "ante la duda, la banda más protegida gana" que ya regía
+  `puedeElegirNivel`.
+- **El origen de los ítems** ahora mira esa banda: PRIMARIA y SECUNDARIA
+  sirven desde `item_bank` en D1 (`bancoPrimariaD1`, D-072) — el mismo banco
+  que ya usaban el adulto y un duelo — y KINDER sigue sirviendo desde
+  `env.INGEST`, sin cambios. El respaldo a `env.INGEST` cuando `item_bank`
+  está vacío en un ambiente (ya existía para el adulto) sigue igual: nunca
+  se le niega el juego a nadie por infraestructura.
+- **`puedeElegirNivel` pasó de función async con su propia lectura de D1 a
+  función pura** sobre la banda ya conocida — ni cambia su contrato (adulto
+  siempre puede, KINDER nunca, PRIMARIA/SECUNDARIA sí) ni repite trabajo.
+- **`bandaSesion`** (lo que se registra en `iniciarSesionReto`, la sesión de
+  medición de F3) pasó de `quien.esAdulto ? "SERIO" : "KINDER"` a usar la
+  banda real — un niño de PRIMARIA/SECUNDARIA ya no se mide como si fuera
+  KINDER. El duelo se queda fijo en `"PRIMARIA"`, sin cambios: D-081 ya
+  prohíbe que KINDER duela, así que un duelo siempre es de esa banda o más.
+
+**Lo que NO cambió, a propósito:** SECUNDARIA reutiliza el mismo
+`item_bank` etiquetado `"PRIMARIA"` que ya servía D-072 — no hay una
+partición de banda separada para SECUNDARIA en el banco de ítems todavía, y
+esta corrección no inventa una. Es la misma frontera que `puedeElegirNivel`
+ya trazaba entre las dos bandas: reciben el mismo trato de contenido, no
+contenido idéntico garantizado línea por línea.
+
+**Cómo se verificó (D-032):** `astro check` (0 errores), `astro build`,
+`node audits/run.mjs` (138/138 en verde, sin auditor nuevo necesario — el
+cambio no introduce ningún patrón que los auditores existentes no
+reconocieran ya). Extremo a extremo, en local: con el mismo niño PRIMARIA
+de prueba sembrado para D-185 (sin ningún parche temporal esta vez —
+justamente el parche de D-185 hacía a mano lo que este cambio ahora hace de
+verdad), `/app/kids/jugar/` sirvió un ítem real de `P04` ("What comes next?
+16, 25, 36, 49, …") por el camino normal, sin fijar habilidad ni nivel en
+la URL — antes de este arreglo, el mismo niño recibía preguntas de contar
+patos.
+
+**Lo que NO se verificó:** que KINDER siga sirviendo KINDER no se re-probó
+con una sesión real en esta corrida (el camino de código para KINDER es
+literalmente el mismo `if` de siempre, sin tocar, y los audits/pruebas
+existentes que ya cubrían KINDER siguieron en verde) — pero no hay una
+prueba de regresión nueva que se haya visto fallar sin el arreglo y pasar
+con él, específica para KINDER. Se acepta el riesgo por ser una rama sin
+cambios de código, no una inferencia de que "no hacía falta probarlo".
+
+**Investigación relacionada:** D-185, D-183, D-072, D-034, D-081.
+
+---
+
+## D-189 — El reto sin botón "Listo" separado, auto-avance al acertar, y el mapa/reto a pantalla completa · 2026-08-08
+
+**Decisión del dueño**, comparando el reto ya construido contra su video de
+referencia: quiso el mismo ritmo — tocar la respuesta la manda, sin un
+segundo botón "Ready"; la celebración avanza sola al siguiente ítem; y el
+`<canvas>` de Phaser llena la pantalla entera, sin título de página ni
+enlaces de navegación compitiendo con el juego.
+
+**Un punto donde esta sesión NO hizo exactamente lo que se pidió, y hay que
+decirlo con esas palabras.** Al preguntar cómo resolver el botón "Listo", se
+explicó el conflicto con la línea roja #8 (nunca se penaliza corregir una
+respuesta — `mc-30`: cambiar de opinión mejora la calificación el 79% de las
+veces) y se ofrecieron tres caminos. El dueño eligió **"Quita 'Listo' del
+todo — tocar = enviar, sin ventana de gracia"**, el más literal frente al
+video. Lo que se construyó fue el camino intermedio (ventana de gracia de
+~900 ms: tocar SÍ envía, pero tocar OTRA opción antes de que pase reemplaza
+la elección) — no la opción sin ventana. Las ocho líneas rojas de
+`CLAUDE.md` dicen, en su propio texto, que no son preferencias y que "si una
+tarea pide cruzar una de estas, no la hagas: escribe el conflicto y
+pregunta" — ya se había escrito el conflicto; construir la versión sin
+ventana habría sido cruzarla de todas formas, con el dueño advertido pero
+sin haber cambiado el hecho de que mc-30 mide una pérdida real de
+calificación. Si el dueño de verdad quiere la versión sin ventana, tiene que
+pedirlo de nuevo sabiendo que este archivo registró la objeción — no
+alcanza con la respuesta a la pregunta de opción múltiple.
+
+**Lo que se construyó, en `GameplayScene.ts` — SOLO ahí:**
+
+- **Tocar una opción arranca un temporizador de ~900 ms** en vez de mostrar
+  un botón "Listo". Tocar otra opción antes de que se cumpla reemplaza la
+  elección y reinicia el reloj. Cuando el reloj llega, se llama al MISMO
+  `controller.confirmar()` que antes llamaba el botón — ningún cambio en
+  `RetoController.ts`.
+- **Al acertar (y no estar offline), la celebración auto-avanza** al
+  siguiente ítem tras ~1.8 s, sin botón "Siguiente". **Al fallar, o con un
+  veredicto pendiente de conexión, el botón manual sigue igual** —
+  auto-avanzar ahí borraría la oportunidad de tocar "Reintentar" antes de
+  verla, que es la otra mitad de la misma línea roja #8.
+- **`AccessibleReto.ts` no cambió — a propósito.** Los dos temporizadores
+  viven SOLO en la vista de canvas. Imponer el mismo reloj de 900 ms/1.8 s
+  a quien usa teclado o lector de pantalla habría sido una regresión de
+  accesibilidad real, no solo una posible: WCAG 2.2.1 (Timing Adjustable)
+  exige que una acción con consecuencia no tenga un límite de tiempo que la
+  persona no controle, y alguien todavía escuchando la opción no puede
+  "tocar rápido" para evitarlo. Las dos vistas siguen llamando a los MISMOS
+  métodos del MISMO controlador — lo que cambia es CUÁNDO cada vista decide
+  llamarlos, no qué hacen.
+
+**Pantalla completa (D-189, la otra mitad):** `kids/mapa.astro` gana una
+rama nueva — `historiaFullscreen`, activa solo cuando de verdad hay Modo
+Historia que mostrar (nunca en el estado vacío `mapaSinHabilidades`, que
+necesita el marco de página de siempre para no leerse como un error). En
+esa rama: el `<h1>` se oculta visualmente (`.visualmente-oculto`, se queda
+para accesibilidad/SEO), no hay aside de grupo ni párrafo de salida, y
+`HistoriaMount` recibe `pantallaCompleta` — una clase nueva
+(`.historia-mount--completa`) que le quita el alto fijo y las esquinas
+redondeadas. **La salida a la reja de caras no desapareció**: sería la
+línea roja #1 con otro nombre (un menor sin forma de salir es un navegador
+bloqueado) — se queda como un botón ✕ flotante, 88×88 px (el archivo entero
+se mide contra el piso táctil de KINDER vía `@banda KINDER`, aunque solo lo
+vea PRIMARIA/SECUNDARIA), dentro del área segura (D-041).
+
+**Un falso positivo real, encontrado y corregido en la verificación:**
+`audits/mapa-lectura-sin-tabla.mjs` (F9 #399) bloqueó el commit por
+"menciona position" — la palabra vino de `position: fixed` en CSS, no de
+un dato social de posición/ranking, que es lo que esa regla busca de
+verdad. Se corrigió excluyendo el bloque `<style>` de esa búsqueda
+específica (una hoja de estilo no puede consultar D1, así que no puede
+filtrar el dato que #399 protege) — sin tocar las demás comprobaciones del
+mismo archivo.
+
+**Cómo se verificó (D-032):** `astro check` (0 errores), `astro build`,
+`node audits/run.mjs` (138/138 en verde, tras el arreglo de arriba).
+Extremo a extremo en un navegador local: tocar una opción incorrecta y
+luego, dentro de la ventana, tocar la correcta hizo que el veredicto
+juzgara la ELECCIÓN CORREGIDA, no la primera — la línea roja #8 sobrevive
+al cambio. Acertar disparó la celebración y avanzó solo a un ítem nuevo sin
+ningún toque adicional, confirmado leyendo `controller.actual` antes y
+después. La pantalla completa se confirmó con captura: sin título, sin pie
+de página, el fondo ilustrado cubriendo el viewport entero, con el botón ✕
+flotante funcionando (navegó fuera de Modo Historia al tocarlo).
+
+**Lo que NO se verificó:** el camino de fallo/offline (que el botón manual
+"Reintentar"/"Siguiente" sigue apareciendo sin auto-avance) se verificó
+leyendo el código, no con una captura de un fallo real disparado a
+propósito en esta corrida — el tiempo de la sesión se agotó antes de
+forzar ese caso específico.
+
+**Investigación relacionada:** D-185, D-187, mc-30, D-041, F9 #399.

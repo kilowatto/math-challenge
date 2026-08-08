@@ -142,15 +142,11 @@ información nueva que un lector de pantalla necesite.
   ~380 KB gz — `audits/bundle-budget.mjs` lo mide aparte del resto del sitio
   (mismo patrón que D-182 con Zaraz) porque solo lo descarga quien entra a
   esta pantalla, nunca el resto del sitio.
-- **Un niño de PRIMARIA/SECUNDARIA no tiene ruta a contenido de su propia
-  banda fuera de un duelo, hoy — hallazgo de D-185, no corregido.**
-  `servirSiguiente()` en `/api/jugar.ts` sirve el banco de KINDER
-  (`env.INGEST`) a cualquier niño (`esAdulto: false`) que no esté en un
-  duelo, sin importar su `theme_band` real. Es arquitectura anterior a
-  Modo Historia — no algo que rompió esta tarea — pero significa que hoy,
-  en producción, un niño real que toque un nodo de Modo Historia y llegue
-  a jugar recibiría contenido de KINDER, no de PRIMARIA. Se le pidió al
-  dueño decidir cuándo se ataca; ver D-185 para el detalle completo.
+- **CORREGIDO (D-188, 2026-08-08).** `servirSiguiente()` en `/api/jugar.ts`
+  ahora lee la banda real (`bandaRealDe()`) y sirve `item_bank` (D-072) a
+  PRIMARIA/SECUNDARIA fuera de un duelo, igual que ya hacía con el adulto —
+  antes servía KINDER a cualquier niño sin importar su banda. Era arquitectura
+  anterior a Modo Historia, encontrada verificando D-185. Ver D-188.
 - **El sistema de composición de props por ítem queda sin diseñar.** El
   video de referencia del dueño mostraba un rompecabezas (contar triángulos
   sobre bloques de hielo) que representa la cantidad real de un ítem — eso

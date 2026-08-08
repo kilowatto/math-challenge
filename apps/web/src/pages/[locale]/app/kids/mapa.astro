@@ -272,6 +272,15 @@ if (esPrimariaOMas) {
     }
   }
 }
+
+/**
+ * Pantalla completa (D-189) solo cuando de verdad hay Modo Historia que
+ * mostrar — no en el estado vacío (`mapaSinHabilidades` necesita el título
+ * y el marco de siempre para no verse como un error). `arbol!`/`rotulosReto!`
+ * más abajo son seguros por esto: TypeScript no encadena la comprobación a
+ * través de una variable separada, pero este booleano ya la hizo.
+ */
+const historiaFullscreen = Boolean(esPrimariaOMas && arbol && arbol.grupos.length > 0 && rotulosReto);
 ---
 
 <!doctype html>
@@ -285,63 +294,89 @@ if (esPrimariaOMas) {
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <main class="mapa-kids">
-      <h1 class="mapa-kids__titulo">{esPrimariaOMas ? m.mapaTitulo : m.mapaSenderoNombre}</h1>
+    {historiaFullscreen ? (
+      /*
+        Modo Historia a pantalla completa (D-189): el dueño pidió el mismo
+        nivel de inmersión que el video de referencia — el `<canvas>` de
+        Phaser llena la pantalla entera, sin título ni enlaces de la página
+        compitiendo con el juego. El `<h1>` sigue existiendo para
+        accesibilidad/SEO (un lector de pantalla y un buscador SÍ lo
+        necesitan) pero se oculta visualmente con `.visualmente-oculto` — el
+        mismo patrón que ya usa `reto.css`.
 
-      {grupo && (
-        <aside class="mapa-grupo" aria-label={m.mapaGrupoAria}>
-          <span class="mapa-grupo__icono" role="img" aria-label={m.mapaGrupoAria}>♧</span>
-          <span class="mapa-grupo__texto">
-            {grupo.club
-              ? m.mapaGrupoClub
-              : m.mapaGrupoEscuela.replace("{nombre}", grupo.escuela ?? "")}
-          </span>
-        </aside>
-      )}
-
-      {esPrimariaOMas ? (
-        arbol && arbol.grupos.length > 0 && rotulosReto ? (
-          <HistoriaMount
-            arbol={arbol}
-            locale={locale}
-            puedeElegirNivel={puedeElegirNivel}
-            rotulos={{
-              eligeNivel: m.practicarEligeNivel,
-              nivelFacil: m.practicarNivelFacil,
-              nivelMedio: m.practicarNivelMedio,
-              nivelDificil: m.practicarNivelDificil,
-              jugar: m.historiaJugar,
-            }}
-            rotulosReto={rotulosReto}
-            etiquetaVoz={ETIQUETA_DE_VOZ[locale]}
-            salirA={rutaMapaKids(locale)}
-          />
-        ) : (
-          <p class="mapa-kids__vacio">{m.mapaSinHabilidades}</p>
-        )
-      ) : (
-        <Mapa
+        La salida a la reja de caras NO desaparece: sería el mismo error que
+        la línea roja #1 prohíbe con otro nombre (un menor sin forma de
+        salir es un navegador bloqueado). Se queda, pero como un botón
+        flotante pequeño en vez de un párrafo de página — mismo destino,
+        mismo nombre accesible (`m.kidsTitle`), otro tratamiento visual. El
+        archivo entero se mide contra el piso táctil de KINDER (88 px,
+        `audits/touch-targets.mjs` vía el marcador `@banda KINDER` de
+        arriba) aunque este botón solo lo vea PRIMARIA/SECUNDARIA — por eso
+        mide 88×88, no un ícono chico.
+      */
+      <main class="mapa-historia-completa">
+        <h1 class="visualmente-oculto">{m.mapaTitulo}</h1>
+        <HistoriaMount
+          arbol={arbol!}
           locale={locale}
-          tema="KINDER"
-          mapa={sendero}
-          companeroVisible={true}
-          accesorios={accesorios}
-          sinFuenteDeHabilidades={false}
-          accionCompanero={null}
-          destinoDeLugar={(l) => destinoDeLugar(locale, l.lugar, l.estado)}
+          puedeElegirNivel={puedeElegirNivel}
+          rotulos={{
+            eligeNivel: m.practicarEligeNivel,
+            nivelFacil: m.practicarNivelFacil,
+            nivelMedio: m.practicarNivelMedio,
+            nivelDificil: m.practicarNivelDificil,
+            jugar: m.historiaJugar,
+          }}
+          rotulosReto={rotulosReto!}
+          etiquetaVoz={ETIQUETA_DE_VOZ[locale]}
+          salirA={rutaMapaKids(locale)}
+          pantallaCompleta
         />
-      )}
+        <a class="mapa-historia-completa__salida" href={rutaKids(locale)} aria-label={m.kidsTitle}>
+          ✕
+        </a>
+      </main>
+    ) : (
+      <main class="mapa-kids">
+        <h1 class="mapa-kids__titulo">{esPrimariaOMas ? m.mapaTitulo : m.mapaSenderoNombre}</h1>
 
-      {/*
-        La salida hacia la reja de caras. Va al final, chica, dentro de un
-        párrafo — la excepción «Inline» de WCAG 2.2 §2.5.8, la misma forma que
-        la salida del adulto en la reja. Un enlace de 88 px aquí competiría con
-        los lugares, que es justo lo contrario de lo que esta pantalla quiere.
-      */}
-      <p class="mapa-kids__salida">
-        <a href={rutaKids(locale)}>{m.kidsTitle}</a>
-      </p>
-    </main>
+        {grupo && (
+          <aside class="mapa-grupo" aria-label={m.mapaGrupoAria}>
+            <span class="mapa-grupo__icono" role="img" aria-label={m.mapaGrupoAria}>♧</span>
+            <span class="mapa-grupo__texto">
+              {grupo.club
+                ? m.mapaGrupoClub
+                : m.mapaGrupoEscuela.replace("{nombre}", grupo.escuela ?? "")}
+            </span>
+          </aside>
+        )}
+
+        {esPrimariaOMas ? (
+          <p class="mapa-kids__vacio">{m.mapaSinHabilidades}</p>
+        ) : (
+          <Mapa
+            locale={locale}
+            tema="KINDER"
+            mapa={sendero}
+            companeroVisible={true}
+            accesorios={accesorios}
+            sinFuenteDeHabilidades={false}
+            accionCompanero={null}
+            destinoDeLugar={(l) => destinoDeLugar(locale, l.lugar, l.estado)}
+          />
+        )}
+
+        {/*
+          La salida hacia la reja de caras. Va al final, chica, dentro de un
+          párrafo — la excepción «Inline» de WCAG 2.2 §2.5.8, la misma forma que
+          la salida del adulto en la reja. Un enlace de 88 px aquí competiría con
+          los lugares, que es justo lo contrario de lo que esta pantalla quiere.
+        */}
+        <p class="mapa-kids__salida">
+          <a href={rutaKids(locale)}>{m.kidsTitle}</a>
+        </p>
+      </main>
+    )}
 
     <style>
       /* Solo tokens que existen — un `var()` sin definir invalida la
@@ -383,6 +418,60 @@ if (esPrimariaOMas) {
         color: var(--color-text-muted);
         text-align: center;
         padding: calc(var(--space) * 3) var(--space);
+      }
+
+      /* Idéntica a `.visualmente-oculto` en reto.css/HistoriaMount.astro —
+         duplicada porque los estilos de esta página son scoped y esos
+         archivos no se importan aquí. */
+      .visualmente-oculto {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      /*
+        Modo Historia a pantalla completa (D-189): el `<canvas>` de Phaser
+        llena TODO el viewport, sin el `max-inline-size`/padding de
+        `.mapa-kids` — el dueño pidió el mismo nivel de inmersión que su
+        video de referencia, sin título ni enlaces de página compitiendo
+        con el juego.
+      */
+      .mapa-historia-completa {
+        position: fixed;
+        inset: 0;
+        block-size: 100dvh;
+        inline-size: 100vw;
+        background: var(--color-surface);
+      }
+
+      /* El botón de salida flotante — mismo destino que "Who is playing?"
+         en el layout normal, tratado como ícono en vez de párrafo. 88 px:
+         este archivo entero se mide contra el piso táctil de KINDER
+         (`@banda KINDER` arriba, `audits/touch-targets.mjs`), aunque solo
+         lo vea PRIMARIA/SECUNDARIA. Dentro del área segura (D-041): nunca
+         bajo el indicador de inicio ni la muesca. */
+      .mapa-historia-completa__salida {
+        position: fixed;
+        inset-block-start: calc(var(--space) + env(safe-area-inset-top));
+        inset-inline-end: calc(var(--space) + env(safe-area-inset-right));
+        z-index: 10;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: var(--tap-kinder, 88px);
+        block-size: var(--tap-kinder, 88px);
+        border-radius: 999px;
+        background: rgb(255 255 255 / 0.85);
+        color: var(--color-text-muted);
+        font-size: var(--text-lg);
+        text-decoration: none;
+        box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+      }
+      .mapa-historia-completa__salida:focus-visible {
+        outline: 4px solid var(--color-accent);
+        outline-offset: 3px;
       }
     </style>
   </body>

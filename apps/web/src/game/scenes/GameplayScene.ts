@@ -48,6 +48,17 @@ export class GameplayScene extends Phaser.Scene {
   private accionesContenedor!: Phaser.GameObjects.Container;
   private escucharBoton!: Phaser.GameObjects.Rectangle;
   private cortina: Phaser.GameObjects.Container | null = null;
+  /**
+   * Los dos temporizadores del D-189 — SOLO existen aquí, nunca en
+   * `AccessibleReto.ts`. Ver el comentario largo en `onSeleccion()` para el
+   * porqué: un temporizador de envío automático es aceptable en el toque
+   * (una vía entre varias, nunca la única) pero forzarlo también en la vía
+   * de teclado/lector de pantalla violaría WCAG 2.2.1 (Timing Adjustable) —
+   * quien todavía está escuchando la opción no puede "tocar rápido" para
+   * evitarlo.
+   */
+  private temporizadorConfirmar: Phaser.Time.TimerEvent | null = null;
+  private temporizadorSiguiente: Phaser.Time.TimerEvent | null = null;
 
   constructor() {
     super("GameplayScene");
@@ -252,6 +263,14 @@ export class GameplayScene extends Phaser.Scene {
     this.controller.callar();
     this.desuscribir.forEach((f) => f());
     this.accesible?.destruir();
+    this.limpiarTemporizadores();
+  }
+
+  private limpiarTemporizadores(): void {
+    this.temporizadorConfirmar?.remove();
+    this.temporizadorConfirmar = null;
+    this.temporizadorSiguiente?.remove();
+    this.temporizadorSiguiente = null;
   }
 
   // --- render ---------------------------------------------------------------
@@ -261,6 +280,7 @@ export class GameplayScene extends Phaser.Scene {
     this.opcionesContenedor.removeAll(true);
     this.opcionBotones = [];
     this.avisoTexto.setText("");
+    this.limpiarTemporizadores();
   }
 
   private onItem(item: ItemDeReto): void {
@@ -314,17 +334,38 @@ export class GameplayScene extends Phaser.Scene {
     void filas;
   }
 
+  /**
+   * D-189: tocar una opción ya no muestra un botón "Listo" — envía sola,
+   * tras una breve ventana en la que tocar OTRA opción reemplaza la
+   * elección y reinicia la espera. Preserva la línea roja #8 (`mc-30`:
+   * corregir antes de que cuente mejora la calificación el 79% de las
+   * veces) sin el botón separado que el dueño pidió quitar del camino de
+   * toque: la ventana ES el "cambiar de opinión", solo que no necesita un
+   * segundo toque para ejercerla — otro toque a tiempo basta.
+   *
+   * SOLO existe en esta escena. `AccessibleReto.ts` sigue con su botón
+   * "Ready" manual y SIN temporizador — ver el campo `temporizadorConfirmar`
+   * arriba para el porqué (WCAG 2.2.1, Timing Adjustable).
+   */
+  private static readonly VENTANA_DE_GRACIA_MS = 900;
+
   private onSeleccion(valor: number | string): void {
     for (const b of this.opcionBotones) {
       const elegido = b.valor === valor;
       b.rect.setFillStyle(elegido ? COLOR_OPCION_ELEGIDA : COLOR_OPCION);
       b.rect.setStrokeStyle(2, elegido ? COLOR_ACENTO : COLOR_OPCION_BORDE);
     }
-    this.mostrarAcciones(["confirmar"]);
+    this.temporizadorConfirmar?.remove();
+    this.temporizadorConfirmar = this.time.delayedCall(GameplayScene.VENTANA_DE_GRACIA_MS, () => {
+      this.temporizadorConfirmar = null;
+      this.controller.confirmar();
+    });
   }
 
   private limpiarVeredictoYAcciones(): void {
     this.veredictoContenedor.removeAll(true);
+    this.temporizadorSiguiente?.remove();
+    this.temporizadorSiguiente = null;
     for (const b of this.opcionBotones) {
       b.rect.setFillStyle(COLOR_OPCION);
       b.rect.setStrokeStyle(2, COLOR_OPCION_BORDE);
@@ -365,13 +406,30 @@ export class GameplayScene extends Phaser.Scene {
     this.veredictoContenedor.add([barra, titulo]);
     if (siguiente) this.veredictoContenedor.add(siguiente);
 
-    const acciones: Array<"reintentar" | "siguiente"> = v.ofrecerReintentar
-      ? ["reintentar", "siguiente"]
-      : ["siguiente"];
-    this.mostrarAcciones(acciones);
+    /*
+     * D-189: al acertar, se celebra y se avanza sola — sin botón "Siguiente"
+     * que tocar, para que el ritmo sea el del video de referencia. Al
+     * fallar o quedar pendiente (offline, siempre `correcto: false`) se
+     * queda el botón manual: forzar el avance ahí borraría la oportunidad
+     * de "reintentar" antes de verla, que es justo lo que la línea roja #8
+     * protege.
+     */
+    if (v.correcto && !v.offline) {
+      this.mostrarAcciones([]);
+      this.temporizadorSiguiente?.remove();
+      this.temporizadorSiguiente = this.time.delayedCall(1800, () => {
+        this.temporizadorSiguiente = null;
+        this.controller.siguiente();
+      });
+    } else {
+      const acciones: Array<"reintentar" | "siguiente"> = v.ofrecerReintentar
+        ? ["reintentar", "siguiente"]
+        : ["siguiente"];
+      this.mostrarAcciones(acciones);
+    }
   }
 
-  private mostrarAcciones(cuales: Array<"confirmar" | "reintentar" | "siguiente">): void {
+  private mostrarAcciones(cuales: Array<"reintentar" | "siguiente">): void {
     this.accionesContenedor.removeAll(true);
     const { width } = this.scale;
     const anchoBoton = 150;
@@ -381,7 +439,7 @@ export class GameplayScene extends Phaser.Scene {
 
     cuales.forEach((cual, i) => {
       const x = inicioX + i * (anchoBoton + espacio);
-      const esPrimario = cual === "confirmar" || cual === "siguiente";
+      const esPrimario = cual === "siguiente";
       const rect = this.add
         .rectangle(x, y, anchoBoton, 52, esPrimario ? COLOR_ACENTO : COLOR_OPCION, 1)
         .setStrokeStyle(esPrimario ? 0 : 2, COLOR_OPCION_BORDE)
@@ -397,8 +455,7 @@ export class GameplayScene extends Phaser.Scene {
 
       rect.on(Phaser.Input.Events.POINTER_DOWN, () => {
         this.tweens.add({ targets: [rect, texto], scaleX: 0.95, scaleY: 0.95, duration: 70, yoyo: true });
-        if (cual === "confirmar") this.controller.confirmar();
-        else if (cual === "reintentar") this.controller.reintentar();
+        if (cual === "reintentar") this.controller.reintentar();
         else this.controller.siguiente();
       });
 

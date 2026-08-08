@@ -1,0 +1,106 @@
+---
+/**
+ * HistoriaMount — el punto de montaje de Modo Historia (D-184).
+ *
+ * ─── Por qué es un componente propio y no un `<script>` dentro de la página ──
+ *
+ * Astro solo extrae y empaqueta con Vite un `<script type="module">` que
+ * vive en la RAÍZ del template de un componente — no uno anidado dentro de
+ * una rama condicional (`{cond ? <>...<script>…</script></> : ...}`), que
+ * Astro compila como un `__template` de HTML literal y dispersa la etiqueta
+ * al cliente SIN procesar sus imports. Se vio en el build: el HTML servido
+ * traía `import { iniciarHistoria } from "../../../../game/main.ts"` como
+ * TEXTO CRUDO, con una ruta relativa a un archivo `.ts` que el navegador no
+ * sabe resolver — Phaser nunca llegaba a empaquetarse.
+ *
+ * Sacar el script a este componente, con el `<script>` en la raíz de SU
+ * propio template, es lo que hace que Astro/Vite lo trate como un asset de
+ * verdad: TypeScript compilado, `phaser` resuelto desde `node_modules`, y
+ * emitido como un chunk hasheado bajo `_astro/`. La página que lo usa
+ * (`kids/mapa.astro`) sigue decidiendo SI se renderiza este componente —
+ * el mismo patrón que `Pantalla.astro` ya usa para el reto.
+ */
+import type { Arbol } from "../../../../../packages/motor/src/mapa.ts";
+
+interface Props {
+  arbol: Arbol;
+  locale: string;
+  puedeElegirNivel: boolean;
+  rotulos: {
+    eligeNivel: string;
+    nivelFacil: string;
+    nivelMedio: string;
+    nivelDificil: string;
+    jugar: string;
+  };
+  /** Los mismos rótulos que usa `Pantalla.astro` para el reto (juego.*) — ver `RetoController.ts`. */
+  rotulosReto: {
+    bien: string;
+    otra: string;
+    siguiente: string;
+    salir: string;
+    cargando: string;
+    mirar: string;
+    confirmar: string;
+    reintentar: string;
+    elige: string;
+    escuchar: string;
+    vozActivada: string;
+    vozDesactivada: string;
+    sinVoz: string;
+    pendiente: string;
+  };
+  /** BCP-47 ya resuelto por `ETIQUETA_DE_VOZ` (D-078) — nunca calculado aquí. */
+  etiquetaVoz: string;
+  /** A dónde vuelve un `401` o el botón de salir — nunca un formulario (línea roja #2). */
+  salirA: string;
+}
+
+const { arbol, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA } = Astro.props;
+---
+
+<div id="historia-mount" class="historia-mount"></div>
+
+{/*
+  El espejo accesible del reto (D-184, ola 2 — "Invertir en la capa paralela
+  esta vez"). `GameplayScene` pinta el `<canvas>`; `AccessibleReto.ts`
+  construye AQUÍ, dentro de este `<div>`, el árbol DOM/ARIA operable por
+  teclado y lector de pantalla — mismo patrón `.visualmente-oculto` que
+  `reto.css` ya usa para el reto en HTML. Vacío hasta que `GameplayScene`
+  arranca: no hay nada que anunciar antes de que exista un ítem.
+*/}
+<div id="historia-accesible" class="visualmente-oculto"></div>
+
+<script
+  type="application/json"
+  id="historia-datos"
+  set:html={JSON.stringify({ arbol, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA })}
+/>
+
+<script src="../../game/entrada.ts"></script>
+
+<style>
+  /* Modo Historia (D-184): el `<canvas>` de Phaser vive aquí. Alto fijo con
+     proporción para que la página no salte mientras `BootScene` genera las
+     texturas — el mismo motivo por el que `.escena` de `reto.css` reserva
+     alto antes de que llegue el dibujo. */
+  .historia-mount {
+    block-size: min(80vh, 56rem);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--color-surface);
+  }
+
+  /* Idéntica a `.visualmente-oculto` en reto.css — duplicada porque esta hoja
+     es scoped a este componente y ese archivo no se importa aquí. Oculta a
+     la vista, operable por teclado y lector de pantalla (WCAG 1.4.12: clip
+     en vez de alto fijo, para que crecer el interlineado no corte texto que
+     sí lee un lector de pantalla). */
+  .visualmente-oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

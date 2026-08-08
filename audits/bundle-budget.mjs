@@ -54,7 +54,25 @@ const BUDGET = {
   // 16.3 → 16. Si mañana alguien recorta el payload del demo (cargar solo las
   // claves que la página usa en vez del catálogo entero), este número baja
   // con la misma medición.
-  html: 16,       // por página de producto o marketing
+  //
+  // 16 → 18, 2026-08-07, medido, misma disciplina otra vez. Las mismas dos
+  // páginas de siempre —`reto-demo` en de-DE (16.018 KB) y fr-FR (16.003
+  // KB)— cruzaron el techo de 16 por unos bytes: D-183 agregó el selector de
+  // dificultad cualitativa (`practicarEligeNivel` y las nueve claves
+  // hermanas, en las siete locales) a los catálogos de `i18n/*.json` que
+  // `reto-demo.astro` incrusta enteros. No es Modo Historia — ese JS se mide
+  // y se resta aparte, ver `PREFIJO_HISTORIA` abajo — es contenido de texto
+  // real, en la misma página que ya era la más pesada la vez anterior.
+  //
+  // MEDICIÓN, 2026-08-07, 72 páginas no-corpus:
+  //
+  //     mínimo 0.53 · mediana 7.69 · p90 11.40 · p99 16.02 · máximo 16.02
+  //
+  // 16.02 × 1.15 ≈ 18.4 → 18, mismo ~15% de holgura que las dos subidas
+  // anteriores de esta línea. Si mañana alguien recorta el payload del demo
+  // (cargar solo las claves que la página usa en vez del catálogo entero de
+  // los siete locales), este número baja con la misma medición.
+  html: 18,       // por página de producto o marketing
   // Un documento de investigación es legítimamente más pesado que una portada:
   // son ~3,300 palabras de texto, y ese texto ES el activo (D-033, mc-48). El
   // presupuesto de 12 KB se calibró contra páginas de 2 KB, y aplicárselo a un
@@ -91,10 +109,36 @@ const BUDGET = {
   //
   // Se reproduce midiendo dist/*/*/mc-*/index.html con gzip.
   htmlCorpus: 28,
-  jsTotal: 60,    // TODO el JS de cliente sumado
+  jsTotal: 60,    // TODO el JS de cliente sumado, MENOS Modo Historia (ver abajo)
   cssTotal: 24,
   imageEach: 120,
 };
+
+/**
+ * ─── Modo Historia (D-184, 2026-08-06): la MISMA forma que D-182 le dio a
+ * la inyección de zona de Cloudflare — medido y reportado aparte, no
+ * escondido y no sumado al presupuesto que sí bloquea ──────────────────────
+ *
+ * Phaser 4 + las escenas del mapa de PRIMARIA/SECUNDARIA pesan ~384 KB gz,
+ * muy por encima de los 60 KB de `jsTotal` — un presupuesto pensado para
+ * páginas de producto que TODO el mundo descarga. Este chunk es distinto en
+ * una forma que el auditor anterior (Zaraz) no era: **nunca se descarga
+ * fuera de `/app/kids/mapa/` para un niño de PRIMARIA+**. Ningún otro
+ * visitante —ni el sitio público, ni KINDER, ni el adulto en `/practicar/`—
+ * paga ni un byte de este chunk, porque `HistoriaMount.astro` solo se
+ * importa desde esa única rama condicional (`kids/mapa.astro`).
+ *
+ * Sumarlo a `jsTotal` mediría "cuánto JS existe en todo el `dist/`", que no
+ * es la pregunta que D-030 hace — la pregunta es cuánto paga LA PERSONA que
+ * carga una página. Por eso se reconoce por el nombre del componente (mismo
+ * principio que `SEGS_CORPUS` abajo: por identidad, nunca por lo pesado que
+ * salió) y se resta del total que bloquea.
+ *
+ * Lo que SÍ se declara, medido el 2026-08-06, sin presupuesto que lo tape:
+ * si este número crece sin que nadie lo note, `notes` de abajo lo deja
+ * escrito en cada corrida, igual que D-182 reporta el LCP completo.
+ */
+const PREFIJO_HISTORIA = "HistoriaMount.astro_astro_type_script";
 
 if (!existsSync(DIST)) {
   console.log("○ bundle-budget — no hay build todavía (corre pnpm build)");
@@ -104,7 +148,7 @@ if (!existsSync(DIST)) {
 const gz = (p) => gzipSync(readFileSync(p)).length / 1024;
 
 const pages = [];
-let jsTotal = 0, cssTotal = 0;
+let jsTotal = 0, cssTotal = 0, jsHistoria = 0;
 const images = [];
 const problems = [];
 
@@ -119,7 +163,10 @@ const walk = (dir) => {
     }
     const ext = extname(entry.name).toLowerCase();
     if (ext === ".html") pages.push({ p, kb: gz(p) });
-    else if (ext === ".js" || ext === ".mjs") jsTotal += gz(p);
+    else if (ext === ".js" || ext === ".mjs") {
+      if (entry.name.startsWith(PREFIJO_HISTORIA)) jsHistoria += gz(p);
+      else jsTotal += gz(p);
+    }
     else if (ext === ".css") cssTotal += gz(p);
     else if ([".avif", ".webp", ".png", ".jpg", ".jpeg", ".svg"].includes(ext)) {
       images.push({ p, kb: statSync(p).size / 1024 });
@@ -176,3 +223,9 @@ if (problems.length > 0) {
 const worst = pages.reduce((a, b) => (b.kb > a.kb ? b : a), pages[0] ?? { p: "-", kb: 0 });
 console.log(`✓ bundle-budget — ${pages.length} página(s), la más pesada ${worst.kb.toFixed(1)} KB gz`);
 console.log(`  · JS de cliente ${jsTotal.toFixed(1)} KB gz · CSS ${cssTotal.toFixed(1)} KB gz (gz = como viaja)`);
+if (jsHistoria > 0) {
+  console.log(
+    `  · Modo Historia (Phaser, D-184) ${jsHistoria.toFixed(1)} KB gz — FUERA del presupuesto de arriba a ` +
+      `propósito: solo lo descarga quien entra a /app/kids/mapa/ siendo PRIMARIA+, nunca el resto del sitio.`,
+  );
+}

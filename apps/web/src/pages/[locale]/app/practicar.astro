@@ -140,6 +140,21 @@ for (const clave of Object.keys(c)) {
 }
 
 /**
+ * Materia y nivel elegidos por la persona (enmienda de D-017, ver
+ * `decisions.md` y `puedeElegirNivel()` en `/api/jugar`). Los dos se validan
+ * aquí contra listas cerradas — un `?habilidad=` o `?nivel=` que no exista en
+ * el catálogo de este locale simplemente se ignora y cae a la rotación de
+ * siempre, igual que hace `/api/jugar` con `lugarPedido` (D-152): un query
+ * param tocado a mano nunca le niega el juego a nadie, solo deja de aplicar
+ * el filtro que pedía.
+ */
+const NIVELES_VALIDOS = new Set(["facil", "medio", "dificil"]);
+const habilidadPedida = Astro.url.searchParams.get("habilidad");
+const habilidadFija = habilidadPedida && habilidades[habilidadPedida] ? habilidadPedida : null;
+const nivelPedido = Astro.url.searchParams.get("nivel");
+const nivelFijo = nivelPedido && NIVELES_VALIDOS.has(nivelPedido) ? nivelPedido : null;
+
+/**
  * La racha y el XP de este adulto, leídos en el SERVIDOR (#201, #192, #206).
  *
  * Esta pantalla es del modo SOLO: quien juega aquí es una persona adulta con su
@@ -182,6 +197,47 @@ const progreso = progresoLeido
   </head>
   <body class="jugar-body">
     <p class="aviso-banco">{m.practicarAviso}</p>
+
+    {/*
+      El selector de materia y nivel (enmienda de D-017 para SERIO — ver
+      `decisions.md`). Es un `<form method="get">` de verdad y no JavaScript:
+      elegir con qué practicar no debería depender de que el script cargue, y
+      el resultado es una URL corriente (`?habilidad=K03&nivel=dificil`) que se
+      puede recargar, compartir o volver atrás sin perder nada.
+
+      Solo se ofrece cuando NO hay ya una elección activa: con el reto en
+      pantalla no hay dónde meter un formulario sin partir la pantalla en dos,
+      así que el cambio es "vuelve a elegir", con el enlace de abajo.
+    */}
+    {!habilidadFija && !nivelFijo && (
+      <form method="get" action={`/${locale}/app/practicar/`} class="practicar-elige">
+        <label>
+          {m.practicarEligeMateria}
+          <select name="habilidad">
+            <option value="">{m.practicarMateriaCualquiera}</option>
+            {Object.entries(habilidades).map(([id, nombre]) => (
+              <option value={id}>{nombre}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {m.practicarEligeNivel}
+          <select name="nivel">
+            <option value="">{m.practicarNivelCualquiera}</option>
+            <option value="facil">{m.practicarNivelFacil}</option>
+            <option value="medio">{m.practicarNivelMedio}</option>
+            <option value="dificil">{m.practicarNivelDificil}</option>
+          </select>
+        </label>
+        <button type="submit" class="boton">{m.practicarEligeIr}</button>
+      </form>
+    )}
+    {(habilidadFija || nivelFijo) && (
+      <p class="practicar-cambiar">
+        <a href={`/${locale}/app/practicar/`}>{m.practicarCambiar}</a>
+      </p>
+    )}
+
     {/* `mostrarContexto` SOLO aquí, nunca en la pantalla del niño: ver la
        propiedad en `Pantalla.astro`. Un adulto que practica y no sabe dónde
        está no puede juzgar si el producto le sirve; un niño que lee «llevas 3»
@@ -195,6 +251,8 @@ const progreso = progresoLeido
       mostrarContexto={true}
       etiquetaVoz={ETIQUETA_DE_VOZ[locale]}
       progreso={progreso}
+      habilidadFija={habilidadFija}
+      nivelFijo={nivelFijo}
     />
 
     <style>
@@ -209,6 +267,49 @@ const progreso = progresoLeido
         line-height: var(--leading-body);
         color: var(--color-text-muted);
         text-align: center;
+      }
+
+      /* El selector, con los mismos tokens que el resto del sitio privado —
+         este archivo no define un solo color, todos vienen de tokens.css. */
+      .practicar-elige {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 1rem;
+        max-inline-size: var(--measure, 46rem);
+        margin: 0 auto 1.5rem;
+        padding: 1rem 1.25rem;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        font-family: var(--font-sistema);
+      }
+      .practicar-elige label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+      }
+      .practicar-elige select {
+        font-family: var(--font-sistema);
+        font-size: var(--text-base);
+        color: var(--color-text);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-control, var(--radius));
+        padding: 0.5rem 0.75rem;
+        /* 44px explícito y no solo por padding+línea (HIG de Apple): un
+           adulto en /practicar/ no tiene el piso de 88px de kinder, pero sí
+           el de cualquier control táctil normal. */
+        min-block-size: var(--tap-primaria, 44px);
+      }
+      .practicar-cambiar {
+        max-inline-size: var(--measure, 46rem);
+        margin: 0 auto 1.5rem;
+        text-align: center;
+        font-family: var(--font-sistema);
+        font-size: var(--text-xs);
       }
     </style>
   </body>

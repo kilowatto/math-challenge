@@ -83,6 +83,24 @@ marcó cuatro hex fuera de paleta en `tokens.css` — eran estos. La respuesta
 correcta no era relajar el auditor sino declarar los colores y justificar su
 contraste, que es lo que está arriba.
 
+### Verde — excepción de marca, solo para vegetación ilustrada (D-186)
+
+El PDF de Ignia no tiene verde, y esa ausencia era intencional hasta que Modo
+Historia (D-184) necesitó ilustrar un mapa de vegetación de verdad — la Sabana
+de KINDER se resuelve en dorado/azul porque es sabana, pero un bosque no.
+
+| Token | Hex | Para qué |
+|---|---|---|
+| `verde-follaje` | `#5B8C3A` | Vegetación — árboles, arbustos, la pradera |
+| `verde-claro` | `#8FC461` | Vegetación — reflejos y hojas jóvenes, nunca un fondo grande |
+
+**Nunca en un botón, un texto o un ícono de interfaz — en ninguna banda, en
+ninguna pantalla.** Vive exclusivamente dentro de las piezas de arte generadas
+para el fondo y la vegetación de Modo Historia (`scripts/gen-mapa-historia.mjs`).
+El naranja y el azul de Ignia siguen siendo los únicos colores de UI del
+producto entero. `audits/brand-image.mjs` declara estos dos tonos junto a
+`sabana-cielo`/`sabana-tierra` para que nadie los lea como marca inventada.
+
 ---
 
 ## Tipografía

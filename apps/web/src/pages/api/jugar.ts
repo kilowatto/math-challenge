@@ -356,6 +356,52 @@ async function nivelSemillaDe(env: Env, childProfileId: string, esAdulto = false
 }
 
 /**
+ * ─── El nivel elegido por la PERSONA (enmienda de D-017, ver decisions.md) ──
+ *
+ * D-017 seguía diciendo «el mapa presenta lugares, no pregunta niveles» — la
+ * materia sí se elige (arriba, `lugarPedido`), la dificultad la elegía siempre
+ * el motor. El dueño pidió otra vez, con nombre, poder elegir también el
+ * nivel — y esta vez la respuesta no es la misma para todas las bandas.
+ *
+ * **KINDER nunca.** `mc-10` mide que ver la propia dificultad empeora el
+ * desempeño en matemáticas, y a los 4-6 años ni siquiera hay con qué
+ * interpretar «difícil» como una elección informada — es la misma razón por
+ * la que D-002 separa edad de dificultad. `audits/mapa-sin-numero-de-nivel.mjs`
+ * ya vigila que ninguna superficie de kinder interpole un nivel; esto no le
+ * abre una puerta nueva porque kinder nunca llega a `NIVEL_FIJO_A_ESCALON`.
+ *
+ * **SERIO (adulto) y PRIMARIA sí.** Un adulto ya decide por sí mismo qué tan
+ * difícil quiere su práctica, y PRIMARIA (7-11) ya lee y ya puede sostener la
+ * idea de «esto va a estar más difícil a propósito» sin que sea un examen.
+ *
+ * Las tres opciones son CUALITATIVAS y no un número de escalón — ni una
+ * calificación ni un grado escolar (D-017 sigue viva en esa parte): se
+ * traducen a un escalón fijo de la escalera de `dificultadDeNivel()` y de ahí
+ * a un theta, nunca al revés.
+ */
+const NIVEL_FIJO_A_ESCALON: Record<string, number> = { facil: 2, medio: 6, dificil: 10 };
+
+/**
+ * ¿Puede ESTE jugador fijar su propio nivel? Un adulto, siempre. Un niño,
+ * solo si su `theme_band` real (no un supuesto) es PRIMARIA o SECUNDARIA —
+ * nunca KINDER. Sin base de datos o sin fila, se falla CERRADO (no se
+ * concede el permiso): es la misma regla de «ante la duda, la protección más
+ * fuerte gana» que el resto de las puertas de este archivo.
+ */
+async function puedeElegirNivel(env: Env, quien: Jugador): Promise<boolean> {
+  if (quien.esAdulto) return true;
+  if (!env.DB) return false;
+  try {
+    const fila = await env.DB.prepare("SELECT theme_band FROM child_profiles WHERE id = ?")
+      .bind(quien.id)
+      .first<{ theme_band: string }>();
+    return fila?.theme_band === "PRIMARIA" || fila?.theme_band === "SECUNDARIA";
+  } catch {
+    return false;
+  }
+}
+
+/**
  * El estado del motor para una habilidad, reconstruido desde el resumen del DO.
  *
  * Se reconstruye con la estimación CRUDA en logits, no con el nivel redondeado.
@@ -589,7 +635,21 @@ async function servirSiguiente(
   // este endpoint todavía no abre. Está dicho en el PR como residuo conocido: la
   // pieza que falta es abrir esa sesión aquí, no cambiar el motor.
   const evitar = new Set(typeof cuerpo.ultimoItemId === "string" ? [cuerpo.ultimoItemId] : []);
-  const elegido = elegirSiguiente(candidatos, estado, evitar, Math.random);
+
+  /*
+   * El nivel elegido por la persona (enmienda de D-017 — ver `puedeElegirNivel`
+   * y `decisions.md`). Solo se consulta la banda cuando de verdad se pidió un
+   * nivel: la mayoría de las peticiones no traen `nivel` y no vale la pena una
+   * lectura extra a D1 para el caso de siempre.
+   */
+  const nivelPedido = typeof cuerpo.nivel === "string" ? cuerpo.nivel : null;
+  const escalonPedido = nivelPedido ? NIVEL_FIJO_A_ESCALON[nivelPedido] : undefined;
+  const thetaFija =
+    escalonPedido !== undefined && (await puedeElegirNivel(env, quien))
+      ? dificultadDeNivel(escalonPedido)
+      : undefined;
+
+  const elegido = elegirSiguiente(candidatos, estado, evitar, Math.random, thetaFija);
   if (!elegido) return json({ error: "sin_items" }, 503);
 
   const item = await origen.presentarItem(elegido.id, locale);

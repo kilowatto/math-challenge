@@ -166,6 +166,14 @@ interface Props {
    * `null` es el caso de siempre: la sesión adaptativa de todos los días.
    */
   habilidadFija?: string | null;
+  /**
+   * El nivel elegido por la PERSONA en vez del que da el motor adaptativo
+   * (enmienda de D-017, ver `decisions.md` y `puedeElegirNivel()` en
+   * `/api/jugar`). Viaja tal cual — `"facil"|"medio"|"dificil"` — hasta el
+   * servidor, que es quien decide si esta sesión puede usarlo: la pantalla no
+   * sabe la banda de nadie y no valida nada aquí, igual que `habilidadFija`.
+   */
+  nivelFijo?: string | null;
 }
 const {
   locale,
@@ -177,6 +185,7 @@ const {
   etiquetaVoz = "",
   progreso = null,
   habilidadFija = null,
+  nivelFijo = null,
 } = Astro.props as Props;
 ---
 
@@ -377,7 +386,7 @@ const {
 
     window.__mathChallengeOffline = offline;
   </script>
-  <script define:vars={{ locale, rotulos, aciertos, salirA, habilidades, mostrarContexto, etiquetaVoz, habilidadFija }}>
+  <script define:vars={{ locale, rotulos, aciertos, salirA, habilidades, mostrarContexto, etiquetaVoz, habilidadFija, nivelFijo }}>
     /**
      * El bucle. Pide, pinta, ELIGE, confirma, repite.
      *
@@ -1194,6 +1203,7 @@ const {
       const r = await pedir("siguiente", {
         ultimoItemId,
         habilidad: habilidadFija ?? undefined,
+        nivel: nivelFijo ?? undefined,
         duelo: dueloId ?? undefined,
       });
       // El día terminó — por el tope o por la noche: la respuesta ES la

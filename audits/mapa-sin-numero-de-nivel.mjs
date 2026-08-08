@@ -39,6 +39,19 @@
 //    («Nivel 4 · fracciones»). Ese texto es contenido y lo revisa una persona.
 //  · Si una cifra correcta está mal explicada. Eso es léxico y le toca a la
 //    flota adversarial.
+//
+// ─── La enmienda de D-183 (2026-08-06) ─────────────────────────────────────
+//
+// SERIO y PRIMARIA ya pueden elegir su propio nivel — cualitativo (Fácil /
+// Medio / Difícil), nunca un número — y KINDER sigue exactamente donde
+// estaba: la mitad de D-017 que este auditor existe para vigilar NO se tocó
+// para esa banda. Lo que cambió es que la palabra «nivel» ya puede aparecer,
+// una vez, en una plantilla del mapa — siempre que el mismo archivo también
+// referencie `puedeElegirNivel`, el identificador que D-183 fija como el
+// único portón (real, contra la banda en D1, nunca contra lo que mande el
+// cliente). Cualquier interpolación de «nivel» SIN esa palabra al lado sigue
+// bloqueando el commit, tal como antes de D-183 — y el número CIFRADO sigue
+// prohibido sin excepción, en cualquier banda, con o sin la marca.
 
 import { archivos, leer, informar, sinComentarios } from "./lib/repo.mjs";
 import { construirArbol, construirSendero } from "../packages/motor/src/mapa.ts";
@@ -137,11 +150,19 @@ for (const f of PLANTILLAS) {
         "se enseña a nadie; se dice qué se está practicando.",
     );
   }
-  // Interpolar `nivel` en la plantilla es la otra vía, y la más probable.
-  if (/\{[^}]*\bnivel\b[^}]*\}/i.test(texto)) {
+  /*
+   * Interpolar `nivel` en la plantilla es la otra vía, y la más probable —
+   * PERO D-183 (2026-08-06) la permite para SERIO/PRIMARIA, cualitativa y
+   * gateada por banda real. La marca de que este archivo ya pasó por esa
+   * revisión es que también referencie `puedeElegirNivel`: sin esa palabra
+   * al lado, cualquier `nivel` sigue siendo la fuga que este auditor busca.
+   */
+  if (/\{[^}]*\bnivel\b[^}]*\}/i.test(texto) && !/\bpuedeElegirNivel\b/.test(texto)) {
     problemas.push(
-      `${f} interpola algo llamado \`nivel\`. El modelo de vista del mapa no trae el nivel ` +
-        "(D-017, #100): si aquí hay uno, salió de otra parte y va a llegar a una pantalla.",
+      `${f} interpola algo llamado \`nivel\` sin pasar por \`puedeElegirNivel\` (D-183). El ` +
+        "modelo de vista del mapa no trae el nivel por su cuenta (D-017, #100): si aquí hay uno " +
+        "sin ese portón, salió de otra parte y va a llegar a una pantalla sin que nadie haya " +
+        "comprobado la banda.",
     );
   }
 }

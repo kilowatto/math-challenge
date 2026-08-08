@@ -124,11 +124,12 @@ caso("con la Sabana entera terminada, Larry se queda en el último lugar", () =>
   igual(s.lugares.map((l) => l.aqui), [false, false, false, true], "Larry no sale del mapa");
 });
 
-caso("el sendero no lleva NI UN número: no hay porcentaje que una plantilla pueda pintar", () => {
-  // El criterio de #232 es «la pantalla no muestra ningún número». La forma de
-  // garantizarlo no es revisar la plantilla: es que el modelo de vista no
-  // tenga de dónde sacarlo. Se recorre el objeto entero, a cualquier
-  // profundidad, buscando un `number`.
+caso("el sendero SOLO lleva el número de secuencia (D-190) — ningún otro número se cuela", () => {
+  // D-190 reversa el criterio original de #232 ("la pantalla no muestra
+  // ningún número") a propósito: ahora SÍ hay un número de secuencia de
+  // camino. Lo que #232 seguía pidiendo es que no aparezca un PORCENTAJE ni
+  // ningún otro número que una plantilla pudiera malinterpretar como nivel
+  // — por eso se recorre el objeto entero y solo se permite `.secuencia`.
   const s = construirSendero(SABANA, { K01: "terminado", K02: "sintesis" });
   const numeros = [];
   const mirar = (v, ruta) => {
@@ -139,7 +140,27 @@ caso("el sendero no lleva NI UN número: no hay porcentaje que una plantilla pue
     }
   };
   mirar(s, "sendero");
-  igual(numeros, [], "campos numéricos en el sendero");
+  const fueraDeSecuencia = numeros.filter((n) => !/\.secuencia = /.test(n));
+  igual(fueraDeSecuencia, [], "campos numéricos fuera de `secuencia` en el sendero");
+  igual(numeros.length, SABANA.length, "un `secuencia` por lugar, ni uno más");
+});
+
+caso("secuencia del sendero es 1,2,3… en orden, nunca el índice del catálogo", () => {
+  const s = construirSendero(SABANA, {});
+  igual(s.lugares.map((l) => l.secuencia), [1, 2, 3, 4], "secuencia correlativa");
+});
+
+caso("bloqueado (D-190): el primero nunca, y solo si ni éste ni el anterior se tocaron", () => {
+  const s = construirSendero(SABANA, { K01: "terminado" });
+  // K01 terminado, K02 recién alcanzado (por_visitar pero es el primero sin
+  // terminar → no cuenta como "tocado" hasta que tenga fase propia), K03/K04
+  // sin tocar y con el anterior tampoco tocado.
+  igual(s.lugares.map((l) => l.bloqueado), [false, false, true, true], "bloqueo por secuencia");
+});
+
+caso("bloqueado se desbloquea con solo EMPEZAR el anterior, no hace falta dominarlo", () => {
+  const s = construirSendero(SABANA, { K01: "terminado", K02: "sintesis" });
+  igual(s.lugares.map((l) => l.bloqueado), [false, false, false, true], "K03 se desbloquea al empezar K02");
 });
 
 // --- PRIMARIA/SECUNDARIA: el árbol sin aristas (#233) ----------------------
@@ -171,6 +192,29 @@ caso("EL NÚMERO DE NIVEL NO SALE DEL MÓDULO (D-017, #100, mc-10)", () => {
   const texto = JSON.stringify(a);
   cierto(!/"nivel"/.test(texto), "el árbol serializado contiene una clave `nivel`");
   cierto(!("nivel" in a.grupos[0]), "el grupo lleva el nivel de entrada");
+});
+
+caso("secuencia del árbol (D-190) cruza los grupos: 1..4 seguidos, nunca reinicia por grupo", () => {
+  const a = construirArbol(HABILIDADES);
+  // Orden esperado tras agrupar+alfabetizar: grupo1=[P01,P02], grupo2=[P05,P07].
+  const secuencias = a.grupos.flatMap((g) => g.nodos.map((n) => n.secuencia));
+  igual(secuencias, [1, 2, 3, 4], "secuencia continua a través de los grupos");
+});
+
+caso("bloqueado del árbol (D-190): nunca el primer nodo, y sale de pericia real", () => {
+  // P01 skillState=1 (dominada), P02 skillState=0.1 (asomando) — P02 no está
+  // bloqueado porque el anterior (P01) sí tiene pericia. P05 skillState=0.4
+  // (en_camino) tampoco bloquea a P07 aunque P07 sea "asomando"... salvo que
+  // P07 en realidad tiene skillState=0.9 (dominada), así que se prueba con un
+  // caso que sí produzca un bloqueo real.
+  const a = construirArbol([
+    { habilidad: "A01", nivel: 1, skillState: 0, rotulo: null }, // asomando, primero: nunca bloqueado
+    { habilidad: "A02", nivel: 2, skillState: 0, rotulo: null }, // asomando, anterior también asomando: bloqueado
+    { habilidad: "A03", nivel: 3, skillState: 0.3, rotulo: null }, // en_camino: nunca bloqueado (no depende del anterior)
+    { habilidad: "A04", nivel: 4, skillState: 0, rotulo: null }, // asomando, anterior en_camino: NO bloqueado
+  ]);
+  const nodos = a.grupos.flatMap((g) => g.nodos);
+  igual(nodos.map((n) => n.bloqueado), [false, true, false, false], "bloqueo depende de la pericia anterior real");
 });
 
 caso("un alumno con habilidades de N5 y N7 ve grupos 1 y 2, no 5 y 7", () => {

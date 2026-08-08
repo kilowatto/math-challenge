@@ -21,6 +21,7 @@ import Phaser from "phaser";
 import { capituloPorId, type WorldChapter } from "../data/story";
 import { VegetationManager } from "../managers/VegetationManager";
 import { LevelNode } from "../objects/LevelNode";
+import { LarryAvatar } from "../objects/LarryAvatar";
 import { ProgressManager } from "../managers/ProgressManager";
 import type { NodoDelArbol } from "../../../../../packages/motor/src/mapa.ts";
 
@@ -79,14 +80,18 @@ export class MapScene extends Phaser.Scene {
     const progreso = this.registry.get("progressManager") as ProgressManager;
     const posiciones = this.distribuirNodos(progreso);
     for (const { nodo, x, y } of posiciones) {
-      const levelNode = new LevelNode(this, x, y, nodo);
+      const levelNode = new LevelNode(this, x, y, nodo, progreso.modo);
       levelNode.setDepth(5);
     }
 
     // El avatar se posa en el último nodo tocado — el "estás aquí" del mapa.
+    // D-190: Larry real (ciclo de caminata antropomorfo) en vez del círculo
+    // procedural `"avatar-marca"` — por ahora solo reemplaza el sprite
+    // estático; caminar la curva al completar un nodo es trabajo de una fase
+    // posterior (necesita detectar la transición de progreso entre visitas).
     const ultimo = posiciones.at(-1);
     const puntoInicial = ultimo ?? { x: this.path.getPoint(0).x, y: this.path.getPoint(0).y };
-    this.avatar = this.add.sprite(puntoInicial.x, puntoInicial.y - 70, "avatar-marca").setDepth(7);
+    this.avatar = new LarryAvatar(this, puntoInicial.x, puntoInicial.y - 70).setDepth(7);
 
     this.cameras.main.setBounds(0, 0, capitulo.worldWidth, capitulo.worldHeight);
     this.cameras.main.centerOn(puntoInicial.x, puntoInicial.y);

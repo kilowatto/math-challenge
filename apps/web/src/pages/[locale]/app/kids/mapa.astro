@@ -281,6 +281,14 @@ if (esPrimariaOMas) {
  * través de una variable separada, pero este booleano ya la hizo.
  */
 const historiaFullscreen = Boolean(esPrimariaOMas && arbol && arbol.grupos.length > 0 && rotulosReto);
+
+/**
+ * D-190: PRIMARIA usa el mismo camino de troncos que KINDER (reemplaza el
+ * árbol de D-184); SECUNDARIA se queda con el árbol de habilidades, sin
+ * número ni candado. Decidido aquí, con la banda REAL ya leída de D1 arriba
+ * — nunca en el cliente (`LevelNode.ts` solo dibuja el modo que le llega).
+ */
+const modoDelMapa: "arbol" | "camino" = banda === "SECUNDARIA" ? "arbol" : "camino";
 ---
 
 <!doctype html>
@@ -318,6 +326,7 @@ const historiaFullscreen = Boolean(esPrimariaOMas && arbol && arbol.grupos.lengt
         <h1 class="visualmente-oculto">{m.mapaTitulo}</h1>
         <HistoriaMount
           arbol={arbol!}
+          modo={modoDelMapa}
           locale={locale}
           puedeElegirNivel={puedeElegirNivel}
           rotulos={{

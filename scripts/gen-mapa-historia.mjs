@@ -119,6 +119,17 @@ const ESTILO_PROP =
 
 const PROPS = [
   ["letrero-madera", `an empty wooden signboard hanging from two ropes, blank rustic wood plank sign with no writing on it, ${BLANCO}, ${ESTILO_PROP}`, 480, 220],
+  // El rediseño de Modo Historia (D-190): cada nodo del camino es un tronco de
+  // madera visto desde arriba/ligero ángulo isométrico, con espacio limpio en
+  // el centro para que Phaser pinte el número de SECUENCIA encima (nunca
+  // horneado en la imagen, mismo motivo que el letrero) — dos variantes para
+  // que el camino no se vea repetitivo cada 40px.
+  ["tronco-a", `a single round tree stump viewed from a slight top-down angle, flat circular wood surface with visible tree rings, dark bark on the sides, empty clean top surface, ${BLANCO}, ${ESTILO_PROP}`, 200, 200],
+  ["tronco-b", `a single round tree stump viewed from a slight top-down angle, flat circular wood surface with visible tree rings, slightly different size and bark texture from a matching stump, empty clean top surface, ${BLANCO}, ${ESTILO_PROP}`, 180, 180],
+  // El candado: ícono pequeño y neutro para el estado "bloqueado" del tronco
+  // (D-190) — gris, sin madera, se superpone al tronco cuando el niño no ha
+  // llegado ahí todavía.
+  ["candado", `a single simple padlock icon, closed shackle, flat vector game icon style, solid gray color (#A4A6A8) with darker gray shading, ${BLANCO}, simple flat vector game asset illustration, clean shape that reads well at small size, no people, no characters, no faces, no eyes, no animals, no text, no numbers, no letters, no logos, no watermarks, no signatures`, 120, 140],
 ];
 
 const args = process.argv.slice(2);

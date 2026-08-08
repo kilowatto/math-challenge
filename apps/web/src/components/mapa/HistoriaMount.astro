@@ -21,9 +21,12 @@
  * el mismo patrón que `Pantalla.astro` ya usa para el reto.
  */
 import type { Arbol } from "../../../../../packages/motor/src/mapa.ts";
+import type { ModoDeNodo } from "../../game/objects/LevelNode";
 
 interface Props {
   arbol: Arbol;
+  /** D-190: "camino" (KINDER/PRIMARIA) o "arbol" (SECUNDARIA) — decidido server-side, nunca en el cliente. */
+  modo: ModoDeNodo;
   locale: string;
   puedeElegirNivel: boolean;
   rotulos: {
@@ -64,7 +67,7 @@ interface Props {
   pantallaCompleta?: boolean;
 }
 
-const { arbol, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA, pantallaCompleta = false } =
+const { arbol, modo, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA, pantallaCompleta = false } =
   Astro.props;
 ---
 
@@ -83,7 +86,7 @@ const { arbol, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, sali
 <script
   type="application/json"
   id="historia-datos"
-  set:html={JSON.stringify({ arbol, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA })}
+  set:html={JSON.stringify({ arbol, modo, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA })}
 />
 
 <script src="../../game/entrada.ts"></script>

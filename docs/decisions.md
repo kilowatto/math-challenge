@@ -5807,3 +5807,93 @@ propósito en esta corrida — el tiempo de la sesión se agotó antes de
 forzar ese caso específico.
 
 **Investigación relacionada:** D-185, D-187, mc-30, D-041, F9 #399.
+
+## D-190 — El mapa de KINDER y PRIMARIA SÍ muestra un número de secuencia y un candado — reversa D-017/D-019 · 2026-08-08
+
+**Decisión del dueño**, tras ver un video de referencia (Gemini) de un
+"Mundo Kinder" multi-bioma con un camino de troncos numerados y candado en
+el que aún no se ha llegado, con Larry caminando de verdad entre ellos:
+quiso ese mecanismo exacto para KINDER y, con el mismo camino, para TODO
+PRIMARIA (no una banda nueva — SECUNDARIA se queda con el árbol de D-184).
+
+**Esto reversa una mitad, y solo una mitad, de D-017/D-019/guía de estilo.**
+Antes de esta decisión, la regla era literal: "el mapa nunca muestra un
+número, nunca un candado" — respaldada por `mc-10` (la presión de
+rendimiento empeora el desempeño en matemáticas) y por `audits/mapa-sin-numero-de-nivel.mjs`,
+que ejecutaba `construirArbol()`/`construirSendero()` y fallaba si aparecía
+CUALQUIER número. **`mc-10` se le mostró al dueño explícitamente antes de
+que respondiera** — la evidencia no se descubrió después, se explicó y se
+decidió construir en contra de ella de todas formas. No se borra de
+`mapa.ts` ni de este archivo: queda anotada como advertencia vigente.
+
+**Lo que NO se reversa, y sigue exactamente igual:** el **nivel de
+dificultad** (N1…N12, D-017, "el número de nivel no se enseña a nadie") —
+`construirArbol()` lo sigue recibiendo para agrupar y lo sigue tirando; el
+número nuevo (`secuencia`) mide la posición en el CAMINO ("vas en el
+tronco 7 de 12"), no la dificultad. Las dos cosas conviven en el mismo
+archivo porque miden ejes distintos, con esa distinción escrita en el
+encabezado del módulo para que nadie las confunda mañana.
+
+**Lo que se construyó, en `packages/motor/src/mapa.ts`:**
+
+- `NodoDelArbol` y `LugarDelSendero` ganan dos campos: `secuencia: number`
+  (1, 2, 3… correlativo a través de TODO el camino, calculado igual que
+  `orden` ya se calculaba para agrupar, ahora expuesto por nodo) y
+  `bloqueado: boolean` (sale de pericia real, nunca de un grafo de
+  prerrequisitos: un nodo está bloqueado si nadie tocó esa habilidad
+  todavía Y tampoco se tocó la anterior en la secuencia — empezar el
+  anterior basta para desbloquear el siguiente, no hace falta dominarlo).
+  El primer nodo de todos nunca está bloqueado.
+- `Arista`/`Arbol.aristas` **sigue sin implementarse y sigue vacío** — el
+  candado nuevo es sobre la SECUENCIA del camino, no sobre un grafo de
+  prerrequisitos por tema; `skills` sigue sin la columna que eso pediría
+  (F5 §4.8 bloqueo 10). D-190 no reabre esa puerta.
+- `audits/mapa-sin-numero-de-nivel.mjs` se actualizó: la comprobación
+  dinámica ya no exige "cero números" en el sendero/árbol — exige "el
+  único número es `secuencia`, por nombre exacto, y `nivel`/`level` nunca
+  aparece". `audits/rango-vs-nivel.mjs` no necesitó cambios: solo vigila
+  las palabras "nivel"/"rango", y `secuencia` es, a propósito, un nombre
+  de campo distinto que nunca las usa.
+- Assets nuevos por Recraft (D-080): dos variantes de tronco de madera
+  (`tronco-a`/`tronco-b`, `scripts/gen-mapa-historia.mjs`) con la
+  superficie limpia para que Phaser pinte el número encima (nunca horneado
+  en la imagen), y un ícono de candado (`candado`) para el estado
+  bloqueado. Además, un ciclo de caminata real de Larry —ahora
+  ANTROPOMÓRFICO, erguido en dos piernas, corrección explícita del dueño
+  sobre el rinoceronte a cuatro patas que ya existía— con 4 cuadros de
+  zancada más poses de festejo/idle (`scripts/gen-larry.mjs`,
+  `larry_camina_1..4`, `larry_festejo`, `larry_idle_1/2`). Esta pose
+  bípeda es una familia NUEVA y deliberadamente distinta de
+  `larry_caminando`/`larry_busto` (D-080), que siguen a cuatro patas y en
+  producción en el sendero plano de KINDER y en la racha (#205) — no se
+  tocaron aquí; migrarlas a bípedo, si se pide, es un cambio aparte con su
+  propio radio de impacto.
+
+**Lo que este cambio de plan implica y todavía no se construyó en esta
+sesión:** el rediseño completo de Modo Historia (mundo multi-bioma,
+`MenuScene`, `LevelNode` con tronco/número/candado real, `LarryAvatar.ts`
+caminando la curva, KINDER migrado de Sabana HTML a Phaser, PRIMARIA al
+mismo camino, `RetosScene`, ícono de sonido) — D-190 documenta el cambio de
+regla y el modelo de datos que lo sostiene; el resto de fases sigue en
+curso y se documenta con su propia decisión cuando aterrice.
+
+**Cómo se verificó:** `node --experimental-strip-types packages/motor/src/mapa.prueba.mjs`
+(24/24 casos, incluyendo 5 casos nuevos para `secuencia`/`bloqueado` que
+antes no existían y que fallan si se quita cualquiera de los dos campos o
+si el candado se calcula distinto). `node audits/mapa-sin-numero-de-nivel.mjs`
+y `node audits/rango-vs-nivel.mjs` en verde con la regla nueva.
+`node audits/kinder-sin-examen.mjs` y `node audits/mapa-escena.mjs` en
+verde, sin disparar con el modelo de datos nuevo (todavía no hay UI que lo
+pinte). Los 9 assets nuevos de Larry/tronco/candado se revisaron
+visualmente uno por uno (se encontró y corrigió una firma visible en un
+cuadro de Larry, y una insignia de estrella no pedida en otro, ambas antes
+de llegar aquí) — **falta la revisión final del dueño antes de commitear
+(D-080): esta sesión no puede ser la única revisión humana que la regla
+exige.**
+
+**Lo que NO se verificó:** ningún build/audit completo de `apps/web` con
+UI real usando estos campos — `LevelNode.ts`/`MapScene.ts` todavía no se
+tocaron en esta sesión; lo de arriba cubre solo el modelo de datos
+(`packages/motor`) y los dos auditores que lo vigilan directamente.
+
+**Investigación relacionada:** D-184, D-187, D-189, mc-10, mc-43 §8, F5 §4.8 bloqueo 10.

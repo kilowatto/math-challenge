@@ -29,8 +29,10 @@
 import type Phaser from "phaser";
 import type { Arbol, GrupoDelArbol, NodoDelArbol } from "../../../../../packages/motor/src/mapa.ts";
 import type { RotulosDeReto } from "../reto/RetoController";
+import type { ModoDeNodo } from "../objects/LevelNode";
 
 export const REGISTRY_ARBOL = "historia:arbol";
+export const REGISTRY_MODO = "historia:modo";
 export const REGISTRY_LOCALE = "historia:locale";
 export const REGISTRY_NIVEL_ELEGIDO = "historia:nivelElegido";
 /** ¿Esta persona puede elegir nivel? Ya decidido por el SERVIDOR (D-183). */
@@ -58,6 +60,13 @@ export interface RotulosDeHistoria {
 
 export interface DatosDeArranque {
   arbol: Arbol;
+  /**
+   * D-190: qué dibuja `LevelNode` — "camino" (tronco+secuencia+candado, para
+   * KINDER/PRIMARIA) o "arbol" (el círculo de siempre, sin número ni
+   * candado, para SECUNDARIA). Lo decide la página server-side a partir de
+   * la banda REAL (D1) — nunca esta escena adivinándolo de otro dato.
+   */
+  modo: ModoDeNodo;
   locale: string;
   puedeElegirNivel: boolean;
   rotulos: RotulosDeHistoria;
@@ -75,6 +84,7 @@ export class ProgressManager {
   constructor(registry: Phaser.Data.DataManager, datos: DatosDeArranque) {
     this.registry = registry;
     this.registry.set(REGISTRY_ARBOL, datos.arbol);
+    this.registry.set(REGISTRY_MODO, datos.modo);
     this.registry.set(REGISTRY_LOCALE, datos.locale);
     this.registry.set(REGISTRY_PUEDE_ELEGIR_NIVEL, datos.puedeElegirNivel);
     this.registry.set(REGISTRY_NIVEL_ELEGIDO, null);
@@ -86,6 +96,11 @@ export class ProgressManager {
 
   get grupos(): readonly GrupoDelArbol[] {
     return (this.registry.get(REGISTRY_ARBOL) as Arbol).grupos;
+  }
+
+  /** D-190: "camino" (KINDER/PRIMARIA) o "arbol" (SECUNDARIA). Ver LevelNode.ts. */
+  get modo(): ModoDeNodo {
+    return this.registry.get(REGISTRY_MODO) as ModoDeNodo;
   }
 
   get locale(): string {

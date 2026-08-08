@@ -51,6 +51,20 @@ export class PreloadScene extends Phaser.Scene {
     // El letrero del reto (GameplayScene): no es del mapa, pero se precarga
     // aquí igual — es la ÚNICA cola de carga de Modo Historia.
     this.load.image("letrero-madera", "/juego/letrero-madera.webp");
+    // D-190: el tronco+candado del camino de KINDER/PRIMARIA (LevelNode.ts
+    // modo "camino") y el ciclo de caminata antropomorfo de Larry
+    // (LarryAvatar.ts) — mismo `PreloadScene`, ninguna cola nueva.
+    this.load.image("tronco-a", "/juego/tronco-a.webp");
+    this.load.image("tronco-b", "/juego/tronco-b.webp");
+    this.load.image("candado", "/juego/candado.webp");
+    this.load.image("larry_camina_1", "/mapa/larry_camina_1.webp");
+    this.load.image("larry_camina_2", "/mapa/larry_camina_2.webp");
+    this.load.image("larry_camina_3", "/mapa/larry_camina_3.webp");
+    this.load.image("larry_camina_4", "/mapa/larry_camina_4.webp");
+    this.load.image("larry_festejo", "/mapa/larry_festejo.webp");
+    this.load.image("larry_menu_aplaude", "/mapa/larry_menu_aplaude.webp");
+    this.load.image("larry_idle_1", "/mapa/larry_idle_1.webp");
+    this.load.image("larry_idle_2", "/mapa/larry_idle_2.webp");
   }
 
   create(): void {

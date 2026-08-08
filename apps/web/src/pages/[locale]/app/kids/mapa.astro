@@ -84,7 +84,7 @@ import {
   leerSesionNino,
 } from "../../../../lib/sesiones";
 import { leerModelo } from "../../../../lib/aprendiz";
-import { rutaKids } from "../../../../lib/rutas-app";
+import { rutaKids, rutaJugar } from "../../../../lib/rutas-app";
 import { destinoDeLugar, fasesDelSendero, rutaMapaKids } from "../../../../lib/mapa-kids";
 import { entradasDelArbol } from "../../../../lib/mapa-primaria";
 import { f9Habilitado } from "../../../../lib/grupo-flag";
@@ -335,10 +335,13 @@ const modoDelMapa: "arbol" | "camino" = banda === "SECUNDARIA" ? "arbol" : "cami
             nivelMedio: m.practicarNivelMedio,
             nivelDificil: m.practicarNivelDificil,
             jugar: m.historiaJugar,
+            menuHistoria: m.menuHistoria,
+            menuRetos: m.menuRetos,
           }}
           rotulosReto={rotulosReto!}
           etiquetaVoz={ETIQUETA_DE_VOZ[locale]}
           salirA={rutaMapaKids(locale)}
+          rutaRetos={rutaJugar(locale)}
           pantallaCompleta
         />
         <a class="mapa-historia-completa__salida" href={rutaKids(locale)} aria-label={m.kidsTitle}>

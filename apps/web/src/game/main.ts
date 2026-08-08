@@ -15,6 +15,7 @@
 import Phaser from "phaser";
 import { BootScene } from "./scenes/BootScene";
 import { PreloadScene } from "./scenes/PreloadScene";
+import { MenuScene } from "./scenes/MenuScene";
 import { MapScene } from "./scenes/MapScene";
 import { ChallengeScene } from "./scenes/ChallengeScene";
 import { DialogueScene } from "./scenes/DialogueScene";
@@ -35,7 +36,7 @@ export function iniciarHistoria(contenedorId: string, datos: DatosDeArranque): P
     // hoy es de formas planas, no de píxeles — mc-47 §5 (Android de gama
     // baja) es la razón de mantener el renderer lo más simple posible.
     render: { antialias: true, pixelArt: false },
-    scene: [BootScene, PreloadScene, MapScene, ChallengeScene, DialogueScene, GameplayScene],
+    scene: [BootScene, PreloadScene, MenuScene, MapScene, ChallengeScene, DialogueScene, GameplayScene],
   });
 
   // El registro se siembra ANTES de que corra la primera escena: el

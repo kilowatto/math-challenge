@@ -57,6 +57,15 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("tronco-a", "/juego/tronco-a.webp");
     this.load.image("tronco-b", "/juego/tronco-b.webp");
     this.load.image("candado", "/juego/candado.webp");
+    // D-190: los biomas de desierto y nieve — cargados ya, aunque todavía no
+    // hay forma de llegar a esos capítulos desde el juego (ver story.ts).
+    this.load.image("fondo-desierto-1", "/juego/fondo-desierto-1.webp");
+    this.load.image("cactus-b", "/juego/cactus-b.webp");
+    this.load.image("roca-desierto", "/juego/roca-desierto.webp");
+    this.load.image("fondo-nieve-1", "/juego/fondo-nieve-1.webp");
+    this.load.image("pino-nevado", "/juego/pino-nevado.webp");
+    this.load.image("roca-nieve", "/juego/roca-nieve.webp");
+    this.load.image("cristal-hielo", "/juego/cristal-hielo.webp");
     this.load.image("larry_camina_1", "/mapa/larry_camina_1.webp");
     this.load.image("larry_camina_2", "/mapa/larry_camina_2.webp");
     this.load.image("larry_camina_3", "/mapa/larry_camina_3.webp");

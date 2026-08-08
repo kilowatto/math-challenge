@@ -116,6 +116,107 @@ export const CAPITULOS: readonly WorldChapter[] = [
     ],
     musicKey: null,
   },
+  /**
+   * D-190: el "Mundo Kinder" multi-bioma del video de referencia. Estos dos
+   * capítulos existen y cargan su arte real (`scripts/gen-mapa-historia.mjs`)
+   * pero TODAVÍA no son alcanzables desde el juego — nada llama a
+   * `MapScene` con `chapterId: "desierto-1"` ni `"nieve-1"` hasta que exista
+   * el enlace entre capítulos (`MenuScene`/selector de mundo, fase
+   * posterior). Se agregan aquí primero, y se precargan en
+   * `PreloadScene.ts`, para que el arte quede revisado y listo sin bloquear
+   * su propia fase en la del enlace de navegación.
+   *
+   * Falta un tercer capítulo de costa/océano: el fondo se intentó tres veces
+   * con Recraft y las tres veces coló gente, casas, veleros o un faro pese a
+   * las exclusiones explícitas — más terco que bosque/desierto/nieve. Queda
+   * pendiente para una sesión de generación aparte, no se fuerza un fondo
+   * que no pasó revisión.
+   */
+  {
+    id: "desierto-1",
+    name: "Las dunas de arena",
+    backgroundKey: "fondo-desierto-1",
+    worldWidth: 1000,
+    worldHeight: 2400,
+    pathData: [
+      { x: 500, y: 2320 },
+      { x: 340, y: 2000 },
+      { x: 660, y: 1700 },
+      { x: 400, y: 1380 },
+      { x: 640, y: 1060 },
+      { x: 360, y: 760 },
+      { x: 560, y: 420 },
+      { x: 500, y: 120 },
+    ],
+    vegetationLayers: [
+      {
+        key: "cactus-b",
+        count: 10,
+        depth: 3,
+        xRange: [40, 960],
+        yRange: [100, 2350],
+        scaleRange: [0.7, 1.1],
+        tier: "cerca",
+      },
+      {
+        key: "roca-desierto",
+        count: 14,
+        depth: 4,
+        xRange: [20, 980],
+        yRange: [100, 2350],
+        scaleRange: [0.6, 1],
+        tier: "lejos",
+      },
+    ],
+    musicKey: null,
+  },
+  {
+    id: "nieve-1",
+    name: "Las montañas nevadas",
+    backgroundKey: "fondo-nieve-1",
+    worldWidth: 1000,
+    worldHeight: 2400,
+    pathData: [
+      { x: 500, y: 2320 },
+      { x: 340, y: 2000 },
+      { x: 660, y: 1700 },
+      { x: 400, y: 1380 },
+      { x: 640, y: 1060 },
+      { x: 360, y: 760 },
+      { x: 560, y: 420 },
+      { x: 500, y: 120 },
+    ],
+    vegetationLayers: [
+      {
+        key: "pino-nevado",
+        count: 12,
+        depth: 3,
+        xRange: [40, 960],
+        yRange: [100, 2350],
+        scaleRange: [0.8, 1.2],
+        tier: "cerca",
+      },
+      {
+        key: "roca-nieve",
+        count: 8,
+        depth: 4,
+        xRange: [20, 980],
+        yRange: [100, 2350],
+        scaleRange: [0.6, 1],
+        tier: "lejos",
+      },
+      {
+        key: "cristal-hielo",
+        count: 10,
+        depth: 6,
+        xRange: [20, 980],
+        yRange: [100, 2350],
+        scaleRange: [0.5, 0.8],
+        tier: "lejos",
+      },
+    ],
+    musicKey: null,
+  },
 ];
 
 export const capituloPorId = (id: string): WorldChapter | null =>

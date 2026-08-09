@@ -6363,3 +6363,110 @@ los tres corregidos el mismo día:
 comportamientos, mismo Larry suelto sobre la escena, misma ropa deportiva
 sin marca real, mismo parallax 2.5D. Es una corrección de producción, no
 una decisión nueva de producto.
+
+---
+
+## D-197 — Pantalla de ajustes de perfil (engrane en "¿Quién juega?") — reversa D-003 para el adulto, PIN por banda, borrar con papelera · 2026-08-09
+
+Alcance completo pedido por el dueño para la pantalla de ajustes que se
+abre desde el engrane en `QuienJuegaScene`: crear perfil, PIN, borrar
+perfil, idioma, alias, nivel de arranque — y, para el adulto, nombre +
+`@usuario`. Investigado primero (infraestructura existente revisada antes
+de proponer nada) y decidido en una ronda de preguntas de opción múltiple.
+Un resumen por punto:
+
+**1. Nombre + `@usuario` del adulto — reversa explícita de D-003.** D-003
+("Modelo de tableros públicos") y su ampliación en el comentario de
+`migrations/0012_ligas_tablero_duelo.sql` fijan que ligas/tableros/clubes
+muestran SIEMPRE un alias generado, nunca un nombre real — ni de niño ni
+de adulto — precisamente para que un adulto compitiendo públicamente
+tenga "el mismo velo que un niño". El dueño vio ese conflicto explícito y
+decidió que el nombre y el `@usuario` del adulto SÍ sean públicos, en vez
+del alias, en esas mismas superficies. **Esto es la primera superficie de
+texto libre de todo el producto visible a otros usuarios** — hasta hoy
+cada superficie pública mostraba solo contenido generado (alias) o
+pictográfico (forma/color/animal), nunca algo que una persona escribió
+para que otros lo lean. Implicaciones:
+  - `username` es único en TODA la plataforma (como un handle de
+    X/Twitter), no por liga/club — evita que el mismo `@` aparezca dos
+    veces y confunda a alguien que está en ambas superficies.
+  - Ambos campos (`display_name`, `username`) son texto libre que el
+    ADULTO escribe — nunca el niño, que sigue sin nombre real ni superficie
+    de texto libre alguna (D-013, línea roja #3, ninguna de las dos se
+    toca). El niño no tiene ni puede tener estos campos.
+  - Necesitan un filtro de groserías/suplantación — el primero de su tipo
+    en el producto. V1 pragmático: lista de bloqueo por substring,
+    normalizada igual que `alias.ts::normalizar()` (sin acentos, sin
+    mayúsculas). Explícitamente NO es un pipeline de moderación completo
+    (sin reporte de usuarios, sin revisión humana, sin apelación) — eso
+    queda fuera de este alcance y se anota como residuo conocido, no como
+    "ya resuelto".
+  - **Lo que D-003 sigue protegiendo:** el niño. Ninguna tarjeta de niño,
+    en ninguna superficie, gana un campo de texto libre por esta decisión.
+
+**2. PIN — hoy no existe NINGÚN flujo que lo fije, en ningún lado.** La
+investigación confirmó algo que no estaba documentado: `child_image_pin`
+existe desde la migración 0002 y `packages/motor/src/pin-imagenes.ts` ya
+tiene toda la criptografía (grid derivado por HKDF, hash de posiciones),
+pero **ni `perfil-nuevo.ts` ni ningún otro archivo del repo escribe jamás
+un `pin_hash`** — `kids/pin.astro` deja pasar sin reto a cualquier perfil
+sin PIN, un hueco que su propio encabezado ya documentaba. Esta pantalla
+de ajustes es la PRIMERA vez que algo en el repo de verdad fija un PIN.
+Decisión sobre el tipo: **KINDER usa el sistema de 3-de-9 imágenes ya
+construido; PRIMARIA y SECUNDARIA usan teclado numérico** — un teclado
+numérico es selección de un conjunto fijo de 10 símbolos, no texto libre
+(línea roja #3 intacta), y a esa edad ya reconocen dígitos con soltura.
+Requiere una función de hash paralela para dígitos (sin la indirección del
+grid por imagen, que no aplica a un teclado numérico) y una columna que
+diga qué tipo de PIN tiene cada perfil.
+
+**3. Borrar perfil — con papelera de 30 días, PERO el modelo se borra de
+inmediato.** Borrar un perfil hoy no tiene ningún endpoint (grep confirmó
+cero `UPDATE child_profiles SET deleted_at`). Confirmación simple (no
+pedir escribir el alias) + la FILA (alias, avatar, idioma, nivel) queda
+recuperable 30 días antes de una purga física — protege de un toque
+accidental sin la fricción de una confirmación tipo "escribe el nombre
+del repositorio". **Matiz descubierto al construirlo, no decidido de
+antemano:** `audits/borrado-alcanza-al-modelo.mjs` (F4 #104, GDPR art. 17,
+COPPA §312.6) exige que el MODELO adaptativo del niño (el Durable Object
+de `LEARNER_DO`) se borre en el mismo instante en que se marca
+`deleted_at` — sin excepción, sin marcador de anulación, a propósito: es
+el derecho de borrado del padre, y ese derecho lo dispara la petición, no
+una purga eventual. Así que la papelera de 30 días recupera el PERFIL
+(la fila, el nombre, el avatar), nunca el PROGRESO — ese ya se borró de
+verdad en el momento del borrado, igual que otros productos separan
+"recuperar una cuenta" de "recuperar un dato sensible ya erosionado".
+
+**4. Cambiar idioma — regenera el alias.** El alias está armado con
+palabras de UN locale (mc-34: "einundzwanzig" no es una traducción de
+"veintiuno", es otra forma de nombrar). Cambiar el idioma de práctica
+regenera el alias en el nuevo locale — nunca se queda un alias con
+palabras de un idioma que el perfil ya no usa.
+
+**5. Cambiar el nivel de arranque — mismo margen ±1 que ya existe.**
+`temasPermitidos()`/`temaPermitido()` (`packages/motor/src/bandas.ts`)
+ya limitan cuánto puede mover el adulto la banda derivada por edad —
+±1 sobre `ORDEN_TEMAS = [KINDER, PRIMARIA, SECUNDARIA, SERIO, PRO]` — y
+esta pantalla reusa la MISMA regla para cambiarlo después, no una nueva.
+**Caso concreto que motivó la pregunta:** un niño de 1º de primaria (banda
+derivada PRIMARIA) que necesita reforzar contenido de KINDER antes de
+seguir con su grado — `temasPermitidos("PRIMARIA")` ya incluye KINDER
+(slice de índice 0 a 2 sobre el arreglo de arriba), así que este caso
+funciona con la regla ya escrita, sin ampliar el margen. Es un nivel
+ACTIVO a la vez, cambiable cuando el padre quiera — no dos bandas
+mezcladas en la misma sesión (eso sería un cambio de motor, no de esta
+pantalla).
+
+**6. Crear perfil — se reconstruye completo en Phaser**, mismos tres pasos
+que `perfil-nuevo.astro` ya tiene (año → tema con margen → locale), no
+solo un enlace a la página existente.
+
+**Lo que esto NO reversa:** D-013/línea roja #2 (el niño sigue sin ser un
+usuario, sin nombre real, sin correo, sin foto), línea roja #3 (el niño
+sigue sin escribir texto libre en ninguna superficie — el `@usuario`/
+nombre es EXCLUSIVO del adulto), D-004 (Larry no cambia).
+
+**Investigación relacionada:** D-003, D-013, D-032 (residuo de moderación
+anotado, no escondido), D-194, D-195, D-196, mc-20 (audio por instrucción
+para quien no lee, ver el comentario de `MARGEN` en `bandas.ts`), mc-34
+(alias y notación por locale).

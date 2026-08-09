@@ -42,6 +42,10 @@ const ESQUEMA = `
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
   alias TEXT,
+  -- D-197: SQL_TOP_ADULTO ahora hace COALESCE(username, alias) — la
+  -- columna tiene que existir aquí aunque ningún caso de esta prueba fije un
+  -- valor (NULL dispara el mismo fallback al alias que ya se probaba).
+  username TEXT,
   deleted_at INTEGER
 );
 CREATE TABLE child_profiles (

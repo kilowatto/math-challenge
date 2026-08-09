@@ -22,8 +22,12 @@ const club = await env.DB.prepare(
 ).bind(id, sesion.userId, sesion.userId).first<{ id: string; name_key: string; join_code: string; max_size: number }>();
 if (!club) return new Response("404", { status: 404 });
 
+// `COALESCE(u.username, u.alias, cp.alias)` (D-197): un miembro ADULTO
+// muestra su `@usuario` público si lo fijó, si no su alias generado — un
+// miembro NIÑO (`u.*` sale NULL por el LEFT JOIN) sigue mostrando SIEMPRE
+// `cp.alias`, sin excepción (D-013, línea roja #2, línea roja #3).
 const miembros = (await env.DB.prepare(
-  "SELECT COALESCE(u.alias, cp.alias) AS alias, m.user_id, m.child_profile_id FROM adult_club_membership m LEFT JOIN users u ON u.id = m.user_id LEFT JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE m.adult_club_id = ? AND m.left_at IS NULL ORDER BY alias",
+  "SELECT COALESCE(u.username, u.alias, cp.alias) AS alias, m.user_id, m.child_profile_id FROM adult_club_membership m LEFT JOIN users u ON u.id = m.user_id LEFT JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE m.adult_club_id = ? AND m.left_at IS NULL ORDER BY alias",
 ).bind(id).all<{ alias: string; user_id: string | null; child_profile_id: string | null }>()).results ?? [];
 const hijosQuePuedeRevocar = (await env.DB.prepare(
   "SELECT m.child_profile_id AS child_id, cp.alias FROM adult_club_membership m JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE m.adult_club_id = ? AND m.approved_by = ? AND m.left_at IS NULL ORDER BY cp.alias",
@@ -34,7 +38,7 @@ const retos = (await env.DB.prepare(
 const resultadosPorReto = new Map<string, Array<{ alias: string; points: number; completed_at: number | null }>>();
 for (const reto of retos) {
   const resultados = (await env.DB.prepare(
-    "SELECT COALESCE(u.alias, cp.alias) AS alias, r.points, r.completed_at FROM club_challenge_result r JOIN adult_club_membership m ON m.id = r.membership_id LEFT JOIN users u ON u.id = m.user_id LEFT JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE r.challenge_id = ? ORDER BY r.points DESC, alias ASC",
+    "SELECT COALESCE(u.username, u.alias, cp.alias) AS alias, r.points, r.completed_at FROM club_challenge_result r JOIN adult_club_membership m ON m.id = r.membership_id LEFT JOIN users u ON u.id = m.user_id LEFT JOIN child_profiles cp ON cp.id = m.child_profile_id WHERE r.challenge_id = ? ORDER BY r.points DESC, alias ASC",
   ).bind(reto.id).all<{ alias: string; points: number; completed_at: number | null }>()).results ?? [];
   resultadosPorReto.set(reto.id, resultados);
 }

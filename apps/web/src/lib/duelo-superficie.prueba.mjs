@@ -39,6 +39,10 @@ CREATE TABLE users (
   alias TEXT,
   alias_locale TEXT
     CHECK (alias_locale IN ('en','es-MX','es-ES','fr-FR','pt-BR','pt-PT','de-DE')),
+  -- D-197: estadoDeParticipacion ahora hace COALESCE(username, alias) —
+  -- la columna tiene que existir aquí aunque ningún caso de esta prueba fije
+  -- un valor (NULL dispara el mismo fallback al alias que ya se probaba).
+  username TEXT,
   created_at INTEGER NOT NULL DEFAULT 0,
   updated_at INTEGER NOT NULL DEFAULT 0,
   deleted_at INTEGER

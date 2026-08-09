@@ -230,9 +230,20 @@ LIMIT ?
  *
  * El adulto no pasa por `child_consents`: consiente por sí mismo al activar
  * `is_learner`, que es también cuando se le genera el alias (#239).
+ *
+ * **`COALESCE(u.username, u.alias)` — reversa puntual de D-003 (D-197).**
+ * Hasta D-197 esta columna era siempre el alias generado; el dueño decidió
+ * que el `@usuario` público (texto que el adulto mismo escribe, D-197 §1)
+ * se muestre en su lugar cuando existe, y solo entonces — mientras no lo
+ * haya fijado, sigue viendo el alias anónimo de siempre. El campo del
+ * resultado se sigue llamando `alias` a propósito: no hay una segunda ruta
+ * de "nombre real" en esta consulta, solo un valor distinto según qué haya
+ * elegido el adulto. **`SQL_TOP_NINO` NO tiene un cambio equivalente ni lo
+ * tendrá nunca** — el niño no gana esta columna bajo ninguna circunstancia
+ * (D-013, línea roja #2, línea roja #3).
  */
 export const SQL_TOP_ADULTO = `
-SELECT u.alias AS alias, s.total_score AS total_score, u.id AS id
+SELECT COALESCE(u.username, u.alias) AS alias, s.total_score AS total_score, u.id AS id
 FROM score_totals_adulto s
 JOIN users u ON u.id = s.user_id AND u.deleted_at IS NULL
 WHERE s.period = ? AND s.theme_band = ? AND u.alias IS NOT NULL

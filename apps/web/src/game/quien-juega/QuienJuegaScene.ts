@@ -45,6 +45,7 @@
  */
 import Phaser from "phaser";
 import { BotonSonido } from "../objects/BotonSonido";
+import { TODOS_LOS_ANIMALES, claveDeAnimal, type AnimalId } from "../../lib/avatares-animal";
 
 /** Los mismos seis tokens de `docs/guia-de-estilo.md`, copiados a hex — Phaser no lee `var(--…)`. */
 const PALETA: ReadonlyArray<{ relleno: number; tinta: number }> = [
@@ -66,6 +67,8 @@ export interface TarjetaPerfil {
   alias: string;
   forma: number;
   color: number;
+  /** El animal ya elegido (D-194), o `null` si el perfil no ha elegido ninguno — la cara procedural sigue siendo el respaldo, nunca una tarjeta vacía. */
+  animal: AnimalId | null;
   esAdulto: boolean;
   dato: DatoDeTarjeta;
   href: string;
@@ -107,6 +110,14 @@ export class QuienJuegaScene extends Phaser.Scene {
   preload(): void {
     this.load.image("fondo-primaria-1", "/juego/fondo-primaria-1.webp");
     this.load.image("larry_menu_aplaude", "/mapa/larry_menu_aplaude.webp");
+    // Los 16 avatares-animal (D-194): se cargan todos, sin importar cuáles
+    // elija esta casa — son 16 imágenes de 512px, más barato que una consulta
+    // adicional para saber cuáles hacen falta, y `Phaser.Loader` de todas
+    // formas pide una URL fija por textura (mismo motivo que `gen-larry.mjs`
+    // documenta para las piezas de LarryAvatar).
+    for (const id of TODOS_LOS_ANIMALES) {
+      this.load.image(claveDeAnimal(id), `/avatares/${claveDeAnimal(id)}.webp`);
+    }
   }
 
   /**
@@ -162,13 +173,47 @@ export class QuienJuegaScene extends Phaser.Scene {
       .image(width - 60, height - 60, "larry_menu_aplaude")
       .setDisplaySize(110, 110)
       .setDepth(3);
+    // "Sube y baja nada más" no se lee como baile — el dueño lo notó de
+    // inmediato. Un solo cuadro estático SÍ puede leerse como baile si se
+    // combinan tres movimientos con periodos distintos (nunca sincronizados
+    // 1:1, o se ve como un metrónomo): vaivén lateral de cadera, bamboleo de
+    // rotación, y un squash/stretch leve en cada rebote — la misma técnica
+    // que usan los juegos casuales para animar un solo sprite sin cuadros.
+    const baseEscalaX = larry.scaleX;
+    const baseEscalaY = larry.scaleY;
+    const xBase = larry.x;
     this.tweens.add({
       targets: larry,
-      y: larry.y - 10,
+      y: larry.y - 16,
+      duration: 420,
       yoyo: true,
       repeat: -1,
-      duration: 1000,
+      ease: "Sine.easeOut",
+    });
+    this.tweens.add({
+      targets: larry,
+      angle: { from: -9, to: 9 },
+      duration: 640,
+      yoyo: true,
+      repeat: -1,
       ease: "Sine.easeInOut",
+    });
+    this.tweens.add({
+      targets: larry,
+      x: { from: xBase - 10, to: xBase + 10 },
+      duration: 640,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+    this.tweens.add({
+      targets: larry,
+      scaleX: baseEscalaX * 0.92,
+      scaleY: baseEscalaY * 1.1,
+      duration: 210,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeOut",
     });
 
     this.dibujarRejilla(width, height);
@@ -264,23 +309,42 @@ export class QuienJuegaScene extends Phaser.Scene {
       contenedor.add(anillo);
     }
 
-    const circulo = this.add.circle(0, 0, RADIO, paleta.relleno);
-    circulo.setStrokeStyle(4, paleta.tinta, 0.9);
-    contenedor.add(circulo);
+    if (tarjeta.animal && this.textures.exists(claveDeAnimal(tarjeta.animal))) {
+      // D-194: el animal elegido reemplaza la cara procedural. El recorte es
+      // un `Phaser.Geom.Circle` usado SOLO como máscara de dibujo (createGeometryMask)
+      // — no como `hitArea` de un objeto interactivo, que es el hallazgo de
+      // esta sesión documentado en el encabezado y en `LevelNode.ts`/`BotonSonido.ts`:
+      // un hitArea de forma explícita no registra el toque en esta build de
+      // Phaser, pero SÍ funciona como máscara de recorte visual, que es un uso
+      // completamente distinto del sistema de input.
+      const avatar = this.add.image(0, 0, claveDeAnimal(tarjeta.animal));
+      avatar.setDisplaySize(RADIO * 2, RADIO * 2);
+      const formaRecorte = this.add.circle(x, y, RADIO).setVisible(false);
+      avatar.setMask(formaRecorte.createGeometryMask());
+      contenedor.add(avatar);
 
-    this.dibujarAccesorio(contenedor, tarjeta.forma, paleta.tinta);
+      const borde = this.add.circle(0, 0, RADIO, 0x000000, 0);
+      borde.setStrokeStyle(4, paleta.tinta, 0.9);
+      contenedor.add(borde);
+    } else {
+      const circulo = this.add.circle(0, 0, RADIO, paleta.relleno);
+      circulo.setStrokeStyle(4, paleta.tinta, 0.9);
+      contenedor.add(circulo);
 
-    const ojoIzq = this.add.circle(-RADIO * 0.32, -RADIO * 0.05, RADIO * 0.09, paleta.tinta);
-    const ojoDer = this.add.circle(RADIO * 0.32, -RADIO * 0.05, RADIO * 0.09, paleta.tinta);
-    contenedor.add(ojoIzq);
-    contenedor.add(ojoDer);
+      this.dibujarAccesorio(contenedor, tarjeta.forma, paleta.tinta);
 
-    const boca = this.add.graphics();
-    boca.lineStyle(3, paleta.tinta, 0.9);
-    boca.beginPath();
-    boca.arc(0, RADIO * 0.1, RADIO * 0.3, Phaser.Math.DegToRad(20), Phaser.Math.DegToRad(160));
-    boca.strokePath();
-    contenedor.add(boca);
+      const ojoIzq = this.add.circle(-RADIO * 0.32, -RADIO * 0.05, RADIO * 0.09, paleta.tinta);
+      const ojoDer = this.add.circle(RADIO * 0.32, -RADIO * 0.05, RADIO * 0.09, paleta.tinta);
+      contenedor.add(ojoIzq);
+      contenedor.add(ojoDer);
+
+      const boca = this.add.graphics();
+      boca.lineStyle(3, paleta.tinta, 0.9);
+      boca.beginPath();
+      boca.arc(0, RADIO * 0.1, RADIO * 0.3, Phaser.Math.DegToRad(20), Phaser.Math.DegToRad(160));
+      boca.strokePath();
+      contenedor.add(boca);
+    }
 
     const alias = this.add
       .text(0, RADIO + 16, tarjeta.alias, {

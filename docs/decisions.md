@@ -6078,3 +6078,108 @@ sin romperse.
 
 **Investigación relacionada:** D-012, D-017, D-019, D-024, D-045, D-080,
 D-184, D-190, D-191, mc-33, mc-47 §5.
+
+## D-194 — El compañero deja de ser Larry con accesorios: se elige un animal, Larry pasa a guía — reversa D-080 · 2026-08-08
+
+**Decisión del dueño, después de ver Larry bailando mal y pedir "mucho más
+diseño".** Vio la primera versión de `QuienJuegaScene` en un dispositivo real
+y dijo tres cosas: no se oía el sonido, Larry solo subía y bajaba (no
+bailaba), y "tenemos que mejorar el diseño de los participantes con avatares
+dibujados, diferentes animales de la sabana (como los amigos de Larry)". Esa
+tercera frase choca de frente con **D-080** (2026-08-02): *"el compañero es
+Larry, que ya existe, ya tiene canon... no es una mascota nueva"* — así que
+antes de construir nada se le mostró el conflicto explícito, con el costo real
+(arte nuevo × 7 locales, revisión humana por imagen, `mc-43` §7 sobre la
+ventaja de un personaje ya familiar). El dueño no matizó: pidió más, no menos.
+
+**Lo que el dueño aprobó, en sus propias palabras, en dos rondas de
+preguntas:**
+
+1. *"Amigos de verdad que lo acompañan en la sábana, también se mueven,
+   algunos están bailando, otros leen dando vuelta a páginas de libros?
+   Algunos te saludan, piensa que puede haber hasta 8 con ocho acciones
+   diferente. Los de adultos también puedes seleccionar de 8 diferentes pero
+   estos son Fotorrealista. Antropomórficos y diferentes animales a los de los
+   niños."*
+2. *"Lo elige la persona, tocando entre las 8 opciones"* — no se asigna por
+   hash ni automáticamente.
+3. *"El animal reemplaza a Larry como compañero, Larry es el guía o
+   profesor."* — Larry no desaparece: cambia de rol. Deja de ser quien camina
+   el sendero (`Presencia = "camina"` en `companero.ts`) y pasa a ser quien
+   explica/narra — el mismo trabajo que ya hace en el tutor (`RetoController`),
+   ahora también dueño de la identidad visual de "quien te enseña" en vez de
+   "quien te acompaña".
+4. *"Cuadros reales por animal (secuencia de varias imágenes)"* — animación
+   real generada, no un tween de Phaser sobre una sola pose (que es
+   exactamente la queja que originó esto: Larry "solo sube y baja").
+5. *"Genera todos de una vez"* — sin piloto de uno solo — con la aclaración
+   explícita de que "adultos" en este contexto **no** significa literalmente
+   el dueño de la cuenta: significa el mismo umbral que ya fijó **D-191**
+   (SECUNDARIA→SERIO→PRO es fotorrealista). Un perfil `child_profiles` en
+   banda SECUNDARIA elige del roster fotorrealista, igual que el adulto de la
+   cuenta — no hay un roster tercero "adolescente".
+
+**Lo que NO se reversa:** las dos líneas que blindaban D-080 siguen vivas,
+solo que ahora aplican al animal en vez de a Larry:
+
+- **`mc-43` §6, sin decaimiento.** El animal elegido no tiene hambre, ni
+  felicidad, ni medidor de ningún tipo — es una IDENTIDAD (qué personaje soy),
+  no un estado que se pueda descuidar. Por diseño esto vive **fuera** de
+  `companion_state`/`EstadoCompanero` (que sigue con exactamente `visible` +
+  `accesorios`, sin tercer campo, con `audits/companero-sin-decaimiento.mjs`
+  intacto y sin tocar) — la elección de animal es una preferencia de
+  identidad, se guarda en `avatar_parts` (el mismo JSON que `child_profiles`
+  ya declaraba desde 0002 para esto exacto, nunca usado hasta hoy), y el
+  adulto obtiene la misma columna por primera vez (migración 0026).
+- **`mc-43` implicación 10, Larry/el animal nunca comentan el avatar.** Sigue
+  aplicando: ni Larry-guía ni el animal-compañero elogian o juzgan qué
+  personaje eligió la persona.
+- **Sin precio, sin aleatoriedad.** Los 16 personajes son un catálogo fijo,
+  gratuito, elegido a dedo — cero cajas de botín, línea roja #5 intacta.
+
+**Costo real, dicho antes de generar nada:** 16 personajes con secuencia real
+de animación (no una pose) es, en volumen de arte, comparable a construir
+Modo Historia completo otra vez — cada cuadro pasa por la misma revisión
+humana que ya le tomó varias rondas a las dos poses únicas de Larry esta
+misma sesión (marca de agua, insignias no pedidas, fotorrealismo donde no
+tocaba). Por eso esta sesión secciona la entrega en vez de prometerla entera
+de un tirón:
+
+- **Hoy (esta sesión):** portrait ESTÁTICO de los 16 (8 ilustrados banda
+  niño + 8 fotorrealistas banda SECUNDARIA+/adulto), suficiente para elegir y
+  para mostrarse en una tarjeta — no para caminar ni bailar todavía. Se cablea
+  en `¿Quién juega?` para ambos niveles, con fallback a la forma procedural de
+  siempre si el perfil no ha elegido nada (nunca una pantalla rota).
+- **Después, fases separadas y ya anotadas en la lista de tareas:** el picker
+  "elige tu animal" como pantalla propia (hoy no existe ninguna, se confirmó
+  buscando en todo el repo); las secuencias reales de animación (caminar,
+  bailar, leer, saludar) para el compañero de la Sábana; el rediseño de Larry
+  como guía/profesor (hoy sigue con las mismas dos poses de siempre, D-004).
+  Ninguna de las tres bloquea que `¿Quién juega?` quede terminada hoy, que es
+  lo que el dueño pidió explícitamente para no volver a tocar esa pantalla.
+
+**Por qué el roster fotorrealista no se adelanta más que esto:** D-191 ya
+declaró, con fecha de hoy, que el Modo Historia fotorrealista de
+SECUNDARIA→SERIO→PRO se **construye después** de que KINDER+PRIMARIA
+terminen en los 7 idiomas. El avatar fotorrealista es parte de ese mismo
+modo — mismo umbral de banda, mismo canon visual pendiente — así que
+generar hoy el PORTRAIT (necesario para que la tarjeta de adulto en
+`¿Quién juega?` no quede coja) no adelanta el resto de ese trabajo diferido:
+ni Larry-guía en fotorrealista, ni las secuencias de animación de esos 8
+personajes, ni el picker.
+
+**Especies:** los 16 nunca repiten Larry (rinoceronte) y el roster
+fotorrealista usa especies **distintas** al roster ilustrado, tal como pidió
+el dueño explícitamente — evita que un niño y un adulto de la misma casa
+elijan "el mismo animal" con dos acabados distintos, que hubiera sido
+confuso en una pantalla que los muestra a los dos a la vez.
+
+**Cómo se verificará:** cada uno de los 16 portraits se mira antes de
+commitear (D-080 sigue exigiendo revisión humana, no la borra esta reversa,
+solo cambia QUÉ se revisa). `astro check`, auditores de superficie de niño,
+y verificación en dispositivo real antes de dar la tarjeta por terminada.
+
+**Investigación relacionada:** D-080 (reversada), D-191 (fija el umbral
+fotorrealista y el orden de entrega), D-193 (la pantalla que esto termina),
+`mc-43` §6-7 y §10 (decaimiento y comentario de avatar, ambos siguen
+aplicando).

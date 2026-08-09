@@ -44,6 +44,7 @@
  * (rectángulo del tamaño nativo del `Zone`) sí responde.
  */
 import Phaser from "phaser";
+import { BotonSonido } from "../objects/BotonSonido";
 
 /** Los mismos seis tokens de `docs/guia-de-estilo.md`, copiados a hex — Phaser no lee `var(--…)`. */
 const PALETA: ReadonlyArray<{ relleno: number; tinta: number }> = [
@@ -96,6 +97,19 @@ export class QuienJuegaScene extends Phaser.Scene {
   }
 
   /**
+   * Reusa arte YA aprobado de Modo Historia (D-080/D-184/D-190) — nada
+   * nuevo que generar ni revisar. El aviso del dueño ("se ve fatal, sin
+   * fondo, sin Larry, sin sonido") fue sobre el ACABADO de la pantalla, no
+   * sobre las caras de los perfiles — eso sigue siendo trabajo de arte
+   * aparte (avatares bespoke, D-193), pero el fondo/Larry/ícono de sonido
+   * no tenían por qué esperar a esa ronda.
+   */
+  preload(): void {
+    this.load.image("fondo-primaria-1", "/juego/fondo-primaria-1.webp");
+    this.load.image("larry_menu_aplaude", "/mapa/larry_menu_aplaude.webp");
+  }
+
+  /**
    * Alto fijo de la cabecera (título + pista), en px — no una fracción de
    * `height`. Con `height*0.1` la cabecera se movía con el alto real del
    * viewport (D-041: un iPhone no mide lo mismo que un iPad) y en un
@@ -107,7 +121,21 @@ export class QuienJuegaScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor(0xffffff);
+    // verde-follaje (D-186): el color de espera antes de que la imagen real
+    // termine de decodificar — nunca un blanco de formulario.
+    this.cameras.main.setBackgroundColor(0x5b8c3a);
+
+    this.add
+      .image(width / 2, height / 2, "fondo-primaria-1")
+      .setDisplaySize(width, height)
+      .setDepth(0);
+
+    // Un panel claro detrás del título — el fondo ilustrado es demasiado
+    // ocupado para leer texto encima sin uno, mismo motivo por el que
+    // `MenuScene` monta su letrero de madera detrás de los botones.
+    const panel = this.add.graphics().setDepth(1);
+    panel.fillStyle(0xffffff, 0.88);
+    panel.fillRoundedRect(width / 2 - 180, 18, 360, 96, 20);
 
     this.add
       .text(width / 2, 56, this.datos.rotulos.titulo, {
@@ -116,7 +144,8 @@ export class QuienJuegaScene extends Phaser.Scene {
         fontStyle: "700",
         color: "#434547", // gris-900
       })
-      .setOrigin(0.5, 0.5);
+      .setOrigin(0.5, 0.5)
+      .setDepth(2);
 
     this.add
       .text(width / 2, 94, this.datos.rotulos.pista, {
@@ -124,9 +153,29 @@ export class QuienJuegaScene extends Phaser.Scene {
         fontSize: "16px",
         color: "#434547",
       })
-      .setOrigin(0.5, 0.5);
+      .setOrigin(0.5, 0.5)
+      .setDepth(2);
+
+    // Larry, en la esquina, con el mismo rebote de idle que ya usa
+    // `MenuScene` — nunca "congelado" en una pantalla que se supone viva.
+    const larry = this.add
+      .image(width - 60, height - 60, "larry_menu_aplaude")
+      .setDisplaySize(110, 110)
+      .setDepth(3);
+    this.tweens.add({
+      targets: larry,
+      y: larry.y - 10,
+      yoyo: true,
+      repeat: -1,
+      duration: 1000,
+      ease: "Sine.easeInOut",
+    });
 
     this.dibujarRejilla(width, height);
+
+    // El ícono de sonido (D-190): mismo control, mismo lugar, en las tres
+    // pantallas de Modo Historia — el niño no debería tener que reencontrarlo.
+    new BotonSonido(this, 44, 44).setDepth(10).setScrollFactor(0);
 
     this.scale.on(Phaser.Scale.Events.RESIZE, ({ width: w, height: h }: { width: number; height: number }) => {
       this.scene.restart(this.datos);
@@ -145,6 +194,9 @@ export class QuienJuegaScene extends Phaser.Scene {
     return 2;
   }
 
+  /** El panel de cada tarjeta mide `RADIO*2+92` de alto — la fila necesita al menos eso para no encimarse. */
+  private static readonly ALTO_FILA = RADIO * 2 + 108;
+
   private dibujarRejilla(width: number, height: number): void {
     const columnas = this.columnasPara(width);
     const paso = Math.min((width - 80) / columnas, 220);
@@ -158,14 +210,14 @@ export class QuienJuegaScene extends Phaser.Scene {
       const col = i % columnas;
       const fila = Math.floor(i / columnas);
       const x = inicioX + col * paso;
-      const y = inicioY + fila * (paso * 0.95);
-      this.dibujarTarjeta(tarjeta, x, y);
+      const y = inicioY + fila * QuienJuegaScene.ALTO_FILA;
+      this.dibujarTarjeta(tarjeta, x, y, i);
     });
 
     // Alto mínimo del mundo — si hay más filas de las que caben, la cámara
     // no recorta la última: mismo criterio de "nada se corta" que el resto
     // del producto.
-    const altoNecesario = inicioY + filas * (paso * 0.95) + 60;
+    const altoNecesario = inicioY + filas * QuienJuegaScene.ALTO_FILA + 60;
     if (altoNecesario > height) {
       this.cameras.main.setBounds(0, 0, width, altoNecesario);
       this.input.on("wheel", (_p: unknown, _go: unknown, _dx: number, dy: number) => {
@@ -178,9 +230,31 @@ export class QuienJuegaScene extends Phaser.Scene {
     }
   }
 
-  private dibujarTarjeta(tarjeta: TarjetaPerfil, x: number, y: number): void {
+  private dibujarTarjeta(tarjeta: TarjetaPerfil, x: number, y: number, indice: number): void {
     const contenedor = this.add.container(x, y);
     const paleta = PALETA[tarjeta.color % PALETA.length];
+
+    // Un panel claro detrás de toda la tarjeta — el fondo ilustrado es
+    // demasiado ocupado para que el alias/dato se lean encima sin uno,
+    // mismo motivo que el panel del título.
+    const panel = this.add.graphics();
+    panel.fillStyle(0xffffff, 0.82);
+    panel.fillRoundedRect(-RADIO - 14, -RADIO - 14, RADIO * 2 + 28, RADIO * 2 + 92, 18);
+    contenedor.add(panel);
+
+    // Respira, no está congelada — desincronizada por índice (mismo
+    // principio que `SwayingPlant`: todas meciéndose igual se lee como un
+    // bug, no como algo vivo).
+    this.tweens.add({
+      targets: contenedor,
+      scaleX: 1.03,
+      scaleY: 1.03,
+      duration: 1400 + (indice % 3) * 220,
+      delay: (indice % 4) * 180,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
 
     if (tarjeta.esAdulto) {
       // El adulto es visualmente distinto a propósito — nunca "otro niño más
@@ -289,6 +363,10 @@ export class QuienJuegaScene extends Phaser.Scene {
   }
 
   private onTocado(tarjeta: TarjetaPerfil, contenedor: Phaser.GameObjects.Container): void {
+    // Para la respiración antes del squash — dos tweens escribiendo la misma
+    // escala a la vez se ve como un tirón, no como dos animaciones.
+    this.tweens.killTweensOf(contenedor);
+    contenedor.setScale(1);
     this.tweens.add({
       targets: contenedor,
       scaleX: 0.92,

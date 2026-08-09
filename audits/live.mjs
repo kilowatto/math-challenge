@@ -637,11 +637,12 @@ if (!SEMBRAR) {
           });
           const destinoPin = pin.headers.get("location") ?? "";
           const cookieNino = (pin.headers.get("set-cookie") ?? "").split(";")[0];
-          if (pin.status !== 303 || !destinoPin.includes("/app/kids/jugar")) {
+          if (pin.status !== 303 || !destinoPin.includes("/app/kids/mapa")) {
             problems.push(
               `el PIN de un perfil sin PIN elegido devuelve ${pin.status} → "${destinoPin}". ` +
-                "Se esperaba 303 a /app/kids/jugar/. Un 500 aquí es la pantalla en blanco del " +
-                "2026-08-04 (TDZ de `locale` en la rama sin PIN); un 404 es un enlace sin locale.",
+                "Se esperaba 303 a /app/kids/mapa/ (D-190, PR #515: el niño entra al mapa, " +
+                "no al programador adaptativo directo). Un 500 aquí es la pantalla en blanco " +
+                "del 2026-08-04 (TDZ de `locale` en la rama sin PIN); un 404 es un enlace sin locale.",
             );
           } else if (!cookieNino.startsWith("mc_k=")) {
             problems.push(`el PIN respondió 303 pero sin cookie mc_k — el niño no queda en sesión`);

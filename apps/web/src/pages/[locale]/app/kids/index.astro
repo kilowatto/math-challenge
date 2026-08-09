@@ -637,7 +637,11 @@ try {
   const animalAdulto: AnimalId | null = animalElegido(avatarPartsAdulto, "PRO");
   const tarjetaAdulto: TarjetaPerfil = {
     id: "adulto",
-    alias: m.kidsAdultLink,
+    // Rótulo CORTO, distinto del enlace de abajo (`kidsAdultLink`, una
+    // frase completa de CTA): esta tarjeta es una etiqueta bajo un avatar,
+    // no un enlace en línea, y una frase larga se salía del panel en
+    // varios idiomas (visto en un dispositivo real, español e inglés).
+    alias: m.kidsAdultCard,
     forma: 0,
     color: 5, // gris-900 — visualmente distinto de cualquier color de niño posible por azar
     animal: animalAdulto,

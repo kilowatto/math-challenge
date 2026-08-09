@@ -47,7 +47,15 @@
   # Nunca cámara, nunca micrófono, nunca biometría, nunca geolocalización. Esto
   # no es defensa en profundidad: es la línea roja #1 expresada de forma que el
   # navegador la haga cumplir aunque alguien escriba el código que la cruza.
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
+  #
+  # `gyroscope`/`accelerometer` en `(self)` desde D-196 (2026-08-09): el
+  # parallax 2.5D de Larry en `QuienJuegaScene` (bajo `/app/**`, SSR) lo
+  # necesita. `audits/cabeceras-ssr.mjs` exige que este archivo y
+  # `cabeceras-seguridad.ts` coincidan al carácter — por eso el techo se abre
+  # también aquí, en las páginas estáticas, aunque NINGUNA de ellas de hecho
+  # pida el evento. No hay forma de acotar el permiso por ruta en esta
+  # plataforma; ver el comentario completo en `cabeceras-seguridad.ts`.
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(self), accelerometer=(self)
 
 # Los assets con hash en el nombre no cambian nunca: su contenido ES su nombre (#325).
 /_astro/*

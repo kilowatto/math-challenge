@@ -6247,3 +6247,77 @@ cerrado del todo.
 **Investigación relacionada:** D-190 (mismo lenguaje visual de props),
 D-193 (la pantalla que se está terminando de pulir), D-194 (la reversa que
 abrió esta ronda de pulido).
+
+## D-196 — El Larry de "¿Quién juega?" se adelanta a fotorrealista, con 7 comportamientos y parallax 2.5D — reversa puntual de D-191 · 2026-08-09
+
+**El conflicto, mostrado antes de decidir.** D-191 (2026-08-08) declaró un
+Larry fotorrealista con ropa deportiva y tenis naranjas, pero lo escribió
+explícito: *solo para SECUNDARIA→SERIO→PRO*, y *"esta decisión NO autoriza
+todavía ningún asset fotorrealista... primero KINDER y PRIMARIA terminados
+en los siete locales, recién después se toca esto"*. `¿Quién juega?` es
+una pantalla de KINDER/PRIMARIA. Se le mostró el conflicto al dueño antes
+de generar nada.
+
+**La razón que dio, y por qué se acepta:** esta pantalla específica ya
+mezclaba los dos niveles desde D-194 — la tarjeta del niño usa el roster
+ilustrado y la tarjeta del adulto ya usa el roster FOTORREALISTA de
+animales (mismo umbral de D-191). La pantalla ya no era "pura KINDER/
+PRIMARIA" antes de esta decisión; Larry fotorrealista es coherente con lo
+que la pantalla ya mostraba, no una grieta nueva. **El alcance es
+puntual: solo el Larry de `QuienJuegaScene`.** `MenuScene` y `MapScene`
+—que sí son 100% superficie de niño, sin ninguna tarjeta de adulto— se
+quedan con el Larry ilustrado bípede de D-190 sin tocar. La secuencia
+general de D-191 (SECUNDARIA/SERIO/PRO fotorrealista completo, después de
+KINDER/PRIMARIA en 7 idiomas) tampoco se toca — esto es una excepción
+nombrada para una pantalla, no un adelanto general.
+
+**Ropa: mismo criterio que D-191 ya fijó.** "Corte deportivo real, estilo
+Adidas/Puma" — nunca el logo real de una marca, que sería infracción de
+marca registrada. Tenis naranjas, el color de Larry.
+
+**Siete comportamientos, elegidos al azar, con Larry SUELTO sobre la
+escena — nunca dentro de una tarjeta** (el dueño lo confirmó viendo el
+resultado de D-195: "hoy Larry no vive en una caja blanca o tarjeta como
+los otros jugadores y eso está perfecto" — se preserva a propósito):
+
+1. Baila.
+2. Saluda.
+3. Se aburre — no pasa nada, Larry lo nota.
+4. Hace ejercicio — ropa deportiva, nunca logo real.
+5. Se sienta a leer — camina fuera de cuadro arrastrando una silla, se
+   sienta, lee, regresa la silla, camina de vuelta. **Mientras está fuera,
+   la pantalla se queda sin Larry unos segundos y él vuelve solo** —
+   decisión explícita del dueño, más simple que llenar el hueco con otra
+   cosa.
+6. Medita/hace yoga — propuesto por Claude para variar el nivel de
+   energía frente a bailar/ejercicio.
+7. Riega una plantita — propuesto por Claude, un gesto de cuidado calmado
+   que además usa el pasto/naturaleza que ya está en la escena.
+
+**Cuadros por comportamiento: los que hagan falta, no un número fijo** —
+mismo criterio que D-191 ya declaró ("sin tope de cuadros... los saltos se
+notan más en fotorrealismo que en ilustración plana"), pero tampoco
+obligatorio llegar a 12-14 si menos ya se ve fluido — el mismo juicio que
+D-190 aplicó con 4 cuadros bípedes para la caminata ilustrada.
+
+**Parallax 2.5D, no 3D real.** El dueño confirmó explícito que 2.5D
+alcanza y que NO hace falta volumen ni un motor 3D nuevo — capas planas
+que se desplazan distinto según la inclinación del dispositivo (el mismo
+truco de las fotos de perfil "espacial" de iOS, sin geometría real
+detrás). **Esto exige reactivar el permiso de giroscopio/acelerómetro**,
+que `cabeceras-seguridad.ts` desactiva hoy a propósito por privacidad — el
+dueño lo autorizó explícito ("lo que se tenga que hacer"). En iOS 13+ el
+navegador exige un gesto humano antes de conceder el permiso
+(`DeviceOrientationEvent.requestPermission()`); sin él, la pantalla
+degrada a plana, sin parallax — nunca rota el flujo ni bloquea con un
+diálogo obligatorio.
+
+**Lo que esto NO reversa:** D-004 (Larry sigue siendo Larry, coach
+honesto, nunca condescendiente, nunca avergüenza), línea roja #1 (nunca
+cámara/micrófono — el giroscopio no es ninguno de los dos, es orientación
+del aparato, no captura del entorno ni biometría), D-012 (el candado del
+dispositivo del hogar sigue siendo 100% servidor, Phaser no participa).
+
+**Investigación relacionada:** D-004, D-080, D-190, D-191 (fija el
+vestuario y el criterio de "sin tope de cuadros", reversado aquí solo en
+la secuencia, no en las reglas), D-194, D-195.

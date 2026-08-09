@@ -46,6 +46,7 @@
 import Phaser from "phaser";
 import { BotonSonido } from "../objects/BotonSonido";
 import { FlechaAtras } from "../objects/FlechaAtras";
+import { LarryFotorrealista, LARRY_FOTO_CLAVES } from "../objects/LarryFotorrealista";
 import { TODOS_LOS_ANIMALES, claveDeAnimal, type AnimalId } from "../../lib/avatares-animal";
 
 /** Los mismos seis tokens de `docs/guia-de-estilo.md`, copiados a hex — Phaser no lee `var(--…)`. */
@@ -128,11 +129,15 @@ export class QuienJuegaScene extends Phaser.Scene {
    */
   preload(): void {
     this.load.image("fondo-primaria-1", "/juego/fondo-primaria-1.webp");
-    this.load.image("larry_menu_aplaude", "/mapa/larry_menu_aplaude.webp");
     // Props de madera (D-194, segunda ronda): reemplazan los fondos blancos
     // procedurales del título y de la flecha de regreso.
     this.load.image("letrero-madera", "/juego/letrero-madera.webp");
     this.load.image("flecha-madera", "/juego/flecha-madera.webp");
+    // Los 24 cuadros de Larry fotorrealista (D-196) — reposo, caminata, y
+    // siete comportamientos. Ver `LarryFotorrealista.ts`.
+    for (const clave of LARRY_FOTO_CLAVES) {
+      this.load.image(clave, `/mapa/${clave}.webp`);
+    }
     // Los 16 avatares-animal (D-194): se cargan todos, sin importar cuáles
     // elija esta casa — son 16 imágenes de 512px, más barato que una consulta
     // adicional para saber cuáles hacen falta, y `Phaser.Loader` de todas
@@ -162,7 +167,7 @@ export class QuienJuegaScene extends Phaser.Scene {
     // termine de decodificar — nunca un blanco de formulario.
     this.cameras.main.setBackgroundColor(0x5b8c3a);
 
-    this.add
+    const fondo = this.add
       .image(width / 2, height / 2, "fondo-primaria-1")
       .setDisplaySize(width, height)
       .setDepth(0);
@@ -211,54 +216,13 @@ export class QuienJuegaScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5)
       .setDepth(2);
 
-    // Larry, en la esquina, con el mismo rebote de idle que ya usa
-    // `MenuScene` — nunca "congelado" en una pantalla que se supone viva.
-    const larry = this.add
-      .image(width - 60, height - 60, "larry_menu_aplaude")
-      .setDisplaySize(110, 110)
-      .setDepth(3);
-    // "Sube y baja nada más" no se lee como baile — el dueño lo notó de
-    // inmediato. Un solo cuadro estático SÍ puede leerse como baile si se
-    // combinan tres movimientos con periodos distintos (nunca sincronizados
-    // 1:1, o se ve como un metrónomo): vaivén lateral de cadera, bamboleo de
-    // rotación, y un squash/stretch leve en cada rebote — la misma técnica
-    // que usan los juegos casuales para animar un solo sprite sin cuadros.
-    const baseEscalaX = larry.scaleX;
-    const baseEscalaY = larry.scaleY;
-    const xBase = larry.x;
-    this.tweens.add({
-      targets: larry,
-      y: larry.y - 16,
-      duration: 420,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeOut",
-    });
-    this.tweens.add({
-      targets: larry,
-      angle: { from: -9, to: 9 },
-      duration: 640,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-    this.tweens.add({
-      targets: larry,
-      x: { from: xBase - 10, to: xBase + 10 },
-      duration: 640,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-    this.tweens.add({
-      targets: larry,
-      scaleX: baseEscalaX * 0.92,
-      scaleY: baseEscalaY * 1.1,
-      duration: 210,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeOut",
-    });
+    // Larry fotorrealista (D-196) — SUELTO sobre la escena, nunca dentro de
+    // una tarjeta/panel (el dueño lo confirmó viendo D-195: "eso está
+    // perfecto"). Reemplaza la imagen estática con tweens de antes: siete
+    // comportamientos reales, al azar, con cuadros de verdad — ver
+    // `LarryFotorrealista.ts`.
+    new LarryFotorrealista(this, width - 90, height - 90).setDepth(3);
+    this.activarParallax(fondo);
 
     this.dibujarRejilla(width, height);
 
@@ -273,6 +237,73 @@ export class QuienJuegaScene extends Phaser.Scene {
       this.scene.restart(this.datos);
       void w;
       void h;
+    });
+  }
+
+  /**
+   * Parallax 2.5D (D-196) — capas planas que se desplazan distinto según la
+   * inclinación del aparato, el mismo truco de las fotos de perfil
+   * "espacial" de iOS. NO es volumen 3D real: el dueño confirmó explícito
+   * que esto alcanza y que no hace falta un motor 3D nuevo.
+   *
+   * `gyroscope`/`accelerometer` se abrieron en `cabeceras-seguridad.ts`
+   * para esto — nunca cámara ni micrófono (línea roja #1 intacta). En
+   * iOS 13+ el navegador exige un gesto humano antes del permiso
+   * (`DeviceOrientationEvent.requestPermission`) — se pide en el primer
+   * toque de esta pantalla, nunca con un diálogo que bloquee el flujo, y si
+   * se niega o el navegador no lo soporta, la pantalla se queda plana sin
+   * romper nada.
+   */
+  private activarParallax(fondo: Phaser.GameObjects.Image): void {
+    // Solo la capa de fondo se desplaza — Larry y las tarjetas se quedan
+    // quietos. `LarryFotorrealista` ya mueve su propio `x`/`y` con tweens
+    // (caminar fuera de cuadro y volver); sumarle un offset de parallax ahí
+    // pelearía contra esos tweens por la misma propiedad. El fondo moviéndose
+    // solo ya da la sensación de profundidad — el mismo principio que una
+    // foto "espacial" de iOS, sin tocar la propia foto del sujeto.
+    const fondoBaseX = fondo.x;
+    const fondoBaseY = fondo.y;
+
+    const manejar = (evento: DeviceOrientationEvent): void => {
+      // `gamma`: inclinación izquierda/derecha (-90..90). `beta`: adelante/
+      // atrás (-180..180). Se acotan y se suavizan con lerp para que no
+      // tiemble con el ruido normal del sensor.
+      const gamma = Phaser.Math.Clamp(evento.gamma ?? 0, -35, 35);
+      const beta = Phaser.Math.Clamp((evento.beta ?? 0) - 35, -35, 35); // ~35° es "de pie mirando de frente"
+
+      const dx = (gamma / 35) * 10;
+      const dy = (beta / 35) * 6;
+      fondo.x = Phaser.Math.Linear(fondo.x, fondoBaseX + dx, 0.08);
+      fondo.y = Phaser.Math.Linear(fondo.y, fondoBaseY + dy, 0.08);
+    };
+
+    type ConPermiso = typeof DeviceOrientationEvent & {
+      requestPermission?: () => Promise<"granted" | "denied">;
+    };
+    const ClaseEvento = typeof DeviceOrientationEvent === "undefined" ? null : (DeviceOrientationEvent as ConPermiso);
+
+    if (!ClaseEvento) return; // navegador sin soporte — pantalla plana, sin romper nada.
+
+    if (typeof ClaseEvento.requestPermission === "function") {
+      // iOS 13+: el permiso exige un gesto humano. Se pide en el primer
+      // toque de ESTA pantalla — nunca antes, nunca un diálogo propio.
+      const pedirEnPrimerToque = () => {
+        ClaseEvento.requestPermission?.()
+          .then((estado) => {
+            if (estado === "granted") window.addEventListener("deviceorientation", manejar);
+          })
+          .catch(() => {
+            /* denegado o no disponible — se queda plano, a propósito, sin romper nada */
+          });
+      };
+      this.input.once(Phaser.Input.Events.POINTER_DOWN, pedirEnPrimerToque);
+    } else {
+      // Android/desktop: no hace falta permiso explícito.
+      window.addEventListener("deviceorientation", manejar);
+    }
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener("deviceorientation", manejar);
     });
   }
 

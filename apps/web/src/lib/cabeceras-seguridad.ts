@@ -38,6 +38,17 @@
  *   cumplir el navegador aunque alguien escriba el código que la cruza. En una
  *   pantalla de niño es donde más importa, y era justo donde no estaba.
  *
+ *   **`gyroscope`/`accelerometer` sí se abrieron (D-196, 2026-08-09)** para el
+ *   parallax 2.5D del Larry fotorrealista de `QuienJuegaScene` — orientación
+ *   del aparato, no captura del entorno ni dato biométrico, así que NO es la
+ *   línea roja #1 (que sigue intacta: cámara/micrófono/biometría/geolocalización
+ *   sin tocar). El dueño lo autorizó explícito viendo el conflicto. Como esta
+ *   cabecera es una sola para TODO `/app/**`+`/api/**` (no hay forma de acotarla
+ *   por ruta), el techo se abre en todo el sitio, pero solo `QuienJuegaScene`
+ *   de hecho pide el evento — abrir el permiso no hace que otra pantalla lo
+ *   use. `magnetometer` se queda cerrado a propósito: no hace falta para
+ *   este efecto, y no hay razón para abrir más de lo que se usa.
+ *
  * ─── Lo que este módulo NO toca ────────────────────────────────────────────
  *
  * `Cache-Control`. Cada ruta SSR ya pone su propio `no-store` (un perfil
@@ -56,5 +67,5 @@ export const CABECERAS_SEGURIDAD: Readonly<Record<string, string>> = {
   "referrer-policy": "strict-origin-when-cross-origin",
   "permissions-policy":
     "camera=(), microphone=(), geolocation=(), payment=(), usb=(), " +
-    "magnetometer=(), gyroscope=(), accelerometer=()",
+    "magnetometer=(), gyroscope=(self), accelerometer=(self)",
 };

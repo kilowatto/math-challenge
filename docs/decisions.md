@@ -6321,3 +6321,45 @@ dispositivo del hogar sigue siendo 100% servidor, Phaser no participa).
 **Investigación relacionada:** D-004, D-080, D-190, D-191 (fija el
 vestuario y el criterio de "sin tope de cuadros", reversado aquí solo en
 la secuencia, no en las reglas), D-194, D-195.
+
+---
+
+### D-196.1 — Correcciones tras verlo en vivo: más fluidez, la silla ya no sale de la nada, y el reinicio por RESIZE ya no corta un tween a medio camino · 2026-08-09
+
+El dueño vio la primera versión desplegada y señaló tres problemas reales,
+los tres corregidos el mismo día:
+
+1. **"A las animaciones les hacen falta muchísimos cuadros, no tiene
+   fluidez."** Caminata y baile tenían 4 cuadros cada uno; ejercicio tenía
+   4 cuadros pero solo 2 poses reales (los cuadros 3/4 casi repetían 1/2).
+   Se ampliaron con las mismas técnicas de D-196 (Gemini + la imagen de
+   referencia aprobada como ancla): caminata y baile a 8 cuadros (4
+   originales + 4 de transición intercaladas), ejercicio a 4 poses
+   ÚNICAS, saluda a 3, arrastra a 4. El `frameRate` se ajustó junto con
+   cada uno para conservar la duración del ciclo — más resolución
+   temporal, no más velocidad.
+2. **"Cuando se va Larry se lleva una silla que nunca trajo."** La silla
+   del comportamiento "leer" estaba horneada en los cuadros `arrastra` y
+   aparecía de golpe en su mano, sin haber existido antes en la escena.
+   Se separó en un prop estático (`larry_foto_silla`, generado SIN la
+   imagen de referencia de Larry — mandarla con la instrucción de "mismo
+   personaje" hizo que el modelo dibujara a Larry sentado en la silla en
+   vez de la silla sola, un hallazgo que quedó documentado en
+   `gen-larry-fotorrealista.mjs` para no repetirlo) que vive siempre junto
+   a Larry y solo se oculta durante la ventana en la que él la arrastra
+   fuera de cuadro.
+3. **"Cuánto camina a la izquierda se queda atorado, se ve que camina
+   pero no se mueve."** Causa raíz real, confirmada instrumentando la
+   escena en vivo (no solo sospechada): el `Phaser.Scale.Events.RESIZE`
+   de `QuienJuegaScene` reiniciaba la escena completa en CADA evento, y el
+   Scale Manager puede emitir varios RESIZE seguidos mientras el viewport
+   se asienta — cada reinicio destruye la instancia de Larry a medio tween
+   y crea una nueva en su posición base, así que el tween de salida de
+   "leer" nunca llegaba a completarse. Se corrigió con debounce: el
+   reinicio de verdad espera 300ms sin nuevos eventos RESIZE antes de
+   ejecutarse.
+
+**Nada de esto cambia el alcance ni las reglas de D-196** — mismos siete
+comportamientos, mismo Larry suelto sobre la escena, misma ropa deportiva
+sin marca real, mismo parallax 2.5D. Es una corrección de producción, no
+una decisión nueva de producto.

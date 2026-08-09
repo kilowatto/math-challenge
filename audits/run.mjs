@@ -583,6 +583,7 @@ for (const prueba of [
   "packages/motor/src/alias.prueba.mjs",
   "packages/motor/src/identidad-adulto.prueba.mjs",
   "packages/motor/src/pin-imagenes.prueba.mjs",
+  "packages/motor/src/pin-numerico.prueba.mjs",
   "apps/web/src/lib/webauthn.prueba.mjs",
   "apps/web/src/lib/passwords.prueba.mjs",
   "apps/web/src/lib/sesiones.prueba.mjs",

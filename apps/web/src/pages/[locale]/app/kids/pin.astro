@@ -70,7 +70,21 @@
  *     quedaría fuera de su propio perfil para siempre, que es la línea roja #4
  *     en su espíritu. Ver el bloque «Un perfil sin PIN todavía» más abajo, que
  *     es lo que se hace mientras esa pantalla no exista.
- *  2. **Resuelto 2026-08-08:** `destinoTrasEntrar(locale)` apuntaba a la
+ *  2. **Resuelto 2026-08-09 (D-197 §2):** esta pantalla solo sabía tocar
+ *     dibujos. Ahora es band-aware: `child_image_pin.tipo` dice si ESTE
+ *     perfil usa el grid de 9 imágenes (KINDER) o un teclado de 4 dígitos
+ *     (PRIMARIA/SECUNDARIA) — un teclado numérico sigue siendo tocar
+ *     símbolos de un conjunto fijo, nunca texto libre (línea roja #3 sigue
+ *     intacta). Las DOS ramas reusan exactamente las mismas clases CSS
+ *     (`.casilla`, `.pasos`, `.borrar`), así que el marcador `@banda KINDER`
+ *     de arriba sigue siendo cierto para cualquiera de las dos: ningún
+ *     blanco táctil de este archivo baja nunca de 88px, sin importar cuál
+ *     rama pinte. El teclado numérico usa el orden ESTÁNDAR de teléfono
+ *     (1-2-3/4-5-6/7-8-9/0), sin barajar por niño — a diferencia del grid de
+ *     imágenes, que si se baraja porque no hay un orden natural entre 24
+ *     dibujos. Ver `packages/motor/src/pin-numerico.ts` para el porqué
+ *     completo de esa asimetría deliberada.
+ *  3. **Resuelto 2026-08-08:** `destinoTrasEntrar(locale)` apuntaba a la
  *     rejilla de caras y después a `rutaJugar` (el reto directo) — los dos,
  *     residuos de cuando "la casa del niño dentro de la aplicación" no
  *     existía todavía. Ahora existe: es `rutaMapaKids` (D-184/D-190), y es
@@ -103,6 +117,8 @@ import "../../../../styles/tokens.css";
  */
 import "../../../../styles/bandas.css";
 import { LOCALES, t, isLocale, DEFAULT_LOCALE, type Locale } from "../../../../i18n";
+import { animalElegido, claveDeAnimal } from "../../../../lib/avatares-animal";
+import type { TemaVisual } from "../../../../lib/quien-juega-datos";
 import {
   COOKIE_HOGAR,
   COOKIE_NINO,
@@ -119,6 +135,12 @@ import {
   rejillaDe,
   type Dibujo,
 } from "../../../../../../../packages/motor/src/pin-imagenes.ts";
+import {
+  LARGO_PIN_NUMERICO,
+  hashearPinNumerico,
+  pinNumericoValido,
+  pinesNumericosIguales,
+} from "../../../../../../../packages/motor/src/pin-numerico.ts";
 
 export const prerender = false;
 
@@ -255,6 +277,15 @@ interface FilaPerfil {
   locale: string;
   parent_user_id: string;
   pin_hash: string | null;
+  /**
+   * `null` mientras no haya `pin_hash` (no importa cuál sería). Con hash,
+   * SIEMPRE viene puesto: `api/perfil-pin.ts` escribe los dos juntos, nunca
+   * uno sin el otro (D-197 §2).
+   */
+  tipo: "imagenes" | "numerico" | null;
+  /** El animal ya elegido (D-194) — para el cuadro colgante del teclado numérico (D-197.1). */
+  avatar_parts: string | null;
+  theme_band: TemaVisual;
 }
 
 const perfilId = Astro.url.searchParams.get("p") ?? "";
@@ -266,7 +297,7 @@ let perfil: FilaPerfil | null = null;
 try {
   perfil = perfilId
     ? await env.DB.prepare(
-        "SELECT c.id, c.alias, c.locale, c.parent_user_id, p.pin_hash " +
+        "SELECT c.id, c.alias, c.locale, c.parent_user_id, c.avatar_parts, c.theme_band, p.pin_hash, p.tipo " +
           "FROM child_profiles c LEFT JOIN child_image_pin p ON p.child_profile_id = c.id " +
           "WHERE c.id = ? AND c.parent_user_id = ? AND c.deleted_at IS NULL",
       )
@@ -338,22 +369,45 @@ if (!perfil.pin_hash) {
 
 
 /**
+ * Band-aware (D-197 §2): KINDER sigue con tres dibujos; PRIMARIA/SECUNDARIA
+ * usan un teclado de cuatro dígitos. `perfil.tipo` viene de la BASE, nunca
+ * del cliente ni de la banda del perfil — es lo que de verdad dice cómo se
+ * calculó el hash guardado, y es lo único con lo que se puede verificar.
+ */
+const esNumerico = perfil.tipo === "numerico";
+const largoActivo = esNumerico ? LARGO_PIN_NUMERICO : LARGO_PIN;
+// Tope EXCLUSIVO de la posición/dígito válido: 10 dígitos (0-9) o 9 casillas.
+const topeActivo = esNumerico ? 10 : CASILLAS;
+
+/**
+ * El cuadro colgante con el avatar (D-197.1, tercera ronda) — SOLO en el
+ * teclado numérico, el mismo alcance que el resto de este rediseño. Si el
+ * perfil todavía no eligió animal (D-194 lo deja opcional), no hay cuadro:
+ * uno vacío se vería como un hueco, no como una elección pendiente.
+ */
+const avatarId = esNumerico ? animalElegido(perfil.avatar_parts, perfil.theme_band) : null;
+const avatarUrl = avatarId ? `/avatares/${claveDeAnimal(avatarId)}.webp` : null;
+
+/**
  * Lee la secuencia de toques que viene en el formulario.
  *
  * El formato es `"0.4.7"` — solo dígitos y puntos, nunca texto. Todo lo que no
- * sea una posición válida de la rejilla se descarta en silencio, y las repetidas
- * también: `pinValido()` exige tres posiciones DISTINTAS, porque tocar la misma
- * casilla tres veces es lo que hace un niño que no entendió, y aceptarlo
- * reduciría el espacio de 504 a 9 sin que nadie lo notara.
+ * sea una posición/dígito válido se descarta en silencio, y las repetidas
+ * también en el PIN de imágenes: `pinValido()` exige posiciones DISTINTAS,
+ * porque tocar la misma casilla tres veces es lo que hace un niño que no
+ * entendió, y aceptarlo reduciría el espacio de 504 a 9 sin que nadie lo
+ * notara. **El PIN numérico SÍ permite dígitos repetidos** (como cualquier
+ * PIN de teléfono) — ahí no se descartan.
  */
 function leerSecuencia(crudo: string): number[] {
   const out: number[] = [];
   for (const trozo of crudo.split(".")) {
     if (!/^\d{1,2}$/.test(trozo)) continue;
     const n = Number(trozo);
-    if (n < 0 || n >= CASILLAS || out.includes(n)) continue;
+    if (n < 0 || n >= topeActivo) continue;
+    if (!esNumerico && out.includes(n)) continue;
     out.push(n);
-    if (out.length >= LARGO_PIN) break;
+    if (out.length >= largoActivo) break;
   }
   return out;
 }
@@ -377,9 +431,12 @@ if (Astro.request.method === "POST") {
   const datos = await Astro.request.formData();
   hechos = leerSecuencia(String(datos.get("t") ?? ""));
 
-  if (hechos.length >= LARGO_PIN) {
+  if (hechos.length >= largoActivo) {
     let acertó = false;
-    if (perfil.pin_hash && pinValido(hechos)) {
+    if (perfil.pin_hash && esNumerico && pinNumericoValido(hechos)) {
+      const hash = await hashearPinNumerico(secreto, perfil.id, hechos);
+      acertó = pinesNumericosIguales(hash, perfil.pin_hash);
+    } else if (perfil.pin_hash && !esNumerico && pinValido(hechos)) {
       const hash = await hashearPin(secreto, perfil.id, hechos);
       acertó = pinesIguales(hash, perfil.pin_hash);
     }
@@ -405,8 +462,25 @@ if (Astro.request.method === "POST") {
   }
 }
 
-/** Las nueve de este niño. Siempre las mismas para él, distintas de las de su hermano. */
-const rejilla: Dibujo[] = await rejillaDe(secreto, perfil.id);
+/**
+ * Las nueve de este niño. Siempre las mismas para él, distintas de las de su
+ * hermano. Solo se deriva en la rama de imágenes — la rama numérica no la usa.
+ */
+const rejilla: Dibujo[] = esNumerico ? [] : await rejillaDe(secreto, perfil.id);
+
+/**
+ * El teclado numérico — orden ESTÁNDAR (1-2-3 / 4-5-6 / 7-8-9 / 0), sin
+ * barajar por niño (D-197 §2, decisión deliberada, no un olvido frente al
+ * barajado de `pin-imagenes.ts`). La rejilla de dibujos se baraja porque no
+ * hay un orden natural entre 24 dibujos — alguno había que elegir, y
+ * barajarlo por niño de paso añade que dos hermanos vean rejillas distintas.
+ * Un dígito SÍ tiene un orden universal que un niño de PRIMARIA ya conoce de
+ * cualquier teléfono; cambiárselo lo haría más difícil de usar sin ganar
+ * seguridad real — D-012 ya fija que este PIN separa hermanos, no defiende de
+ * un extraño, y un teclado de teléfono normal ya tiene esa misma propiedad
+ * (cualquiera que mire por encima del hombro ve la posición Y el dígito).
+ */
+const TECLADO_NUMERICO = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] as const;
 
 /**
  * Los dibujos son EMOJI, no arte propio, y no es una decisión provisional
@@ -464,13 +538,34 @@ const NOMBRE: Record<Dibujo, string> = {
  * Si la casilla ya está elegida, el valor no cambia — tocarla otra vez no suma
  * ni resta. Repetir no es un error que castigar, es un toque que no hace nada.
  */
-const valorDe = (i: number) => (hechos.includes(i) ? hechos : [...hechos, i]).join(".");
+/**
+ * `data-casilla`/el valor que se hashea son la POSICIÓN en el PIN de
+ * imágenes, pero el DÍGITO en el numérico — `TECLADO_NUMERICO[i] !== i`
+ * salvo por coincidencia (el "0" vive en el índice 9). Pasarle el índice al
+ * numérico habría hasheado el número de botón, no el dígito que el niño ve
+ * y recuerda.
+ *
+ * El PIN numérico además permite dígitos repetidos (D-197 §2: es un PIN de
+ * teléfono normal, "1111" es válido) — así que ahí SIEMPRE se agrega,
+ * nunca se descarta por ya estar. El de imágenes sigue exigiendo posiciones
+ * distintas: tocar la misma casilla otra vez no suma ni resta.
+ */
+const valorDe = (valor: number) =>
+  (!esNumerico && hechos.includes(valor) ? hechos : [...hechos, valor]).join(".");
 
 // Con el locale delante, siempre: escrita a mano como `/app/kids/pin?p=…` esta
 // pantalla se veía perfecta y ENVIAR el PIN caía en el 404 del sitio — medido
 // en producción el 2026-08-04. Las rutas de la app salen de `rutas-app.ts`.
 const accion = `${rutaPin(locale)}?p=${encodeURIComponent(perfil.id)}`;
-const estadoTexto = m.pinProgress.replace("{n}", String(hechos.length));
+
+// Los mensajes de la pantalla, band-aware (D-197 §2) — mismo patrón que el
+// resto: nunca reusar un texto que dice "tres dibujos" delante de un teclado.
+const TEXTO_TITULO = esNumerico ? m.pinTitleNumeric : m.pinTitle;
+const TEXTO_AYUDA = esNumerico ? m.pinHelpNumeric : m.pinHelp;
+const TEXTO_GRUPO = esNumerico ? m.pinGridLabelNumeric : m.pinGridLabel;
+const TEXTO_REINTENTA = esNumerico ? m.pinTryAgainNumeric : m.pinTryAgain;
+const PLANTILLA_PROGRESO = esNumerico ? m.pinProgressNumeric : m.pinProgress;
+const estadoTexto = PLANTILLA_PROGRESO.replace("{n}", String(hechos.length));
 
 /**
  * `data-band="KINDER"` en `<html>`, escrito por el SERVIDOR y fijo.
@@ -502,7 +597,7 @@ const BANDA_DE_LA_PANTALLA = "KINDER";
         usa el padre que acompaña. */}
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>{m.pinTitle}</title>
+    <title>{TEXTO_TITULO}</title>
     <meta name="theme-color" content="#F36B1C" />
     <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -515,25 +610,48 @@ const BANDA_DE_LA_PANTALLA = "KINDER";
     />
   </head>
 
-  <body>
+  <body data-pin-tipo={esNumerico ? "numerico" : "imagenes"}>
     <main class="pin">
-      {/* El alias del niño, para que sepa de quién es esta rejilla. Es texto
-          GENERADO por el sistema y elegido entre opciones (D-003), nunca escrito
-          por él: la línea roja #3 no se roza. */}
-      <p class="alias">{perfil.alias}</p>
-      <h1>{m.pinTitle}</h1>
+      {/* D-197.1: el dueño vio el teclado numérico en blanco ("quitaste todo
+          lo increíble del app por algo blanco") y pidió que fuera
+          gráficamente coherente con el resto de la app. El fondo, el letrero
+          de madera y el cuadro colgante son SOLO de la rama numérica — la
+          rejilla de imágenes de KINDER ya se probó y se aprobó tal como está,
+          no se toca. `.encabezado` da un fondo de letrero legible al
+          alias/título sobre la foto; en la rama de imágenes es un `<div>`
+          sin estilo, transparente. */}
+      {avatarUrl && (
+        /* El cuadro colgante con el avatar del niño (tercera ronda de
+           feedback: "un cuadro colgando de madera donde dentro esté el
+           avatar"). Dos imágenes superpuestas: el avatar detrás, el marco
+           encima — el marco ya viene con el centro transparente (D-080,
+           mismo colorkey que el resto del arte de esta pantalla). */
+        <div class="cuadro-avatar">
+          <img class="cuadro-avatar-foto" src={avatarUrl} alt="" />
+          <img class="cuadro-avatar-marco" src="/juego/pin-numerico-marco.webp" alt="" />
+        </div>
+      )}
+      <div class="encabezado">
+        <div class="encabezado-texto">
+          {/* El alias del niño, para que sepa de quién es esta rejilla. Es texto
+              GENERADO por el sistema y elegido entre opciones (D-003), nunca escrito
+              por él: la línea roja #3 no se roza. */}
+          <p class="alias">{perfil.alias}</p>
+          <h1>{TEXTO_TITULO}</h1>
+        </div>
+      </div>
 
       {noEranEsos && (
         /* Sin rojo, sin cruz, sin contador. Larry no aparece aquí porque no hay
            nada que explicar: no es un error de matemáticas, es un toque que no
            era. `role="status"` y no `role="alert"` — una alerta interrumpe al
            lector de pantalla a media frase, y esto no es una urgencia. */
-        <p class="reintenta" role="status">{m.pinTryAgain}</p>
+        <p class="reintenta" role="status">{TEXTO_REINTENTA}</p>
       )}
 
       {/* `data-largo` es cuántos toques son, para el script. Va como dato del
-          documento y no como un `3` escrito otra vez en el JavaScript: el
-          servidor ya decide con `LARGO_PIN`, y dos números que significan lo
+          documento y no como un `3`/`4` escrito otra vez en el JavaScript: el
+          servidor ya decide con `largoActivo`, y dos números que significan lo
           mismo en dos sitios se separan el día que uno cambie — con el síntoma
           de que la rejilla se envía al tercer toque y el servidor pide cuatro. */}
       <form
@@ -541,32 +659,46 @@ const BANDA_DE_LA_PANTALLA = "KINDER";
         action={accion}
         id="rejilla"
         data-hechos={hechos.join(".")}
-        data-largo={LARGO_PIN}
+        data-largo={largoActivo}
+        data-permite-repetidos={esNumerico ? "1" : undefined}
         autocomplete="off"
       >
-        <div class="casillas" role="group" aria-label={m.pinGridLabel}>
-          {rejilla.map((dibujo, i) => (
-            <button
-              type="submit"
-              class="casilla"
-              name="t"
-              value={valorDe(i)}
-              data-casilla={i}
-              aria-pressed={hechos.includes(i) ? "true" : "false"}
-              aria-label={NOMBRE[dibujo]}
-            >
-              <span aria-hidden="true">{EMOJI[dibujo]}</span>
-            </button>
-          ))}
+        <div class="casillas" data-pin-tipo={esNumerico ? "numerico" : "imagenes"} role="group" aria-label={TEXTO_GRUPO}>
+          {esNumerico
+            ? TECLADO_NUMERICO.map((digito) => (
+                <button
+                  type="submit"
+                  class="casilla"
+                  name="t"
+                  value={valorDe(digito)}
+                  data-casilla={digito}
+                  aria-pressed={hechos.includes(digito) ? "true" : "false"}
+                  aria-label={String(digito)}
+                  style={`--foto-normal: url("/juego/pin-numerico-digito-${digito}.webp"); --foto-presionado: url("/juego/pin-numerico-digito-${digito}-presionado.webp")`}
+                />
+              ))
+            : rejilla.map((dibujo, i) => (
+                <button
+                  type="submit"
+                  class="casilla"
+                  name="t"
+                  value={valorDe(i)}
+                  data-casilla={i}
+                  aria-pressed={hechos.includes(i) ? "true" : "false"}
+                  aria-label={NOMBRE[dibujo]}
+                >
+                  <span aria-hidden="true">{EMOJI[dibujo]}</span>
+                </button>
+              ))}
         </div>
 
-        {/* Cuántos llevas, sin números y sin texto: tres marcas que se llenan.
-            Cambia la FORMA además del color —anillo hueco contra círculo lleno—
-            porque ~8% de los niños varones tiene deficiencia de visión del color
-            (`mc-38`), y un indicador que solo cambia de color no existe para
-            ellos. */}
+        {/* Cuántos llevas, sin números y sin texto: tres o cuatro marcas que se
+            llenan. Cambia la FORMA además del color —anillo hueco contra
+            círculo lleno— porque ~8% de los niños varones tiene deficiencia de
+            visión del color (`mc-38`), y un indicador que solo cambia de color
+            no existe para ellos. */}
         <p class="pasos" aria-hidden="true">
-          {Array.from({ length: LARGO_PIN }, (_, k) => (
+          {Array.from({ length: largoActivo }, (_, k) => (
             <span class="paso" data-lleno={hechos.length > k ? "" : undefined}></span>
           ))}
         </p>
@@ -591,13 +723,13 @@ const BANDA_DE_LA_PANTALLA = "KINDER";
       {/* Solo para lectores de pantalla. Aquí sí se dicen los números —«2 de 3»—
           porque es la única forma de que quien no ve las marcas sepa cuántas
           lleva. En la pantalla no aparece ninguna cifra. */}
-      <p class="solo-lectores" role="status" id="estado" data-plantilla={m.pinProgress}>
+      <p class="solo-lectores" role="status" id="estado" data-plantilla={PLANTILLA_PROGRESO}>
         {estadoTexto}
       </p>
 
       {/* Una línea para el adulto que acompaña. El niño no la necesita para
           entrar, y por eso va debajo y en gris: `mc-20` — el texto es apoyo. */}
-      <p class="apoyo">{m.pinHelp}</p>
+      <p class="apoyo">{TEXTO_AYUDA}</p>
     </main>
 
     <style>
@@ -629,6 +761,151 @@ const BANDA_DE_LA_PANTALLA = "KINDER";
           max(clamp(0.5rem, 3vw, 1.25rem), env(safe-area-inset-left))
           max(clamp(0.5rem, 3vw, 1.25rem), env(safe-area-inset-right));
         text-align: center;
+      }
+
+      /* D-197.1, cuarta ronda: "todo debe ser visible sin scroll". Las 12
+         casillas (9 + el "0") ya suman 4 filas de 88px — el piso de
+         `mc-20` no se toca — así que el recorte tiene que salir de todo lo
+         DEMÁS: el cuadro, el letrero, los puntos y la ayuda, más apretados
+         que en la rama de imágenes. En viewports muy bajos (≤700px, un
+         iPhone SE en vertical) la ayuda para el adulto se oculta del todo:
+         es la única pieza de esta pantalla que es apoyo puro, nunca
+         necesaria para entrar (`mc-20`), así que es la primera en ceder
+         espacio. */
+      body[data-pin-tipo="numerico"] .pin {
+        padding-block-start: max(0.2rem, env(safe-area-inset-top));
+        padding-block-end: max(0.35rem, env(safe-area-inset-bottom));
+      }
+
+      /* ─── D-197.1: fondo y textura fotorrealista, SOLO en el teclado numérico ───
+         El dueño vio la primera versión (cuadros blancos con borde) y la
+         señaló como "quitaste todo lo increíble del app por algo blanco" —
+         pidió coherencia gráfica con el resto de la app. La rejilla de
+         imágenes de KINDER, ya probada y aprobada, no cambia: estas reglas
+         solo aplican bajo `[data-pin-tipo="numerico"]`. */
+      body[data-pin-tipo="numerico"] {
+        background-image: url("/juego/pin-numerico-fondo.webp");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+      }
+
+      /* El letrero de madera colgante detrás del alias/título (D-197.1,
+         tercera ronda: "pon en madera el 'Enter your PIN' tallado"). Nunca
+         se hornea el texto en la imagen — son 7 locales (D-197.1 lo dice
+         expreso) — el letrero es una foto EN BLANCO y el texto lo pinta
+         este mismo HTML encima, con el mismo tratamiento "tallado" (marrón
+         oscuro + halo claro) que ya usa `QuienJuegaScene` sobre madera. En
+         la rama de imágenes, `.encabezado` no lleva ningún estilo — sigue
+         transparente sobre el fondo plano de siempre. */
+      [data-pin-tipo="numerico"] .encabezado {
+        position: relative;
+        /* La imagen es 900×420 — la caja mantiene esa proporción exacta para
+           que `background-size: 100% 100%` de abajo nunca deforme la madera.
+           `max-inline-size: 78%` (no 100% del contenedor) achica el letrero
+           a propósito — D-197.1 cuarta ronda, el alto es lo escaso, y el
+           letrero es la pieza más grande después de la rejilla. */
+        aspect-ratio: 900 / 420;
+        max-inline-size: 66%;
+        margin: 0 auto 0.25rem;
+        background-image: url("/juego/pin-numerico-letrero.webp");
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+      }
+      /* El texto vive SOLO sobre la tabla de madera, no sobre la cuerda ni
+         el gancho — medido a mano sobre la imagen de 900×420: la tabla
+         ocupa de ~45% a ~86% de la altura, ~10% a ~90% del ancho. */
+      [data-pin-tipo="numerico"] .encabezado-texto {
+        position: absolute;
+        inset: 46% 12% 12%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.15rem;
+      }
+      [data-pin-tipo="numerico"] .encabezado-texto .alias,
+      [data-pin-tipo="numerico"] .encabezado-texto h1 {
+        margin: 0;
+        color: #3e2712;
+        text-shadow: 0 0 6px rgba(255, 255, 255, 0.7), 0 0 2px rgba(255, 255, 255, 0.9);
+      }
+      [data-pin-tipo="numerico"] .encabezado-texto h1 {
+        font-size: clamp(1.1rem, 4.5vw, 1.6rem);
+      }
+
+      /* El cuadro colgante con el avatar — dos fotos apiladas: el avatar
+         llena el hueco, el marco (con el centro ya transparente) va encima
+         y aporta la madera + el gancho. La imagen del marco es 420×480; el
+         hueco se midió a mano sobre esa imagen (D-080). */
+      .cuadro-avatar {
+        position: relative;
+        /* Más chico que el primer intento (6rem): D-197.1 cuarta ronda pide
+           que la pantalla completa quepa sin scroll, y las 4 filas de
+           casillas de 88px (piso de `mc-20`) ya se llevan la mayor parte
+           del alto disponible — el cuadro es lo primero que cede tamaño. */
+        inline-size: 2.75rem;
+        aspect-ratio: 420 / 480;
+        margin: 0 auto -0.65rem;
+      }
+      .cuadro-avatar-foto {
+        /* `inset` por sí solo NO redimensiona un elemento reemplazado
+           (`<img>`) — un `<img>` absoluto con `width/height: auto` usa su
+           tamaño INTRÍNSECO (aquí 512×512) e ignora `right`/`bottom` para el
+           tamaño, solo los usa `top`/`left` para la posición. Hay que fijar
+           `inline-size`/`block-size` explícitos para que sí se recorte al
+           hueco del marco. */
+        position: absolute;
+        inset-block-start: 42%;
+        inset-inline-start: 33%;
+        inline-size: 35%;
+        block-size: 35%;
+        object-fit: cover;
+        background: #fff;
+        display: block;
+      }
+      .cuadro-avatar-marco {
+        position: relative;
+        z-index: 1;
+        display: block;
+        inline-size: 100%;
+        block-size: 100%;
+      }
+
+      /* Los botones del teclado numérico: cada uno es su PROPIA foto — el
+         dígito tallado de verdad en la madera (D-197.1, segunda ronda: "que
+         se vean grabados bien"), no texto de CSS encima de una textura
+         compartida. `background-image` real va inline por botón (el dígito
+         decide cuál), así que aquí solo quedan las reglas comunes. */
+      [data-pin-tipo="numerico"] .casilla {
+        /* `--foto-normal`/`--foto-presionado` SIEMPRE llegan por el atributo
+           `style` inline de cada botón (una URL por dígito) — este valor es
+           el respaldo si algún día un botón se renderiza sin ese atributo
+           (`audits/hojas-de-estilo.mjs` bloquea un `var()` sin definir en
+           ninguna parte de la hoja: sin este respaldo, ESE día el fondo
+           entero desaparece en silencio, no solo el número). La textura en
+           blanco es un respaldo razonable — se ve una tabla de madera vacía,
+           no un hueco. */
+        --foto-normal: url("/juego/pin-numerico-boton.webp");
+        --foto-presionado: url("/juego/pin-numerico-boton.webp");
+        background-image: var(--foto-normal);
+        background-size: cover;
+        background-position: center;
+        border: none;
+      }
+
+      /* Elegida: la MISMA tabla, pero la foto "presionada" (D-197.1, cuarta
+         ronda: "todos los estados en imágenes") — no un filtro CSS sobre la
+         foto normal, una foto de verdad generada con esa referencia exacta.
+         El anillo naranja se queda como refuerzo de foco/accesibilidad
+         (WCAG 2.4.7), pero el estado en sí ya se ve en la textura. */
+      [data-pin-tipo="numerico"] .casilla:active,
+      [data-pin-tipo="numerico"] .casilla[aria-pressed="true"] {
+        background-image: var(--foto-presionado);
+      }
+      [data-pin-tipo="numerico"] .casilla[aria-pressed="true"] {
+        outline: 4px solid var(--color-accent);
+        outline-offset: -4px;
       }
 
       /* El alias, en la voz de la marca. Es de lo poco que se lee aquí. */
@@ -682,13 +959,35 @@ const BANDA_DE_LA_PANTALLA = "KINDER";
         max-inline-size: none;
       }
 
-      /* --- Las nueve casillas ---------------------------------------------- */
+      /* --- Las nueve casillas (o el teclado de diez dígitos, D-197 §2) ------ */
 
       .casillas {
         display: grid;
         grid-template-columns: repeat(3, minmax(var(--tap-kinder), 1fr));
         gap: clamp(0.5rem, 2vw, 1rem);
         justify-content: center;
+      }
+
+      /* El numérico fija el ancho EXACTO de columna en vez de crecer con
+         `1fr` (D-197.1, cuarta ronda: "todo debe ser visible sin scroll").
+         La rejilla de imágenes de KINDER se queda como está — crecer con la
+         pantalla ahí es ya un diseño aprobado, no un problema — pero en el
+         numérico, 4 filas creciendo más allá del piso de 88px es lo que
+         empujaba a la pantalla entera fuera del viewport. */
+      body[data-pin-tipo="numerico"] .casillas {
+        grid-template-columns: repeat(3, var(--tap-kinder));
+        gap: 0.5rem;
+      }
+
+      /* El teclado numérico tiene 10 botones en una rejilla de 3 columnas
+         (1-2-3 / 4-5-6 / 7-8-9 / 0): el «0» queda solo en la cuarta fila y se
+         centra en vez de pegarse a la izquierda. `nth-child(3n+1)` sobre el
+         ÚLTIMO hijo solo es cierto cuando el total es 10 (posición 10 = 3·3+1)
+         — con 9 casillas de imágenes (posición 9) nunca coincide, así que esta
+         regla no le hace nada a la rejilla de dibujos. */
+      .casilla:last-child:nth-child(3n + 1) {
+        grid-column: 1 / -1;
+        justify-self: center;
       }
 
       /* 88 px en las DOS direcciones, no solo en alto (`mc-20` §201). El
@@ -819,6 +1118,41 @@ const BANDA_DE_LA_PANTALLA = "KINDER";
 
       .borrar:focus-visible { outline: 4px solid var(--color-text); outline-offset: 3px; }
 
+      /* El botón de "empezar de nuevo" también en madera (D-197.1, cuarta
+         ronda: "esto no está integrado") — el círculo blanco desentonaba con
+         el resto de la pantalla igual que los cuadros blancos originales. */
+      [data-pin-tipo="numerico"] .borrar {
+        background-image: url("/juego/pin-numerico-boton.webp");
+        background-size: cover;
+        background-position: center;
+        border: none;
+        color: #3e2712;
+      }
+      [data-pin-tipo="numerico"] .borrar:active {
+        filter: brightness(0.85);
+      }
+
+      /* Márgenes más apretados en el numérico — mismo motivo que el cuadro
+         más chico arriba: las 4 filas de 88px ya se llevan la mayor parte
+         del alto, así que los puntos/la ayuda ceden el resto (D-197.1,
+         cuarta ronda). */
+      body[data-pin-tipo="numerico"] .pasos {
+        margin-block: 0.15rem;
+      }
+      body[data-pin-tipo="numerico"] .apoyo {
+        margin-block-start: 0.5rem;
+      }
+      /* En un viewport realmente bajo (un iPhone SE en vertical, ~667px de
+         alto), incluso con todo lo anterior apretado no siempre alcanza:
+         la ayuda para el adulto es la única pieza de esta pantalla que es
+         apoyo puro —nunca hace falta para entrar (`mc-20`)— así que es la
+         primera en desaparecer antes de aceptar un scroll. */
+      @media (max-height: 700px) {
+        body[data-pin-tipo="numerico"] .apoyo {
+          display: none;
+        }
+      }
+
       .apoyo {
         font-family: var(--font-marca);
         font-size: var(--text-xs);
@@ -866,6 +1200,10 @@ const BANDA_DE_LA_PANTALLA = "KINDER";
         // para traer un número, y esta pantalla se pinta en un Android de gama
         // baja. El respaldo es el mismo 3 del servidor por si el atributo falta.
         const largo = Number(forma.dataset.largo) || 3;
+        // El PIN numérico permite dígitos repetidos (D-197 §2) — el de
+        // imágenes no. Un solo script sirve a las dos pantallas, así que la
+        // diferencia viaja como dato del documento, igual que `data-largo`.
+        const permiteRepetidos = forma.dataset.permiteRepetidos === "1";
         // Se arranca de lo que el SERVIDOR ya sabe, no de cero: si el script
         // llega tarde y hubo un toque sin él, el estado no se pierde.
         const hechos = (forma.dataset.hechos ?? "")
@@ -925,9 +1263,11 @@ const BANDA_DE_LA_PANTALLA = "KINDER";
           const i = Number(casilla.dataset.casilla);
           if (!Number.isInteger(i)) return;
 
-          // Tocar dos veces la misma casilla no suma ni resta: el PIN son tres
-          // posiciones distintas. No es un error, así que no se avisa de nada.
-          if (hechos.includes(i)) {
+          // Tocar dos veces la misma casilla no suma ni resta EN EL PIN DE
+          // IMÁGENES: son tres posiciones distintas, y repetir no es un error
+          // que avisar. El PIN NUMÉRICO es distinto — "1111" es un PIN válido
+          // (D-197 §2), así que ahí cada toque del mismo dígito SÍ cuenta.
+          if (!permiteRepetidos && hechos.includes(i)) {
             ev.preventDefault();
             return;
           }

@@ -61,7 +61,11 @@ export class MenuScene extends Phaser.Scene {
     // El ícono de bocina (D-190): control de experiencia, no de cuenta — es
     // lo único del lado adulto que SÍ le corresponde al niño (D-065 sigue
     // intacto para todo lo demás: ajustes, club, escuela, siguen del otro lado).
-    new BotonSonido(this, width - 44, 44).setDepth(5);
+    // Arriba a la IZQUIERDA, a propósito: el botón ✕ de salida de pantalla
+    // completa (D-189, `.mapa-historia-completa__salida`) ya es dueño de la
+    // esquina superior derecha — un bug real, encontrado probando en un
+    // simulador real, los tenía superpuestos ahí.
+    new BotonSonido(this, 44, 44).setDepth(5);
   }
 
   /** Un ligero rebote — Larry no se queda "congelado" en el menú. */

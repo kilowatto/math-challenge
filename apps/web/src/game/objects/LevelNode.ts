@@ -70,11 +70,15 @@ export class LevelNode extends Phaser.GameObjects.Container {
 
     const radio = 44; // 88px de diámetro — el mismo blanco táctil que el resto del producto.
 
-    if (modo === "camino") {
-      this.dibujarTronco(scene, nodo, radio);
-    } else {
-      this.dibujarCirculo(scene, nodo, radio);
-    }
+    // El toque vive en la FORMA (círculo o tronco, un hijo real), no en el
+    // Container que la envuelve: en un simulador de verdad, un Container
+    // interactivo directamente —con hitArea explícita o con el patrón por
+    // defecto de la propia guía de Phaser 4— no respondió a un toque real,
+    // aunque se veía perfecto en pantalla (encontrado probando la misma falla
+    // en `BotonSonido.ts`, ver ese archivo). Un hijo interactivo sortea lo
+    // que sea que esté fallando en el hit-test de Container.
+    const zonaInteractiva =
+      modo === "camino" ? this.dibujarTronco(scene, nodo, radio) : this.dibujarCirculo(scene, nodo, radio);
 
     if (nodo.rotulo && modo === "arbol") {
       // El rótulo de habilidad es propio del árbol (SECUNDARIA); el camino
@@ -96,15 +100,26 @@ export class LevelNode extends Phaser.GameObjects.Container {
     // Sin `setInteractive()` cuando está bloqueado: un tronco bloqueado no
     // responde a toques, ni siquiera con un manejador que no haga nada — es
     // el estado real de "todavía no", no una decoración.
+    //
+    // `setInteractive()` SIN forma explícita, nunca `setInteractive(new
+    // Phaser.Geom.Circle(...), Circle.Contains)` — bug real, encontrado
+    // probando en un simulador de verdad con un overlay de depuración
+    // (`this.input.hitTestPointer()` devolvía CERO objetos incluso con el
+    // toque exactamente centrado, `d=0`, sobre la zona). Una forma de
+    // `hitArea` explícita no registraba el toque en esta build de Phaser
+    // 4.2.1; el hitArea AUTOGENERADO (un rectángulo del tamaño nativo del
+    // objeto — `radio*2`, ya sea el `Circle` de `dibujarCirculo` o el
+    // `Zone` de `dibujarTronco`) sí responde, y es el mismo patrón que
+    // `BotonSonido.ts` ya tenía confirmado funcionando en el mismo
+    // simulador.
     if (!this.bloqueado) {
-      this.setInteractive(new Phaser.Geom.Circle(0, 0, radio), Phaser.Geom.Circle.Contains);
-      this.input!.cursor = "pointer";
+      zonaInteractiva.setInteractive({ useHandCursor: true });
       if (nodo.pericia === "en_camino") this.iniciarPulso();
-      this.on(Phaser.Input.Events.POINTER_DOWN, this.onTocado, this);
+      zonaInteractiva.on(Phaser.Input.Events.POINTER_DOWN, this.onTocado, this);
     }
   }
 
-  private dibujarCirculo(scene: Phaser.Scene, nodo: NodoDelArbol, radio: number): void {
+  private dibujarCirculo(scene: Phaser.Scene, nodo: NodoDelArbol, radio: number): Phaser.GameObjects.Arc {
     const circulo = scene.add.circle(0, 0, radio, COLOR_POR_PERICIA[nodo.pericia]);
     circulo.setStrokeStyle(4, 0xffffff);
     this.add(circulo);
@@ -118,6 +133,8 @@ export class LevelNode extends Phaser.GameObjects.Container {
       arco.strokePath();
       this.add(arco);
     }
+
+    return circulo;
   }
 
   /**
@@ -127,8 +144,21 @@ export class LevelNode extends Phaser.GameObjects.Container {
    * `GameplayScene`: un solo asset sirve a los siete locales). Bloqueado
    * atenúa el tronco y superpone el candado; nunca lo hace desaparecer —
    * "nada se tacha y nada regresa" también vale para lo que aún no se pisa.
+   *
+   * La zona de toque es una `Zone` invisible propia, NUNCA la imagen del
+   * tronco — bug real, encontrado probando en un simulador de verdad:
+   * `setDisplaySize()` ESCALA la imagen desde el tamaño nativo de su
+   * textura, pero un `hitArea` de forma (`Circle(0,0,radio)`) se mide en el
+   * espacio LOCAL SIN ESCALAR del objeto — con una textura nativa más
+   * grande que `radio*2`, esa área de toque terminaba cubriendo un puñado
+   * de píxeles reales en el centro del tronco, no el círculo completo que
+   * se ve en pantalla. Una `Zone` declarada directamente a tamaño `radio*2`
+   * no tiene ese problema (su tamaño es el que se le da, sin textura de
+   * por medio) — mismo motivo por el que el círculo de modo "arbol"
+   * (`scene.add.circle(0,0,radio)`, una forma nativa, no una imagen escalada)
+   * nunca tuvo este bug.
    */
-  private dibujarTronco(scene: Phaser.Scene, nodo: NodoDelArbol, radio: number): void {
+  private dibujarTronco(scene: Phaser.Scene, nodo: NodoDelArbol, radio: number): Phaser.GameObjects.Zone {
     const clave = TRONCOS[nodo.secuencia % TRONCOS.length];
     const tronco = scene.add.image(0, 0, clave).setDisplaySize(radio * 2, radio * 2);
     if (this.bloqueado) tronco.setAlpha(0.55);
@@ -157,6 +187,10 @@ export class LevelNode extends Phaser.GameObjects.Container {
       const candado = scene.add.image(radio * 0.6, radio * 0.6, "candado").setDisplaySize(32, 36);
       this.add(candado);
     }
+
+    const zona = scene.add.zone(0, 0, radio * 2, radio * 2);
+    this.add(zona);
+    return zona;
   }
 
   private iniciarPulso(): void {

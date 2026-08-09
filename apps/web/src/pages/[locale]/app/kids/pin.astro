@@ -70,13 +70,16 @@
  *     quedaría fuera de su propio perfil para siempre, que es la línea roja #4
  *     en su espíritu. Ver el bloque «Un perfil sin PIN todavía» más abajo, que
  *     es lo que se hace mientras esa pantalla no exista.
- *  2. **`destinoTrasEntrar(locale)` apunta a la rejilla de caras**, que es de donde
- *     vino el niño: hoy no hay casa del niño dentro de la aplicación, así que
- *     entrar con el PIN correcto lo devuelve al mismo sitio. No se arregla desde
- *     aquí —hace falta la ruta— y **no se arregla dejando pasar sin PIN a quien
- *     ya tiene `mc_k` abierta**: la sesión de niño dura 12 horas y ese atajo le
- *     abriría el perfil del hermano a quien toque su cara esa misma tarde, que
- *     es exactamente lo único que este PIN defiende.
+ *  2. **Resuelto 2026-08-08:** `destinoTrasEntrar(locale)` apuntaba a la
+ *     rejilla de caras y después a `rutaJugar` (el reto directo) — los dos,
+ *     residuos de cuando "la casa del niño dentro de la aplicación" no
+ *     existía todavía. Ahora existe: es `rutaMapaKids` (D-184/D-190), y es
+ *     ahí donde el niño entra tras el PIN correcto — el mapa decide él solo,
+ *     por banda real, si eso es la Sabana de KINDER o el menú Historia/Retos
+ *     de PRIMARIA/SECUNDARIA (`MenuScene`). **No se arregla dejando pasar sin
+ *     PIN a quien ya tiene `mc_k` abierta**: la sesión de niño dura 12 horas y
+ *     ese atajo le abriría el perfil del hermano a quien toque su cara esa
+ *     misma tarde, que es exactamente lo único que este PIN defiende.
  *
  * ─── El contrato con la pantalla que trae al niño hasta aquí ───────────────
  *
@@ -85,7 +88,8 @@
  * dispositivo del hogar: un `p` de un niño de otra casa no pinta nada.
  */
 import "../../../../styles/fonts.css";
-import { rutaJugar, rutaPin } from "../../../../lib/rutas-app";
+import { rutaPin } from "../../../../lib/rutas-app";
+import { rutaMapaKids } from "../../../../lib/mapa-kids";
 import "../../../../styles/tokens.css";
 /**
  * La capa de banda, igual que en `app/kids/index.astro`.
@@ -162,11 +166,12 @@ interface Env {
 
 /** A dónde va el niño cuando entra. Su casa dentro de la aplicación. */
 // Igual que en `index.astro`: función, porque `locale` nace más abajo.
-// Tras entrar, el niño va A JUGAR. Apuntaba a la rejilla de caras —la pantalla
-// de la que acababa de venir—, así que el embudo infantil entero terminaba
-// donde empezó y no había nada que hacer. El literal vive en `lib/rutas-app.ts`
-// y no aquí (ver el encabezado de ese archivo).
-const destinoTrasEntrar = (l: string) => rutaJugar(l);
+// Tras entrar, el niño va AL MAPA (D-184/D-190) — no directo al reto. El mapa
+// decide él solo, con la banda real, si eso es la Sabana de KINDER o el menú
+// Historia/Retos de PRIMARIA/SECUNDARIA (`MenuScene`). El literal vive en
+// `lib/mapa-kids.ts` y no aquí, por la misma razón que las demás rutas viven
+// en un solo sitio (ver el encabezado de `lib/rutas-app.ts`).
+const destinoTrasEntrar = (l: string) => rutaMapaKids(l);
 
 /**
  * A dónde va quien no debería estar aquí.

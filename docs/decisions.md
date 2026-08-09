@@ -6183,3 +6183,67 @@ y verificación en dispositivo real antes de dar la tarjeta por terminada.
 fotorrealista y el orden de entrega), D-193 (la pantalla que esto termina),
 `mc-43` §6-7 y §10 (decaimiento y comentario de avatar, ambos siguen
 aplicando).
+
+## D-195 — "¿Quién juega?": props de madera en vez de cajas blancas, flecha de regreso, bandera de idioma por tarjeta · 2026-08-08
+
+**Tres pedidos del dueño, viendo la pantalla en un dispositivo real, en la
+misma tanda:**
+
+1. La pantalla no tenía ninguna forma de volver a la anterior — solo el
+   gesto del sistema. Se agregó una flecha, esquina superior izquierda.
+2. "Demasiados fondos blancos" — el ícono de sonido, el panel del título y
+   el panel de cada tarjeta eran rectángulos/círculos blancos genéricos
+   flotando sobre el mundo ilustrado. Pidió reemplazarlos por props reales,
+   mismo lenguaje visual que el resto de Modo Historia (`letrero-madera`,
+   `tronco-a/b`, D-190).
+3. Por cada perfil (niño o adulto), mostrar en qué idioma hace sus retos —
+   dato que ya vive en `child_profiles.locale`/`users.locale` pero que
+   `¿Quién juega?` no enseñaba.
+
+**Qué se resolvió con props reales:**
+
+- **La flecha de regreso** (`FlechaAtras.ts`) es la pieza nueva
+  `flecha-madera` (Recraft, `gen-mapa-historia.mjs`) en vez de un círculo +
+  chevron dibujado — apunta a la derecha por diseño y se voltea con
+  `setFlipX` para "atrás". `window.history.back()`, no una ruta fija: esta
+  pantalla se llega desde más de un lugar.
+- **El título** reusa `letrero-madera`, la misma pieza que ya lleva
+  "Modo Historia/Retos" en `MenuScene` (D-190) — el texto se pinta encima
+  con Phaser en el idioma real, nunca horneado (D-019).
+- **El ícono de sonido** (`BotonSonido.ts`) perdió el círculo blanco: ahora
+  es el glifo suelto con un halo blanco grueso detrás del trazo (mismo
+  truco que un ícono de mapa, legible sobre pasto o cielo sin placa
+  debajo) — cambio al componente COMPARTIDO, así que también se ve así en
+  `MenuScene`/`MapScene`, no una versión especial de esta pantalla nada
+  más. Se movió de la esquina superior (donde ahora vive la flecha sola) a
+  la inferior izquierda, como pidió el dueño.
+
+**Lo que se intentó y se abandonó, dicho de frente:** una placa de madera
+para el fondo de cada tarjeta de jugador. Seis rondas de prompt, desde
+"ícono de UI plano" hasta "textura de swatch sin costura" hasta negar
+explícitamente cara/retrato/grabado — las seis devolvieron un retrato
+tallado de un hombre con barba (aparentemente "plaqueta de madera con
+grabado de Lincoln" es un producto de artesanía real muy sobrerrepresentado
+en el set de entrenamiento de Recraft para esta combinación de forma +
+material). No hubo una séptima ronda: el panel de cada tarjeta se quedó en
+Phaser puro — tono crema-pergamino con borde marrón, en vez del blanco de
+formulario de antes. Es una mejora real sobre lo que había, aunque no sea
+la pieza de Recraft que se pidió. `scripts/gen-mapa-historia.mjs` documenta
+el intento completo, con las seis frases probadas, para que la próxima
+sesión no repita las mismas seis.
+
+**La bandera de idioma:** pictográfica a propósito (nunca texto — D-019,
+KINDER no lee), una por perfil, tomada de `child_profiles.locale`/
+`users.locale` — nunca del locale de la URL que se está viendo en ese
+momento, que puede no ser el del perfil (un padre hispanohablante puede
+estar mirando esta pantalla en `/en/` desde el dispositivo de un pariente).
+Insignia chica (26px) con un pequeño respaldo crema, no un panel — no
+cuenta como una de las cajas blancas que se estaban quitando. Verificado
+en un navegador de escritorio sandboxed donde el glifo de bandera no
+compone bien (falta la fuente de emoji a color completa); Safari/iOS sí la
+tiene — pendiente de confirmar en un dispositivo real antes de darlo por
+cerrado del todo.
+
+**Investigación relacionada:** D-190 (mismo lenguaje visual de props),
+D-193 (la pantalla que se está terminando de pulir), D-194 (la reversa que
+abrió esta ronda de pulido).

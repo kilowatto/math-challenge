@@ -613,6 +613,7 @@ try {
         esAdulto: false,
         dato,
         href: rutaDelPin(locale, perfil.id),
+        locale: perfil.locale,
       };
     }),
   );
@@ -623,14 +624,16 @@ try {
   // `animalElegido` recibe una banda fija de ese tier ("PRO" sirve igual que
   // "SECUNDARIA" o "SERIO": `rosterPara` las trata idéntico).
   let avatarPartsAdulto = "{}";
+  let localeAdulto: string = locale;
   try {
     // Sin parámetro de tipo en `.first()`, mismo motivo que `.all()` arriba:
     // el binding de Workers llega como `any` en este paquete.
     const filaAdulto = (await db
-      .prepare("SELECT avatar_parts FROM users WHERE id = ?")
+      .prepare("SELECT avatar_parts, locale FROM users WHERE id = ?")
       .bind(hogar.ownerUserId)
-      .first()) as { avatar_parts: string } | null;
+      .first()) as { avatar_parts: string; locale: string } | null;
     avatarPartsAdulto = filaAdulto?.avatar_parts ?? "{}";
+    localeAdulto = filaAdulto?.locale || locale;
   } catch {
     avatarPartsAdulto = "{}";
   }
@@ -648,6 +651,11 @@ try {
     esAdulto: true,
     dato: datoAdulto ? { tipo: "rango", rango: datoAdulto.rango, xp: datoAdulto.xp } : { tipo: "ninguno" },
     href: rutaPracticar(locale),
+    // El idioma en el que EL ADULTO hace sus retos — `users.locale`, no el
+    // de la URL que está viendo ahora mismo (puede diferir: un padre
+    // hispanohablante puede estar mirando esta pantalla en /en/ desde el
+    // dispositivo de un pariente, y eso no cambia en qué idioma practica él).
+    locale: localeAdulto,
   };
 
   tarjetas = [...deNinos, tarjetaAdulto];

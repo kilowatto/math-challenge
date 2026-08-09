@@ -76,7 +76,7 @@ export class MapScene extends Phaser.Scene {
     this.dibujarCamino();
 
     this.vegetacion = new VegetationManager(this);
-    this.vegetacion.crearCapas(capitulo.vegetationLayers);
+    this.vegetacion.crearCapas(capitulo.vegetationLayers, this.path);
 
     const progreso = this.registry.get("progressManager") as ProgressManager;
     const posiciones = this.distribuirNodos(progreso);
@@ -144,33 +144,38 @@ export class MapScene extends Phaser.Scene {
   }
 
   /**
-   * Un grupo del árbol (`GrupoDelArbol.orden`, 1..N) se distribuye en el
-   * TRAMO `orden/N` del camino, y sus nodos se separan con un pequeño
-   * desplazamiento perpendicular a la tangente — así los nodos de un mismo
-   * grupo se agrupan en la curva en vez de alinearse en línea recta (el
-   * efecto visual que piden las referencias de Angry Birds).
+   * Cada NODO (no cada grupo) ocupa su propio punto a lo largo del camino,
+   * en el mismo orden que su `secuencia` — es lo que hace que el tronco 7 se
+   * vea después del 6 SOBRE la curva, en vez de al lado.
+   *
+   * Bug real, encontrado mirando el mapa desplegado (no en el código): la
+   * versión anterior ubicaba el grupo entero en UN solo punto del camino
+   * (`grupo.orden/N`) y solo separaba sus nodos con un empujón perpendicular
+   * de 70px — menos que el diámetro de un tronco (88px). Con un grupo de 2+
+   * nodos (el caso normal: varias habilidades comparten nivel), los troncos
+   * quedaban encimados y lejos de la curva dibujada, en vez de sucederse
+   * sobre ella. Un pequeño zigzag perpendicular (alternando lado, no
+   * apilando) es la única variación lateral que queda — el avance real
+   * siempre es a lo largo de la curva.
    */
   private distribuirNodos(progreso: ProgressManager): NodoPosicionado[] {
-    const grupos = progreso.grupos;
-    if (grupos.length === 0) return [];
-    const resultado: NodoPosicionado[] = [];
+    const nodos = progreso.grupos.flatMap((g) => g.nodos);
+    if (nodos.length === 0) return [];
 
-    for (const grupo of grupos) {
-      const t = grupo.orden / (grupos.length + 0.0001);
-      const centro = this.path.getPoint(Math.min(0.98, t));
-      const tangente = this.path.getTangent(Math.min(0.98, t));
+    const ZIGZAG = 34; // px — menor que el radio del tronco (44px): nunca cruza al carril de al lado.
+
+    return nodos.map((nodo, i) => {
+      const t = Phaser.Math.Clamp((i + 0.5) / nodos.length, 0.02, 0.98);
+      const centro = this.path.getPoint(t);
+      const tangente = this.path.getTangent(t);
       const normal = new Phaser.Math.Vector2(-tangente.y, tangente.x).normalize();
-
-      grupo.nodos.forEach((nodo, i) => {
-        const offset = (i - (grupo.nodos.length - 1) / 2) * 70;
-        resultado.push({
-          nodo,
-          x: centro.x + normal.x * offset,
-          y: centro.y + normal.y * offset,
-        });
-      });
-    }
-    return resultado;
+      const lado = i % 2 === 0 ? 1 : -1;
+      return {
+        nodo,
+        x: centro.x + normal.x * ZIGZAG * lado,
+        y: centro.y + normal.y * ZIGZAG * lado,
+      };
+    });
   }
 
   private configurarArrastre(capitulo: WorldChapter): void {

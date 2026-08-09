@@ -28,7 +28,18 @@ export class BotonSonido extends Phaser.GameObjects.Container {
     scene.add.existing(this);
     this.activado = leerVozActivada();
 
+    // El toque vive en el CÍRCULO (un hijo real, no en el Container que lo
+    // envuelve): en un simulador de verdad, un `Container` hecho interactivo
+    // directamente —con forma explícita o con el patrón por defecto de la
+    // propia guía de Phaser 4— no respondió a un toque real, aunque se veía
+    // perfecto en pantalla. Un hijo interactivo (Circle real, mismo patrón
+    // que ya usan los botones "Historia"/"Retos" de MenuScene, que sí
+    // responden) sortea lo que sea que esté fallando en el hit-test de
+    // Container. Encontrado probando en un simulador de iOS real — nunca en
+    // el navegador de escritorio, que no lo mostró.
     const fondo = scene.add.circle(0, 0, RADIO, 0xffffff, 1).setStrokeStyle(3, 0xa4a6a8); // gris-400
+    fondo.setInteractive({ useHandCursor: true });
+    fondo.on(Phaser.Input.Events.POINTER_DOWN, this.alternar, this);
     this.add(fondo);
 
     this.glifo = scene.add.graphics();
@@ -36,9 +47,6 @@ export class BotonSonido extends Phaser.GameObjects.Container {
     this.dibujar();
 
     this.setSize(RADIO * 2, RADIO * 2);
-    this.setInteractive(new Phaser.Geom.Circle(0, 0, RADIO), Phaser.Geom.Circle.Contains);
-    this.input!.cursor = "pointer";
-    this.on(Phaser.Input.Events.POINTER_DOWN, this.alternar, this);
   }
 
   private dibujar(): void {

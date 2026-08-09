@@ -41,13 +41,35 @@ export class VegetationManager {
       Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
   }
 
-  /** Construye TODAS las capas de una vez. No llamar desde `update()`. */
-  crearCapas(layers: readonly VegetationLayerConfig[]): void {
+  /**
+   * Construye TODAS las capas de una vez. No llamar desde `update()`.
+   *
+   * `path` ancla la vegetación al CORREDOR del camino en vez de esparcirla
+   * uniforme por todo `xRange` — bug real, visto en el mapa desplegado: un
+   * `x` puramente aleatorio entre 40 y 960 pone árboles sobre zonas que la
+   * ilustración de fondo pinta como cielo/monte lejano en ese punto de
+   * altura, y se leen como "islas flotantes" en vez de vegetación del
+   * terreno. Buscar el punto del camino más cercano en Y y centrar el
+   * rango horizontal ahí (recortado a `xRange`) mantiene la vegetación
+   * cerca de por dónde de verdad pasa el sendero, que es la franja que la
+   * ilustración sí pinta como suelo.
+   */
+  crearCapas(layers: readonly VegetationLayerConfig[], path?: Phaser.Curves.Path): void {
+    const puntosDelCamino = path?.getPoints(80) ?? [];
     for (const layer of layers) {
       for (let i = 0; i < layer.count; i++) {
-        const x = Phaser.Math.Between(layer.xRange[0], layer.xRange[1]);
         const y = Phaser.Math.Between(layer.yRange[0], layer.yRange[1]);
-        const escala = Phaser.Math.FloatBetween(layer.scaleRange[0], layer.scaleRange[1]);
+        const xCentro = this.xDelCaminoEn(puntosDelCamino, y) ?? (layer.xRange[0] + layer.xRange[1]) / 2;
+        const x = Phaser.Math.Clamp(
+          xCentro + Phaser.Math.Between(-280, 280),
+          layer.xRange[0],
+          layer.xRange[1],
+        );
+        // Perspectiva atmosférica: más arriba en el mundo (Y menor) es más
+        // lejos en esta ilustración (el camino sube hacia el fondo) — un
+        // objeto a tamaño completo ahí también rompe la ilusión de distancia.
+        const profundidad = Phaser.Math.Clamp(y / (layer.yRange[1] || 1), 0.55, 1);
+        const escala = Phaser.Math.FloatBetween(layer.scaleRange[0], layer.scaleRange[1]) * profundidad;
 
         if (layer.tier === "cerca") {
           const planta = new SwayingPlant(this.scene, x, y, layer.key);
@@ -71,6 +93,21 @@ export class VegetationManager {
         }
       }
     }
+  }
+
+  /** El punto muestreado del camino más cercano a esa altura Y — `null` si no hay camino que seguir. */
+  private xDelCaminoEn(puntos: readonly Phaser.Math.Vector2[], y: number): number | null {
+    if (puntos.length === 0) return null;
+    let mejor = puntos[0];
+    let mejorDistancia = Math.abs(mejor.y - y);
+    for (const p of puntos) {
+      const distancia = Math.abs(p.y - y);
+      if (distancia < mejorDistancia) {
+        mejor = p;
+        mejorDistancia = distancia;
+      }
+    }
+    return mejor.x;
   }
 
   /** Llamar una vez por frame desde `MapScene.update(time)`. Barato: un seno por planta lejana. */

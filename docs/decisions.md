@@ -6470,3 +6470,126 @@ nombre es EXCLUSIVO del adulto), D-004 (Larry no cambia).
 anotado, no escondido), D-194, D-195, D-196, mc-20 (audio por instrucción
 para quien no lee, ver el comentario de `MARGEN` en `bandas.ts`), mc-34
 (alias y notación por locale).
+
+---
+
+### D-197.1 — El teclado numérico, otra vez fotorrealista: fondo nuevo, botones tallados de verdad · 2026-08-09
+
+El dueño vio la primera versión del teclado numérico (D-197 §2: nueve
+cuadros blancos con borde, el dígito en texto plano) y reaccionó en el
+momento: *"esto está fatal, quitaste todo lo increíble del app por algo
+blanco... aquí es donde pones imágenes hiperrealista fotorrealista para
+dar clic... gráficamente coherente"*. Dos rondas de corrección, las dos en
+vivo contra el feedback real:
+
+**Ronda 1 — fondo de escena + textura de botón.** Con dos preguntas de
+opción múltiple se acotó el pedido: fondo fotorrealista NUEVO (no reusar
+`fondo-primaria-1`) detrás del teclado, y una textura de madera en los
+botones en vez del cuadro blanco — el dígito seguía pintado por CSS
+encima. Generado con Gemini (`scripts/gen-pin-numerico-fondo.mjs`, mismo
+modelo que `gen-larry-fotorrealista.mjs`): una escena de una tranquera de
+madera abierta entre colinas doradas, y una textura de madera de cerca.
+**Dos errores propios, corregidos antes de que el dueño los viera:**
+(1) la imagen del fondo salió cuadrada (1024×1024) y el primer intento la
+ESTIRÓ a 1:2 en vez de recortarla — se corrigió con `crop` antes de
+`scale`; (2) el primer prompt de textura pidió "un botón de madera
+aislado sobre blanco", y salió exactamente eso — una ficha chica flotando
+en una tarjeta blanca, no una textura de pared a pared. Se corrigió
+pidiendo explícito "full-bleed, sin bordes, sin objeto aislado".
+
+**Ronda 2 — los dígitos tallados de verdad.** El dueño vio la ronda 1
+("¡Mucho mejor!") y pidió el siguiente paso: *"manda a hacer los 10
+botones para que se vean grabados bien"* — el número TALLADO en la madera,
+no texto plano encima. Se generaron 10 piezas nuevas
+(`pin-numerico-digito-0` a `-9`), cada una con la textura ya aprobada
+mandada como imagen de REFERENCIA (mismo truco de consistencia que
+`gen-larry-fotorrealista.mjs` usa con Larry) para que las 10 compartan el
+mismo tono/veta de madera. **Un defecto real, encontrado en revisión
+humana (D-080) y corregido antes de commitear:** el dígito "5" salió con
+una marca de texto microscópica e ilegible incrustada en el borde de la
+talla — un artefacto conocido del modelo (texto fantasma en los detalles
+finos) — se regeneró esa sola pieza y salió limpia.
+
+**Por qué NO las 10 en la primera ronda:** costaba más generar y revisar
+10 piezas que 1, y la primera pregunta de opción múltiple concluyó que no
+hacía falta — el dígito ya es un símbolo universal, no necesitaba ser una
+foto propia. **En la práctica:** cuando se vio la versión de solo-textura en
+pantalla real, sí hacía falta — el texto plano de CSS sobre una foto se
+sentía genérico comparado con el resto de la app. La lección para la
+próxima vez: en una pantalla ya fotorrealista, cualquier texto que NO sea
+parte de la foto se nota.
+
+**Alcance: SOLO el teclado numérico.** La rejilla de imágenes de KINDER
+(D-012, `pin-imagenes.ts`) no se toca — ya estaba probada y aprobada antes
+de esta sesión, y el dueño reaccionó específicamente a la pantalla nueva,
+no a la vieja.
+
+**Investigación relacionada:** D-080 (revisión humana obligatoria — es
+literalmente lo que atrapó el artefacto del "5"), D-196 (mismo pipeline
+Gemini + referencia), D-197 §2.
+
+**Ronda 3 — el letrero también tallado, y un cuadro colgante con el
+avatar.** El dueño vio la ronda 2 y pidió dos cosas más: el texto del
+letrero ("Enter your PIN") también en el mismo lenguaje de madera —
+aclarando él mismo el porqué no se hornea en la imagen ("entiendo que
+tienes que tener 7 por los idiomas") — y un cuadro de fotos colgando de
+madera, con el avatar ya elegido del niño (D-194) dentro. Dos piezas
+nuevas: `pin-numerico-letrero` (una tabla de madera en blanco, colgada de
+cuerdas de un gancho, foto realista) y `pin-numerico-marco` (un marco de
+fotos de madera colgante, con el interior transparente vía colorkey) — el
+texto y el avatar se pintan ENCIMA con HTML/CSS, nunca horneados, por la
+misma razón que el dueño ya identificó.
+
+**Dos bugs reales de CSS, no de arte, encontrados al probarlo en vivo:**
+
+1. El alias/título se salían de la tabla de madera hacia la zona de la
+   cuerda — el padding fijo no se ajustaba a las proporciones reales de la
+   imagen (900×420). Se resolvió midiendo a mano dónde empieza/termina la
+   tabla dentro de la imagen y posicionando el texto con `inset` absoluto
+   sobre una caja con `aspect-ratio` fijo, no con padding a ojo.
+2. El avatar dentro del cuadro salía a tamaño COMPLETO (512×512),
+   desbordando muy por fuera del marco — un `<img>` posicionado en absoluto
+   con `width`/`height: auto` usa su tamaño INTRÍNSECO e ignora
+   `right`/`bottom` para el tamaño (los usa solo `top`/`left` para
+   posición); hay que fijar `inline-size`/`block-size` explícitos para que
+   el `inset` de verdad recorte al hueco del marco. Ninguna cantidad de
+   ajuste al prompt de generación iba a arreglar esto — era CSS, no arte.
+
+**El avatar es el ROSTER ILUSTRADO existente (D-194), con su fondo blanco
+de "sticker" — no se regeneró.** Es arte ya aprobado; el marco fotorrealista
+alrededor de un avatar ilustrado es la misma mezcla deliberada de estilos
+que D-194/D-196 ya declararon en `QuienJuegaScene` (niño ilustrado, adulto
+fotorrealista, en la misma pantalla) — no una inconsistencia nueva.
+
+**Ronda 4 — estado presionado en fotos, no en CSS.** El dueño notó que
+ninguno de los 10 botones tenía un estado de "presionado" real, y pidió
+explícito que "todos los estados" fueran imágenes — se le ofreció la
+alternativa más barata (un filtro CSS sobre la misma foto) y prefirió pagar
+el costo de generar 10 fotos más. Cada `pin-numerico-digito-{d}-presionado`
+usa como referencia SU PROPIO dígito ya aprobado (no la textura en blanco),
+pidiendo la misma talla pero más oscura y con sombra más profunda — así el
+número tallado es idéntico entre el estado normal y el presionado, cambia
+solo la iluminación. El anillo naranja de foco/accesibilidad (WCAG 2.4.7)
+se queda como refuerzo, no como el único indicador.
+
+**Ronda 5 — que quepa sin scroll, y NO desactivar el zoom.** El dueño pidió
+dos cosas a la vez: "todo debe ser visible sin scroll... para cada
+dispositivo" y "que no acepte el zoom". Lo segundo se le mostró como
+conflicto directo con una decisión ya escrita en este mismo archivo — quitar
+`maximum-scale`/`user-scalable=no` viola WCAG 2.2 AA 1.4.4, con el padre que
+acompaña o un niño con baja visión como caso real — y el dueño confirmó
+NO cruzarla: el zoom se queda disponible.
+
+Lo primero sí se resolvió, con un hallazgo real: los 10 botones no medían
+88px fijos — crecían con `minmax(var(--tap-kinder), 1fr)` hasta llenar el
+ancho disponible, y al ser cuadrados (`aspect-ratio: 1`) crecer en ancho es
+crecer en alto también. En una pantalla de 375px eso daba botones de 114px,
+no 88px — 4 filas así ya no cabían en un iPhone SE (667px) sin scroll. Se
+fijó el ancho de columna EXACTO (`repeat(3, var(--tap-kinder))`) solo en el
+numérico — la rejilla de imágenes de KINDER, que sí depende de crecer para
+verse bien, no se toca. El resto del recorte salió de lo que ya no podía
+crecer: cuadro, letrero, puntos y márgenes, todos más chicos que en la
+primera versión, y la ayuda para el adulto se oculta del todo bajo 700px de
+alto (es apoyo puro, nunca necesaria para entrar, `mc-20`). Verificado con
+medición real de `scrollHeight` contra `innerHeight` en un viewport de
+375×667 (iPhone SE), no a ojo: 654px de contenido en 667px de viewport.

@@ -5897,3 +5897,99 @@ tocaron en esta sesión; lo de arriba cubre solo el modelo de datos
 (`packages/motor`) y los dos auditores que lo vigilan directamente.
 
 **Investigación relacionada:** D-184, D-187, D-189, mc-10, mc-43 §8, F5 §4.8 bloqueo 10.
+
+## D-191 — Modo Historia fotorrealista para SECUNDARIA→SERIO→PRO, declarado ahora y construido después · 2026-08-08
+
+**Decisión del dueño, en fase de planeación — nada de esto se construye
+todavía.** Mientras se probaba el Modo Historia de KINDER/PRIMARIA en un
+simulador real, el dueño pidió declarar y guardar por escrito el
+siguiente tramo del mismo modo, para las bandas de arriba, antes de
+seguir con la parte que sí está en construcción. El orden de trabajo que
+fija esta decisión es explícito: **primero KINDER y PRIMARIA terminados
+en los siete locales; recién después se toca lo que sigue aquí.**
+
+**A qué bandas aplica.** `packages/motor/src/bandas.ts` (`ORDEN_TEMAS`) ya
+tiene la escalera completa: `KINDER, PRIMARIA, SECUNDARIA, SERIO, PRO`
+(`JR` comparte pantalla con `PRO` — alias de dificultad, no tema visual
+propio, D-066). Esta decisión es sobre **SECUNDARIA, SERIO y PRO** — las
+tres bandas de arriba, que hoy son las únicas sin ningún plan de Modo
+Historia propio. El dueño confirmó que "SERIO" es la banda a la que se
+refería como "el modo que no recuerdo cómo se llama": es literalmente
+como se llama en el código.
+
+**Cambio de estilo: se abandona el dibujo/caricatura, todo pasa a
+fotorrealismo.** KINDER, PRIMARIA y el árbol de SECUNDARIA de hoy (D-184)
+siguen con la ilustración de Recraft ya establecida (guía de estilo,
+D-080). A partir de aquí se abre un SEGUNDO canon visual, deliberadamente
+distinto, solo para SECUNDARIA→SERIO→PRO en Modo Historia:
+
+- **Larry deja de ser el rinoceronte ilustrado y pasa a ser fotorrealista**
+  — mismo personaje (rinoceronte antropomorfo naranja, bípedo, D-190),
+  pero renderizado con el máximo detalle fotográfico posible, no como
+  dibujo. Viste ropa deportiva de corte real (estilo Adidas/Puma) y
+  siempre tenis naranjas fotorrealistas — un vestuario que no existe en
+  ninguna otra versión de Larry y que es, a propósito, la señal visual de
+  que el usuario entró a una banda avanzada.
+- **Sin tope de cuadros por animación.** Si un ciclo necesita 12 o 14
+  imágenes para verse fluido en fotorrealismo (donde los saltos entre
+  cuadros se notan mucho más que en una ilustración plana), se generan
+  esos 12 o 14 — la economía de cuadros que sí aplicó en D-190 (4 cuadros
+  bípedos para KINDER/PRIMARIA) no es una regla del producto, era lo que
+  bastaba para ESE estilo.
+- Esto es una reversa parcial de D-080 en el mismo sentido que D-190
+  reversó parte de D-017: D-080 fija Recraft/ilustración como el canon
+  ÚNICO de Larry. Aquí se abre un canon PARALELO, no un reemplazo — las
+  piezas ilustradas de KINDER/PRIMARIA/SECUNDARIA-árbol no se tocan ni se
+  regeneran.
+
+**Estructura de biomas: 6 biomas de dificultad por materia, de SECUNDARIA
+a PRO.** El dueño pidió pensar cuántos biomas es "toda la historia" con
+esta regla. La respuesta honesta, verificada contra el código de este
+turno, es que **ese número no se puede calcular todavía, y no por falta
+de aritmética:**
+
+- `packages/motor/src/explicacion.ts` (`PROCEDIMIENTO_POR_MATERIA`) es la
+  única tabla de materias que existe en el código, y es explícitamente
+  parcial ("una materia que no esté aquí cae en `no_aplica`") — 18
+  entradas (`conteo`… `demostracion`) elegidas para decidir si Larry
+  puede explicar el PROCEDIMIENTO de un ítem, no un catálogo cerrado de
+  materias del currículo.
+- `docs/research/2026-08-03-mc-51-clasificacion-ramas-matematicas.md`
+  investigó exactamente este vacío (MSC 2020, arXiv, ICM, PISA, ISCED-F) y
+  **concluyó que no existe una taxonomía de ramas para nivel escolar** y
+  recomendó construir una — recomendación todavía no implementada.
+- Ninguna migración de D1 tiene columna de materia.
+
+Así que la fórmula queda declarada, no resuelta: **total de biomas =
+(número de materias reales, cuando existan) × 6.** A modo de ilustración
+únicamente — NO es una lista comprometida — una partición común de
+SECUNDARIA a PRO (álgebra, geometría, trigonometría, cálculo, estadística
+y probabilidad, estructuras/demostración) daría 6 materias × 6 biomas =
+36 biomas para este tramo solo; con los 4 biomas × 14 troncos de
+KINDER/PRIMARIA ya conversados en esta sesión (56 troncos, 18 retos cada
+uno = 1008 retos, tampoco escrito hasta ahora en ningún documento), el
+total de "toda la historia" queda pendiente de una sola pieza real: la
+taxonomía de materias que mc-51 ya pidió y nadie construyó. Construirla
+es DESBLOQUEANTE de este número, no al revés.
+
+**Voz de Larry en español: la voz "Kilowatto".** El dueño ya creó una voz
+con ese nombre (fuera de este repositorio, plataforma no especificada
+aquí) para el registro en español de Larry en estas bandas — felicita,
+orienta, nunca dictamina (línea roja #7 sigue intacta: la voz LEE un
+veredicto ya calculado, nunca lo calcula). Esto vive dentro del alcance ya
+reservado por D-192 en el plan de Modo Historia (ElevenLabs, reversa
+puntual de D-035) — cuando D-192 se implemente de verdad, "Kilowatto" es
+la voz a usar para el locale `es-*`, no una voz genérica de biblioteca.
+Las otras seis voces (en, fr-FR, pt-BR, pt-PT, de-DE, y la variante
+es-ES/es-MX si difiere) siguen sin decidir.
+
+**Lo que esta decisión NO autoriza todavía:** ningún asset fotorrealista,
+ninguna escena nueva, ningún bioma de SECUNDARIA/SERIO/PRO, ninguna
+llamada a Recraft ni a ningún generador de imagen fotorrealista. Es
+puramente una declaración de alcance y de secuencia. El trabajo de esta
+sesión, después de escribir esto, sigue siendo terminar Modo Historia de
+KINDER/PRIMARIA — este documento existe para que esa decisión no se
+pierda ni haya que volver a explicarla cuando le toque su turno.
+
+**Investigación relacionada:** D-080, D-190, D-066, D-074, D-035, D-192
+(reservada, sin escribir todavía), mc-51.

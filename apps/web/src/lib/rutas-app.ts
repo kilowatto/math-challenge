@@ -43,6 +43,17 @@ export const rutaPin = (locale: Locale | string) => `/${locale}/app/kids/pin`;
 // baja que es el dispositivo de referencia (`mc-47` §5).
 export const rutaJugar = (locale: Locale | string) => `/${locale}/app/kids/jugar/`;
 
+/**
+ * El selector de retos por materia y dificultad — placeholder, D-190/#514.
+ *
+ * "Retos" en el menú de dos modos de Modo Historia (`MenuScene.ts`) apunta
+ * aquí y NO a `rutaJugar`: el dueño pidió que "Retos" sea un selector MANUAL
+ * distinto del programador adaptativo de siempre, y esa pantalla nueva
+ * todavía no existe. Vive en su propio archivo (`kids/retos.astro`) para no
+ * fingir que ya está construida.
+ */
+export const rutaRetosKids = (locale: Locale | string) => `/${locale}/app/kids/retos/`;
+
 /** La puerta del adulto cuando el dispositivo no está marcado. */
 export const rutaSignin = (locale: Locale | string) => `/${locale}/app/signin`;
 

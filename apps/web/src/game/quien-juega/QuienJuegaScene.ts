@@ -239,8 +239,77 @@ export class QuienJuegaScene extends Phaser.Scene {
     return 2;
   }
 
-  /** El panel de cada tarjeta mide `RADIO*2+92` de alto — la fila necesita al menos eso para no encimarse. */
-  private static readonly ALTO_FILA = RADIO * 2 + 108;
+  /**
+   * El ancho del alias/dato dentro del panel — MENOR que el panel mismo
+   * (`RADIO*2+28`), a propósito. Con 12px de margen por lado, ninguna línea
+   * envuelta puede tocar la esquina redondeada.
+   */
+  private static readonly ANCHO_TEXTO = RADIO * 2 + 28 - 24;
+
+  /**
+   * El alias (`FrailecilloRadiante1427`, `generarAlias()` en
+   * `packages/motor/src/alias.ts`) NUNCA tiene un espacio — es un
+   * adjetivo+sustantivo+sufijo pegados, a propósito, para que no se lea
+   * como dos palabras sueltas. `wordWrap` de Phaser (como el de CSS) solo
+   * envuelve en un espacio: contra un alias real, o contra la traducción
+   * larga de "Ir al área de los grandes" ya vista en un dispositivo real,
+   * NO hacía nada — la línea entera se salía del panel sin envolver ni un
+   * carácter. Visto en un dispositivo real y reproducido en local con un
+   * alias largo antes de este método: sin él, el texto ignora por completo
+   * el ancho de la caja.
+   *
+   * Primero se encoge la fuente hasta el mínimo legible; si ni así cabe
+   * (un alias realmente largo, o una traducción sin ningún espacio), se
+   * trunca con «…» — el patrón estándar para una etiqueta de una sola
+   * línea que no puede crecer más (mismo criterio que Carbon/PatternFly:
+   * envolver primero, truncar solo si ya no cabe).
+   */
+  private ajustarAlAncho(texto: Phaser.GameObjects.Text, anchoMax: number, tamMinimo: number): void {
+    let tam = parseInt(String(texto.style.fontSize), 10) || tamMinimo;
+    while (texto.width > anchoMax && tam > tamMinimo) {
+      tam -= 1;
+      texto.setFontSize(tam);
+    }
+    if (texto.width <= anchoMax) return;
+    let cadena = texto.text;
+    while (cadena.length > 1) {
+      cadena = cadena.slice(0, -1);
+      texto.setText(`${cadena}…`);
+      if (texto.width <= anchoMax) break;
+    }
+  }
+
+  /**
+   * Cuánto ocupa el alias (+ el dato, si lo hay) de ESTA tarjeta, ya
+   * envuelto/encogido/truncado al ancho real. Crea los `Text` solo para
+   * medir y los destruye de inmediato — nunca llegan a un frame renderizado.
+   */
+  private medirAltoContenido(tarjeta: TarjetaPerfil): number {
+    const alias = this.add.text(0, 0, tarjeta.alias, {
+      fontFamily: "system-ui, sans-serif",
+      fontSize: "15px",
+      fontStyle: "600",
+      align: "center",
+      wordWrap: { width: QuienJuegaScene.ANCHO_TEXTO, useAdvancedWrap: true },
+    });
+    this.ajustarAlAncho(alias, QuienJuegaScene.ANCHO_TEXTO, 11);
+    let alto = alias.height;
+    alias.destroy();
+
+    const textoDato = this.textoDeDato(tarjeta.dato);
+    if (textoDato) {
+      const linea = this.add.text(0, 0, textoDato, {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "13px",
+        align: "center",
+        wordWrap: { width: QuienJuegaScene.ANCHO_TEXTO, useAdvancedWrap: true },
+      });
+      this.ajustarAlAncho(linea, QuienJuegaScene.ANCHO_TEXTO, 10);
+      alto += 6 + linea.height;
+      linea.destroy();
+    }
+    return alto;
+  }
 
   private dibujarRejilla(width: number, height: number): void {
     const columnas = this.columnasPara(width);
@@ -251,18 +320,28 @@ export class QuienJuegaScene extends Phaser.Scene {
     const anchoUsado = paso * columnas;
     const inicioX = (width - anchoUsado) / 2 + paso / 2;
 
+    // El panel mide igual en TODAS las tarjetas — una rejilla de cajas
+    // dispares se ve rota — así que primero se mide la más alta de todas
+    // (el alias/habilidad más largo, en el idioma más largo) y esa medida
+    // gobierna el panel de cada tarjeta y el paso entre filas.
+    const altoContenidoMax = Math.max(0, ...this.datos.tarjetas.map((t) => this.medirAltoContenido(t)));
+    // panelTop = -RADIO-14; el alias empieza en RADIO+16; el panel debe llegar
+    // 14px más abajo del contenido más alto: (RADIO+16+altoContenidoMax+14) - (-RADIO-14) = 2·RADIO+44+altoContenidoMax.
+    const altoPanel = RADIO * 2 + 44 + altoContenidoMax;
+    const altoFila = altoPanel + 26; // separación visible entre filas
+
     this.datos.tarjetas.forEach((tarjeta, i) => {
       const col = i % columnas;
       const fila = Math.floor(i / columnas);
       const x = inicioX + col * paso;
-      const y = inicioY + fila * QuienJuegaScene.ALTO_FILA;
-      this.dibujarTarjeta(tarjeta, x, y, i);
+      const y = inicioY + fila * altoFila;
+      this.dibujarTarjeta(tarjeta, x, y, i, altoPanel);
     });
 
     // Alto mínimo del mundo — si hay más filas de las que caben, la cámara
     // no recorta la última: mismo criterio de "nada se corta" que el resto
     // del producto.
-    const altoNecesario = inicioY + filas * QuienJuegaScene.ALTO_FILA + 60;
+    const altoNecesario = inicioY + filas * altoFila + 60;
     if (altoNecesario > height) {
       this.cameras.main.setBounds(0, 0, width, altoNecesario);
       this.input.on("wheel", (_p: unknown, _go: unknown, _dx: number, dy: number) => {
@@ -275,16 +354,18 @@ export class QuienJuegaScene extends Phaser.Scene {
     }
   }
 
-  private dibujarTarjeta(tarjeta: TarjetaPerfil, x: number, y: number, indice: number): void {
+  private dibujarTarjeta(tarjeta: TarjetaPerfil, x: number, y: number, indice: number, altoPanel: number): void {
     const contenedor = this.add.container(x, y);
     const paleta = PALETA[tarjeta.color % PALETA.length];
 
     // Un panel claro detrás de toda la tarjeta — el fondo ilustrado es
     // demasiado ocupado para que el alias/dato se lean encima sin uno,
-    // mismo motivo que el panel del título.
+    // mismo motivo que el panel del título. La ALTURA la decide
+    // `dibujarRejilla` (mide el contenido más largo de la rejilla entera),
+    // no un número fijo — así ninguna traducción larga vuelve a salirse.
     const panel = this.add.graphics();
     panel.fillStyle(0xffffff, 0.82);
-    panel.fillRoundedRect(-RADIO - 14, -RADIO - 14, RADIO * 2 + 28, RADIO * 2 + 92, 18);
+    panel.fillRoundedRect(-RADIO - 14, -RADIO - 14, RADIO * 2 + 28, altoPanel, 18);
     contenedor.add(panel);
 
     // Respira, no está congelada — desincronizada por índice (mismo
@@ -353,21 +434,24 @@ export class QuienJuegaScene extends Phaser.Scene {
         fontStyle: "600",
         color: "#434547",
         align: "center",
+        wordWrap: { width: QuienJuegaScene.ANCHO_TEXTO, useAdvancedWrap: true },
       })
       .setOrigin(0.5, 0);
+    this.ajustarAlAncho(alias, QuienJuegaScene.ANCHO_TEXTO, 11);
     contenedor.add(alias);
 
     const textoDato = this.textoDeDato(tarjeta.dato);
     if (textoDato) {
       const linea = this.add
-        .text(0, RADIO + 38, textoDato, {
+        .text(0, RADIO + 16 + alias.height + 6, textoDato, {
           fontFamily: "system-ui, sans-serif",
           fontSize: "13px",
           color: tarjeta.esAdulto ? "#0B6AB0" : "#F36B1C",
           align: "center",
-          wordWrap: { width: 150 },
+          wordWrap: { width: QuienJuegaScene.ANCHO_TEXTO, useAdvancedWrap: true },
         })
         .setOrigin(0.5, 0);
+      this.ajustarAlAncho(linea, QuienJuegaScene.ANCHO_TEXTO, 10);
       contenedor.add(linea);
     }
 

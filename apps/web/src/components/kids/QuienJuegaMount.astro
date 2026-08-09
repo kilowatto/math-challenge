@@ -1,0 +1,43 @@
+---
+/**
+ * QuienJuegaMount — el punto de montaje de "¿Quién juega?" en Phaser (D-192).
+ *
+ * Mismo motivo que `components/mapa/HistoriaMount.astro` para ser un
+ * componente propio y no un `<script>` inline en la página: Astro/Vite solo
+ * empaqueta un `<script type="module">` que vive en la RAÍZ del template de
+ * SU PROPIO componente, nunca uno anidado dentro de una rama condicional.
+ *
+ * `kids/index.astro` decide SI este componente se renderiza (siempre, hoy)
+ * y le pasa los datos ya resueltos por el servidor — este componente no lee
+ * ninguna cookie ni toca la base de datos.
+ */
+import type { TarjetaPerfil, RotulosQuienJuega } from "../../game/quien-juega/QuienJuegaScene";
+
+interface Props {
+  tarjetas: TarjetaPerfil[];
+  rotulos: RotulosQuienJuega;
+}
+
+const { tarjetas, rotulos } = Astro.props;
+---
+
+<div id="quien-juega-mount" class="quien-juega-mount"></div>
+
+<script type="application/json" id="quien-juega-datos" set:html={JSON.stringify({ tarjetas, rotulos })} />
+
+<script src="../../game/quien-juega/entrada.ts"></script>
+
+<style>
+  /* Superpuesto sobre la rejilla de HTML — `entrada.ts` oculta esa rejilla
+     con `hidden` en cuanto Phaser arranca bien, así que en el caso normal
+     esto es lo único visible. Si Phaser nunca llegó a ocultarla (JS
+     deshabilitado, falló la carga), este `<div>` queda vacío y no estorba:
+     `display: contents` no reserva caja propia. */
+  .quien-juega-mount:not(:empty) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: #ffffff;
+    z-index: 5;
+  }
+</style>

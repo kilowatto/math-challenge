@@ -150,6 +150,19 @@ const LISTA_BLANCA = [
       "al padre en PerfilNuevo.astro: explica mover el TEMA visual una banda arriba o abajo (en " +
       "de-DE, «eine Stufe»). Mismo lector y mismo motivo que profileThemeLevels.",
   },
+  {
+    clave: "kidsRango",
+    conCifra: true,
+    porQue:
+      "ÚNICA excepción de esta lista que SÍ es una pantalla de niño: la tarjeta de \"¿Quién juega?\" " +
+      "(D-192/D-193, kids/index.astro) le muestra su propio Rango+XP a un perfil de SECUNDARIA/SERIO/" +
+      "PRO y al adulto de la cuenta — nunca a KINDER (D-024/D-045, sin excepción) ni PRIMARIA (ve la " +
+      "habilidad en curso, en palabras, nunca un número). Es EL MISMO Rango que ya calcula " +
+      "`packages/motor/src/xp.ts::rangoDeXp()` para el panel del padre, no un eje nuevo — y sigue " +
+      "siendo el eje distinto de `nivel` (D-017/D-055): la cifra que acompaña esta clave es SIEMPRE " +
+      "`rangoDeXp(xp)`, nunca `nivelDeHabilidad()`. Decisión explícita del dueño, con el trade-off " +
+      "mostrado antes (mc-10, D-024) — ver D-193 en docs/decisions.md.",
+  },
 ];
 
 // ─── Alcance de las cadenas visibles ───────────────────────────────────────
@@ -332,7 +345,7 @@ for (const f of PLANTILLAS) {
 }
 
 notas.push(`${ARCHIVOS_DE_CADENAS.length} archivos de cadenas, ${PLANTILLAS.length} plantillas y ${PRODUCTO.length} archivos de producto revisados`);
-notas.push(`lista blanca escrita a mano: ${LISTA_BLANCA.length} claves, todas en superficies del padre o públicas`);
+notas.push(`lista blanca escrita a mano: ${LISTA_BLANCA.length} claves — todas del padre o públicas salvo \`kidsRango\` (D-193), la única que sí pinta en una pantalla de niño`);
 
 informar({
   nombre: "rango-vs-nivel",

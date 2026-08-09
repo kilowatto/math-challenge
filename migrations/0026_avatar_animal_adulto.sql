@@ -1,0 +1,13 @@
+-- 0026 — El adulto también puede elegir un avatar-animal (D-194)
+--
+-- `child_profiles.avatar_parts` existe desde 0002, declarada para esto exacto
+-- ("avatar armado de piezas predefinidas") pero nunca escrita hasta D-194: la
+-- cara siempre se derivó del hash del id (`kids/index.astro::caraDe()`). Con
+-- D-194 el JSON gana una clave real (`animal`, el id del catálogo de 16
+-- personajes) y el ADULTO necesita el mismo lugar para guardar su elección —
+-- hoy `users` no tiene ninguna columna de avatar.
+--
+-- Mismo nombre, mismo tipo, mismo formato que `child_profiles.avatar_parts`:
+-- una sola forma de leer "qué avatar eligió esta persona" en todo el repo, sin
+-- importar si es un perfil de hijo o la cuenta del adulto.
+ALTER TABLE users ADD COLUMN avatar_parts TEXT NOT NULL DEFAULT '{}';

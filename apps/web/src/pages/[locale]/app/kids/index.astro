@@ -81,6 +81,7 @@ import {
 } from "../../../../lib/sesiones";
 import { rutaPin, rutaPracticar } from "../../../../lib/rutas-app";
 import { datoDeTarjeta, rangoYXpDe, type TemaVisual } from "../../../../lib/quien-juega-datos";
+import { animalElegido, type AnimalId } from "../../../../lib/avatares-animal";
 import QuienJuegaMount from "../../../../components/kids/QuienJuegaMount.astro";
 import type { TarjetaPerfil } from "../../../../game/quien-juega/QuienJuegaScene";
 import "../../../../styles/fonts.css";
@@ -566,7 +567,12 @@ const caras = perfiles.map((p) => {
   formasUsadas.add(forma);
   coloresUsados.add(color);
   paresUsados.add(`${forma}:${color}`);
-  return { perfil: p, forma, color };
+  // D-194: si el niño ya eligió un animal, la cara procedural de arriba
+  // (forma/color) deja de pintarse — se calcula igual, por si el animal no
+  // sirviera (id de un roster equivocado tras un cambio de banda, ver
+  // `animalElegido`), y esta pantalla nunca se queda sin cara.
+  const animal = animalElegido(p.avatar_parts, (p.theme_band as TemaVisual) || "KINDER");
+  return { perfil: p, forma, color, animal };
 });
 
 // --- D-192: los datos de la mejora progresiva en Phaser ---------------------
@@ -591,7 +597,7 @@ const learnerDo = runtime?.env?.LEARNER_DO;
 let tarjetas: TarjetaPerfil[] = [];
 try {
   const deNinos = await Promise.all(
-    caras.map(async ({ perfil, forma, color }): Promise<TarjetaPerfil> => {
+    caras.map(async ({ perfil, forma, color, animal }): Promise<TarjetaPerfil> => {
       const tema = (perfil.theme_band as TemaVisual) || "KINDER";
       const dato = await datoDeTarjeta(
         { DB: db, LEARNER_DO: learnerDo },
@@ -603,6 +609,7 @@ try {
         alias: perfil.alias,
         forma,
         color,
+        animal,
         esAdulto: false,
         dato,
         href: rutaDelPin(locale, perfil.id),
@@ -611,11 +618,29 @@ try {
   );
 
   const datoAdulto = await rangoYXpDe(db, { userId: hogar.ownerUserId });
+  // El adulto también puede elegir animal (migración 0026) — mismo umbral
+  // fotorrealista que D-191 sin importar la banda real del adulto, así que
+  // `animalElegido` recibe una banda fija de ese tier ("PRO" sirve igual que
+  // "SECUNDARIA" o "SERIO": `rosterPara` las trata idéntico).
+  let avatarPartsAdulto = "{}";
+  try {
+    // Sin parámetro de tipo en `.first()`, mismo motivo que `.all()` arriba:
+    // el binding de Workers llega como `any` en este paquete.
+    const filaAdulto = (await db
+      .prepare("SELECT avatar_parts FROM users WHERE id = ?")
+      .bind(hogar.ownerUserId)
+      .first()) as { avatar_parts: string } | null;
+    avatarPartsAdulto = filaAdulto?.avatar_parts ?? "{}";
+  } catch {
+    avatarPartsAdulto = "{}";
+  }
+  const animalAdulto: AnimalId | null = animalElegido(avatarPartsAdulto, "PRO");
   const tarjetaAdulto: TarjetaPerfil = {
     id: "adulto",
     alias: m.kidsAdultLink,
     forma: 0,
     color: 5, // gris-900 — visualmente distinto de cualquier color de niño posible por azar
+    animal: animalAdulto,
     esAdulto: true,
     dato: datoAdulto ? { tipo: "rango", rango: datoAdulto.rango, xp: datoAdulto.xp } : { tipo: "ninguno" },
     href: rutaPracticar(locale),
@@ -674,17 +699,29 @@ try {
               segunda — el compilador de Astro responde con «Expected
               corresponding JSX closing tag for 'html'» quinientos renglones más
               abajo, que no apunta a nada parecido al problema.) */}
-          {caras.map(({ perfil, forma, color }) => (
+          {caras.map(({ perfil, forma, color, animal }) => (
             <li>
               <a class="cara" href={rutaDelPin(locale, perfil.id)} aria-label={`${m.kidsPlayAs} ${perfil.alias}`}>
-                {/* El dibujo es decorativo para la tecnología de asistencia: el
+                {/* D-194: si el niño ya eligió un animal, esa es la cara —
+                    incluso en el HTML sin JavaScript de siempre (D-012). Sin
+                    esto, un teléfono lento vería la Phaser-mejora con arte
+                    real y el respaldo de siempre con la forma procedural: dos
+                    pantallas distintas para la misma elección. AVIF con
+                    respaldo WebP, mismo patrón que `Companero.astro`. */}
+                {animal ? (
+                  <picture aria-hidden="true" class="dibujo dibujo--foto">
+                    <source srcset={`/avatares/avatar_${animal}.avif`} type="image/avif" />
+                    <img src={`/avatares/avatar_${animal}.webp`} alt="" width="512" height="512" loading="lazy" />
+                  </picture>
+                ) : (
+                /* El dibujo es decorativo para la tecnología de asistencia: el
                     nombre accesible del enlace ya lo da el `aria-label`, y
                     anunciar «imagen» dos veces sobra. Para el niño que no lee,
                     en cambio, el dibujo ES la interfaz y el alias el apoyo.
 
                     El color entra como CLASE y no como atributo `fill`: así el
                     valor sale de un token `--ignia-*` en la hoja de estilo, y no
-                    hay un solo color escrito dentro del marcado. */}
+                    hay un solo color escrito dentro del marcado. */
                 <svg class={`dibujo c${color}`} viewBox="0 0 120 120" aria-hidden="true" focusable="false">
                   {/* Las orejas van ANTES de la cabeza para que el relleno de la
                       cabeza tape su base y el trazo no se cruce por dentro. */}
@@ -725,6 +762,7 @@ try {
                   <circle class="tinta" cx="73" cy="62" r="6" />
                   <path class="boca" d="M44 84 Q60 98 76 84" />
                 </svg>
+                )}
                 <span class="alias">{perfil.alias}</span>
               </a>
             </li>
@@ -867,6 +905,19 @@ try {
         block-size: auto;
         aspect-ratio: 1 / 1;
         max-inline-size: 100%;
+      }
+
+      /* D-194: el animal elegido, recortado en círculo — mismas medidas que
+         `.dibujo` (arriba) para que la fila no salte de tamaño según quién
+         ya eligió y quién sigue con la cara procedural. `object-fit: cover`
+         porque el arte de Recraft no sale perfectamente circular (D-080
+         sigue exigiendo revisión humana del encuadre, no del recorte final). */
+      .dibujo--foto { display: block; border-radius: 50%; overflow: hidden; }
+      .dibujo--foto img {
+        inline-size: 100%;
+        block-size: 100%;
+        object-fit: cover;
+        border-radius: 50%;
       }
 
       /* ── Los seis colores de cara, y solo tokens de Ignia ───────────────────

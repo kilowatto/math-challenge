@@ -13,6 +13,15 @@
  * utilitario de bocina no es personaje). Dos estados: bocina con ondas
  * (activado) o con una X (silenciado) — nunca un texto, para que sirva
  * igual en los siete locales sin siete versiones.
+ *
+ * ─── Sin círculo blanco (D-194, segunda ronda) ─────────────────────────────
+ *
+ * El dueño lo pidió explícito, viendo `QuienJuegaScene` con demasiados
+ * fondos blancos flotando sobre la escena ilustrada: el glifo se dibuja
+ * SUELTO, con un contorno blanco grueso detrás del trazo oscuro (mismo
+ * truco que un ícono de mapa: legible sobre pasto, cielo o tierra sin
+ * necesitar una placa debajo). El toque sigue viviendo en un `Zone`
+ * invisible, no en el Container — mismo hallazgo de siempre.
  */
 import Phaser from "phaser";
 import { leerVozActivada, escribirVozActivada } from "../../lib/preferencia-voz";
@@ -28,19 +37,13 @@ export class BotonSonido extends Phaser.GameObjects.Container {
     scene.add.existing(this);
     this.activado = leerVozActivada();
 
-    // El toque vive en el CÍRCULO (un hijo real, no en el Container que lo
-    // envuelve): en un simulador de verdad, un `Container` hecho interactivo
-    // directamente —con forma explícita o con el patrón por defecto de la
-    // propia guía de Phaser 4— no respondió a un toque real, aunque se veía
-    // perfecto en pantalla. Un hijo interactivo (Circle real, mismo patrón
-    // que ya usan los botones "Historia"/"Retos" de MenuScene, que sí
-    // responden) sortea lo que sea que esté fallando en el hit-test de
-    // Container. Encontrado probando en un simulador de iOS real — nunca en
-    // el navegador de escritorio, que no lo mostró.
-    const fondo = scene.add.circle(0, 0, RADIO, 0xffffff, 1).setStrokeStyle(3, 0xa4a6a8); // gris-400
-    fondo.setInteractive({ useHandCursor: true });
-    fondo.on(Phaser.Input.Events.POINTER_DOWN, this.alternar, this);
-    this.add(fondo);
+    // La zona de toque: un `Zone` hijo invisible, hitArea AUTOGENERADO — un
+    // Container interactivo directamente no responde en un simulador real
+    // (mismo hallazgo que `LevelNode.ts`/`QuienJuegaScene.ts` documentan).
+    const zona = scene.add.zone(0, 0, RADIO * 2, RADIO * 2);
+    zona.setInteractive({ useHandCursor: true });
+    zona.on(Phaser.Input.Events.POINTER_DOWN, this.alternar, this);
+    this.add(zona);
 
     this.glifo = scene.add.graphics();
     this.add(this.glifo);
@@ -53,22 +56,38 @@ export class BotonSonido extends Phaser.GameObjects.Container {
     const g = this.glifo;
     g.clear();
     const color = 0x434547; // gris-900 (paleta Ignia)
-    g.fillStyle(color, 1);
-    g.lineStyle(3, color, 1);
+    const halo = 0xffffff;
 
-    // El cuerpo de la bocina: un trapecio + un rectángulo, igual en los dos estados.
-    g.beginPath();
-    g.moveTo(-14, -6);
-    g.lineTo(-6, -6);
-    g.lineTo(4, -14);
-    g.lineTo(4, 14);
-    g.lineTo(-6, 6);
-    g.lineTo(-14, 6);
-    g.closePath();
+    // El cuerpo de la bocina: un trapecio + un rectángulo, igual en los dos
+    // estados. Se traza dos veces: primero un contorno blanco grueso (el
+    // "halo" que reemplaza al círculo), después el relleno oscuro encima.
+    const cuerpo = () => {
+      g.beginPath();
+      g.moveTo(-14, -6);
+      g.lineTo(-6, -6);
+      g.lineTo(4, -14);
+      g.lineTo(4, 14);
+      g.lineTo(-6, 6);
+      g.lineTo(-14, 6);
+      g.closePath();
+    };
+
+    g.lineStyle(6, halo, 0.95);
+    cuerpo();
+    g.strokePath();
+    g.fillStyle(color, 1);
+    cuerpo();
     g.fillPath();
 
     if (this.activado) {
-      // Dos ondas de sonido.
+      // Dos ondas de sonido, cada una con su propio halo blanco debajo.
+      g.lineStyle(5.5, halo, 0.95);
+      g.beginPath();
+      g.arc(4, 0, 8, -0.6, 0.6, false);
+      g.strokePath();
+      g.beginPath();
+      g.arc(4, 0, 13, -0.7, 0.7, false);
+      g.strokePath();
       g.lineStyle(2.5, color, 1);
       g.beginPath();
       g.arc(4, 0, 8, -0.6, 0.6, false);
@@ -78,6 +97,13 @@ export class BotonSonido extends Phaser.GameObjects.Container {
       g.strokePath();
     } else {
       // Una X — silenciado.
+      g.lineStyle(6, halo, 0.95);
+      g.beginPath();
+      g.moveTo(10, -8);
+      g.lineTo(20, 8);
+      g.moveTo(20, -8);
+      g.lineTo(10, 8);
+      g.strokePath();
       g.lineStyle(3, color, 1);
       g.beginPath();
       g.moveTo(10, -8);

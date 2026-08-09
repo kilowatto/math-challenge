@@ -223,6 +223,19 @@ const PROPS = [
   // (D-190) — gris, sin madera, se superpone al tronco cuando el niño no ha
   // llegado ahí todavía.
   ["candado", `a single simple padlock icon, closed shackle, flat vector game icon style, solid gray color (#A4A6A8) with darker gray shading, ${BLANCO}, simple flat vector game asset illustration, clean shape that reads well at small size, no people, no characters, no faces, no eyes, no animals, no text, no numbers, no letters, no logos, no watermarks, no signatures`, 120, 140],
+  // La flecha de "regresar" de `QuienJuegaScene` (D-194): el dueño pidió que
+  // dejara de ser un círculo procedural y fuera un prop de madera, mismo
+  // lenguaje visual que el letrero/los troncos — nunca un ícono UI genérico
+  // flotando sobre la escena ilustrada.
+  ["flecha-madera", `a flat vector game icon of a chevron arrow button, the icon is shaped like a thick left-pointing arrow, filled with a warm brown wood grain texture pattern, simple UI button icon design, ${BLANCO}, ${ESTILO_PROP}`, 130, 90],
+  // Intentado y ABANDONADO (D-194, tercera ronda): una placa de madera para
+  // el fondo de cada tarjeta de "¿Quién juega?", pidiendo desde "ícono de UI"
+  // hasta "textura de swatch" hasta "patrón sin costura" — las SEIS rondas,
+  // sin importar el encuadre, devolvieron un retrato grabado de un hombre
+  // con barba (una plaqueta de Lincoln tallada en madera, un producto real
+  // de artesanía muy sobrerrepresentado en el dataset, aparentemente). No
+  // vale la pena una séptima ronda — el panel de la tarjeta se quedó en
+  // Phaser puro (color cálido + borde, `QuienJuegaScene.ts`), no en Recraft.
 ];
 
 const args = process.argv.slice(2);

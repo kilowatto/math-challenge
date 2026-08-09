@@ -45,6 +45,7 @@
  */
 import Phaser from "phaser";
 import { BotonSonido } from "../objects/BotonSonido";
+import { FlechaAtras } from "../objects/FlechaAtras";
 import { TODOS_LOS_ANIMALES, claveDeAnimal, type AnimalId } from "../../lib/avatares-animal";
 
 /** Los mismos seis tokens de `docs/guia-de-estilo.md`, copiados a hex — Phaser no lee `var(--…)`. */
@@ -72,7 +73,25 @@ export interface TarjetaPerfil {
   esAdulto: boolean;
   dato: DatoDeTarjeta;
   href: string;
+  /** En qué idioma hace sus retos ESTE perfil — el dueño pidió mostrarlo por tarjeta (D-194, segunda ronda). Uno de `LOCALES` (`i18n/index.ts`). */
+  locale: string;
 }
+
+/**
+ * Bandera por locale — pictográfica a propósito: KINDER no lee (D-019), y una
+ * bandera identifica el PAÍS/dialecto tan bien como el texto ("es-MX" vs.
+ * "es-ES" son dialectos distintos, no solo "español" — la misma distinción
+ * que ya hace `packages/motor/src/alias.ts` con sus siete listas separadas).
+ */
+const BANDERA_POR_LOCALE: Readonly<Record<string, string>> = Object.freeze({
+  en: "🇺🇸",
+  "es-MX": "🇲🇽",
+  "es-ES": "🇪🇸",
+  "fr-FR": "🇫🇷",
+  "pt-BR": "🇧🇷",
+  "pt-PT": "🇵🇹",
+  "de-DE": "🇩🇪",
+});
 
 export interface RotulosQuienJuega {
   titulo: string;
@@ -110,6 +129,10 @@ export class QuienJuegaScene extends Phaser.Scene {
   preload(): void {
     this.load.image("fondo-primaria-1", "/juego/fondo-primaria-1.webp");
     this.load.image("larry_menu_aplaude", "/mapa/larry_menu_aplaude.webp");
+    // Props de madera (D-194, segunda ronda): reemplazan los fondos blancos
+    // procedurales del título y de la flecha de regreso.
+    this.load.image("letrero-madera", "/juego/letrero-madera.webp");
+    this.load.image("flecha-madera", "/juego/flecha-madera.webp");
     // Los 16 avatares-animal (D-194): se cargan todos, sin importar cuáles
     // elija esta casa — son 16 imágenes de 512px, más barato que una consulta
     // adicional para saber cuáles hacen falta, y `Phaser.Loader` de todas
@@ -126,9 +149,12 @@ export class QuienJuegaScene extends Phaser.Scene {
    * viewport (D-041: un iPhone no mide lo mismo que un iPad) y en un
    * teléfono terminaba tan cerca de la rejilla que la pista se montaba
    * sobre la primera fila de caras — visto en un simulador real, no en el
-   * código.
+   * código. Con el letrero de madera (D-194, segunda ronda) el alto real
+   * varía con el ancho de pantalla (hasta ~165px en tableta/escritorio,
+   * donde el letrero llega a su ancho máximo de 360px) — este número cubre
+   * ese caso con margen, no el de un teléfono angosto.
    */
-  private static readonly ALTO_CABECERA = 148;
+  private static readonly ALTO_CABECERA = 180;
 
   create(): void {
     const { width, height } = this.scale;
@@ -141,28 +167,46 @@ export class QuienJuegaScene extends Phaser.Scene {
       .setDisplaySize(width, height)
       .setDepth(0);
 
-    // Un panel claro detrás del título — el fondo ilustrado es demasiado
-    // ocupado para leer texto encima sin uno, mismo motivo por el que
-    // `MenuScene` monta su letrero de madera detrás de los botones.
-    const panel = this.add.graphics().setDepth(1);
-    panel.fillStyle(0xffffff, 0.88);
-    panel.fillRoundedRect(width / 2 - 180, 18, 360, 96, 20);
+    // El letrero de madera del título (D-194, segunda ronda) — reemplaza el
+    // panel blanco: "demasiados fondos blancos flotando" fue la crítica
+    // exacta del dueño viendo esta pantalla. Mismo prop que ya usa
+    // `MenuScene` para "Modo Historia/Retos" (`letrero-madera`,
+    // `gen-mapa-historia.mjs`) — el texto se PINTA encima con Phaser, nunca
+    // horneado en la imagen (D-019: la Sábana no habla en texto fijo, y de
+    // todas formas hace falta en los siete locales).
+    //
+    // El letrero NO se centra en el ancho completo: la flecha de regreso
+    // vive en la esquina superior izquierda y en un teléfono angosto un
+    // letrero centrado la tapaba — visto en un simulador real. `zonaIcono`
+    // reserva ese espacio y el letrero se centra en lo que queda.
+    const zonaIcono = 90;
+    const anchoLetrero = Math.min(360, width - zonaIcono - 20);
+
+    const letrero = this.add.image(0, 0, "letrero-madera").setDepth(1);
+    const escalaLetrero = anchoLetrero / letrero.width;
+    letrero.setScale(escalaLetrero);
+    letrero.setPosition(zonaIcono + anchoLetrero / 2 + 10, letrero.displayHeight / 2 - 6);
+    const centroPanel = letrero.x;
 
     this.add
-      .text(width / 2, 56, this.datos.rotulos.titulo, {
+      .text(centroPanel, letrero.y - 20, this.datos.rotulos.titulo, {
         fontFamily: "system-ui, sans-serif",
-        fontSize: "28px",
+        fontSize: "26px",
         fontStyle: "700",
-        color: "#434547", // gris-900
+        color: "#3E2712", // marrón oscuro — legible sobre la veta clara de la madera
+        stroke: "#F3E4C8",
+        strokeThickness: 3,
       })
       .setOrigin(0.5, 0.5)
       .setDepth(2);
 
     this.add
-      .text(width / 2, 94, this.datos.rotulos.pista, {
+      .text(centroPanel, letrero.y + 12, this.datos.rotulos.pista, {
         fontFamily: "system-ui, sans-serif",
         fontSize: "16px",
-        color: "#434547",
+        color: "#3E2712",
+        stroke: "#F3E4C8",
+        strokeThickness: 2,
       })
       .setOrigin(0.5, 0.5)
       .setDepth(2);
@@ -218,9 +262,12 @@ export class QuienJuegaScene extends Phaser.Scene {
 
     this.dibujarRejilla(width, height);
 
-    // El ícono de sonido (D-190): mismo control, mismo lugar, en las tres
-    // pantallas de Modo Historia — el niño no debería tener que reencontrarlo.
-    new BotonSonido(this, 44, 44).setDepth(10).setScrollFactor(0);
+    // La flecha de regreso vive arriba a la izquierda (D-194, segunda ronda).
+    new FlechaAtras(this, 44, 44).setDepth(10).setScrollFactor(0);
+    // El ícono de sonido (D-190) se movió abajo a la izquierda — el dueño
+    // pidió que dejara de compartir esquina con la flecha nueva, y sin
+    // círculo blanco detrás (ver `BotonSonido.ts`).
+    new BotonSonido(this, 44, height - 44).setDepth(10).setScrollFactor(0);
 
     this.scale.on(Phaser.Scale.Events.RESIZE, ({ width: w, height: h }: { width: number; height: number }) => {
       this.scene.restart(this.datos);
@@ -363,9 +410,18 @@ export class QuienJuegaScene extends Phaser.Scene {
     // mismo motivo que el panel del título. La ALTURA la decide
     // `dibujarRejilla` (mide el contenido más largo de la rejilla entera),
     // no un número fijo — así ninguna traducción larga vuelve a salirse.
+    //
+    // Tono cálido de pergamino, no blanco de formulario, con un borde
+    // marrón — el dueño pidió menos "cajas blancas sin chiste" y seis
+    // intentos de generar una placa de madera de verdad (Recraft) devolvieron
+    // un retrato tallado en vez de una textura vacía (ver el comentario en
+    // `gen-mapa-historia.mjs`). Esto es el respaldo en Phaser puro mientras
+    // ese arte no exista.
     const panel = this.add.graphics();
-    panel.fillStyle(0xffffff, 0.82);
+    panel.fillStyle(0xf3e4c8, 0.88); // crema-pergamino
     panel.fillRoundedRect(-RADIO - 14, -RADIO - 14, RADIO * 2 + 28, altoPanel, 18);
+    panel.lineStyle(3, 0x8a5a2b, 0.8); // marrón madera
+    panel.strokeRoundedRect(-RADIO - 14, -RADIO - 14, RADIO * 2 + 28, altoPanel, 18);
     contenedor.add(panel);
 
     // Respira, no está congelada — desincronizada por índice (mismo
@@ -388,6 +444,30 @@ export class QuienJuegaScene extends Phaser.Scene {
       const anillo = this.add.circle(0, 0, RADIO + 8, 0x000000, 0);
       anillo.setStrokeStyle(4, 0x434547);
       contenedor.add(anillo);
+    }
+
+    // La bandera del idioma en el que este perfil hace sus retos — una
+    // insignia CHICA sobre el borde del avatar (22px, no un panel), lo
+    // bastante pequeña para no contar como una de las "cajas blancas sin
+    // chiste" que el dueño pidió quitar — esas eran paneles de toda la
+    // tarjeta, no una insignia del tamaño de una moneda. El círculo de
+    // respaldo también ayuda a que la bandera se lea si la fuente de
+    // emoji del dispositivo no compone bien el par de indicadores
+    // regionales (visto en este navegador de prueba: sin el círculo, el
+    // glifo salía parcial). Pictográfica a propósito — sirve igual en KINDER.
+    const bandera = BANDERA_POR_LOCALE[tarjeta.locale];
+    if (bandera) {
+      const xIns = RADIO * 0.7;
+      const yIns = RADIO * 0.7;
+      const insignia = this.add.circle(xIns, yIns, 13, 0xf3e4c8, 1);
+      insignia.setStrokeStyle(2, 0x8a5a2b, 0.8);
+      contenedor.add(insignia);
+      const textoBandera = this.add
+        .text(xIns, yIns, bandera, {
+          fontSize: "16px",
+        })
+        .setOrigin(0.5, 0.5);
+      contenedor.add(textoBandera);
     }
 
     if (tarjeta.animal && this.textures.exists(claveDeAnimal(tarjeta.animal))) {

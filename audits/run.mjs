@@ -581,6 +581,7 @@ for (const [name, what, enforces] of ACTIVE) {
 for (const prueba of [
   "packages/motor/src/bandas.prueba.mjs",
   "packages/motor/src/alias.prueba.mjs",
+  "packages/motor/src/identidad-adulto.prueba.mjs",
   "packages/motor/src/pin-imagenes.prueba.mjs",
   "apps/web/src/lib/webauthn.prueba.mjs",
   "apps/web/src/lib/passwords.prueba.mjs",

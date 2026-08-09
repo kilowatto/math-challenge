@@ -170,8 +170,15 @@ export async function estadoDeParticipacion(
       // El adulto consiente por sí mismo (D-081): siempre participa. Su banda
       // es SERIO — el mismo criterio de `app/mapa.astro`: D-017 lo ubica de 18
       // en adelante y `users` no tiene columna de banda.
+      // `COALESCE(username, alias)` (D-197): el `@usuario` público reemplaza
+      // el alias generado cuando el adulto lo fijó — mismo criterio que
+      // `packages/motor/src/tablero.ts::SQL_TOP_ADULTO`. Se re-lee en cada
+      // ítem (`asegurarMembresia` llama esta función y difunde el resultado
+      // al DO de la liga), así que un cambio de `@usuario` llega a la liga en
+      // el siguiente ítem que este adulto resuelva — el mismo cauce por el
+      // que ya viajaba cualquier cambio de alias, sin mecanismo nuevo.
       const u = await env.DB.prepare(
-        "SELECT alias, locale FROM users WHERE id = ? AND deleted_at IS NULL",
+        "SELECT COALESCE(username, alias) AS alias, locale FROM users WHERE id = ? AND deleted_at IS NULL",
       )
         .bind(quien.id)
         .first<FilaUsuario>();

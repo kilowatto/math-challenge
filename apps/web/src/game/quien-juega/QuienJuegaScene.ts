@@ -233,12 +233,22 @@ export class QuienJuegaScene extends Phaser.Scene {
     // círculo blanco detrás (ver `BotonSonido.ts`).
     new BotonSonido(this, 44, height - 44).setDepth(10).setScrollFactor(0);
 
-    this.scale.on(Phaser.Scale.Events.RESIZE, ({ width: w, height: h }: { width: number; height: number }) => {
-      this.scene.restart(this.datos);
-      void w;
-      void h;
+    // Reinicio de la escena, con RESIZE debounced (D-196.1). El Scale
+    // Manager puede emitir varios eventos RESIZE seguidos mientras el
+    // viewport se asienta (la barra de direcciones de un navegador móvil
+    // colapsando, por ejemplo) — reiniciar la escena en CADA uno corta
+    // cualquier tween/timer en curso a medio camino. El dueño lo vio en
+    // vivo: Larry "camina pero no se mueve" — el tween de salida de "leer"
+    // se reiniciaba una y otra vez antes de completar el recorrido, así que
+    // nunca llegaba a salir de cuadro. Se espera a que los eventos dejen de
+    // llegar 300ms antes de reiniciar de verdad.
+    this.scale.on(Phaser.Scale.Events.RESIZE, () => {
+      this.eventoRedimension?.remove();
+      this.eventoRedimension = this.time.delayedCall(300, () => this.scene.restart(this.datos));
     });
   }
+
+  private eventoRedimension: Phaser.Time.TimerEvent | null = null;
 
   /**
    * Parallax 2.5D (D-196) — capas planas que se desplazan distinto según la

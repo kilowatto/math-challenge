@@ -5993,3 +5993,88 @@ pierda ni haya que volver a explicarla cuando le toque su turno.
 
 **Investigación relacionada:** D-080, D-190, D-066, D-074, D-035, D-192
 (reservada, sin escribir todavía), mc-51.
+
+## D-193 — "¿Quién juega?" pasa a Phaser, mejora progresiva sobre el HTML de siempre · 2026-08-08
+
+**Decisión del dueño, con el riesgo mostrado antes de decidir.** Pidió
+arte real (D-080) para la pantalla donde el niño —o el propio dueño de la
+cuenta— elige quién juega, con el Rango/XP o la habilidad actual pintados
+en cada tarjeta. Antes de construirlo se le mostró que `kids/index.astro`
+es HOY 100% HTML sin una sola línea de JavaScript, **a propósito**, citando
+su propio encabezado: `mc-33` (el JavaScript falla más de lo que nadie
+cree, medido contra Android de gama baja en 4G lento, el dispositivo de
+referencia de `mc-47` §5) y el hecho de que ahí vive el candado de D-012
+(fallar cerrado si el dispositivo no está marcado como de la casa). El
+dueño confirmó que quiere Phaser de todas formas, con esa evidencia ya
+vista.
+
+**Lo que NO se reversa, y es la mitad que importa: el candado de D-012 se
+queda exactamente en HTML/servidor, sin tocar.** `kids/index.astro` sigue
+decidiendo, en el servidor, si este dispositivo puede ver una sola cara —
+Phaser nunca participa en esa decisión y no podría: correría DESPUÉS de que
+el servidor ya decidió servir la rejilla. Lo que sí se reversa es solo la
+mitad de "cero JavaScript" que dibujaba las caras.
+
+**Cómo queda sin romper el "nunca una pantalla en blanco" que `mc-33`
+pedía:** `kids/index.astro` sigue rindiendo su rejilla de HTML completa,
+siempre — nunca condicionada a JavaScript. `QuienJuegaScene` es una
+MEJORA PROGRESIVA montada por
+`components/kids/QuienJuegaMount.astro` (mismo patrón que
+`HistoriaMount.astro`, D-184): si Phaser arranca bien, `game/quien-juega/entrada.ts`
+oculta la rejilla de HTML con `hidden` — nunca al revés, nunca por CSS
+antes de confirmar que Phaser corrió. Un teléfono viejo, sin JS, o con
+Phaser fallando a medio cargar, ve exactamente la pantalla de HTML de
+siempre. Se documenta como reversa PARCIAL y con salvaguarda, no como
+"ya no importa mc-33".
+
+**El Rango/XP vs. la habilidad, con la regla de cada banda intacta:**
+
+- **SECUNDARIA, SERIO, PRO y el adulto de la cuenta**: "Rango N · NNN XP",
+  reusando `packages/motor/src/xp.ts::rangoDeXp()` — el mismo número que ya
+  ve el padre en su panel. Deliberadamente NO se llama "Nivel": es la
+  misma distinción que `xp.ts` ya documenta contra el N1-N12 de D-017, y
+  `audits/rango-vs-nivel.mjs` la hace cumplir por palabra en los siete
+  locales — la etiqueta nueva (`kidsRango`) se tradujo evitando a propósito
+  "nivel"/"nível"/"niveau"/"level"/"stufe" en cada idioma (p. ej. "Patente"
+  en portugués, no "Nível", que el propio auditor bloquea).
+- **PRIMARIA**: nunca un número — el rótulo en palabras de la habilidad en
+  curso (`lib/quien-juega-datos.ts::habilidadActualDe()`), calculado con la
+  MISMA construcción del árbol que ya usa `kids/mapa.astro`
+  (`construirArbol`/`entradasDelArbol`), nunca un cálculo paralelo.
+- **KINDER**: nada, ni un número ni una palabra. D-024/D-045 (con evidencia
+  citada) dicen que kinder nunca ve un puntaje ni antes ni durante el
+  juego; D-019 dice que kinder nunca ve texto porque no lee. Las dos siguen
+  intactas — la tarjeta de un perfil KINDER no lleva esta información.
+
+**El adulto de la cuenta ahora tiene su propia tarjeta, visualmente
+distinta** (un anillo que ninguna tarjeta de niño lleva) — nunca "otro
+niño más en la fila". Toca a `rutaPracticar()` (`/app/practicar/`, el
+selector de materia/nivel que YA existe para el adulto) como puente
+temporal: el Modo Historia fotorrealista del adulto (D-191) sigue
+deliberadamente diferido, y esta tarjeta no podía esperarlo para existir.
+
+**El toque, con la lección de esta misma sesión ya aplicada sin
+repetir el error:** `QuienJuegaScene.ts` usa un `Zone` hijo del contenedor
+con `setInteractive()` SIN forma explícita — la sesión que construyó esta
+pantalla encontró, probando en un simulador de iOS real, que un `hitArea`
+de `Phaser.Geom.Circle` explícito NO registra el toque en esta build de
+Phaser 4.2.1 (verificado con `d=0, hits=0`: el toque exactamente en el
+centro no contaba como hit), mientras que el hitArea autogenerado
+(rectángulo del tamaño nativo del objeto) sí responde — mismo hallazgo que
+`LevelNode.ts`/`BotonSonido.ts` ya documentan.
+
+**Lo que esta sesión NO construyó:** arte de Recraft para las caras — la
+pantalla sigue con la misma forma+color procedural de siempre
+(`caraDe()`/`indice()` de `kids/index.astro`), ahora dibujada con
+`Phaser.Graphics` en vez de SVG, pero geométricamente equivalente, no un
+personaje ilustrado nuevo. El dueño pidió arte real; construirlo (con su
+propia revisión humana, D-080) es el siguiente paso, no parte de este.
+
+**Cómo se verificó:** `astro check` en 0 errores. Auditores de superficie de
+niño (`child-free-text`, `telemetria-infantil`, `turnstile-solo-adulto`,
+`touch-targets`) en verde. Verificado en vivo en un iPhone real (simulador)
+con sesión ya autenticada: el flujo avatar → PIN → mapa sigue funcionando
+sin romperse.
+
+**Investigación relacionada:** D-012, D-017, D-019, D-024, D-045, D-080,
+D-184, D-190, D-191, mc-33, mc-47 §5.

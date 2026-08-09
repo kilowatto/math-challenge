@@ -7,10 +7,19 @@
  * La tarea pedía explícitamente revisar "dónde se inicializa `new
  * Phaser.Game(...)` actualmente" antes de escribir código, para no crear una
  * segunda instancia por accidente. Se buscó en todo el repo (`grep -r
- * "Phaser"`) y no había ninguna — este es el primer y único punto de montaje.
- * Que sea una función exportada, y no código suelto en el `<script>` de la
- * página, es lo que hace que "solo hay un `new Phaser.Game()`" se pueda
- * verificar con una búsqueda de texto en vez de con disciplina.
+ * "Phaser"`) y no había ninguna — este es el único punto de montaje PARA
+ * MODO HISTORIA. Que sea una función exportada, y no código suelto en el
+ * `<script>` de la página, es lo que hace que "solo hay un
+ * `new Phaser.Game()` para Modo Historia" se pueda verificar con una
+ * búsqueda de texto en vez de con disciplina.
+ *
+ * **Deja de ser el único de todo el repo a partir de D-192**:
+ * `game/quien-juega/main.ts::arrancarQuienJuega()` monta una instancia
+ * SEPARADA para "¿Quién juega?" (`kids/index.astro`) — una página distinta
+ * que nunca corre a la vez que ésta. Dos pantallas con su propio
+ * `new Phaser.Game()`, cada una con el mismo criterio de "un solo lugar
+ * dentro de su propia pantalla", no es la misma regla que "uno solo en todo
+ * el producto" — esa segunda regla nunca estuvo escrita en ningún lado.
  */
 import Phaser from "phaser";
 import { BootScene } from "./scenes/BootScene";

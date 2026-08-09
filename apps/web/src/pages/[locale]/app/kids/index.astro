@@ -79,10 +79,20 @@ import {
   leerCookies,
   leerDispositivoDelHogar,
 } from "../../../../lib/sesiones";
-import { rutaPin } from "../../../../lib/rutas-app";
+import { rutaPin, rutaPracticar } from "../../../../lib/rutas-app";
+import { datoDeTarjeta, rangoYXpDe, type TemaVisual } from "../../../../lib/quien-juega-datos";
+import QuienJuegaMount from "../../../../components/kids/QuienJuegaMount.astro";
+import type { TarjetaPerfil } from "../../../../game/quien-juega/QuienJuegaScene";
 import "../../../../styles/fonts.css";
 import "../../../../styles/tokens.css";
 import "../../../../styles/bandas.css";
+import enReto from "../../../../i18n/reto/en.json";
+import esMXReto from "../../../../i18n/reto/es-MX.json";
+import esESReto from "../../../../i18n/reto/es-ES.json";
+import frFRReto from "../../../../i18n/reto/fr-FR.json";
+import ptBRReto from "../../../../i18n/reto/pt-BR.json";
+import ptPTReto from "../../../../i18n/reto/pt-PT.json";
+import deDEReto from "../../../../i18n/reto/de-DE.json";
 
 export const prerender = false;
 
@@ -558,6 +568,64 @@ const caras = perfiles.map((p) => {
   paresUsados.add(`${forma}:${color}`);
   return { perfil: p, forma, color };
 });
+
+// --- D-192: los datos de la mejora progresiva en Phaser ---------------------
+//
+// Todo lo de abajo es ADITIVO — nada de lo de arriba se toca. Si algo aquí
+// revienta, `tarjetas` queda vacío y `QuienJuegaMount` no tiene nada que
+// montar: la rejilla de HTML de siempre sigue siendo la pantalla real.
+
+const CATALOGOS_RETO: Record<string, Record<string, unknown>> = {
+  en: enReto, "es-MX": esMXReto, "es-ES": esESReto, "fr-FR": frFRReto,
+  "pt-BR": ptBRReto, "pt-PT": ptPTReto, "de-DE": deDEReto,
+};
+const catalogoReto = CATALOGOS_RETO[locale] ?? enReto;
+const habilidadesPorClave: Record<string, string> = {};
+for (const clave of Object.keys(catalogoReto)) {
+  if (clave.startsWith("habilidad.") && typeof catalogoReto[clave] === "string") {
+    habilidadesPorClave[clave.slice("habilidad.".length)] = catalogoReto[clave] as string;
+  }
+}
+
+const learnerDo = runtime?.env?.LEARNER_DO;
+let tarjetas: TarjetaPerfil[] = [];
+try {
+  const deNinos = await Promise.all(
+    caras.map(async ({ perfil, forma, color }): Promise<TarjetaPerfil> => {
+      const tema = (perfil.theme_band as TemaVisual) || "KINDER";
+      const dato = await datoDeTarjeta(
+        { DB: db, LEARNER_DO: learnerDo },
+        { tema, childProfileId: perfil.id, esAdulto: false },
+        habilidadesPorClave,
+      );
+      return {
+        id: perfil.id,
+        alias: perfil.alias,
+        forma,
+        color,
+        esAdulto: false,
+        dato,
+        href: rutaDelPin(locale, perfil.id),
+      };
+    }),
+  );
+
+  const datoAdulto = await rangoYXpDe(db, { userId: hogar.ownerUserId });
+  const tarjetaAdulto: TarjetaPerfil = {
+    id: "adulto",
+    alias: m.kidsAdultLink,
+    forma: 0,
+    color: 5, // gris-900 — visualmente distinto de cualquier color de niño posible por azar
+    esAdulto: true,
+    dato: datoAdulto ? { tipo: "rango", rango: datoAdulto.rango, xp: datoAdulto.xp } : { tipo: "ninguno" },
+    href: rutaPracticar(locale),
+  };
+
+  tarjetas = [...deNinos, tarjetaAdulto];
+} catch (err) {
+  console.error("kids: no se pudieron componer las tarjetas de Phaser", String(err).slice(0, 200));
+  tarjetas = [];
+}
 ---
 
 <!doctype html>
@@ -676,6 +744,19 @@ const caras = perfiles.map((p) => {
         {m.kidsAdultQuestion} <a href={SIGNIN}>{m.kidsAdultLink}</a>
       </p>
     </main>
+
+    {/*
+      D-192: mejora progresiva en Phaser, siempre después del contenido real.
+      Si `tarjetas` quedó vacío (algo reventó componiéndolo, ver el
+      frontmatter), el componente no tiene nada que montar y la rejilla de
+      arriba sigue siendo la única pantalla — nunca una carrera entre las dos.
+    */}
+    {tarjetas.length > 0 && (
+      <QuienJuegaMount
+        tarjetas={tarjetas}
+        rotulos={{ titulo: m.kidsTitle, pista: m.kidsPick, jugarComo: m.kidsPlayAs, rango: m.kidsRango }}
+      />
+    )}
 
     <style>
       /* Fondo de superficie y no de página: la rejilla es una tarjeta grande y

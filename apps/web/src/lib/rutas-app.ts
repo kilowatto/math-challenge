@@ -57,6 +57,15 @@ export const rutaRetosKids = (locale: Locale | string) => `/${locale}/app/kids/r
 /** La puerta del adulto cuando el dispositivo no está marcado. */
 export const rutaSignin = (locale: Locale | string) => `/${locale}/app/signin`;
 
+/**
+ * El selector de materia y nivel del adulto (#343) — puente temporal, D-191.
+ *
+ * El adulto todavía no tiene su propio Modo Historia (SECUNDARIA→SERIO→PRO,
+ * D-191, deliberadamente diferido). Hasta que exista, tocar su tarjeta en
+ * "¿Quién juega?" lo manda aquí, no a una pantalla nueva a medio construir.
+ */
+export const rutaPracticar = (locale: Locale | string) => `/${locale}/app/practicar/`;
+
 /** Crear el perfil de un hijo. */
 export const rutaPerfilNuevo = (locale: Locale | string) => `/${locale}/app/perfil-nuevo/`;
 

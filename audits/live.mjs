@@ -596,9 +596,15 @@ if (!SEMBRAR) {
     // (`mc_h`, tabla household_devices) y un perfil sembrado.
     //
     // Aquí se siembra un perfil de prueba sobre la cuenta «familia» y se
-    // camina: rejilla → enlace de la cara → PIN → destino. Un niño sin PIN
-    // elegido entra directo (D-012), así que el PIN responde 303 a jugar con
-    // la cookie `mc_k` — y jugar tiene que responder 200 con cuerpo.
+    // camina el recorrido REAL de D-201: rejilla → la ruta del PIN redirige al
+    // SPA → `/api/pin-datos` sirve la rejilla a PinScene → y `/api/pin-entrar`
+    // NIEGA la entrada a un perfil sin PIN.
+    //
+    // Esa última comprobación es la que importa. Hasta D-201 este mismo bloque
+    // exigía lo contrario —que un niño sin PIN entrara directo— porque eso era
+    // lo que el producto hacía. Era el agujero, no la funcionalidad: cualquier
+    // hermano abría el perfil de otro tocando su cara. Si algún día vuelve a
+    // pasar, esta comprobación es la que lo grita.
     const familia = sembradas.find((c) => c.intent === "PADRE" && c.userId);
     if (familia) {
       const childId = crypto.randomUUID();
@@ -630,35 +636,63 @@ if (!SEMBRAR) {
         } else {
           ok.push(`la cara enlaza con locale: ${cara[1].slice(0, 40)}…`);
 
-          // 4b. El PIN responde 303 con sesión de niño — no 404, no 500 en blanco.
+          // 4b. La RUTA del PIN ya no es una pantalla: es una redirección
+          // al SPA (D-201). Antes esta comprobación exigía un 303 al mapa CON
+          // cookie de niño — o sea, exigía que un perfil sin PIN entrara sin
+          // reto. Eso era el agujero, no la funcionalidad: se cambió con él.
           const pin = await fetch(`${ORIGIN}${cara[1]}`, {
             headers: { Cookie: `mc_h=${aparato}` },
             redirect: "manual",
           });
           const destinoPin = pin.headers.get("location") ?? "";
-          const cookieNino = (pin.headers.get("set-cookie") ?? "").split(";")[0];
-          if (pin.status !== 303 || !destinoPin.includes("/app/kids/mapa")) {
+          if (pin.status !== 303 || !destinoPin.includes("/app/kids")) {
             problems.push(
-              `el PIN de un perfil sin PIN elegido devuelve ${pin.status} → "${destinoPin}". ` +
-                "Se esperaba 303 a /app/kids/mapa/ (D-190, PR #515: el niño entra al mapa, " +
-                "no al programador adaptativo directo). Un 500 aquí es la pantalla en blanco " +
-                "del 2026-08-04 (TDZ de `locale` en la rama sin PIN); un 404 es un enlace sin locale.",
+              `la ruta del PIN devuelve ${pin.status} → "${destinoPin}". Se esperaba 303 a ` +
+                "/app/kids/ (D-201: dejó de ser una pantalla y quedó como redirección al SPA). " +
+                "Un 404 aquí rompe cualquier marcador guardado, que es justo lo que la " +
+                "redirección existe para evitar.",
             );
-          } else if (!cookieNino.startsWith("mc_k=")) {
-            problems.push(`el PIN respondió 303 pero sin cookie mc_k — el niño no queda en sesión`);
+          } else if ((pin.headers.get("set-cookie") ?? "").includes("mc_k=")) {
+            problems.push(
+              "la ruta del PIN abrió una sesión de niño (mc_k) — D-201 borró esa rama: un perfil " +
+                "sin PIN NO entra, va a elegir uno. Si esto vuelve, un hermano abre el perfil de otro.",
+            );
           } else {
-            // 4c. El destino responde 200 CON CUERPO — la pantalla en blanco es cero bytes.
-            const jugar = await fetch(`${ORIGIN}${destinoPin}`, {
-              headers: { Cookie: `mc_h=${aparato}; ${cookieNino}` },
+            ok.push(`la ruta del PIN redirige al SPA: 303 → ${destinoPin}`);
+
+            // 4c. El camino REAL: los tres endpoints que sirven a PinScene.
+            const datos = await fetch(`${ORIGIN}/api/pin-datos?p=${childId}`, {
+              headers: { Cookie: `mc_h=${aparato}` },
             });
-            const cuerpo = jugar.ok ? await jugar.text() : "";
-            if (!jugar.ok || cuerpo.trim().length === 0) {
+            const cuerpo = datos.ok ? await datos.json() : null;
+            if (!datos.ok || !cuerpo?.ok) {
+              problems.push(`/api/pin-datos con aparato de la casa devuelve ${datos.status} — PinScene no puede pintarse`);
+            } else if (!Array.isArray(cuerpo.dibujos) || !cuerpo.rotulos?.titulo) {
+              problems.push("/api/pin-datos responde sin dibujos o sin rótulos — la rejilla saldría vacía");
+            } else if (cuerpo.yaTienePin !== false) {
+              problems.push("un perfil recién sembrado dice yaTienePin=true — el modo «elegir» no se alcanzaría nunca");
+            } else {
+              ok.push(
+                `/api/pin-datos sirve a PinScene: tipo=${cuerpo.tipo}, ${cuerpo.dibujos.length} dibujo(s), ` +
+                  `sin PIN todavía → modo elegir`,
+              );
+            }
+
+            // 4d. EL HUECO CERRADO, comprobado en producción: un perfil sin
+            // PIN no entra por más que se intente.
+            const entrar = await fetch(`${ORIGIN}/api/pin-entrar`, {
+              method: "POST",
+              headers: { Cookie: `mc_h=${aparato}`, "content-type": "application/json" },
+              body: JSON.stringify({ childId, posiciones: [0, 1, 2] }),
+            });
+            const rEntrar = await entrar.json().catch(() => ({}));
+            if (rEntrar.ok === true || (entrar.headers.get("set-cookie") ?? "").includes("mc_k=")) {
               problems.push(
-                `${destinoPin} devuelve ${jugar.status} con ${cuerpo.length} bytes — la pantalla ` +
-                  "en blanco que el dueño grabó el 2026-08-04",
+                "/api/pin-entrar dejó entrar a un perfil SIN PIN — el agujero de kids/pin.astro:361 " +
+                  "ha vuelto. Un hermano abre el perfil de otro tocando su cara.",
               );
             } else {
-              ok.push(`camino del niño completo: rejilla → PIN → ${destinoPin} 200 (${cuerpo.length} bytes)`);
+              ok.push(`un perfil sin PIN no entra: /api/pin-entrar → ${rEntrar.error ?? "rechazado"}`);
             }
           }
         }

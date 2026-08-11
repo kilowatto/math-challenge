@@ -136,41 +136,79 @@ export class QuienJuegaScene extends Phaser.Scene {
     // procedurales del título y de la flecha de regreso.
     this.load.image("letrero-madera", "/juego/letrero-madera.webp");
     this.load.image("flecha-madera", "/juego/flecha-madera.webp");
-    // Los 24 cuadros de Larry fotorrealista (D-196) — reposo, caminata, y
-    // siete comportamientos. Ver `LarryFotorrealista.ts`.
-    for (const clave of LARRY_FOTO_CLAVES) {
-      this.load.image(clave, `/mapa/${clave}.webp`);
-    }
-    // Los 16 avatares-animal (D-194): se cargan todos, sin importar cuáles
-    // elija esta casa — son 16 imágenes de 512px, más barato que una consulta
-    // adicional para saber cuáles hacen falta, y `Phaser.Loader` de todas
-    // formas pide una URL fija por textura (mismo motivo que `gen-larry.mjs`
-    // documenta para las piezas de LarryAvatar).
-    for (const id of TODOS_LOS_ANIMALES) {
+    // Larry fotorrealista (D-196). Los 38 cuadros pesan 900 KB y solo el
+    // primero hace falta para que Larry EXISTA en pantalla: los demás son
+    // caminata y siete comportamientos que empiezan segundos después. El resto
+    // va en `segundaFase()`.
+    this.load.image(LARRY_FOTO_CLAVES[0], `/mapa/${LARRY_FOTO_CLAVES[0]}.webp`);
+    // Los avatares que ESTA casa usa — no los 16.
+    //
+    // `init()` corre antes que `preload()`, así que aquí ya se sabe qué animal
+    // eligió cada perfil. Una casa con dos hijos usaba 673 KB para pintar dos
+    // caras. El resto se sigue cargando, pero DESPUÉS (ver `segundaFase`).
+    for (const id of this.animalesUsados()) {
       this.load.image(claveDeAnimal(id), `/avatares/${claveDeAnimal(id)}.webp`);
     }
-    // El atrezo de madera del PIN (D-197.1) y los 24 dibujos (D-201) — se
-    // cargan AQUÍ, con todo lo demás, no dentro de `PinScene`.
-    //
-    // La primera versión los cargaba en caliente al abrir el PIN, razonando
-    // que cada niño solo ve nueve de los veinticuatro. Está mal por tres
-    // motivos, y el dueño lo señaló antes de que llegara a producción:
-    //
-    //  1. **La rejilla se baraja POR NIÑO.** En una tablet compartida —el caso
-    //     central de D-012— dos o tres hermanos ven entre todos casi los 24,
-    //     así que el ahorro se evapora justo donde se suponía que contaba.
-    //  2. **El PIN es la SEGUNDA pantalla**, que es exactamente donde D-200 y
-    //     D-200.1 pusieron el precargador para que no hubiera huecos. Cargar
-    //     en caliente reintroduce el hueco en la transición más visible del
-    //     recorrido, y obliga a un spinner y a un estado de error propios.
-    //  3. **Pesan 552 KB**, la mitad que los 38 cuadros de Larry que ya se
-    //     cargan aquí sin discusión (972 KB).
+  }
+
+  /** Los animales que de verdad aparecen en esta rejilla, sin repetir. */
+  private animalesUsados(): AnimalId[] {
+    const vistos = new Set<AnimalId>();
+    for (const t of this.datos.tarjetas) if (t.animal) vistos.add(t.animal);
+    return [...vistos];
+  }
+
+  /**
+   * Lo que NO hace falta para pintar esta pantalla, cargado después de
+   * pintarla.
+   *
+   * ─── Por qué existe esta segunda fase ──────────────────────────────────
+   *
+   * Medido: `preload()` llegó a pedir **2.5 MB** antes de enseñar nada — 38
+   * cuadros de Larry, 16 avatares, y los 48 archivos del PIN. En el
+   * dispositivo de referencia (Android de gama baja sobre 4G lento, `mc-47`)
+   * son ~14 segundos de pantalla de carga, y ~51 en 3G. El niño no puede
+   * tocar su cara en todo ese rato.
+   *
+   * Nada de eso hace falta para pintar la rejilla. Lo que sí hace falta —el
+   * fondo, la madera y los avatares de esta casa— son ~400 KB.
+   *
+   * ─── Y por qué SIGUEN precargándose, en vez de cargarse al usarlos ─────
+   *
+   * Porque el PIN es la SEGUNDA pantalla, y cargarlo en el momento del toque
+   * reintroduce el hueco que D-200 existe para cerrar. La respuesta correcta
+   * no era «al vuelo» ni «todo antes de empezar»: es **antes de empezar, pero
+   * sin bloquear**. Cuando el dedo llega al PIN, los archivos llevan segundos
+   * en la caché de texturas.
+   *
+   * `Loader` de Phaser admite encolar y arrancar de nuevo sobre una escena ya
+   * creada; los `load.image()` de claves ya cargadas se ignoran solos.
+   */
+  private segundaFase(): void {
+    const pendientes: Array<[string, string]> = [];
+
+    // El resto de cuadros de Larry: caminata y comportamientos.
+    for (const clave of LARRY_FOTO_CLAVES) {
+      if (!this.textures.exists(clave)) pendientes.push([clave, `/mapa/${clave}.webp`]);
+    }
+    // El resto de avatares: los necesita el selector de avatar del engrane,
+    // que puede abrirse en cualquier momento.
+    for (const id of TODOS_LOS_ANIMALES) {
+      const clave = claveDeAnimal(id);
+      if (!this.textures.exists(clave)) pendientes.push([clave, `/avatares/${clave}.webp`]);
+    }
+    // El atrezo del PIN y los 24 dibujos (D-201).
     for (const clave of CLAVES_ATREZO_PIN) {
-      this.load.image(clave, `/juego/${clave}.webp`);
+      if (!this.textures.exists(clave)) pendientes.push([clave, `/juego/${clave}.webp`]);
     }
     for (const id of CATALOGO) {
-      this.load.image(clavePinDibujo(id), urlPinDibujo(id));
+      const clave = clavePinDibujo(id);
+      if (!this.textures.exists(clave)) pendientes.push([clave, urlPinDibujo(id)]);
     }
+
+    if (pendientes.length === 0) return;
+    for (const [clave, url] of pendientes) this.load.image(clave, url);
+    this.load.start();
   }
 
   /**
@@ -271,6 +309,10 @@ export class QuienJuegaScene extends Phaser.Scene {
       this.eventoRedimension?.remove();
       this.eventoRedimension = this.time.delayedCall(300, () => this.scene.restart(this.datos));
     });
+
+    // Lo pesado que no hacía falta para pintar ESTA pantalla, ya con la
+    // rejilla delante del niño. Ver `segundaFase()`.
+    this.segundaFase();
   }
 
   private eventoRedimension: Phaser.Time.TimerEvent | null = null;

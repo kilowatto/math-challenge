@@ -74,12 +74,6 @@ const ACCESIBILIDAD_DECLARADA = [/AccessibleReto\.ts$/];
 
 const DEUDA = [
   {
-    id: "app/kids/pin.astro",
-    issue: "D-201 fase 5",
-    porQue:
-      "el PIN se está migrando a PinScene; esta página muere en la fase 5 y su ruta queda como redirección 303",
-  },
-  {
     id: "app/kids/jugar.astro",
     issue: "D-201, sin fase asignada",
     porQue:

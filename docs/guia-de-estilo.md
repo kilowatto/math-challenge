@@ -539,3 +539,59 @@ Se respetan `env(safe-area-inset-*)` en los cuatro lados. El indicador de inicio
 se come el borde inferior en horizontal, que es justo donde un diseño de teléfono
 suele poner la barra de acciones.
 
+
+---
+
+## La interfaz del niño es Phaser, y todo botón es una imagen (D-201)
+
+Regla de arquitectura con consecuencia visual directa, así que vive también
+aquí y no solo en `decisions.md`.
+
+**Toda pantalla que ve un niño es una escena de Phaser** dentro de una sola
+sesión que vive mientras el niño está dentro. Ninguna pantalla de niño en
+HTML/CSS, y **nunca** HTML transplantado a un `<div>` sobre el canvas. Si
+aparece una pantalla de niño en HTML, se migra — `audits/spa-phaser.mjs` la
+bloquea si es nueva y declara como deuda las que ya existían.
+
+### Cómo se construye un elemento, y con qué herramienta
+
+| Qué | Con qué | Nunca |
+|---|---|---|
+| Fondo de bioma, vegetación, objeto del mundo, personaje, prop | **Recraft** (`digital_illustration`), fondo blanco puro + recorte por color a alfa | Una forma plana dibujada a mano donde debería haber ilustración |
+| Botón, letrero, marco, tabla de madera, dígito tallado | **Recraft** — una imagen por estado (normal y presionado) | Un `<button>` de HTML, o un rectángulo de `Graphics` con texto encima |
+| Pieza de interfaz **abstracta**: aro vacío, línea punteada, medidor, tarjeta en blanco, anillo de pulso | **`Phaser.GameObjects.Graphics`**, en código | Insistir con Recraft: una forma sin referente real en el mundo hace que el modelo invente un objeto real (un espejo, un aro de luz, una vía de tren, un retrato) |
+| Texto con el nombre de un niño o un número | **`Phaser.Text` encima** de la madera | Hornearlo en la imagen: son siete locales y un alias por niño |
+| Texto fijo tallado en madera (un título por locale) | Imagen pre-tallada **por locale** (Nano Banana / Gemini, que hornea texto mejor) | Una sola imagen con texto en un idioma |
+
+La frontera entre las dos primeras filas y la tercera **está medida, no
+supuesta**: un riel con muescas dio un ferrocarril, luego comida, luego un
+plano técnico con cotas; una tarjeta rectangular en blanco dio retratos
+humanos, luego azulejos, luego muestras de pintura con texto inventado. Tres
+rondas cada una, sin converger. **Tras 2-3 fallos con el mismo patrón, se
+dibuja en código** — es más barato y siempre exacto.
+
+### El acabado mínimo, antes de dar una pantalla por terminada
+
+La vara es **Angry Birds, Plants vs Zombies, Royal Kingdom, Magic Sort** — no
+"una web bonita para niños". Si una pantalla se puede confundir con un
+formulario, está mal terminada. Antes de cerrarla, verificar que tenga:
+
+1. **Fondo ilustrado real** — reusar arte ya aprobado si no hay presupuesto de
+   generación en esa tanda, nunca dejarlo en blanco.
+2. **Larry presente y animado** donde corresponda (idle bob, respiración), no
+   estático.
+3. **El ícono de sonido** (`BotonSonido`) en la misma posición que las demás
+   escenas, y `BotonMusica` a 64 px a su derecha.
+4. **Vida en lo interactivo** — bob, respiración o pulso; nunca todo quieto.
+5. **`prefers-reduced-motion` respetado** en cada animación.
+6. **Blancos táctiles de 88 px** como piso en cualquier pantalla que use un
+   niño (`mc-20`: 23.7 mm es lo que necesita un niño de cuatro años para
+   acertar el 90% de las veces). El usuario más pequeño fija el piso.
+7. **Todo estado visible sin depender solo del color** — cambia también la
+   forma: ~8% de los niños varones tiene deficiencia de visión del color
+   (`mc-38`).
+
+Y una trampa de Phaser que ya costó tiempo cuatro veces: un botón se hace
+interactivo con una **`Zone` hija** y hitArea autogenerada, nunca con
+`setInteractive(new Phaser.Geom.Circle(...))` — una hitArea explícita **no
+registra el toque** en la build actual.

@@ -2207,6 +2207,35 @@ const CASOS = [
   },
 
   {
+    // D-201. El fallo que este auditor existe para cazar: la SEXTA pantalla de
+    // niño naciendo en HTML. Plantada y no degradada a propósito — las tres
+    // páginas que incumplen hoy van declaradas como deuda en el auditor, así
+    // que degradar una de ellas no probaría nada: ya está reconocida. Lo que
+    // hay que demostrar es que una pantalla NUEVA bloquea.
+    auditor: "spa-phaser",
+    que: "una pantalla de niño nueva servida como HTML",
+    archivo: "apps/web/src/pages/[locale]/app/kids/sonda-html.astro",
+    contenido:
+      "---\nexport const prerender = false;\n---\n" +
+      '<main class="p"><button type="button">toca</button></main>\n' +
+      "<style>.p { color: red }</style>\n",
+    espera: "pinta interfaz propia",
+  },
+  {
+    // D-201, la otra mitad: el transplante de DOM sobre el canvas. Es el
+    // patrón EXACTO que tenía `game/spa/puente-pin.ts` — se planta en vez de
+    // degradarse porque el archivo real se borra en la fase 5, y una prueba
+    // que apunta a un archivo borrado deja de probar en silencio.
+    auditor: "spa-phaser",
+    que: "un puente que transplanta DOM de otra página al canvas",
+    archivo: "apps/web/src/game/spa/sonda-transplante.ts",
+    contenido:
+      "export function montar(doc: Document, destino: HTMLElement) {\n" +
+      '  const frag = extraerFragmento(doc, "main.pin");\n' +
+      "  if (frag) destino.appendChild(frag.cloneNode(true));\n}\n",
+    espera: "transplantar HTML sobre el canvas",
+  },
+  {
     // F8 #285. El fallo que este auditor existe para cazar: un archivo NUEVO
     // en la ruta del panel que lee el binding de Analytics Engine. Plantado,
     // no degradado — el archivo real no lo referencia.

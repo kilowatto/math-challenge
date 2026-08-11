@@ -425,6 +425,18 @@ const ACTIVE = [
   ["gestos-reto",             "toda pantalla de reto declara la protección de gestos", "#451, pwa-gestos.md §3, WebKit bug 240183, D-070"],
   ["reto-opciones-moviles",   "las opciones del reto siguen seleccionables en móvil", "#451, mc-20, D-041"],
 
+  // ─── D-201, y por qué nace ROJO con la deuda declarada ───────────────────
+  //
+  // La interfaz del niño es Phaser. Vigila las DOS formas de romperlo: una
+  // pantalla de niño servida como página HTML, y HTML transplantado sobre el
+  // canvas con `cloneNode` (el atajo de D-200.1 que costó una sesión entera de
+  // defectos en cadena — overlay transparente, CSS que no llegaba, franjas de
+  // 41 pt sin causa raíz). Tres páginas incumplen la regla hoy y van
+  // DECLARADAS en el auditor con su issue: lo nuevo bloquea desde el primer
+  // commit, y cuando una se migra su renglón queda rancio y el auditor exige
+  // borrarlo. Sus dos controles negativos son violaciones PLANTADAS.
+  ["spa-phaser",              "la interfaz del niño es Phaser, nunca HTML",     "D-201, D-200.2, CLAUDE.md § SPA"],
+
 
   // F8 #285 (criterio del paraguas #277). El panel del padre lee SOLO D1:
   // un binding de Analytics Engine en su ruta es la puerta de atrás al

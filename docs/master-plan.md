@@ -63,12 +63,21 @@ que sepa **qué** error cometiste y no solo que fallaste.
 
 ### 3.1 Stack
 
-**Astro + islas React sobre Cloudflare Workers**, el mismo stack que `apps/portal`
-y `apps/partners` en `ignia-object-storage` — convención heredada, no código
-compartido (D-023). HTML estático para lo público (tableros,
-marketing, SEO en cinco idiomas) e islas React solo para el motor de reto. La
-razón no es la convención: es que buena parte del mercado objetivo en LatAm juega
-en Android de gama baja, y el bundle importa.
+**Astro sobre Cloudflare Workers**, el mismo stack que `apps/portal` y
+`apps/partners` en `ignia-object-storage` — convención heredada, no código
+compartido (D-023). HTML estático para lo público (tableros, marketing, SEO en
+cinco idiomas). La razón no es la convención: es que buena parte del mercado
+objetivo en LatAm juega en Android de gama baja, y el bundle importa.
+
+**Y la aplicación del niño no es una isla de React: es Phaser** (D-201,
+corregido 2026-08-11 — esta sección decía "islas React solo para el motor de
+reto", y dejó de ser cierto en D-184/D-193). Toda pantalla que ve un niño es una
+**escena** dentro de una sola sesión de `Phaser.Game`: "¿quién juega?", el PIN,
+el mapa, el reto. Nunca una página HTML suelta y nunca HTML transplantado sobre
+el canvas — D-201 tiene la evidencia de lo que cuesta el atajo, y
+`audits/spa-phaser.mjs` lo bloquea. Las dos excepciones son la capa de
+accesibilidad DOM de D-185 (un camino paralelo real, no una capa encima) y este
+sitio público, que sigue siendo HTML a propósito.
 
 ### 3.2 Infraestructura
 

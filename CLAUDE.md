@@ -58,6 +58,50 @@ pregunta.
 
 ---
 
+## La interfaz del niño es Phaser, sin excepción (D-201)
+
+No es una preferencia de stack: es una línea de arquitectura, y va aquí porque
+se cruzó tres veces antes de escribirse.
+
+- **Toda pantalla que ve un niño es una ESCENA de Phaser**, dentro de una sola
+  sesión de `Phaser.Game` que vive mientras el niño está dentro. Nunca una
+  página HTML suelta, y **nunca HTML transplantado a un `<div>` sobre el
+  canvas**.
+- **Si encuentras una pantalla de niño en HTML, se migra.** No se documenta como
+  excepción, no se deja para después, no se envuelve en un puente. Está en
+  `app/kids/` y pinta interfaz propia → es trabajo pendiente, y
+  `audits/spa-phaser.mjs` lo bloquea si es nuevo.
+- **Todo componente visual y todo botón es una imagen generada** (Recraft), no
+  un `<button>` ni una forma dibujada a mano. La excepción son las 12 piezas de
+  interfaz abstracta sin referente real en el mundo —un aro vacío, una línea
+  punteada, una tarjeta en blanco— que se dibujan con
+  `Phaser.GameObjects.Graphics` porque Recraft las convierte sistemáticamente
+  en un objeto real (un espejo, un aro de luz, una vía de tren).
+- **La vara es un videojuego real** — Angry Birds, Plants vs Zombies, Royal
+  Kingdom, Magic Sort — desde el primer borrador: fondo ilustrado, Larry
+  animado, sonido, algo de vida en lo interactivo. Si una pantalla se puede
+  confundir con un formulario web, está mal terminada.
+
+**Por qué, con la evidencia:** D-200.1 declaró a propósito que el PIN se reusaba
+como HTML sobre el canvas en vez de reescribirse. Costó una sesión entera de
+defectos en cadena — overlay transparente que dejaba ver el canvas de abajo, el
+CSS que nunca llegaba (Astro emite el `<style>` grande como `<link>`), y franjas
+blancas de 41 pt que no se reprodujeron en Chrome y quedaron sin causa raíz. Un
+`<canvas>` llena el viewport por definición; el HTML encima no.
+
+**Las dos excepciones reales, con candado.** La capa de accesibilidad DOM de
+D-185 (`AccessibleReto.ts`) es un camino **paralelo y completo** para calificar
+—nunca la implementación principal encima del canvas—. Y el **sitio público**
+(marketing, corpus, SEO en siete locales) es HTML estático a propósito: D-201
+cubre la superficie del niño, no el sitio.
+
+**Lo que D-201 revocó, dicho de frente:** ya no se conserva la página HTML como
+respaldo sin JavaScript. Un niño con JS bloqueado no puede entrar. La ruta
+sobrevive como redirección 303 al SPA para no dar 404 a un marcador guardado,
+pero la pantalla no existe dos veces.
+
+---
+
 ## Antes de implementar algo no trivial
 
 Investiga primero, y después hazle al dueño **preguntas de opción múltiple con

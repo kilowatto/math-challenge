@@ -436,6 +436,12 @@ const ACTIVE = [
   // commit, y cuando una se migra su renglón queda rancio y el auditor exige
   // borrarlo. Sus dos controles negativos son violaciones PLANTADAS.
   ["spa-phaser",              "la interfaz del niño es Phaser, nunca HTML",     "D-201, D-200.2, CLAUDE.md § SPA"],
+  // El otro lado de D-201: `CATALOGO` y `public/juego/pin-dibujo-*.webp` son
+  // dos listas que tienen que decir lo mismo, y nada las ata. Un dibujo del
+  // catálogo sin archivo deja una casilla vacía solo a ALGUNOS perfiles —la
+  // rejilla se baraja por niño— y ese niño no puede entrar al suyo. Visto
+  // fallar escondiendo `pin-dibujo-rana.webp`.
+  ["pin-arte-completo",       "los 24 dibujos del PIN existen y ninguno sobra", "D-201, D-012, mc-20"],
 
 
   // F8 #285 (criterio del paraguas #277). El panel del padre lee SOLO D1:

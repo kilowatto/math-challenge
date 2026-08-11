@@ -2222,6 +2222,17 @@ const CASOS = [
     espera: "pinta interfaz propia",
   },
   {
+    // D-201. Un dibujo NUEVO en el catálogo del motor sin su archivo — el
+    // fallo real que este auditor caza. Se degrada `pin-imagenes.ts` en vez de
+    // borrar un `.webp` porque así se prueba la dirección que de verdad ocurre:
+    // alguien amplía el catálogo y se olvida de generar el arte.
+    auditor: "pin-arte-completo",
+    que: "un dibujo en CATALOGO sin su archivo",
+    archivo: "packages/motor/src/pin-imagenes.ts",
+    parche: (t) => t.replace('"campana",', '"campana", "unicornio",'),
+    espera: "pin-dibujo-unicornio.webp",
+  },
+  {
     // D-201, la otra mitad: el transplante de DOM sobre el canvas. Es el
     // patrón EXACTO que tenía `game/spa/puente-pin.ts` — se planta en vez de
     // degradarse porque el archivo real se borra en la fase 5, y una prueba

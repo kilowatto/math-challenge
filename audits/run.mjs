@@ -596,6 +596,14 @@ for (const prueba of [
   "packages/motor/src/identidad-adulto.prueba.mjs",
   "packages/motor/src/pin-imagenes.prueba.mjs",
   "packages/motor/src/pin-numerico.prueba.mjs",
+  // Los TRES endpoints de PIN, ejecutados de verdad (D-201). Las dos pruebas de
+  // arriba cubren la criptografía; ésta cubre lo que la rodea, que es donde
+  // vivían las protecciones de `kids/pin.astro` antes de que esa página se
+  // borrara: la autorización por dispositivo del hogar (D-012), el 425 de
+  // 0-RTT, el fallo sin castigo, y el candado que impide que un hermano
+  // recambie el PIN de otro. Las cuatro se vieron fallar degradándolas una a
+  // una antes de confiar en ellas.
+  "apps/web/src/lib/pin-endpoints.prueba.mjs",
   "apps/web/src/lib/webauthn.prueba.mjs",
   "apps/web/src/lib/passwords.prueba.mjs",
   "apps/web/src/lib/sesiones.prueba.mjs",

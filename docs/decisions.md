@@ -6593,3 +6593,141 @@ primera versión, y la ayuda para el adulto se oculta del todo bajo 700px de
 alto (es apoyo puro, nunca necesaria para entrar, `mc-20`). Verificado con
 medición real de `scrollHeight` contra `innerHeight` en un viewport de
 375×667 (iPhone SE), no a ojo: 654px de contenido en 667px de viewport.
+
+---
+
+## D-201 — La interfaz del niño es Phaser, sin excepción: lo que se encuentre en HTML se migra — revoca el respaldo sin JavaScript de D-012 · 2026-08-11
+
+**La regla, en una frase:** toda superficie que ve un niño es una **escena de
+Phaser** dentro de la sesión única de la SPA. No hay pantalla de niño en
+HTML/CSS, no hay HTML transplantado sobre el canvas, y **cuando se encuentre
+una pantalla en HTML se migra** — no se documenta como excepción ni se deja
+para después.
+
+El dueño lo pidió con esas palabras: *"nada puede ser ya en HTML, debe ser
+Phaser, y si nos encontramos una página en HTML o fuera del SPA se debe migrar
+a Phaser en el SPA"*. No es una preferencia estética nueva: es la conclusión de
+una cadena de decisiones que ya venía en esa dirección (D-184, D-185, D-193,
+D-200.1, D-200.2) y que hasta hoy conservaba una excepción que se acaba de
+cerrar.
+
+### Por qué, con la evidencia y no con el principio
+
+D-200.1 declaró a propósito que el PIN **no se reescribía** como Phaser: se
+reusaba tal cual, extrayendo el `<main>` de `kids/pin.astro` y transplantándolo
+a un `<div>` sobre el canvas (`game/spa/puente-pin.ts`). Lo que siguió fue una
+sesión entera de defectos en cadena, todos hijos del mismo atajo:
+
+- un overlay **transparente** que dejaba ver el canvas de "¿quién juega?" a
+  través del PIN;
+- el CSS de la pantalla que **nunca llegaba** — Astro emite ese `<style>`
+  grande como `<link rel=stylesheet>` por `inlineStylesheets: "auto"`, y el
+  puente solo clonaba `<style>`;
+- franjas blancas laterales de 41 pt que **no se reprodujeron en Chrome a
+  ningún ancho** y quedaron sin causa raíz identificada.
+
+Un `<canvas>` de Phaser llena el viewport por definición. La mitad de esos
+defectos no existen si la pantalla es una escena, y el otro medio se convierte
+en código que se puede leer en un solo archivo.
+
+### Lo que esta decisión REVOCA
+
+D-012 exige que las páginas del niño funcionen cargadas directo — enlace,
+refresco, **sin JavaScript**. Hasta hoy eso se leía como "la página HTML se
+conserva como respaldo y la SPA es la experiencia real". **El dueño eligió
+explícitamente lo contrario:** las páginas se borran, solo existe Phaser.
+
+**El residuo, dicho de frente y no escondido:** un niño con JavaScript
+bloqueado, o un dispositivo donde Phaser falle al arrancar, **no puede entrar a
+su perfil**. No hay camino de respaldo. Es una elección del dueño ante la
+alternativa (mantener dos implementaciones completas del mismo PIN, que
+divergen), no un descuido — y queda aquí escrita para que quien la revierta
+sepa que fue deliberada.
+
+Lo que **no** se revoca: la ruta sigue existiendo como **redirección 303** al
+SPA. Borrar la ruta entera daría 404 a un marcador guardado o a un refresco a
+media sesión, y el proyecto ya se quemó con esa clase de fallo — una versión
+previa de `kids/pin.astro` devolvía redirecciones perfectas **sobre un estado
+404** que ningún navegador sigue, y la tablet se quedaba en "no encontrado".
+Una redirección no es una pantalla HTML.
+
+### La única excepción, con candado
+
+**La capa de accesibilidad DOM de D-185** (`AccessibleReto.ts`) sigue siendo
+DOM a propósito, y no contradice esto: es un camino **paralelo y completo** para
+calificar, nunca la implementación principal metida encima del canvas. Esa
+distinción —paralelo vs. encima— es la regla entera, así que el auditor nombra
+el archivo en vez de aflojar el patrón.
+
+El sitio público (marketing, corpus de investigación, SEO en siete locales)
+**no** entra en esta decisión: es HTML estático a propósito y seguirá siéndolo.
+D-201 cubre la superficie del niño.
+
+### Qué se construye, y qué se descubrió al construirlo
+
+Primera aplicación: las tres pantallas de PIN — **entrar**, **cambiar** y
+**elegir** (esta última no existía en ningún archivo del repo). Con una
+consecuencia técnica que no era obvia: al borrar las páginas Astro se va con
+ellas el único lugar donde se puede derivar la rejilla de 9 dibujos, porque
+`rejillaDe()` exige `PIN_PAD_SECRET` y ese secreto nunca sale del servidor. La
+migración obliga a tres endpoints nuevos (`/api/pin-datos`, `/api/pin-entrar`,
+`/api/pin-elegir`), que heredan literalmente las protecciones que hoy viven en
+la página: `no-store, private` + `vary: cookie`, **425 ante `early-data: 1`**
+(0-RTT es replicable por diseño: reenviar los bytes de un acierto abriría
+sesión otra vez), y **ningún bloqueo tras fallar** (líneas rojas #4 y #8).
+
+`/api/pin-elegir` lleva un candado que la pantalla vieja no podía tener:
+**escribe solo si `pin_hash IS NULL`**. Fijar sí, sobrescribir nunca — así un
+hermano no puede recambiar el PIN de otro.
+
+**Y cierra un hueco de seguridad que estaba abierto.** `kids/pin.astro:361`
+abre sesión de niño a cualquier perfil sin `pin_hash`, y como no existía ninguna
+pantalla donde elegir un PIN, **todo perfil nuevo caía en esa rama**: un hermano
+abría el perfil de otro tocando su cara. El propio archivo lo documentaba como
+residuo y decía que la rama "deja de ejecutarse sola" en cuanto existiera la
+pantalla de elección. Es esa pantalla.
+
+**El niño elige y repite.** Tres dibujos, y luego los mismos tres otra vez para
+confirmar. Si el segundo trío no coincide, vuelve a elegir **sin regañar**
+(línea roja #7). La repetición existe porque tres toques accidentales fijarían
+un PIN que no recuerda, y quedaría fuera de su propio perfil.
+
+**Los 24 dibujos pasan a ser arte real.** Hoy son EMOJI del sistema
+(`pin.astro:503`), que en Phaser serían un `Text` — exactamente lo que la regla
+visual proscribe. Se generan con Recraft. Cambiar el arte **no invalida ningún
+PIN**: se hashea la posición (`"0,4,7"`), nunca el dibujo.
+
+**No entran al precargador global.** Grupo propio en `assets-manifest.ts`; la
+escena carga **solo los 9 que le tocan a ese niño**. El precedente exacto ya
+está comentado en ese archivo: `AUDIOS_QUIEN_JUEGA` excluye el audio del reto
+porque `musica-energia` pesa ~700 KB, y el dispositivo de referencia es Android
+de gama baja sobre 4G lento (`mc-47`).
+
+### Qué lo hace cumplir
+
+**`audits/spa-phaser.mjs`**, cableado en `audits/run.mjs`. Vigila las **dos**
+formas de romper la regla, porque vigilar una sola deja la otra abierta: (1) una
+página `.astro` bajo `app/kids/**` que pinte interfaz propia en vez de montar su
+isla, y (2) cualquier archivo de `game/` que transplante DOM ajeno al canvas
+(`extraerFragmento`, `cloneNode(true)`, `createElement` de un control de
+formulario).
+
+**Nace ROJO, y eso es el diseño.** Tres páginas incumplen la regla el día que
+se escribe, y van declaradas con su issue vía `separarDeuda`: lo nuevo bloquea
+desde el primer commit, y cuando una se migra su renglón queda rancio y el
+propio auditor exige borrarlo.
+
+**El auditor encontró dos páginas que nadie había contado.** El trabajo se
+abrió por el PIN, pero `app/kids/` tiene **tres** pantallas en HTML:
+`pin.astro`, `jugar.astro` (sendero de racha y franja de liga) y `retos.astro`
+(el marcador de posición de D-190). Las dos últimas **quedan sin plan de
+migración** — declaradas, visibles, y sin fecha. Decirlo es la mitad del valor
+de haber escrito el auditor.
+
+Visto fallar antes de darlo por bueno, con sus dos controles negativos
+plantados en `audits/pruebas-auditores.mjs`: una pantalla de niño nueva en HTML
+(exit 1) y un puente que transplanta DOM (exit 1), con el control en verde
+después de quitar cada uno (exit 0).
+
+**Investigación relacionada:** D-200.2, D-200.1, D-193, D-185, D-184, D-012,
+D-197 §2, `mc-20`, `mc-47`, `mc-38`.

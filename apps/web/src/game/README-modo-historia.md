@@ -4,6 +4,20 @@ Mapa de niveles en Phaser 4 para **PRIMARIA y SECUNDARIA**. KINDER no lo usa —
 sigue con la Sabana de siempre (`components/mapa/EscenaSabana.astro`,
 `pages/[locale]/app/kids/mapa.astro`).
 
+> **D-201 (2026-08-11) — esto ya no es solo el mapa.** Toda pantalla que ve un
+> niño es una escena de Phaser dentro de la MISMA sesión de `Phaser.Game`:
+> "¿quién juega?", el PIN, el mapa y el reto. **Ninguna pantalla de niño se
+> construye en HTML, y nunca se transplanta HTML a un `<div>` sobre el canvas** —
+> D-200.1 lo intentó con el PIN y costó una sesión entera de defectos en cadena
+> (overlay transparente, CSS que no llegaba, franjas de 41 pt sin causa raíz).
+> Si encuentras una pantalla de niño en HTML, **se migra**;
+> `audits/spa-phaser.mjs` bloquea las nuevas y declara como deuda las que ya
+> existen. La única excepción es la capa de accesibilidad DOM de D-185
+> (`AccessibleReto.ts`), que es un camino paralelo real y no una capa encima.
+> Al agregar una escena: `game.scene.add("Clave", Clase, false)` —**jamás** en
+> el array `scene:` del config, porque Phaser auto-arranca esas sin datos y
+> `init()` recibe `undefined`.
+
 ## Cómo agregar un mundo/capítulo nuevo, sin tocar ninguna escena
 
 Todo vive en **un solo archivo**: [`data/story.ts`](data/story.ts). Agrega una

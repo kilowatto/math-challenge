@@ -29,7 +29,15 @@ import Phaser from "phaser";
 const ANCHO = 64;
 
 export class FlechaAtras extends Phaser.GameObjects.Container {
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  /**
+   * @param alTocar qué hacer al tocarla. Por omisión `history.back()`, que es
+   *   lo correcto cuando la pantalla ES un documento. **Una escena lanzada
+   *   sobre otra no lo es**: `PinScene` vive dentro de la misma sesión de
+   *   Phaser sin haber empujado ninguna entrada al historial, así que ahí
+   *   `history.back()` sacaría al niño del sitio entero en vez de devolverlo a
+   *   la rejilla de caras. Por eso el destino se puede pasar desde fuera.
+   */
+  constructor(scene: Phaser.Scene, x: number, y: number, alTocar?: () => void) {
     super(scene, x, y);
     scene.add.existing(this);
 
@@ -40,7 +48,7 @@ export class FlechaAtras extends Phaser.GameObjects.Container {
 
     const zona = scene.add.zone(0, 0, ANCHO, alto);
     zona.setInteractive({ useHandCursor: true });
-    zona.on(Phaser.Input.Events.POINTER_DOWN, () => window.history.back());
+    zona.on(Phaser.Input.Events.POINTER_DOWN, alTocar ?? (() => window.history.back()));
     this.add(zona);
 
     this.setSize(ANCHO, alto);

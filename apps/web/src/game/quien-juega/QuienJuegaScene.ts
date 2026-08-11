@@ -49,6 +49,7 @@ import { FlechaAtras } from "../objects/FlechaAtras";
 import { LarryFotorrealista, LARRY_FOTO_CLAVES } from "../objects/LarryFotorrealista";
 import { TODOS_LOS_ANIMALES, claveDeAnimal, type AnimalId } from "../../lib/avatares-animal";
 import { CLAVES_ATREZO_PIN, clavePinDibujo, urlPinDibujo } from "../pin-dibujos";
+import type { ArranquePin } from "./PinScene";
 import { CATALOGO } from "../../../../../packages/motor/src/pin-imagenes";
 
 /** Los mismos seis tokens de `docs/guia-de-estilo.md`, copiados a hex — Phaser no lee `var(--…)`. */
@@ -668,7 +669,26 @@ export class QuienJuegaScene extends Phaser.Scene {
       yoyo: true,
       ease: "Sine.easeInOut",
       onComplete: () => {
-        window.location.href = tarjeta.href;
+        // El adulto sigue saliendo a su propia página: su área no es una
+        // superficie de niño y no vive en esta sesión de Phaser (D-201 cubre
+        // la del niño, no la del adulto).
+        if (tarjeta.esAdulto) {
+          window.location.href = tarjeta.href;
+          return;
+        }
+        // El niño NO navega: el PIN es una escena de esta misma sesión
+        // (D-201). `sleep` y no `stop` — al volver de un PIN cancelado, la
+        // rejilla despierta tal cual estaba, sin recargar ni volver a pedir
+        // los perfiles al servidor. Y `sleep` y no `pause`: una escena pausada
+        // deja de actualizarse pero SIGUE renderizando, así que estas caras se
+        // verían por debajo del PIN.
+        this.scene.sleep();
+        this.scene.launch("PinScene", {
+          childId: tarjeta.id,
+          alEntrar: (destino: string) => {
+            window.location.href = destino;
+          },
+        } satisfies ArranquePin);
       },
     });
   }

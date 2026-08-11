@@ -12,6 +12,7 @@
  */
 import Phaser from "phaser";
 import { QuienJuegaScene, type DatosQuienJuega } from "./QuienJuegaScene";
+import { PinScene } from "./PinScene";
 
 /**
  * `scene: []` a propósito: si `QuienJuegaScene` fuera parte del arreglo de
@@ -34,5 +35,9 @@ export function arrancarQuienJuega(contenedorId: string, datos: DatosQuienJuega)
     scene: [],
   });
   game.scene.add("QuienJuegaScene", QuienJuegaScene, true, datos);
+  // Registrada pero NO arrancada (`false`): la lanza `QuienJuegaScene` al
+  // tocar una cara, con el `childId` puesto. En el arreglo `scene:` del config
+  // Phaser la auto-arrancaría sin datos y `init()` recibiría `undefined`.
+  game.scene.add("PinScene", PinScene, false);
   return game;
 }

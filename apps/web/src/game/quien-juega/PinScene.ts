@@ -183,24 +183,11 @@ export class PinScene extends Phaser.Scene {
     const ayuda =
       this.modo === "elegir" ? r.ayudaElegir : this.modo === "confirmar" ? r.ayudaConfirmar : r.ayuda;
 
-    this.pintarLetrero(titulo);
-    this.pintarRejilla();
-    this.pintarPasos();
-    this.pintarBorrar();
-
-    // La ayuda es para el ADULTO que acompaña — abajo y discreta, porque
-    // `mc-20` dice que el texto es apoyo y nunca requisito para entrar.
-    const apoyo = this.add
-      .text(width / 2, height - 108, ayuda, {
-        fontFamily: "Raleway, system-ui, sans-serif",
-        fontSize: "13px",
-        color: "#3E2712",
-        align: "center",
-        wordWrap: { width: Math.min(420, width - 48) },
-      })
-      .setOrigin(0.5, 0)
-      .setShadow(0, 0, "#FFFFFF", 6);
-    this.capa.add(apoyo);
+    const yTrasLetrero = this.pintarLetrero(titulo);
+    const yTrasRejilla = this.pintarRejilla(yTrasLetrero);
+    const yTrasPasos = this.pintarPasos(yTrasRejilla + 26);
+    const yTrasAyuda = this.pintarAyuda(ayuda, yTrasPasos + 14);
+    this.pintarBorrar(Math.max(yTrasAyuda + 20, height - 52));
 
     // Chrome compartido, en las mismas posiciones que el resto de escenas.
     this.capa.add(new FlechaAtras(this, 44, 44, () => this.salir()).setDepth(10));
@@ -215,41 +202,108 @@ export class PinScene extends Phaser.Scene {
    * El tratamiento «tallado» —marrón oscuro con halo claro— es el mismo que ya
    * usa `QuienJuegaScene` sobre madera.
    */
-  private pintarLetrero(titulo: string): void {
+  private pintarLetrero(titulo: string): number {
     const { width } = this.scale;
     const cx = width / 2;
     // 90 px reservados a la izquierda para que el letrero no se meta debajo
     // de la flecha de regreso.
     const ancho = Math.min(360, width - 90 - 20);
 
+    let tablaCentroY = 104;
+    let tablaAncho = ancho * 0.7;
     if (this.textures.exists("pin-numerico-letrero")) {
       const letrero = this.add.image(cx, 96, "pin-numerico-letrero");
-      letrero.setDisplaySize(ancho, ancho * (letrero.height / letrero.width));
+      const alto = ancho * (letrero.height / letrero.width);
+      letrero.setDisplaySize(ancho, alto);
       this.capa.add(letrero);
+      // La imagen es 900×420 y la TABLA —lo único sobre lo que se puede
+      // escribir— ocupa de ~46% a ~88% de su altura y de ~10% a ~90% de su
+      // ancho. Medido a mano sobre la imagen, igual que en la versión HTML.
+      //
+      // La primera versión ponía el texto en coordenadas fijas (y=92 y y=116)
+      // y en el simulador el alias salía flotando SOBRE LAS CUERDAS, encima de
+      // la madera. Las posiciones se derivan del letrero real, no se adivinan.
+      const arriba = 96 - alto / 2;
+      tablaCentroY = arriba + alto * 0.67;
+      tablaAncho = ancho * 0.8;
     }
 
+    // El alias puede ser larguísimo y NUNCA tiene un espacio
+    // (`FrailecilloRadiante1427`), así que `wordWrap` no lo parte: se encoge
+    // la fuente hasta que quepa. Mismo problema y misma solución que
+    // `QuienJuegaScene.ajustarAlAncho()`.
     const alias = this.add
-      .text(cx, 92, this.datos!.alias, {
+      .text(cx, tablaCentroY - 16, this.datos!.alias, {
         fontFamily: "Raleway, system-ui, sans-serif",
-        fontSize: "15px",
+        fontSize: "14px",
         fontStyle: "600",
         color: "#3E2712",
       })
       .setOrigin(0.5)
       .setShadow(0, 0, "#F3E4C8", 5);
+    this.encogerHasta(alias, tablaAncho, 9);
+
     const t = this.add
-      .text(cx, 116, titulo, {
+      .text(cx, tablaCentroY + 8, titulo, {
         fontFamily: "Raleway, system-ui, sans-serif",
-        fontSize: "19px",
+        fontSize: "18px",
         fontStyle: "600",
         color: "#3E2712",
         align: "center",
-        wordWrap: { width: ancho - 40 },
       })
       .setOrigin(0.5)
       .setShadow(0, 0, "#F3E4C8", 5);
+    this.encogerHasta(t, tablaAncho, 12);
+
     this.capa.add(alias);
     this.capa.add(t);
+    // Dónde termina el letrero, para que lo de abajo no tenga que adivinarlo.
+    return this.textures.exists("pin-numerico-letrero")
+      ? 96 + (ancho * (this.textures.get("pin-numerico-letrero").getSourceImage().height / this.textures.get("pin-numerico-letrero").getSourceImage().width)) / 2
+      : 150;
+  }
+
+  /** Encoge la fuente hasta que el texto quepa. Nunca deja que se desborde. */
+  private encogerHasta(texto: Phaser.GameObjects.Text, anchoMax: number, minimo: number): void {
+    let tam = Number(String(texto.style.fontSize).replace("px", ""));
+    while (texto.width > anchoMax && tam > minimo) {
+      tam -= 1;
+      texto.setFontSize(tam);
+    }
+  }
+
+  /**
+   * La ayuda para el ADULTO que acompaña.
+   *
+   * Va sobre un fondo de pergamino y no suelta sobre la ilustración: en el
+   * simulador, en gris sobre la hierba dorada del portón, era ilegible — y
+   * además caía ENCIMA del botón de empezar de nuevo, porque estaba anclada a
+   * una coordenada fija que no contaba con que el texto ocupa dos líneas.
+   *
+   * En pantallas muy bajas desaparece del todo: es la única pieza que es apoyo
+   * puro y nunca necesaria para entrar (`mc-20`), así que es la primera que
+   * cede espacio — la misma decisión que ya tomó la versión HTML.
+   */
+  private pintarAyuda(ayuda: string, y: number): number {
+    const { width, height } = this.scale;
+    // 120px = las dos líneas de la ayuda más el botón de empezar de nuevo. Sin
+    // ese hueco no se pinta: `mc-20` dice que este texto es apoyo y nunca
+    // requisito para entrar, así que es lo primero que cede espacio.
+    if (height - y < 120) return y;
+    const apoyo = this.add
+      .text(width / 2, y, ayuda, {
+        fontFamily: "Raleway, system-ui, sans-serif",
+        fontSize: "12px",
+        color: "#3E2712",
+        align: "center",
+        backgroundColor: "#F3E4C8",
+        padding: { x: 10, y: 6 },
+        wordWrap: { width: Math.min(360, width - 60) },
+      })
+      .setOrigin(0.5, 0)
+      .setAlpha(0.92);
+    this.capa.add(apoyo);
+    return y + apoyo.height;
   }
 
   private get columnas(): number {
@@ -264,13 +318,18 @@ export class PinScene extends Phaser.Scene {
     return this.datos!.tipo === "numerico" ? [...TECLADO] : this.datos!.dibujos.map((_, i) => i);
   }
 
-  private pintarRejilla(): void {
+  private pintarRejilla(yDesde: number): number {
     const { width, height } = this.scale;
     const vals = this.valores;
     const filas = Math.ceil(vals.length / this.columnas);
+    const alto = filas * CASILLA + (filas - 1) * HUECO;
     const anchoTotal = this.columnas * CASILLA + (this.columnas - 1) * HUECO;
     const x0 = (width - anchoTotal) / 2 + CASILLA / 2;
-    const y0 = height / 2 - (filas * CASILLA + (filas - 1) * HUECO) / 2 + CASILLA / 2 + 20;
+    // Debajo del letrero, con un respiro — pero centrada en el hueco que queda
+    // si sobra sitio, para que en una tableta no se apelotone arriba. Las 4
+    // filas del teclado numérico ya llenan casi todo en un teléfono.
+    const disponible = height - yDesde - 190;
+    const y0 = yDesde + Math.max(16, (disponible - alto) / 2) + CASILLA / 2;
 
     vals.forEach((valor, i) => {
       const col = i % this.columnas;
@@ -282,6 +341,7 @@ export class PinScene extends Phaser.Scene {
       if (i === vals.length - 1 && vals.length % this.columnas === 1) x = width / 2;
       this.pintarCasilla(valor, i, x, y);
     });
+    return y0 - CASILLA / 2 + alto;
   }
 
   private pintarCasilla(valor: number, indice: number, x: number, y: number): void {
@@ -359,15 +419,15 @@ export class PinScene extends Phaser.Scene {
    * misma razón que el anillo de arriba: un indicador que solo cambia de color
    * no existe para quien no distingue ese color.
    */
-  private pintarPasos(): void {
-    const { width, height } = this.scale;
+  private pintarPasos(y: number): number {
+    const { width } = this.scale;
     const total = this.largoPin;
     const g = this.add.graphics();
     const paso = 30;
     const x0 = width / 2 - ((total - 1) * paso) / 2;
-    const y = height - 148;
     for (let i = 0; i < total; i++) {
       const x = x0 + i * paso;
+      g.fillStyle(0xf3e4c8, 0.9).fillCircle(x, y, 12);
       if (i < this.tocados.length) {
         g.fillStyle(0xf36b1c, 1).fillCircle(x, y, 9);
       } else {
@@ -375,6 +435,7 @@ export class PinScene extends Phaser.Scene {
       }
     }
     this.capa.add(g);
+    return y + 12;
   }
 
   /**
@@ -382,9 +443,9 @@ export class PinScene extends Phaser.Scene {
    * aparece y desaparece mueve lo que hay debajo, y un niño que ya apuntó el
    * dedo falla el toque.
    */
-  private pintarBorrar(): void {
-    const { width, height } = this.scale;
-    const caja = this.add.container(width / 2, height - 62);
+  private pintarBorrar(y: number): void {
+    const { width } = this.scale;
+    const caja = this.add.container(width / 2, y);
     if (this.textures.exists("pin-numerico-boton")) {
       const t = this.add.image(0, 0, "pin-numerico-boton");
       t.setDisplaySize(180, 46);
@@ -545,7 +606,7 @@ export class PinScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.mensaje?.destroy();
     this.mensaje = this.add
-      .text(width / 2, height - 190, texto, {
+      .text(width / 2, height - 240, texto, {
         fontFamily: "Raleway, system-ui, sans-serif",
         fontSize: "15px",
         color: "#3E2712",

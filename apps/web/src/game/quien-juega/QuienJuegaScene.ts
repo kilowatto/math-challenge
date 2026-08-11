@@ -48,6 +48,8 @@ import { BotonSonido } from "../objects/BotonSonido";
 import { FlechaAtras } from "../objects/FlechaAtras";
 import { LarryFotorrealista, LARRY_FOTO_CLAVES } from "../objects/LarryFotorrealista";
 import { TODOS_LOS_ANIMALES, claveDeAnimal, type AnimalId } from "../../lib/avatares-animal";
+import { CLAVES_ATREZO_PIN, clavePinDibujo, urlPinDibujo } from "../pin-dibujos";
+import { CATALOGO } from "../../../../../packages/motor/src/pin-imagenes";
 
 /** Los mismos seis tokens de `docs/guia-de-estilo.md`, copiados a hex — Phaser no lee `var(--…)`. */
 const PALETA: ReadonlyArray<{ relleno: number; tinta: number }> = [
@@ -145,6 +147,28 @@ export class QuienJuegaScene extends Phaser.Scene {
     // documenta para las piezas de LarryAvatar).
     for (const id of TODOS_LOS_ANIMALES) {
       this.load.image(claveDeAnimal(id), `/avatares/${claveDeAnimal(id)}.webp`);
+    }
+    // El atrezo de madera del PIN (D-197.1) y los 24 dibujos (D-201) — se
+    // cargan AQUÍ, con todo lo demás, no dentro de `PinScene`.
+    //
+    // La primera versión los cargaba en caliente al abrir el PIN, razonando
+    // que cada niño solo ve nueve de los veinticuatro. Está mal por tres
+    // motivos, y el dueño lo señaló antes de que llegara a producción:
+    //
+    //  1. **La rejilla se baraja POR NIÑO.** En una tablet compartida —el caso
+    //     central de D-012— dos o tres hermanos ven entre todos casi los 24,
+    //     así que el ahorro se evapora justo donde se suponía que contaba.
+    //  2. **El PIN es la SEGUNDA pantalla**, que es exactamente donde D-200 y
+    //     D-200.1 pusieron el precargador para que no hubiera huecos. Cargar
+    //     en caliente reintroduce el hueco en la transición más visible del
+    //     recorrido, y obliga a un spinner y a un estado de error propios.
+    //  3. **Pesan 552 KB**, la mitad que los 38 cuadros de Larry que ya se
+    //     cargan aquí sin discusión (972 KB).
+    for (const clave of CLAVES_ATREZO_PIN) {
+      this.load.image(clave, `/juego/${clave}.webp`);
+    }
+    for (const id of CATALOGO) {
+      this.load.image(clavePinDibujo(id), urlPinDibujo(id));
     }
   }
 

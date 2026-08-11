@@ -29,6 +29,7 @@ import { accesoAlPin, json, localeSeguro, tipoDePin, type Env } from "../../lib/
 import { rejillaDe } from "../../../../../packages/motor/src/pin-imagenes.ts";
 import { animalElegido, claveDeAnimal } from "../../lib/avatares-animal.ts";
 import { rutaMapaKids } from "../../lib/mapa-kids.ts";
+import { rotulosPin } from "../../lib/pin-rotulos.ts";
 
 export const prerender = false;
 
@@ -62,6 +63,10 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
     locale,
     avatarUrl: animal ? `/avatares/${claveDeAnimal(animal)}.webp` : null,
     yaTienePin: perfil.pin_hash !== null,
+    // Resueltos en el idioma del PERFIL, no en el de la página: en una tablet
+    // compartida el hermano mayor puede tener la app en inglés y el pequeño en
+    // español. Es lo que hacía `kids/pin.astro` con `t(perfil.locale)`.
+    rotulos: rotulosPin(locale, tipo === "numerico"),
     // A dónde va el niño cuando entra: su casa dentro de la aplicación. El
     // mapa decide él solo, por banda real, si eso es la Sabana de KINDER o el
     // menú de PRIMARIA/SECUNDARIA (D-184/D-190).

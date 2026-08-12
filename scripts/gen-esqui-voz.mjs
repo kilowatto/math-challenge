@@ -41,14 +41,19 @@ const llave = () => process.env.ELEVENLABS_API_KEY;
 // pida una voz nativa por idioma. Se agregan aquí cuando `GUION_ESQUI`
 // tenga esos locales: la forma de mapa permite cambiar una sola voz por
 // locale después sin tocar código en ningún otro lado.
+// D-203 (2026-08-12) autorizó explícitamente usar la MISMA voz clonada de
+// Kilowatto en los 7 locales, vía `eleven_multilingual_v2` — por eso los 7
+// apuntan al mismo VOICE_ID hoy. La forma de mapa (no un string suelto)
+// existe para que el día que se decida una voz distinta por locale, sea
+// un cambio de dato, no de código.
 const VOICE_ID_POR_LOCALE = {
   "es-MX": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
-  // "en": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
-  // "fr-FR": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
-  // "pt-BR": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
-  // "pt-PT": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
-  // "de-DE": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
-  // "es-ES": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
+  "en": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
+  "fr-FR": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
+  "pt-BR": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
+  "pt-PT": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
+  "de-DE": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
+  "es-ES": process.env.KILOWATTO_VOICE_ID ?? "PB3qgWFhiD1nqaQ2qiEZ",
 };
 
 /** Divide una frase con `{n}` en sus dos mitades; null si no lleva marcador.

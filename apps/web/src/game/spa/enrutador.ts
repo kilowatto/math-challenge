@@ -67,10 +67,18 @@ export function extraerIsla<T>(documento: Document, id: string): T | null {
   }
 }
 
-/** Un fragmento de DOM de la página fetcheada — para pantallas sin isla JSON, como el PIN. */
-export function extraerFragmento(documento: Document, selector: string): Element | null {
-  return documento.querySelector(selector);
-}
+/**
+ * `extraerFragmento()` VIVÍA AQUÍ y se borró con D-201.
+ *
+ * Extraía un trozo de DOM del HTML de otra página para meterlo sobre el
+ * canvas. Su único consumidor era `puente-pin.ts`, que transplantaba el
+ * `<main>` de `kids/pin.astro` — el atajo que costó una sesión entera de
+ * defectos en cadena y por el que se escribió D-201. Con el PIN convertido en
+ * escena (`PinScene`), no queda nada que transplantar.
+ *
+ * `extraerIsla()` se queda: leer un `<script type="application/json">` es
+ * datos, no marcado. `audits/spa-phaser.mjs` distingue las dos cosas.
+ */
 
 /**
  * Actualiza la barra de direcciones sin navegar — para que refrescar,

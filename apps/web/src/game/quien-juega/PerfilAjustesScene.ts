@@ -29,12 +29,12 @@
  * dentro del lienzo.
  */
 import Phaser from "phaser";
+import type { ArranquePin } from "./PinScene";
 import { BANDERA_POR_LOCALE, type TarjetaPerfil, type RotulosQuienJuega } from "./QuienJuegaScene";
 import { rosterPara, claveDeAnimal, type AnimalId } from "../../lib/avatares-animal";
 import type { TemaVisual } from "../../lib/quien-juega-datos";
 import { LOCALES, type Locale } from "../../i18n/index";
 import { ruta } from "../../i18n/rutas";
-import { rutaPerfilPin } from "../../lib/rutas-app";
 import type { SfxManager } from "../managers/SfxManager";
 
 type RotulosAjustes = RotulosQuienJuega["ajustes"];
@@ -577,8 +577,18 @@ export class PerfilAjustesScene extends Phaser.Scene {
 
   private irACambiarPin(): void {
     this.sfx();
-    window.location.href = rutaPerfilPin(this.locale, this.tarjeta.id);
+    // D-201: el PIN es una ESCENA. Antes esto navegaba a `kids/perfil-pin`,
+    // una página HTML aparte — el único sitio del SPA que todavía salía a un
+    // documento. `PinScene` en modo «cambiar» hace lo mismo dentro de la
+    // sesión, y la rejilla de 9 dibujos la sirve `/api/pin-datos` en vez del
+    // frontmatter de aquella página.
+    this.scene.stop();
+    this.scene.launch("PinScene", {
+      childId: this.tarjeta.id,
+      modo: "cambiar",
+    } satisfies ArranquePin);
   }
+
 
   private confirmarBorrar(): void {
     this.ejecutar(

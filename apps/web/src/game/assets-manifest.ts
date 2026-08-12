@@ -36,6 +36,9 @@ export interface Activo {
  * D-199, ronda 5: el letrero de "¿Quién juega?" tallado por locale — ver
  * `scripts/gen-letrero-quien-juega.mjs`. es-MX/es-ES comparten un archivo.
  */
+import { CATALOGO } from "../../../../packages/motor/src/pin-imagenes";
+import { CLAVES_ATREZO_PIN, clavePinDibujo, urlPinDibujo } from "./pin-dibujos";
+
 const CLAVES_LETRERO_LOCALE = [
   "letrero-quien-juega-en",
   "letrero-quien-juega-es",
@@ -62,6 +65,23 @@ export const IMAGENES_QUIEN_JUEGA: Activo[] = [
     const clave = claveDeAnimal(id);
     return { clave, url: `/avatares/${clave}.webp` };
   }),
+
+  // ─── PIN screen (D-201) ─────────────────────────────────────────────────
+  //
+  // Derived from CATALOGO instead of listed by hand: the engine decides which
+  // 24 drawings exist, and a 25th added there would otherwise ship without art
+  // and leave an empty cell in some child's grid (the shuffle is per-child, so
+  // it would break for SOME profiles only). audits/pin-arte-completo.mjs ties
+  // the two lists.
+  ...CATALOGO.map((id) => ({ clave: clavePinDibujo(id), url: urlPinDibujo(id) })),
+  { clave: "pin-imagenes-fondo", url: "/juego/pin-imagenes-fondo.webp" },
+  // Background for the KINDER image-grid PIN — its own scene, distinct from
+  // the numeric keypad's gate (pin-numerico-fondo). Generated for the HTML
+  // version and unused since; PinScene now picks it per branch.
+  // Wooden props for both PIN branches — sign, tile, hanging frame and the ten
+  // carved digits in their normal and pressed states (D-197.1). Reused as-is by
+  // PinScene; nothing here was regenerated for Phaser.
+  ...CLAVES_ATREZO_PIN.map((clave) => ({ clave, url: `/juego/${clave}.webp` })),
 ];
 
 /** Lo que `PreloadScene.ts` necesita — Modo Historia (mapa Y reto, D-200: `GameplayScene` no carga nada propio, reusa este mismo cargador). */
@@ -94,6 +114,78 @@ export const IMAGENES_MODO_HISTORIA: Activo[] = [
   { clave: "larry_menu_aplaude", url: "/mapa/larry_menu_aplaude.webp" },
   { clave: "larry_idle_1", url: "/mapa/larry_idle_1.webp" },
   { clave: "larry_idle_2", url: "/mapa/larry_idle_2.webp" },
+
+  // ─── Costa bioma, complete (D-201 / multi-biome #34) ────────────────────
+  { clave: "fondo-costa-1", url: "/juego/fondo-costa-1.webp" },
+  // Background scene for the Costa bioma chapter — grassy hills next to the
+  // ocean, no path/characters baked in (MapScene draws the path separately).
+  { clave: "palmera", url: "/juego/palmera.webp" },
+  // Vegetation prop for Costa — a single palm tree, cutout with alpha,
+  // decoration layer (VegetationLayerConfig).
+  { clave: "roca-costa", url: "/juego/roca-costa.webp" },
+  // Vegetation prop for Costa — a smooth beach rock, decoration layer.
+  { clave: "concha", url: "/juego/concha.webp" },
+  // Vegetation prop for Costa — a seashell, decoration layer.
+
+  // ─── Stepping-stone material, per bioma ─────────────────────────────────
+  { clave: "roca-arenisca-tronco", url: "/juego/roca-arenisca-tronco.webp" },
+  // Stepping-stone material for the Desierto path — replaces wood
+  // tronco-a/tronco-b, which looks out of place on sand. Clean top surface,
+  // Phaser paints the sequence number on top, never baked in.
+  { clave: "bloque-nieve-tronco", url: "/juego/bloque-nieve-tronco.webp" },
+  // Stepping-stone material for the Nieve path — frost-covered stone, same
+  // convention as roca-arenisca-tronco.
+
+  // ─── World-object mechanics, per bioma ──────────────────────────────────
+  //
+  // Seven pieces × four biomas. Desierto's burbuja/burbuja-pop are already
+  // listed above (the tap-to-pop pilot); everything else lands here.
+  //
+  // Each row is the SAME interaction wearing a different bioma skin, so a
+  // skill assigned a mechanic works in any chapter without new code — that is
+  // the whole point of keeping content free of a bioma dimension
+  // (packages/motor/src/mapa.ts, #231).
+  { clave: "burbuja-sabana", url: "/juego/burbuja-sabana.webp" },
+  { clave: "burbuja-nieve", url: "/juego/burbuja-nieve.webp" },
+  { clave: "burbuja-costa", url: "/juego/burbuja-costa.webp" },
+  // Tap-to-pop mechanic, resting state — reusable for any kinder skill
+  // assigned this mechanic (K01, K02, K03, K11, K12). Bioma skin of the same
+  // interaction as burbuja-desierto.
+  { clave: "burbuja-pop-sabana", url: "/juego/burbuja-pop-sabana.webp" },
+  { clave: "burbuja-pop-nieve", url: "/juego/burbuja-pop-nieve.webp" },
+  { clave: "burbuja-pop-costa", url: "/juego/burbuja-pop-costa.webp" },
+  // Tap-to-pop mechanic, popped state — plays right after the matching
+  // burbuja-* above is tapped correctly.
+  { clave: "ficha-conteo-sabana", url: "/juego/ficha-conteo-sabana.webp" },
+  { clave: "ficha-conteo-desierto", url: "/juego/ficha-conteo-desierto.webp" },
+  { clave: "ficha-conteo-nieve", url: "/juego/ficha-conteo-nieve.webp" },
+  { clave: "ficha-conteo-costa", url: "/juego/ficha-conteo-costa.webp" },
+  // Tap-in-sequence mechanic (K03, K06) — a small token that appears with each
+  // tap, one per counted item.
+  { clave: "objeto-saltarin-sabana", url: "/juego/objeto-saltarin-sabana.webp" },
+  { clave: "objeto-saltarin-desierto", url: "/juego/objeto-saltarin-desierto.webp" },
+  { clave: "objeto-saltarin-nieve", url: "/juego/objeto-saltarin-nieve.webp" },
+  { clave: "objeto-saltarin-costa", url: "/juego/objeto-saltarin-costa.webp" },
+  // Tap origin→destination mechanic — the object that visually jumps between
+  // ZonaDestino markers (K05, K09, K10, K12).
+  { clave: "indicador-movil-sabana", url: "/juego/indicador-movil-sabana.webp" },
+  { clave: "indicador-movil-desierto", url: "/juego/indicador-movil-desierto.webp" },
+  { clave: "indicador-movil-nieve", url: "/juego/indicador-movil-nieve.webp" },
+  { clave: "indicador-movil-costa", url: "/juego/indicador-movil-costa.webp" },
+  // Swipe-with-snap mechanic (K08, K14) — the slider knob/bead that moves
+  // along RielCarril (code-drawn track, apps/web/src/game/objects/RielCarril.ts).
+  { clave: "canasta-clasificar-sabana", url: "/juego/canasta-clasificar-sabana.webp" },
+  { clave: "canasta-clasificar-desierto", url: "/juego/canasta-clasificar-desierto.webp" },
+  { clave: "canasta-clasificar-nieve", url: "/juego/canasta-clasificar-nieve.webp" },
+  { clave: "canasta-clasificar-costa", url: "/juego/canasta-clasificar-costa.webp" },
+  // Tap-to-sort mechanic, container A (K07, K13) — one of two visually
+  // distinct containers a child sorts items into.
+  { clave: "canasta-b-sabana", url: "/juego/canasta-b-sabana.webp" },
+  { clave: "canasta-b-desierto", url: "/juego/canasta-b-desierto.webp" },
+  { clave: "canasta-b-nieve", url: "/juego/canasta-b-nieve.webp" },
+  { clave: "canasta-b-costa", url: "/juego/canasta-b-costa.webp" },
+  // Tap-to-sort mechanic, container B — the second, visually distinct
+  // container (a bowl, not a basket).
 ];
 
 /**
@@ -116,6 +208,72 @@ export const AUDIOS_MODO_HISTORIA: Activo[] = [
   { clave: "sfx-toque", url: "/juego/sfx-toque.mp3" },
   { clave: "sfx-acierto", url: "/juego/sfx-acierto.mp3" },
   { clave: "sfx-error", url: "/juego/sfx-error.mp3" },
+
+  // ─── Interaction-texture SFX (19) ───────────────────────────────────────
+  //
+  // The sound of HOW something was touched, not of whether it was right. The
+  // five event SFX (sfx-toque/acierto/error/panel-abre/panel-cierra) are a
+  // different layer and stay exactly as they are — these never replace them.
+  { clave: "sfx-elegir", url: "/juego/sfx-elegir.mp3" },
+  // Interaction-texture SFX for the toca_la_respuesta format — a decisive
+  // selection click, distinct from the generic sfx-toque.
+  { clave: "sfx-contar-toque", url: "/juego/sfx-contar-toque.mp3" },
+  // Interaction-texture SFX for toca_para_contar — a soft counting tap, meant
+  // to repeat quickly in a row.
+  { clave: "sfx-destello", url: "/juego/sfx-destello.mp3" },
+  // Interaction-texture SFX for flash — a quick shimmer when the dot flash
+  // appears.
+  { clave: "sfx-casilla", url: "/juego/sfx-casilla.mp3" },
+  // Interaction-texture SFX for arma_el_numero — filling a ten-frame cell.
+  { clave: "sfx-descartar", url: "/juego/sfx-descartar.mp3" },
+  // Interaction-texture SFX for cual_sobra — setting aside the odd-one-out,
+  // neutral tone.
+  { clave: "sfx-ficha-conteo", url: "/juego/sfx-ficha-conteo.mp3" },
+  // Interaction-texture SFX for the tap-in-sequence mechanic — a token/bead drop.
+  { clave: "sfx-burbuja-pop", url: "/juego/sfx-burbuja-pop.mp3" },
+  // Interaction-texture SFX for tap-to-pop — a bubble pop.
+  { clave: "sfx-salto", url: "/juego/sfx-salto.mp3" },
+  // Interaction-texture SFX for tap origin→destination — a short hop/bounce.
+  { clave: "sfx-snap", url: "/juego/sfx-snap.mp3" },
+  // Interaction-texture SFX for swipe-with-snap — the slider locking into a notch.
+  { clave: "sfx-comparar", url: "/juego/sfx-comparar.mp3" },
+  // Interaction-texture SFX for comparar-y-tocar — the comparison frame appearing.
+  { clave: "sfx-clasificar", url: "/juego/sfx-clasificar.mp3" },
+  // Interaction-texture SFX for tap-to-sort — dropping an item into a container.
+  { clave: "sfx-voltear", url: "/juego/sfx-voltear.mp3" },
+  // Interaction-texture SFX for match-tap-de-pares — a card flip.
+  { clave: "sfx-pulso", url: "/juego/sfx-pulso.mp3" },
+  // Interaction-texture SFX for tap-to-beat — one rhythmic pulse.
+  { clave: "sfx-progreso", url: "/juego/sfx-progreso.mp3" },
+  // Interaction-texture SFX for tap-hasta-objetivo — one tick of the gauge filling.
+  { clave: "sfx-trazo", url: "/juego/sfx-trazo.mp3" },
+  // Interaction-texture SFX for trazado guiado — a gliding whoosh while tracing.
+  { clave: "sfx-pista", url: "/juego/sfx-pista.mp3" },
+  // Interaction-texture SFX for the optional hint — a gentle chime when a hint
+  // appears.
+  { clave: "sfx-fusion", url: "/juego/sfx-fusion.mp3" },
+  // Interaction-texture SFX for tap-para-fusionar — two values combining.
+  { clave: "sfx-incremento", url: "/juego/sfx-incremento.mp3" },
+  // Interaction-texture SFX for the two-point positional-value mechanic — a
+  // double tick, second pitch higher.
+  { clave: "sfx-blanco", url: "/juego/sfx-blanco.mp3" },
+  // Interaction-texture SFX for tap-a-blanco-en-movimiento — a lock-on catch sound.
+
+  // ─── Background music, per bioma (8) ────────────────────────────────────
+  //
+  // Background music for the {bioma} chapter — "calma" plays on map/menu,
+  // "energia" plays while solving a challenge. NOTE: MusicManager.reproducir()
+  // needs a bioma param, not just a mood, to pick the right pair — until it
+  // has one, the universal musica-calma/musica-energia below are still what
+  // actually plays, and these eight are loaded but unused.
+  { clave: "musica-sabana-calma", url: "/juego/musica-sabana-calma.mp3" },
+  { clave: "musica-sabana-energia", url: "/juego/musica-sabana-energia.mp3" },
+  { clave: "musica-desierto-calma", url: "/juego/musica-desierto-calma.mp3" },
+  { clave: "musica-desierto-energia", url: "/juego/musica-desierto-energia.mp3" },
+  { clave: "musica-nieve-calma", url: "/juego/musica-nieve-calma.mp3" },
+  { clave: "musica-nieve-energia", url: "/juego/musica-nieve-energia.mp3" },
+  { clave: "musica-costa-calma", url: "/juego/musica-costa-calma.mp3" },
+  { clave: "musica-costa-energia", url: "/juego/musica-costa-energia.mp3" },
 ];
 
 function dedupeAudios(lista: Activo[]): Activo[] {

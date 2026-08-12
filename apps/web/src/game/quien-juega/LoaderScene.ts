@@ -84,6 +84,8 @@ export class LoaderScene extends Phaser.Scene {
   private ultimoAlto = 0;
   private inclinacionObjetivo = 0;
 
+  /** Ya se programó la salida. Sin esto, `update()` la reprograma cada fotograma. */
+  private saliendo = false;
   private version = "";
   private ultimoLabel = "";
 
@@ -106,6 +108,7 @@ export class LoaderScene extends Phaser.Scene {
     this.ultimoAncho = 0;
     this.ultimoAlto = 0;
     this.ultimoLabel = "";
+    this.saliendo = false;
   }
 
   create(): void {
@@ -404,6 +407,22 @@ export class LoaderScene extends Phaser.Scene {
     // un número que pega tirones.
     this.progresoVisible = Phaser.Math.Linear(this.progresoVisible, this.progresoReal, 0.06);
 
+    /**
+     * El remate, y por qué hace falta uno.
+     *
+     * Una interpolación hacia 1 **nunca llega a 1**: se acerca asintóticamente.
+     * `Math.floor(0.9999 * 100)` es 99, así que el cuadro número 100 no caía,
+     * la condición de salida no se cumplía nunca y el loader se quedaba
+     * **clavado en 99% para siempre**, con la carga terminada y la pila entera
+     * en pantalla. Se vio así en el iPhone, ya desplegado — de las capturas del
+     * navegador no salió porque ahí nunca llegué a mirar el final.
+     *
+     * Cuando la carga real ya acabó y lo visible está a menos de medio punto,
+     * se cierra a mano. Los pocos cuadros que falten caen de golpe en ese
+     * fotograma, que es justo el efecto que uno quiere al final.
+     */
+    if (this.progresoReal >= 1 && this.progresoVisible > 0.995) this.progresoVisible = 1;
+
     // El tamaño puede llegar tarde y SIN evento: el `RESIZE` de Phaser cuelga
     // del `resize` del navegador, que no se dispara cuando lo que cambió fue
     // el layout del propio contenedor. Comparar dos números por fotograma es
@@ -429,9 +448,21 @@ export class LoaderScene extends Phaser.Scene {
     this.pintarBarra();
     this.aplicarInclinacion();
 
-    if (this.caidos >= TOTAL_CUADROS && this.progresoReal >= 1 && this.progresoVisible > 0.995) {
+    /**
+     * Se sale cuando cayeron los 100 **y** la carga terminó de verdad.
+     *
+     * Las dos condiciones, no una: si bastara la carga, en una segunda visita
+     * —todo cacheado— la pantalla parpadearía sin que se viera un solo cuadro;
+     * si bastaran los cuadros, se entraría con assets a medias.
+     *
+     * Y con una pausa corta: el remate de arriba suelta de golpe los cuadros
+     * que faltaran, y salir en ese mismo fotograma los deja congelados en el
+     * aire. 450 ms es lo que tardan en aterrizar.
+     */
+    if (!this.saliendo && this.caidos >= TOTAL_CUADROS && this.progresoReal >= 1) {
+      this.saliendo = true;
       traza("terminado -> QuienJuegaScene");
-      this.scene.start("QuienJuegaScene", this.datos);
+      this.time.delayedCall(450, () => this.scene.start("QuienJuegaScene", this.datos));
     }
   }
 

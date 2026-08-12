@@ -5003,6 +5003,18 @@ tres candados que son la condición de esta decisión, no un añadido:
 
 **Investigación relacionada:** D-089, D-102, D-116, D-121.
 
+**Nota 2026-08-12 (revisión de decisiones) — D-102 no tiene entrada
+propia.** `D-100`, `D-101` y `D-102` cayeron dentro del rango que D-107
+dice que "los números los reparte el orquestador" (F7 en sesión paralela,
+D-093 a D-106), pero a diferencia del resto de ese rango, estos tres
+nunca se escribieron bajo su propio encabezado en ningún commit de este
+archivo — confirmado con `git log --all -S "## D-10{0,1,2}"`, cero
+resultados. Lo que se sabe de D-102 es solo lo que ESTA entrada cita de
+memoria: fijaba «un solo operador sin infraestructura de equipo». Si el
+dueño tiene el texto original (otro documento, otra sesión), vale la pena
+pegarlo aquí con su fecha real; si no aparece, esta nota es el registro
+de que la referencia es de segunda mano.
+
 ---
 
 ## D-173 — Las tres apps salen en los 7 locales desde el día uno, con copy autorado y diccionarios compartidos con prefijos · 2026-08-03
@@ -7362,6 +7374,19 @@ importante de todo el día de hoy, y no se puede saltar.
 **Investigación relacionada:** D-200, D-200.1, D-192, D-012, D-186,
 `packages/motor/src/mapa.ts` (#231).
 
+**Nota 2026-08-12 (revisión de decisiones) — piezas 2 y 3 nunca se
+construyeron, y quedaron reemplazadas sin decirlo.** `game/spa/
+pin-interaccion.ts` y `game/spa/puente-pin.ts` no existen en el árbol
+actual ni existieron nunca en el historial de git: el plan de arriba
+—transplantar `<main class="pin">` y su `<style>` sobre el canvas— es
+exactamente lo que **D-201** (2026-08-11) prohíbe como regla de
+arquitectura y lo que `audits/spa-phaser.mjs` bloquea desde entonces. El
+PIN terminó reescrito como escenas reales de Phaser (`PinScene.ts`,
+D-201/D-202), no como el puente de esta entrada. D-201 cita esta entrada
+como antecedente de investigación, no como algo que revierte
+explícitamente — queda dicho aquí para que nadie busque estos dos
+archivos pensando que se perdieron en un merge.
+
 ### D-200.3 — Primera prueba real en dispositivo de D-200.2: la flecha se apilaba, no faltaba caché · 2026-08-09
 
 El dueño probó D-200.2 en vivo — la primera confirmación real de todo el
@@ -8163,3 +8188,32 @@ leído como un ✓ verdadero para siempre. El propio auto-chequeo de
 `pruebas-auditores.mjs` ("el parche... no cambió NADA") es lo que lo
 detectó, sin intervención humana — exactamente el caso para el que existe.
 Corregido para apuntar a la línea real.
+
+---
+
+## "¿Quién juega?" también estiraba su fondo en dos ejes distintos — el mismo defecto de D-186, sin corregir · 2026-08-12
+
+Al revisar todas las pantallas de Phaser (tarea de esta sesión) se
+encontró un cuarto caso del defecto que D-186 ya corrigió en
+`MapScene`/`MenuScene`: `QuienJuegaScene.ts` seguía usando
+`.setDisplaySize(width, height)` sobre `fondo-primaria-1` (800×1600),
+estirando la imagen a la proporción exacta del viewport en vez de
+cubrirlo y recortar. En un teléfono angosto casi no se nota; en una
+tableta o un escritorio la sabana se ve notoriamente aplastada u
+horizontalmente estirada.
+
+**Arreglo — el mismo patrón cover-fit de D-186 (revisited) y `PinScene`:**
+`Math.max(width/fondo.width, height/fondo.height)` como escala uniforme,
+sin `setDisplaySize`. Verificado en vivo: build limpio
+(`rm -rf dist && astro build`), servido con `wrangler dev` propio en el
+puerto 8799 (el 8787 de este Mac ya lo ocupaba otra sesión — ver
+`servidor-de-otra-sesion-en-8788` en memoria), y confirmado en el iOS
+Simulator sobre `http://localhost:8799/es-MX/loader-dev/`: el fondo llena
+el viewport completo sin bandas ni distorsión.
+
+**Lo que esto NO fue:** no se regeneró arte nuevo. Como en D-186
+(revisited), el defecto era de matemática de escala (dos ejes distintos)
+y no de resolución de la imagen — más píxeles no habrían arreglado nada
+sin este cambio.
+
+**Investigación relacionada:** D-186, D-080, mc-47 §5.

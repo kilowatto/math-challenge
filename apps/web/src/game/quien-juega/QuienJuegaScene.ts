@@ -56,6 +56,7 @@ import { IMAGENES_QUIEN_JUEGA, AUDIOS_QUIEN_JUEGA } from "../assets-manifest";
 import { empujarHistorial } from "../spa/enrutador";
 import type { ArranquePin } from "./PinScene";
 import { fijarFase } from "../spa/estado";
+import { rutaCasa } from "../../lib/rutas-app";
 
 /** Los mismos seis tokens de `docs/guia-de-estilo.md`, copiados a hex — Phaser no lee `var(--…)`. */
 const PALETA: ReadonlyArray<{ relleno: number; tinta: number }> = [
@@ -300,8 +301,28 @@ export class QuienJuegaScene extends Phaser.Scene {
 
     this.dibujarRejilla(width, height);
 
-    // La flecha de regreso vive arriba a la izquierda (D-194, segunda ronda).
-    new FlechaAtras(this, 44, 44).setDepth(10).setScrollFactor(0);
+    /**
+     * La flecha de regreso vive arriba a la izquierda (D-194, segunda ronda),
+     * y desde aquí **sale del SPA**, a la casa del adulto.
+     *
+     * Antes no pasaba nada al tocarla: se dejaba el destino por omisión de
+     * `FlechaAtras`, que es `history.back()`. Eso funcionaba cuando cada
+     * pantalla era un documento, pero `/app/kids/` es la PUERTA del SPA —
+     * normalmente la primera entrada del historial de la pestaña— y ahí
+     * «atrás» no tiene a dónde ir, así que el toque se comía sin efecto. Lo
+     * encontró el dueño probando en el dispositivo.
+     *
+     * Un destino explícito y no el historial: esta es la única escena de la
+     * que salir significa *abandonar la sesión de Phaser*, y a dónde se va no
+     * es una pregunta que el historial pueda contestar mejor que nosotros.
+     * `rutaCasa` es la casa del adulto (#311) — no `/app/perfil/`, que se ha
+     * corregido más de diez veces.
+     */
+    new FlechaAtras(this, 44, 44, () => {
+      window.location.href = rutaCasa(this.datos.locale);
+    })
+      .setDepth(10)
+      .setScrollFactor(0);
     // El ícono de sonido (D-190) se movió abajo a la izquierda — el dueño
     // pidió que dejara de compartir esquina con la flecha nueva, y sin
     // círculo blanco detrás (ver `BotonSonido.ts`).

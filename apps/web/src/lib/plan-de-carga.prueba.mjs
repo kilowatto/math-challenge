@@ -36,7 +36,18 @@ function igual(real, esperado, que) {
   if (real !== esperado) throw new Error(`${que}: esperaba ${JSON.stringify(esperado)}, fue ${JSON.stringify(real)}`);
 }
 
-const A = (clave, hash, size) => ({ clave, url: `/juego/${clave}.webp`, hash, size, label: clave });
+/**
+ * Un asset del manifiesto, con LOS NOMBRES DE CAMPO DEL GENERADOR.
+ *
+ * `key`, no `clave`, porque eso es lo que emite `manifiestoDeAssets()` en
+ * `astro.config.mjs` — el código de este repo es inglés. Esta prueba usaba
+ * `clave` y pasaba en verde mientras el loader estaba roto en producción: el
+ * tipo de TypeScript también decía `clave`, así que prueba y código estaban de
+ * acuerdo entre ellos y en desacuerdo con el único que manda, el JSON real.
+ * El loader encolaba 243 archivos con clave `undefined` y Phaser moría con
+ * `Invalid File key: false`. Ver el caso «el contrato con el generador».
+ */
+const A = (key, hash, size) => ({ key, url: `/juego/${key}.webp`, hash, size, label: key });
 
 console.log("\nplan-de-carga — D-201 (loader C)\n");
 
@@ -61,7 +72,7 @@ await caso("EL CASO QUE JUSTIFICA EL HASH: presente pero cambiado", async () => 
   const assets = [A("uno", "NUEVO", 1000)];
   const p = planDeCarga(assets, { uno: "viejo" });
   igual(p.descargar.length, 1, "a descargar");
-  igual(p.descargar[0].clave, "uno", "cuál");
+  igual(p.descargar[0].key, "uno", "cuál");
 });
 
 await caso("un asset cacheado NO pesa cero", async () => {
@@ -95,7 +106,7 @@ await caso("un asset nuevo en el servidor entra al plan", async () => {
   const assets = [A("viejo", "h1", 100), A("nuevo", "h2", 200)];
   const p = planDeCarga(assets, { viejo: "h1" });
   igual(p.descargar.length, 1, "a descargar");
-  igual(p.descargar[0].clave, "nuevo", "cuál");
+  igual(p.descargar[0].key, "nuevo", "cuál");
 });
 
 await caso("un asset que el servidor YA NO tiene no se descarga ni cuenta", async () => {
@@ -144,6 +155,41 @@ await caso("pesoDe distingue descargado de cacheado", async () => {
   const a = A("x", "h", 1000);
   igual(pesoDe(a, false), 1000, "descargado");
   igual(pesoDe(a, true), 1000 * PESO_CACHEADO, "cacheado");
+});
+
+/**
+ * EL CONTRATO CON EL GENERADOR — el caso que faltaba.
+ *
+ * El defecto que costó cinco despliegues no estaba en la lógica del plan: los
+ * once casos de arriba pasaban en verde. Estaba en que el TIPO y las PRUEBAS
+ * decían `clave` mientras `astro.config.mjs` emitía `key`, así que el loader
+ * leía `undefined` de los 243 assets reales. Prueba y código coincidían entre
+ * ellos; ninguno miraba el archivo que de verdad se sirve.
+ *
+ * Este caso mira los dos lados: los campos que emite el generador y los que
+ * lee `planDeCarga`. Si alguien renombra uno solo, falla aquí en vez de en el
+ * dispositivo de un niño.
+ *
+ * Se lee el FUENTE del generador, no `dist/manifest-assets.json`: el gate corre
+ * sin build, y una prueba que se salta a sí misma cuando falta un archivo es
+ * una prueba que un día no prueba nada.
+ */
+await caso("el contrato con el generador: los nombres de campo son los mismos", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const config = readFileSync(
+    fileURLToPath(new URL("../../astro.config.mjs", import.meta.url)),
+    "utf8",
+  );
+  const bloque = config.slice(config.indexOf("mc-manifiesto-assets"));
+  for (const campo of ["key", "url", "hash", "size", "label"]) {
+    if (!new RegExp(`^\\s*${campo}:`, "m").test(bloque)) {
+      throw new Error(`el generador ya no emite '${campo}' — planDeCarga lo lee`);
+    }
+  }
+  // Y al revés: que el plan siga leyendo por `key`, no por otra cosa.
+  const p = planDeCarga([A("uno", "h1", 10)], {});
+  igual(Object.keys(p.descargar[0]).includes("key"), true, "el plan conserva 'key'");
 });
 
 console.log(`\n${corridos - fallos}/${corridos} casos\n`);

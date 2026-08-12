@@ -46,7 +46,8 @@ import { GameplayScene } from "./scenes/GameplayScene";
 import { QuienJuegaScene, type DatosQuienJuega } from "./quien-juega/QuienJuegaScene";
 import { PinScene } from "./quien-juega/PinScene";
 import { PerfilAjustesScene } from "./quien-juega/PerfilAjustesScene";
-import { CargaGlobalScene } from "./quien-juega/CargaGlobalScene";
+import { LoaderScene } from "./quien-juega/LoaderScene";
+import { CargaAssetsScene } from "./quien-juega/CargaAssetsScene";
 import { ProgressManager, type DatosDeArranque } from "./managers/ProgressManager";
 import { MusicManager } from "./managers/MusicManager";
 import { SfxManager } from "./managers/SfxManager";
@@ -58,8 +59,11 @@ import { SfxManager } from "./managers/SfxManager";
  * pantalla para que se lea de un vistazo qué hay.
  */
 const ESCENAS: ReadonlyArray<[string, new (...args: never[]) => Phaser.Scene]> = [
-  // La puerta: precarga global, rejilla de caras, PIN y ajustes de perfil.
-  ["CargaGlobalScene", CargaGlobalScene],
+  // La puerta: el loader, la rejilla de caras, el PIN y los ajustes.
+  ["LoaderScene", LoaderScene],
+  // No se arranca nunca a mano: la lanza `LoaderScene`, que es quien pinta.
+  // Ver el encabezado de `CargaAssetsScene` para por qué son dos.
+  ["CargaAssetsScene", CargaAssetsScene],
   ["QuienJuegaScene", QuienJuegaScene],
   ["PinScene", PinScene],
   ["PerfilAjustesScene", PerfilAjustesScene],
@@ -76,11 +80,11 @@ const ESCENAS: ReadonlyArray<[string, new (...args: never[]) => Phaser.Scene]> =
 /**
  * Con qué pantalla abre esta sesión.
  *
- * `CargaGlobalScene` es la puerta del niño: precarga el catálogo entero antes
- * de que vea nada (D-200) y arranca `QuienJuegaScene` ella misma al terminar.
+ * `LoaderScene` es la puerta del niño: baja lo que falte del catálogo antes de
+ * que vea nada, y arranca `QuienJuegaScene` ella misma al terminar.
  */
 export type Arranque =
-  | { escena: "CargaGlobalScene"; datos: DatosQuienJuega }
+  | { escena: "LoaderScene"; datos: DatosQuienJuega }
   | { escena: "BootScene"; datos: DatosDeArranque };
 
 /**

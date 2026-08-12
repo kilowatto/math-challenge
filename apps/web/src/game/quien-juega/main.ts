@@ -13,14 +13,13 @@
  * Una sola SPA, una sola instancia (decisión del dueño). Se construye en
  * `game/juego.ts::crearJuego()`; esto solo dice con qué pantalla abre.
  *
- * Abre por `CargaGlobalScene` y no por `QuienJuegaScene`: D-200 precarga el
- * catálogo entero antes de que el niño vea nada, y arranca la rejilla ella
- * misma al terminar.
+ * Abre por `LoaderScene` y no por `QuienJuegaScene`: el loader baja lo que falte del
+ * catálogo antes de que el niño vea nada, y arranca la rejilla al terminar.
  */
 import Phaser from "phaser";
 import { crearJuego } from "../juego";
 import type { DatosQuienJuega } from "./QuienJuegaScene";
 
 export function arrancarQuienJuega(contenedorId: string, datos: DatosQuienJuega): Phaser.Game {
-  return crearJuego(contenedorId, { escena: "CargaGlobalScene", datos });
+  return crearJuego(contenedorId, { escena: "LoaderScene", datos });
 }

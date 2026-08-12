@@ -33,9 +33,20 @@
  * este proyecto**. Queda dicho aquí y no en un informe aparte.
  */
 
-/** Un asset tal como lo describe `manifest-assets.json`. */
+/**
+ * Un asset tal como lo describe `manifest-assets.json`.
+ *
+ * **Los nombres de campo son los que emite `manifiestoDeAssets()` en
+ * `astro.config.mjs`, y son inglés porque el código de este repo es inglés.**
+ * Esta interfaz decía `clave` y costó cuatro despliegues a ciegas: el loader
+ * leía `a.clave` de 243 objetos que traían `key`, encolaba 243 archivos sin
+ * clave, y Phaser reventaba con `Invalid File key: false` dentro del callback
+ * del manifiesto — sin que `astro check` viera nada, porque `load.json()`
+ * devuelve `any` y ahí no hay tipo que contrastar. Si alguien cambia un
+ * nombre aquí, tiene que cambiarlo en el generador, no al revés.
+ */
 export interface AssetDelManifiesto {
-  clave: string;
+  key: string;
   url: string;
   hash: string;
   size: number;

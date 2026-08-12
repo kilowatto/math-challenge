@@ -133,8 +133,20 @@ export class PinScene extends Phaser.Scene {
    */
   private pintarFondo(): void {
     const { width, height } = this.scale;
-    if (this.textures.exists("pin-numerico-fondo")) {
-      const fondo = this.add.image(width / 2, height / 2, "pin-numerico-fondo");
+    // Cada rama tiene su propia escena, que es para lo que se generaron: el
+    // portón de madera para el teclado numérico y un fondo propio para la
+    // rejilla de dibujos de KINDER. `pin-imagenes-fondo` llevaba generado
+    // desde D-199.2 sin que nada lo cargara — lo encontró
+    // `audits/manifiesto-assets.mjs`, no una mirada al código.
+    //
+    // Antes de que lleguen los datos no se sabe qué rama es, así que el portón
+    // hace de fondo por omisión: nunca una pantalla en blanco esperando.
+    const clave =
+      this.datos?.tipo === "imagenes" && this.textures.exists("pin-imagenes-fondo")
+        ? "pin-imagenes-fondo"
+        : "pin-numerico-fondo";
+    if (this.textures.exists(clave)) {
+      const fondo = this.add.image(width / 2, height / 2, clave);
       const escala = Math.max(width / fondo.width, height / fondo.height);
       fondo.setScale(escala).setDepth(-10);
       this.capa.add(fondo);

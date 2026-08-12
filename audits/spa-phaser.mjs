@@ -129,8 +129,14 @@ for (const ruta of juego) {
   const crudo = leer(ruta);
   if (crudo === null) continue;
   revisados++;
+  // Sin comentarios, igual que la comprobación de instancias: `enrutador.ts`
+  // EXPLICA en prosa por qué se borró `extraerFragmento()`, y castigar a un
+  // archivo por documentar la regla que cumple es cómo un guardián se acaba
+  // anulando por costumbre (`sinComentarios` en lib/repo.mjs lo documenta con
+  // los cuatro casos que ya lo provocaron).
+  const codigo = sinComentarios(crudo);
   for (const { re, que } of TRANSPLANTE) {
-    if (re.test(crudo)) {
+    if (re.test(codigo)) {
       problemas.push(
         `${ruta}: ${que}. D-201 prohíbe transplantar HTML sobre el canvas — costó una sesión de ` +
           "defectos en cadena (overlay transparente, CSS que no llegaba, franjas de 41 pt sin causa " +

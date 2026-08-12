@@ -442,6 +442,11 @@ const ACTIVE = [
   // rejilla se baraja por niño— y ese niño no puede entrar al suyo. Visto
   // fallar escondiendo `pin-dibujo-rana.webp`.
   ["pin-arte-completo",       "los 24 dibujos del PIN existen y ninguno sobra", "D-201, D-012, mc-20"],
+  // El otro extremo del mismo problema: arte que EXISTE y que Phaser nunca
+  // carga porque nadie lo añadió al manifiesto. No falla nada — simplemente no
+  // se usa lo que ya se generó, revisó y desplegó. Encontró `pin-imagenes-fondo`
+  // en su primera corrida: generado en D-199.2 y sin cargar desde entonces.
+  ["manifiesto-assets",       "el manifiesto y public/juego dicen lo mismo", "D-200, D-201, mc-47 §5"],
 
 
   // F8 #285 (criterio del paraguas #277). El panel del padre lee SOLO D1:

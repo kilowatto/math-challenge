@@ -1,0 +1,105 @@
+---
+/**
+ * `/dev/loader/` — el banco de pruebas de `LoaderScene`.
+ *
+ * ─── Por qué existe ────────────────────────────────────────────────────────
+ *
+ * El loader se depuró cuatro despliegues seguidos **a ciegas**: en el
+ * simulador no hay consola, así que un progreso clavado en 0% solo se podía
+ * deducir de una captura. El cuarto intento dejó la pantalla del niño en
+ * blanco en producción.
+ *
+ * Esta ruta monta la escena SOLA, sin sesión de niño y sin dispositivo del
+ * hogar, para poder abrirla en un navegador de verdad —con consola y panel de
+ * red— y ver el error en vez de adivinarlo. Sirve igual en local
+ * (`wrangler dev`) que desplegada.
+ *
+ * ─── Por qué lleva segmento de locale ──────────────────────────────────────
+ *
+ * Porque sin él da 404: la configuración de i18n de Astro espera locale en
+ * TODA ruta, y una página en `src/pages/dev/` no resuelve. Es el mismo golpe
+ * que `kids/pin.astro` documenta y que costó una tablet atascada en «no
+ * encontrado». El locale no se usa para nada aquí; está por el enrutador.
+ *
+ * ─── Por qué NO vive bajo `/app/kids/` ─────────────────────────────────────
+ *
+ * Porque no es una superficie de niño: no hay progreso, ni perfil, ni nada que
+ * un menor deba ver. Ponerla ahí la convertiría en deuda de D-201 en
+ * `audits/spa-phaser.mjs` sin ganar nada — y además arrastraría la puerta de
+ * `mc_h`, que es justo lo que impide depurar.
+ *
+ * ─── Qué NO es ─────────────────────────────────────────────────────────────
+ *
+ * No es una pantalla de producto y no debe enlazarse desde ninguna. `noindex`
+ * abajo, y `LoaderScene` recibe aquí tarjetas de mentira: al terminar arranca
+ * `QuienJuegaScene` con datos falsos, que es exactamente lo que se quiere
+ * para ver el final del recorrido sin una cuenta.
+ */
+import { LOCALES } from "../../i18n";
+
+/**
+ * `getStaticPaths()` es OBLIGATORIO aquí, y su ausencia costó cuatro 404.
+ *
+ * Con `output: "static"`, una página bajo `[locale]/` sin esta función no
+ * genera ruta para ningún locale: `/es-MX/loader-dev/` responde 404 aunque el
+ * archivo exista y el manifiesto del build lo liste como
+ * `/[locale]/loader-dev`. `kids/pin.astro` dice que Astro lo IGNORA en páginas
+ * bajo demanda — cierto para las suyas, que además llevan
+ * `prerender = false`; ésta se prerenderiza, y `reto-demo.astro` (la otra
+ * página de demo del repo) sí lo trae. Copiado de ahí.
+ */
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+// Datos de mentira, con la forma real de `DatosQuienJuega`. Dos tarjetas
+// bastan para que la rejilla se dibuje al terminar y se vea la transición.
+const datos = {
+  tarjetas: [
+    {
+      id: "dev-1",
+      alias: "PruebaUno1234",
+      forma: 1,
+      color: 0,
+      animal: null,
+      esAdulto: false,
+      dato: { tipo: "ninguno" },
+      href: "#",
+      locale: "es-MX",
+    },
+    {
+      id: "dev-2",
+      alias: "PruebaDos5678",
+      forma: 3,
+      color: 2,
+      animal: null,
+      esAdulto: false,
+      dato: { tipo: "ninguno" },
+      href: "#",
+      locale: "es-MX",
+    },
+  ],
+  rotulos: {
+    titulo: "¿Quién juega?",
+    pista: "Toca tu dibujo.",
+    jugarComo: "Jugar como",
+    rango: "Rango",
+    carga: { imagenes: "Dibujos", sonidos: "Sonidos" },
+  },
+};
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>dev · loader</title>
+  </head>
+  <body style="margin:0;background:#434547;overflow:hidden">
+    <div id="quien-juega-mount" style="position:fixed;inset:0"></div>
+    <script type="application/json" id="quien-juega-datos" set:html={JSON.stringify(datos)} />
+    <script src="../../game/quien-juega/entrada-dev.ts"></script>
+  </body>
+</html>

@@ -71,7 +71,7 @@ export function planDeCarga(
     // La comparación es por HASH, no por presencia: un asset que existe pero
     // cambió de contenido tiene que volver a bajarse, y ese es justo el caso
     // que un candado global no distingue.
-    if (local[a.clave] === a.hash) desdeCache.push(a);
+    if (local[a.key] === a.hash) desdeCache.push(a);
     else descargar.push(a);
   }
 

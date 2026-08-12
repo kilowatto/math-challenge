@@ -38,7 +38,7 @@
 // (no registrarlo hasta que todo esté limpio) es cómo seis auditores acabaron
 // fallando abiertos sin que nadie lo supiera.
 
-import { archivos, leer, informar, separarDeuda } from "./lib/repo.mjs";
+import { archivos, leer, informar, separarDeuda, sinComentarios } from "./lib/repo.mjs";
 
 // Marcado que solo tiene sentido si la página PINTA una interfaz. `<div>` no
 // entra: el contenedor donde monta el canvas es un `<div>`, así que exigirlo
@@ -138,6 +138,42 @@ for (const ruta of juego) {
       );
     }
   }
+}
+
+// --- 3. UNA sola instancia de Phaser en todo el producto -------------------
+//
+// «Una sola SPA y una sola Phaser» es la mitad de la regla que faltaba. Hasta
+// hoy había dos `new Phaser.Game()` —uno por pantalla— y el encabezado de
+// `game/main.ts` decía con todas las letras que «uno solo en todo el producto»
+// era una regla que **nunca estuvo escrita**. Ahora lo está, y esto la sostiene.
+//
+// No es contar archivos por gusto: con dos instancias, entrar al mapa tras el
+// PIN destruía una sesión entera de Phaser y construía otra, tirando todo lo
+// precargado en la transición más frecuente del producto. Una tercera
+// instancia reintroduce ese coste sin que nada se vea roto.
+const CONSTRUCTOR = /new\s+Phaser\.Game\s*\(/;
+const constructores = [];
+for (const ruta of archivos(/^apps\/web\/src\/.*\.(ts|astro)$/)) {
+  const crudo = leer(ruta);
+  if (crudo === null) continue;
+  // Sin comentarios: los dos envoltorios EXPLICAN que ya no construyen Phaser,
+  // y castigar a un archivo por documentar su propia regla es cómo un guardián
+  // se acaba apagando (ver `sinComentarios` en lib/repo.mjs).
+  if (CONSTRUCTOR.test(sinComentarios(crudo))) constructores.push(ruta);
+}
+revisados += 1;
+if (constructores.length > 1) {
+  problemas.push(
+    `hay ${constructores.length} instancias de Phaser (${constructores.join(", ")}). ` +
+      "D-201: una sola SPA, una sola `new Phaser.Game()`, en `game/juego.ts`. Con dos, cada " +
+      "transición entre pantallas destruye una sesión y construye otra — se tira todo lo " +
+      "precargado justo donde más se nota.",
+  );
+} else if (constructores.length === 0) {
+  problemas.push(
+    "no encontré ninguna `new Phaser.Game()` — o el juego dejó de montarse, o este auditor " +
+      "dejó de saber buscarlo. Las dos cosas hay que mirarlas.",
+  );
 }
 
 const { bloquean, conocidos } = separarDeuda(problemas, DEUDA);

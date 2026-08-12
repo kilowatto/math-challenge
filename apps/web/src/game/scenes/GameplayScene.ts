@@ -21,6 +21,7 @@ import {
   type VeredictoDeReto,
   type LimiteDePantalla,
 } from "../reto/RetoController";
+import { entrarAHistoria } from "../entrar-historia";
 import { AccessibleReto } from "../reto/AccessibleReto";
 import { ProgressManager } from "../managers/ProgressManager";
 
@@ -537,17 +538,26 @@ export class GameplayScene extends Phaser.Scene {
   }
 
   /**
-   * Vuelve al mapa con una navegación real, no un `scene.resume` — `MapScene`
+   * Vuelve al mapa pidiendo el árbol de nuevo, no con `scene.resume` — `MapScene`
    * quedó DETENIDA (no pausada, `ChallengeScene.irAlReto()`) al entrar aquí, y
    * `resume()` sobre una escena detenida no hace nada. Pero la razón de fondo
    * no es esa: aunque `resume()` funcionara, mostraría la MISMA pericia que
    * había antes de jugar, no la que el servidor acaba de recalcular al
    * calificar la última respuesta. `packages/motor/src/mapa.ts` (#231)
-   * prohíbe una segunda fuente de verdad para el árbol; una vuelta que no
-   * recarga sería exactamente eso, con el usuario viéndolo.
+   * prohíbe una segunda fuente de verdad para el árbol; una vuelta que
+   * reusara el árbol viejo sería exactamente eso, con el usuario viéndolo.
    */
   private volverAlMapa(): void {
-    window.location.href = this.salirA;
+    // Ya no recarga la página (D-201). La razón por la que NO bastaba un
+    // `resume()` sigue siendo verdad y por eso se piden datos frescos: el
+    // árbol que el servidor acaba de recalcular al calificar la última
+    // respuesta, nunca el que había antes de jugar. Lo único que cambió es que
+    // pedirlos cuesta una petición en vez de un documento entero.
+    //
+    // `false`: esta transición es INTERNA, así que reemplaza la entrada de
+    // historial en vez de apilar otra (D-200.3 — con tres apiladas, salir
+    // costaba varios toques de «atrás»).
+    void entrarAHistoria(this, this.salirA, false);
   }
 
   private mostrarCortina(opts: { titulo?: string; cuerpo?: string; nota?: string; boton: string; onBoton: () => void }): void {

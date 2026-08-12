@@ -35,6 +35,7 @@ import Phaser from "phaser";
 import { BotonSonido } from "../objects/BotonSonido";
 import { FlechaAtras } from "../objects/FlechaAtras";
 import { clavePinDibujo } from "../pin-dibujos";
+import { entrarAHistoria } from "../entrar-historia";
 
 /** Lo que `pin-datos` devuelve. Nada de esto se calcula en el cliente. */
 export interface DatosDelPin {
@@ -568,8 +569,12 @@ export class PinScene extends Phaser.Scene {
 
       if (r.ok) {
         const destino = r.destino ?? this.datos!.destino;
+        // El PIN acertado ya NO navega (D-201): la sesión de Phaser sigue
+        // viva y Modo Historia arranca dentro de ella. `true` porque ésta es
+        // la PRIMERA salida de la rejilla — la única que empuja historial, para
+        // que un toque de «atrás» vuelva a las caras (D-200.3).
         if (this.arranque.alEntrar) this.arranque.alEntrar(destino);
-        else window.location.href = destino;
+        else await entrarAHistoria(this, destino, true);
         return;
       }
 

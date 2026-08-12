@@ -610,6 +610,12 @@ for (const prueba of [
   // recambie el PIN de otro. Las cuatro se vieron fallar degradándolas una a
   // una antes de confiar en ellas.
   "apps/web/src/lib/pin-endpoints.prueba.mjs",
+  // `/api/historia-datos` (D-201, fusión de las dos instancias de Phaser). Al
+  // sacar estos datos del frontmatter de `kids/mapa.astro` a una ruta propia,
+  // tres cosas se pueden perder sin que nada se vea roto: la puerta de sesión
+  // de niño, la frontera de banda de D-184, y el fallo-CERRADO de una banda
+  // ilegible. Las tres se vieron fallar quitándolas una a una.
+  "apps/web/src/lib/historia-datos.prueba.mjs",
   "apps/web/src/lib/webauthn.prueba.mjs",
   "apps/web/src/lib/passwords.prueba.mjs",
   "apps/web/src/lib/sesiones.prueba.mjs",

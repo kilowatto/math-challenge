@@ -93,6 +93,21 @@ export const LARRY_FOTO_CLAVES: readonly string[] = [
 /** El prop de silla (D-196.1) — nunca un cuadro de Larry, se carga aparte. */
 const CLAVE_SILLA = "larry_foto_silla";
 
+/**
+ * Lo MÍNIMO para que Larry exista en pantalla sin un hueco.
+ *
+ * El constructor dibuja dos cosas de inmediato: la pose de reposo y la silla.
+ * Cualquier precarga que se quede corta de estas dos deja el cuadro con
+ * diagonal verde de Phaser —su placeholder de textura faltante— en mitad de la
+ * escena. Pasó de verdad: al partir el precargador en dos fases se cargó solo
+ * `LARRY_FOTO_CLAVES[0]`, y la silla apareció como ese cuadro junto a Larry,
+ * en producción, hasta que el dueño lo señaló.
+ *
+ * Los otros 36 cuadros —caminata y los siete comportamientos— empiezan
+ * segundos después y sí pueden llegar en una segunda fase.
+ */
+export const LARRY_FOTO_ESENCIALES: readonly string[] = ["larry_foto_idle_1", CLAVE_SILLA];
+
 const ANCHO_DISPLAY = 150; // px — más grande que el busto anterior (110), es cuerpo completo.
 
 type NombreComportamiento = "baila" | "saluda" | "aburrido" | "ejercicio" | "medita" | "riega" | "leer";

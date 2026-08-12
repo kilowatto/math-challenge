@@ -232,10 +232,13 @@ export class QuienJuegaScene extends Phaser.Scene {
     // termine de decodificar — nunca un blanco de formulario.
     this.cameras.main.setBackgroundColor(0x5b8c3a);
 
-    const fondo = this.add
-      .image(width / 2, height / 2, "fondo-primaria-1")
-      .setDisplaySize(width, height)
-      .setDepth(0);
+    // Cover-fit, no estiramiento en dos ejes (mismo defecto que D-186
+    // revisited en MapScene/MenuScene — esta escena se había quedado con el
+    // `setDisplaySize` viejo pese a ser la puerta de entrada, vista en TODO
+    // dispositivo).
+    const fondo = this.add.image(width / 2, height / 2, "fondo-primaria-1").setDepth(0);
+    const escalaFondo = Math.max(width / fondo.width, height / fondo.height);
+    fondo.setScale(escalaFondo);
 
     // El letrero de madera del título (D-194, segunda ronda; TALLADO de
     // verdad desde D-199 ronda 5) — reemplaza el panel blanco: "demasiados

@@ -8005,3 +8005,38 @@ explica el bloqueo) y no vale la pena seguir: el simulador es la fuente de
 verdad de este proyecto para todo lo que toca Phaser (regla ya escrita), y
 ahí funciona. Si alguien vuelve a ver `CargaAssetsScene` sin arrancar, mirar
 primero si está en el Browser pane antes de sospechar del código.
+
+---
+
+## Loader F — el ícono real de Larry, y el hueco que dejaba el placeholder (D-080, D-201) · 2026-08-12
+
+`apps/web/public/icons/icon-{192,512}.png` eran el placeholder que
+`scripts/gen-icons.mjs` documentaba desde F0 como provisional: un cuadrado
+naranja con un signo de más, 521 bytes. `scripts/gen-icon-larry.mjs` los
+reemplaza con Larry de verdad, en el mismo lenguaje visual plano/cel-shaded
+que ya usan los 16 avatares (`gen-avatares-animal.mjs`) — coherente porque
+el ícono cae mezclado con esos mismos 16 en la pantalla del loader.
+
+**Cinco intentos de prompt** antes de aceptar uno (documentados en el propio
+script): pedir explícitamente "orange"/"head and shoulders" devolvió un
+rinoceronte GRIS de cuerpo entero; reforzar con más negativos trajo una
+sudadera con una "R" bordada (viola "sin texto") y luego, apilando aún más
+negativos, un marco decorado con medallones en las esquinas — el mismo
+patrón que la memoria de sobre-ajuste de Recraft ya advertía: negar de más
+hace que el modelo se fije en la familia de conceptos negados. La que
+funcionó fue volver casi palabra por palabra al prompt de `larry_busto`
+(ya aprobado en producción), cambiando solo el fondo.
+
+**Un hueco de verdad, cerrado de paso:** `LoaderScene::texturaDeCuadro()` ya
+buscaba una clave `"icono-app"` desde que se escribió el loader, pero NADA
+cargaba jamás una textura con ese nombre — `apps/web/public/icons/` no lo
+escanea `manifiestoDeAssets()` (solo mira `juego/mapa/avatares/cosmeticos`),
+así que `this.textures.exists("icono-app")` era siempre falso y el ícono
+nunca caía entre los cuadros. `cargarIconoApp()` lo pide con el mismo
+patrón que ya usa el fondo (`Image()` del DOM, fuera de la cola del
+catálogo) — correcto: es un asset de INSTALACIÓN de la PWA, no del juego.
+
+**Paleta indexada, no RGB directo:** el PNG de 512px pesaba 474 KB en RGB
+y 174 KB con paleta de 256 colores (`palettegen`/`paletteuse` de ffmpeg,
+sin diferencia visible) — no hay `pngquant` en este entorno, y la
+ilustración ya usa pocos colores por diseño.

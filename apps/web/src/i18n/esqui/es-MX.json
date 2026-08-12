@@ -1,0 +1,13 @@
+{
+  "_nota": "Modo Esquí/Deslizada (D-202). Autorado, no traducido — este es el locale canónico. revisadoPor: null en los otros 6, este ya está en su idioma de origen.",
+  "esqui": {
+    "nombreModo": "Esquí / Deslizada",
+    "resultado": {
+      "victoria": "¡Cadena completa!",
+      "descalificado": "Cadena rota"
+    },
+    "tablero": {
+      "etiqueta": "Esquí / Deslizada"
+    }
+  }
+}

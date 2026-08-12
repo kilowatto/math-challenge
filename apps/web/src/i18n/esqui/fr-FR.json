@@ -1,0 +1,13 @@
+{
+  "_nota": "Borrador adaptado de es-MX, pendiente de revisión nativa.",
+  "esqui": {
+    "nombreModo": "Ski / Glisse",
+    "resultado": {
+      "victoria": "Chaîne complète !",
+      "descalificado": "Chaîne rompue"
+    },
+    "tablero": {
+      "etiqueta": "Ski / Glisse"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "_nota": "Borrador adaptado de es-MX, pendiente de revisión nativa. pt-BR y pt-PT son locales separados (D-022) — verificar si divergen aquí antes de aprobar.",
+  "esqui": {
+    "nombreModo": "Esqui / Deslize",
+    "resultado": {
+      "victoria": "Corrente completa!",
+      "descalificado": "Corrente quebrada"
+    },
+    "tablero": {
+      "etiqueta": "Esqui / Deslize"
+    }
+  }
+}

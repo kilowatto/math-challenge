@@ -73,5 +73,7 @@
   "padre.habilidad.K11": "Sumar contando",
   "padre.habilidad.K12": "Restar quitando",
   "padre.habilidad.K13": "Formas básicas",
-  "padre.habilidad.K14": "Patrones AB"
+  "padre.habilidad.K14": "Patrones AB",
+  "padre.pinBloqueado.aviso": "PIN en pausa un momento",
+  "padre.pinBloqueado.desbloquear": "Desbloquear ahora"
 }

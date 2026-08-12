@@ -73,5 +73,7 @@
   "padre.habilidad.K11": "Adding by counting on",
   "padre.habilidad.K12": "Subtracting by taking away",
   "padre.habilidad.K13": "Basic shapes",
-  "padre.habilidad.K14": "AB patterns"
+  "padre.habilidad.K14": "AB patterns",
+  "padre.pinBloqueado.aviso": "PIN paused a moment",
+  "padre.pinBloqueado.desbloquear": "Unlock now"
 }

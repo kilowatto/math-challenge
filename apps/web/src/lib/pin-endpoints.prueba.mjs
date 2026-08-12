@@ -303,7 +303,21 @@ await caso("el PIN incorrecto NO entra, sin castigo y sin decir por qué", async
   igual(res.status, 200, "estado (nunca 401/403: sería un oráculo)");
   igual((await res.json()).ok, false, "ok");
   igual(res.headers.get("set-cookie"), null, "no se emite cookie");
-  igual(kv._guardado.size, 0, "no se abrió sesión");
+  /**
+   * Desde D-202 esto ya NO significa "no se escribió nada en KV" — significa
+   * "no se abrió sesión". Antes de D-202 las dos frases eran la misma
+   * aserción porque KV solo se usaba para sesiones; ahora `anotarFallo`
+   * (`lib/pin-intentos.ts`) también escribe ahí, a propósito, y es lo que
+   * sostiene el límite de intentos obligatorio desde ese mismo D-202. La
+   * aserción vieja (`kv._guardado.size === 0`) se habría puesto en rojo por
+   * el motivo correcto — el fallo SÍ se cuenta— y hubiera leído como una
+   * regresión sin serlo. Se corrige a lo que de verdad importa: sin llave de
+   * sesión (`k:`), y con exactamente el contador de fallos que toca.
+   */
+  const llaves = [...kv._guardado.keys()];
+  if (llaves.some((k) => k.startsWith("k:"))) throw new Error("se abrió sesión con un PIN incorrecto");
+  igual(llaves.length, 1, "entradas en KV — solo el contador de fallos");
+  igual(llaves[0], "pin-fallos:ana", "la clave es el contador de D-202, no una sesión");
 });
 
 await caso("tres toques a la MISMA casilla no son un PIN válido", async () => {

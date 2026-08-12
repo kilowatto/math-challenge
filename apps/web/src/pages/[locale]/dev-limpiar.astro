@@ -101,7 +101,6 @@ if (!isLocale(raw)) return Astro.redirect("/en/");
             "fondo-primaria-1.webp",
             "fondo-desierto-1.webp",
             "fondo-nieve-1.webp",
-            "fondo-costa-1.webp",
           ];
           const resultados = await Promise.allSettled(
             FONDOS.map((f) => fetch(`/juego/${f}`, { cache: "reload" })),

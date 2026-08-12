@@ -316,23 +316,27 @@ preguntar lo ya decidido en §1.1.
 ## 5. Inventario detallado de assets, todos los idiomas (2026-08-11)
 
 **Nota metodológica:** todo lo marcado "Hecho" en esta sección se verificó
-**en disco, en vivo, el 2026-08-11** (`ls`/`grep` reales sobre
+en disco, en vivo — primero el 2026-08-11 (`ls`/`grep` sobre
 `apps/web/public/`, `apps/web/src/i18n/`, `packages/motor/src/convenciones.ts`,
-`packages/tutor/src/voz.ts`) — no se copió del inventario del plan de Mundo
-Kinder ni se asumió nada. Como el modo sigue "documentado, no en
-construcción" (§4.3), la expectativa por defecto es "No hecho"; donde algo
-SÍ existe, se cita el archivo real. **Resumen:** de las piezas listadas
-abajo, solo dos catálogos están genuinamente hechos y reusables tal
-cual: las convenciones numéricas por locale y los números hablados por
-locale. **El catálogo de 16 identidades de avatar existe pero NO es
-reusable dentro de este modo** (2026-08-11): son retratos de frente, y
-este modo necesita vista trasera 3/4 en movimiento — eso solo son
-**64 piezas nuevas de sprite** (16 avatares × 4 cuadros de ciclo), más 3
-efectos genéricos de partículas (choque neutro, choque dramático,
-victoria) que sí se comparten entre avatares. El resto (arte de pista,
-puertas, audio dedicado, cada línea de voz de Larry en cada idioma, y
-todo el texto de interfaz de este modo) no existe en ningún idioma
-todavía.
+`packages/tutor/src/voz.ts`), luego actualizado el 2026-08-12 conforme se
+ejecutó el plan de generación (D-202→D-206) — no se copió del inventario
+del plan de Mundo Kinder ni se asumió nada.
+
+**Resumen actualizado (2026-08-12): la mayor parte del inventario ya está
+hecha.** 76/76 imágenes (64 sprites de avatar + 12 piezas de pista),
+12/12 audios dedicados, 553/553 clips de voz (7 locales), texto de
+interfaz en 7/7 locales. Todo generado con Nano Banana (Gemini 2.5 Flash
+Image) donde Recraft falló repetidamente (D-204, D-205) y con ElevenLabs
+para audio/voz (D-203). **Nada de esto pasó por revisión humana
+completa** — imágenes sin mirar una por una, música/SFX sin escuchar
+completos, y los 553 clips de voz con solo una muestra parcial (~15/79
+de es-MX) confirmada por el dueño, el resto sin oír (D-080, pendiente).
+Sigue sin conectarse a ninguna escena de Phaser — el modo sigue
+"documentado, no en construcción" (§4.3). El wireo del manifest
+(`IMAGENES_ESQUI_DESLIZADA`/`AUDIOS_ESQUI_DESLIZADA`/`VOZ_LARRY_ESQUI` en
+`assets-manifest.ts`) está en disco pero sin comitear — ese archivo
+mezcla este trabajo con el de otra sesión, y se acordó esperar a que esa
+otra sesión comitee primero.
 
 ### 5.1 Visual
 
@@ -388,39 +392,33 @@ no el arte, es lo que cambia entre celular y 4K.
 
 ### 5.3 Voz de Larry (TTS), por los 7 locales
 
-**Estado real de la infraestructura, verificado en disco:**
-- Solo **es-MX** tiene audio de Larry pre-grabado (ElevenLabs, voz
-  clonada) — 68 archivos en `apps/web/public/voz/es-MX/`, y **todos** son
-  del banco KINDER K01-K14 (aciertos/errores/números). Ninguno es de este
-  modo ni de ningún otro de los 5 modos existentes fuera de kinder.
-- Los otros **6 locales (en, es-ES, fr-FR, pt-BR, pt-PT, de-DE) no tienen
-  ningún archivo pre-grabado** — dependen hoy de la síntesis de voz del
-  navegador como resguardo, y esa cobertura está confirmada como **no
-  garantizada** para fr-FR/pt-BR/pt-PT/de-DE (`packages/tutor/src/voz.ts:44`)
-  — cuatro de los siete locales.
-- Ninguna línea de este modo, en ningún idioma, existe redactada ni
-  grabada.
+**Estado (2026-08-12, actualizado — D-203, D-206): Hecho, 7/7 locales,
+553 clips.** Historia real, no idealizada: se redactaron y generaron
+primero los 60 líneas de es-MX (79 clips tras dividir las que llevan
+`{n}`); el dueño escuchó una **muestra parcial (~15 de 79)**, no el lote
+completo, y confirmó que el tono estaba bien; con esa autorización se
+adaptaron (no tradujeron literal) los otros 6 locales, verificados
+programáticamente (mismas 60 claves, mismo orden, `{n}` siempre al final
+de la frase); al generar el audio de esos 6, la primera corrida devolvió
+**0 clips** por un bug real — `VOICE_ID_POR_LOCALE` en
+`scripts/gen-esqui-voz.mjs` tenía los 6 comentados, dejados así por
+precaución en la Fase A, antes de que D-203 autorizara generarlos —
+corregido y reejecutado: 474 clips más, 0 errores. **Ninguno de los 553
+clips fue escuchado por un humano en su totalidad** — todos siguen con
+`revisadoPor: null` en `scripts/datos/guion-esqui.mjs`, pendiente de
+revisión nativa (D-080) antes de que un niño los oiga.
 
-**Líneas que harían falta — primera pasada corregida (2026-08-11).** La
-lista original (2026-08-10) tenía dos problemas reales, encontrados al
-revisarla otra vez a propósito: (a) asumía una sola redacción por línea,
-cuando el propio banco de Larry usa MUCHAS variantes por causa para no
-sonar robótico (`packages/tutor/src/voz.ts`/`scripts/gen-voz-larry.mjs`:
-~15 variantes por causa de error en kinder); (b) no cubría dos momentos
-reales del juego. Sigue siendo propuesta de primer borrador, NO guion
-aprobado — solo ahora con la cobertura y el volumen corregidos:
-
-| Línea propuesta | Banda | Variantes mínimas sugeridas | Estado por los 7 locales |
+| Línea | Banda | Variantes reales | Estado por los 7 locales |
 |---|---|---|---|
-| Instrucción de inicio ("elige la puerta con el resultado correcto") | PRIMARIA tardía+ | 1 (se dice una vez, no se repite en la corrida) | No hecho, 0/7 |
-| Instrucción de inicio, versión formas ("tienes que pasar por los triángulos") | KINDER | 1 por habilidad/figura usada | No hecho, 0/7 |
-| Aliento en tiempo real, sin detener el juego | KINDER | ~8-10 (se repite muchas veces por corrida, necesita variedad) | No hecho, 0/7 |
-| Reporte de cierre ("se te fueron 3 figuras...") | KINDER | ~6-8 (por rango de aciertos: perfecto / casi perfecto / con oportunidad) | No hecho, 0/7 |
-| Descalificación, tono Larry-safe | PRIMARIA tardía | ~6-8 (varía según cuántas puertas se alcanzaron) | No hecho, 0/7 |
-| Descalificación, tono arcade opt-in ("¡CHOCASTE!") | SECUNDARIA+/PRO | ~6-8, mismo criterio | No hecho, 0/7 |
-| Victoria / cadena completa | Todas las bandas con cadena | ~4-6 (varía por longitud: 12 vs. 60) | No hecho, 0/7 |
-| **Cuenta atrás antes de arrancar** ("3, 2, 1, ¡desliza!") | Todas | **Pendiente de decidir si existe** | No redactada — hueco de cobertura nuevo, no estaba en la lista original |
-| **Aliento/narración DURANTE la corrida en bandas con cadena** (no solo kinder) — p. ej. al pasar un checkpoint | PRIMARIA tardía+/SECUNDARIA/PRO | **Pendiente de decidir si Larry habla en vivo aquí, o solo acompaña en silencio** | No redactada — §1.1 solo confirmó QUE Larry acompaña/narra, no CUÁNDO en las bandas con cadena |
+| Instrucción de inicio | PRIMARIA tardía+ | 1 | **Hecho, 7/7** |
+| Instrucción de inicio, versión formas/habilidad K | KINDER | 7 (una por habilidad + 1 de formas) | **Hecho, 7/7** |
+| Aliento en tiempo real, sin detener el juego | KINDER | 10 | **Hecho, 7/7** |
+| Reporte de cierre | KINDER | 8 (2 perfecto + 3 casi + 3 oportunidad) | **Hecho, 7/7** |
+| Descalificación, tono Larry-safe | PRIMARIA tardía | 8 | **Hecho, 7/7** |
+| Descalificación, tono arcade opt-in | SECUNDARIA+/PRO | 8 | **Hecho, 7/7** |
+| Victoria / cadena completa | Todas las bandas con cadena | 6 | **Hecho, 7/7** |
+| Cuenta atrás antes de arrancar | Todas | 4 (decidido: sí existe, autorado 2026-08-12) | **Hecho, 7/7** |
+| Narración en vivo durante la cadena | PRIMARIA tardía+/SECUNDARIA/PRO | 8 (decidido: sí habla, siempre tono safe, sin `{n}`) | **Hecho, 7/7** |
 
 ### 5.4 Texto de interfaz (i18n), por los 7 locales
 

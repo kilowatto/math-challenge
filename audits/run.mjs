@@ -621,6 +621,12 @@ for (const prueba of [
   // de niño, la frontera de banda de D-184, y el fallo-CERRADO de una banda
   // ilegible. Las tres se vieron fallar quitándolas una a una.
   "apps/web/src/lib/historia-datos.prueba.mjs",
+  // El diff del loader (D-201, fase C): la ÚNICA pieza del loader que es
+  // lógica pura y se puede ejecutar sin navegador. Ahí viven los dos errores
+  // caros e invisibles: comparar por presencia en vez de por hash deja al niño
+  // con arte viejo para siempre, y contar archivos en vez de bytes hace que la
+  // barra mienta. Los dos se vieron fallar degradándolos.
+  "apps/web/src/lib/plan-de-carga.prueba.mjs",
   "apps/web/src/lib/webauthn.prueba.mjs",
   "apps/web/src/lib/passwords.prueba.mjs",
   "apps/web/src/lib/sesiones.prueba.mjs",

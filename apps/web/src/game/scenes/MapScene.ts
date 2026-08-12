@@ -59,20 +59,32 @@ export class MapScene extends Phaser.Scene {
     // termine de decodificar — nunca un verde inventado.
     this.cameras.main.setBackgroundColor(0x5b8c3a);
     /*
-     * UNA escena ilustrada, estirada al tamaño del mundo — no un mosaico
-     * (D-186, ver el encabezado de `scripts/gen-mapa-historia.mjs`). El
-     * primer intento repetía una textura pequeña con `tileSprite`; Recraft
-     * nunca entregó una textura neutra de verdad —siempre quiso pintar una
-     * escena completa—, así que el mundo entero usa esa escena una sola vez.
-     * `setDisplaySize` estira la imagen al `worldWidth`/`worldHeight` reales
-     * en vez de recortarla — la proporción del archivo (1024x2048, el
-     * tamaño soportado por Recraft más cercano) no tiene que calzar exacto.
+     * UNA escena ilustrada, escalada para CUBRIR el mundo — no un mosaico
+     * (D-186, ver el encabezado de `scripts/gen-mapa-historia.mjs`) y, desde
+     * ahora, tampoco un estiramiento en dos ejes distintos.
+     *
+     * Hasta aquí, `setDisplaySize(worldWidth, worldHeight)` estiraba la
+     * imagen —1024x2048, el tamaño soportado por Recraft más cercano— a
+     * 1000x2400: casi sin cambio en ancho, pero ~17% más alta de lo que
+     * Recraft dibujó, deformando cada colina y cada nube. El comentario
+     * original decía que la proporción "no tiene que calzar exacto" porque
+     * de todos modos había que estirar — cierto, pero estirar EN DOS EJES
+     * DISTINTOS es lo que deforma; escalar por el mismo factor en los dos
+     * no.
+     *
+     * `Math.max(worldWidth/tex.width, worldHeight/tex.height)` es el mismo
+     * cálculo de "cubrir" que ya usan `LoaderScene`/`PinScene` para sus
+     * fondos de pantalla completa — aquí cubre el MUNDO, no el viewport. La
+     * imagen sale más ANCHA que `worldWidth` (una escala de ~1.17 dejaría
+     * ~1198 de ancho contra 1000 de mundo), así que se centra horizontalmente
+     * y sobra por los lados — nunca falta: el camino y los nodos, que viven
+     * dentro de `[0, worldWidth]`, siempre caen sobre imagen real, jamás
+     * sobre el verde-follaje de espera.
      */
-    this.add
-      .image(0, 0, capitulo.backgroundKey)
-      .setOrigin(0, 0)
-      .setDisplaySize(capitulo.worldWidth, capitulo.worldHeight)
-      .setDepth(0);
+    const fondo = this.add.image(0, 0, capitulo.backgroundKey).setOrigin(0, 0).setDepth(0);
+    const escala = Math.max(capitulo.worldWidth / fondo.width, capitulo.worldHeight / fondo.height);
+    fondo.setScale(escala);
+    fondo.setX((capitulo.worldWidth - fondo.displayWidth) / 2);
 
     this.path = this.construirPath(capitulo);
     this.dibujarCamino();

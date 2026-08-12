@@ -46,7 +46,7 @@
 import Phaser from "phaser";
 import { BotonSonido } from "../objects/BotonSonido";
 import { FlechaAtras } from "../objects/FlechaAtras";
-import { LarryFotorrealista, LARRY_FOTO_CLAVES } from "../objects/LarryFotorrealista";
+import { LarryFotorrealista, LARRY_FOTO_CLAVES, LARRY_FOTO_ESENCIALES } from "../objects/LarryFotorrealista";
 import { TODOS_LOS_ANIMALES, claveDeAnimal, type AnimalId } from "../../lib/avatares-animal";
 import { CLAVES_ATREZO_PIN, clavePinDibujo, urlPinDibujo } from "../pin-dibujos";
 import type { ArranquePin } from "./PinScene";
@@ -136,11 +136,18 @@ export class QuienJuegaScene extends Phaser.Scene {
     // procedurales del título y de la flecha de regreso.
     this.load.image("letrero-madera", "/juego/letrero-madera.webp");
     this.load.image("flecha-madera", "/juego/flecha-madera.webp");
-    // Larry fotorrealista (D-196). Los 38 cuadros pesan 900 KB y solo el
-    // primero hace falta para que Larry EXISTA en pantalla: los demás son
-    // caminata y siete comportamientos que empiezan segundos después. El resto
-    // va en `segundaFase()`.
-    this.load.image(LARRY_FOTO_CLAVES[0], `/mapa/${LARRY_FOTO_CLAVES[0]}.webp`);
+    // Larry fotorrealista (D-196). Los 38 cuadros pesan 900 KB y solo DOS
+    // hacen falta para que exista sin huecos: la pose de reposo y la silla,
+    // que el constructor dibuja de inmediato. Los demás son caminata y siete
+    // comportamientos que empiezan segundos después, y van en `segundaFase()`.
+    //
+    // Decir «solo el primero» fue un error que llegó a producción: la silla
+    // salió como el cuadro con diagonal verde de Phaser —su placeholder de
+    // textura faltante— junto a Larry. `LARRY_FOTO_ESENCIALES` existe para que
+    // esa lista viva al lado del constructor que la necesita, no aquí.
+    for (const clave of LARRY_FOTO_ESENCIALES) {
+      this.load.image(clave, `/mapa/${clave}.webp`);
+    }
     // Los avatares que ESTA casa usa — no los 16.
     //
     // `init()` corre antes que `preload()`, así que aquí ya se sabe qué animal

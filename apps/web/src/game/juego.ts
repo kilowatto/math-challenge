@@ -101,7 +101,13 @@ export function crearJuego(contenedorId: string, arranque: Arranque): Phaser.Gam
     // `mc-47` §5 (Android de gama baja) es la razón de mantener el renderer lo
     // más simple posible.
     render: { antialias: true, pixelArt: false },
-    physics: { default: "matter", matter: { gravity: { x: 0, y: 1.1 } } },
+    // SIN `physics` — se probó activar Matter aquí, adelantándose al loader, y
+    // en el simulador apareció un cuadro negro con diagonal verde flotando
+    // junto a Larry: el wireframe de depuración de Matter, en una pantalla que
+    // no usa física. `debug: false` NO lo quitó (Phaser 4 no lo respeta en esa
+    // posición del config), así que el motor se enciende cuando de verdad haya
+    // un cuerpo que simular — en la escena del loader, y con su config propia,
+    // no en el config global de todo el producto.
     scene: [],
   });
 

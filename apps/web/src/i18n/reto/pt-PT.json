@@ -50,6 +50,8 @@
   "k.descomponer.marco": "Já há {parte}. Quantos faltam para {total}?",
   "k.suma.patos": "{a} patos e mais {b} patos. Quantos patos ficam?",
   "k.resta.patos": "Havia {a} patos. Foram-se {b}. Quantos ficam?",
+  "k.pop.subitiza": "Rebenta exatamente {n} bolhas.",
+  "k.pop.resta": "Há {a} bolhas. Rebenta {b}. Quantas ficam?",
   "k.formas.cual_sobra": "Qual é que não vai com os outros?",
   "juego.bien": "É isso!",
   "juego.aciertos": ["Sim!", "Muito bem!", "Encontraste!", "Exactamente!", "Acertaste!", "Boa ideia!", "Está certo!", "Vamos continuar!"],
@@ -79,6 +81,8 @@
     "Num padrão AB vão-se alternando."
   ],
   "k.unoauno.gorros": "{patos} patos e {gorros} chapéus. Quantos patos ficam sem chapéu?",
+  "k.mover.gorros": "Move cada chapéu para um pato. Quantos patos ficam sem chapéu?",
+  "k.mover.resta": "Move os patos que se vão embora. Quantos ficam?",
   "k.cardinalidad.ultimo": "O Larry contou até {n}. Então, quantos patos há?",
   "k.recta.hueco": "Que número vai no espaço vazio, logo a seguir ao {antes}?",
   "k.marco.faltan": "O quadro tem {llenas} preenchidas. Quantas faltam para o encher?",

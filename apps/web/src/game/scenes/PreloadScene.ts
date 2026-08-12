@@ -18,66 +18,67 @@
  */
 import Phaser from "phaser";
 import { ProgressManager } from "../managers/ProgressManager";
+import { IMAGENES_MODO_HISTORIA, AUDIOS_MODO_HISTORIA } from "../assets-manifest";
+import { activosYaPrecargados, cargarLoteConProgreso } from "../carga-assets";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
     super("PreloadScene");
   }
 
-  preload(): void {
-    const { width, height } = this.scale;
-    const caja = this.add.graphics();
-    const barra = this.add.graphics();
-    const centroX = width / 2;
-    const centroY = height / 2;
+  // Sin `this.load` aquí: D-200 encontró que esta escena dibujaba su barra
+  // SIEMPRE, sin importar si `CargaGlobalScene` (quien-juega) ya había
+  // precargado todo esto minutos antes — "el loader está cuando entro al
+  // mapa" seguía pasando aunque los archivos ya estuvieran calientes en el
+  // caché del service worker, porque la barra se dibujaba de todas formas.
+  // La carga real (y la UI, si hace falta) se decide en `create()`, después
+  // de preguntar si ya se precargó — ver `carga-assets.ts`.
+  preload(): void {}
 
-    caja.fillStyle(0xffffff, 0.15);
-    caja.fillRoundedRect(centroX - 110, centroY - 10, 220, 20, 10);
+  async create(): Promise<void> {
+    const yaPrecargado = await activosYaPrecargados();
+    let caja: Phaser.GameObjects.Graphics | undefined;
+    let barra: Phaser.GameObjects.Graphics | undefined;
 
-    this.load.on("progress", (valor: number) => {
-      barra.clear();
-      barra.fillStyle(0xf36b1c, 1);
-      barra.fillRoundedRect(centroX - 106, centroY - 6, 212 * valor, 12, 6);
-    });
-
-    this.load.on("complete", () => {
+    if (!yaPrecargado) {
+      const { width, height } = this.scale;
+      const centroX = width / 2;
+      const centroY = height / 2;
+      caja = this.add.graphics();
+      caja.fillStyle(0xffffff, 0.15);
+      caja.fillRoundedRect(centroX - 110, centroY - 10, 220, 20, 10);
+      barra = this.add.graphics();
+      const dibujarBarra = (valor: number) => {
+        barra?.clear();
+        barra?.fillStyle(0xf36b1c, 1);
+        barra?.fillRoundedRect(centroX - 106, centroY - 6, 212 * valor, 12, 6);
+      };
+      await cargarLoteConProgreso(this, IMAGENES_MODO_HISTORIA, "imagen", dibujarBarra);
+      await cargarLoteConProgreso(this, AUDIOS_MODO_HISTORIA, "audio", dibujarBarra);
       caja.destroy();
       barra.destroy();
-    });
+    } else {
+      // Ya se marcó como precargado (`CargaGlobalScene`), pero ESTE
+      // `Phaser.Game` (página distinta) todavía no tiene las texturas en su
+      // propio caché EN MEMORIA — la petición de red la sirve el service
+      // worker casi al instante, pero decodificar y subir cada archivo
+      // sigue siendo trabajo real de Phaser. D-200.4: saltar la UI por
+      // completo aquí (como hacía `CargaGlobalScene` antes de arreglarse)
+      // dejaba ese trabajo corriendo con la pantalla en blanco — un
+      // spinner mínimo, nunca nada en silencio.
+      const { width, height } = this.scale;
+      const spinner = this.add.graphics();
+      spinner.lineStyle(4, 0xf36b1c, 1);
+      spinner.beginPath();
+      spinner.arc(0, 0, 18, 0, Math.PI * 1.4);
+      spinner.strokePath();
+      spinner.setPosition(width / 2, height / 2);
+      this.tweens.add({ targets: spinner, angle: 360, duration: 900, repeat: -1, ease: "Linear" });
+      await cargarLoteConProgreso(this, IMAGENES_MODO_HISTORIA, "imagen");
+      await cargarLoteConProgreso(this, AUDIOS_MODO_HISTORIA, "audio");
+      spinner.destroy();
+    }
 
-    this.load.image("fondo-primaria-1", "/juego/fondo-primaria-1.webp");
-    this.load.image("arbusto-a", "/juego/arbusto-a.webp");
-    this.load.image("arbusto-b", "/juego/arbusto-b.webp");
-    this.load.image("helecho-a", "/juego/helecho-a.webp");
-    // El letrero del reto (GameplayScene): no es del mapa, pero se precarga
-    // aquí igual — es la ÚNICA cola de carga de Modo Historia.
-    this.load.image("letrero-madera", "/juego/letrero-madera.webp");
-    // D-190: el tronco+candado del camino de KINDER/PRIMARIA (LevelNode.ts
-    // modo "camino") y el ciclo de caminata antropomorfo de Larry
-    // (LarryAvatar.ts) — mismo `PreloadScene`, ninguna cola nueva.
-    this.load.image("tronco-a", "/juego/tronco-a.webp");
-    this.load.image("tronco-b", "/juego/tronco-b.webp");
-    this.load.image("candado", "/juego/candado.webp");
-    // D-190: los biomas de desierto y nieve — cargados ya, aunque todavía no
-    // hay forma de llegar a esos capítulos desde el juego (ver story.ts).
-    this.load.image("fondo-desierto-1", "/juego/fondo-desierto-1.webp");
-    this.load.image("cactus-b", "/juego/cactus-b.webp");
-    this.load.image("roca-desierto", "/juego/roca-desierto.webp");
-    this.load.image("fondo-nieve-1", "/juego/fondo-nieve-1.webp");
-    this.load.image("pino-nevado", "/juego/pino-nevado.webp");
-    this.load.image("roca-nieve", "/juego/roca-nieve.webp");
-    this.load.image("cristal-hielo", "/juego/cristal-hielo.webp");
-    this.load.image("larry_camina_1", "/mapa/larry_camina_1.webp");
-    this.load.image("larry_camina_2", "/mapa/larry_camina_2.webp");
-    this.load.image("larry_camina_3", "/mapa/larry_camina_3.webp");
-    this.load.image("larry_camina_4", "/mapa/larry_camina_4.webp");
-    this.load.image("larry_festejo", "/mapa/larry_festejo.webp");
-    this.load.image("larry_menu_aplaude", "/mapa/larry_menu_aplaude.webp");
-    this.load.image("larry_idle_1", "/mapa/larry_idle_1.webp");
-    this.load.image("larry_idle_2", "/mapa/larry_idle_2.webp");
-  }
-
-  create(): void {
     // D-190: MenuScene (Larry aplaudiendo, dos botones) solo existe para
     // "camino" (KINDER/PRIMARIA). SECUNDARIA sigue exactamente como antes:
     // directo al árbol, sin menú — no tiene un "modo historia" separado de
@@ -86,7 +87,11 @@ export class PreloadScene extends Phaser.Scene {
     if (progreso.modo === "camino") {
       this.scene.start("MenuScene");
     } else {
-      this.scene.start("MapScene", { chapterId: "primaria-1" });
+      // Mundo Kinder multi-bioma: antes literal "primaria-1" — SECUNDARIA
+      // no tiene biomas todavía, así que `chapterId` siempre resuelve a
+      // "primaria-1" para esta banda, pero ahora es un dato real, no un
+      // literal repetido en cuatro archivos.
+      this.scene.start("MapScene", { chapterId: progreso.chapterId });
     }
   }
 }

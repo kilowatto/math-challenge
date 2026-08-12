@@ -50,6 +50,8 @@
   "k.descomponer.marco": "Es sind schon {parte} da. Wie viele fehlen bis {total}?",
   "k.suma.patos": "{a} Enten und noch {b} Enten. Wie viele Enten sind das?",
   "k.resta.patos": "Da waren {a} Enten. {b} sind weggeschwommen. Wie viele bleiben?",
+  "k.pop.subitiza": "Lass genau {n} Blasen platzen.",
+  "k.pop.resta": "Da sind {a} Blasen. Lass {b} davon platzen. Wie viele bleiben?",
   "k.formas.cual_sobra": "Welches passt nicht dazu?",
   "juego.bien": "Genau!",
   "juego.aciertos": ["Ja!", "Sehr gut!", "Du hast es gefunden!", "Genau richtig!", "Geschafft!", "Gut gedacht!", "Das stimmt!", "Weiter geht’s!"],
@@ -79,6 +81,8 @@
     "Bei einem AB-Muster wechseln sie sich ab."
   ],
   "k.unoauno.gorros": "{patos} Enten und {gorros} Hüte. Wie viele Enten bekommen keinen Hut?",
+  "k.mover.gorros": "Bewege jeden Hut zu einer Ente. Wie viele Enten bekommen keinen Hut?",
+  "k.mover.resta": "Bewege die Enten, die wegschwimmen. Wie viele bleiben?",
   "k.cardinalidad.ultimo": "Larry hat bis {n} gezählt. Wie viele Enten sind es also?",
   "k.recta.hueco": "Welche Zahl gehört in die Lücke, gleich nach der {antes}?",
   "k.marco.faltan": "Im Zehnerfeld sind {llenas} voll. Wie viele fehlen noch?",

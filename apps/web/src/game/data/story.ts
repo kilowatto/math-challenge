@@ -138,15 +138,40 @@ export const CAPITULOS: readonly WorldChapter[] = [
     backgroundKey: "fondo-desierto-1",
     worldWidth: 1000,
     worldHeight: 2400,
+    /**
+     * Mundo Kinder multi-bioma (#34, plan §4.2): el sendero de arena que
+     * YA está dibujado en `fondo-desierto-1.webp` — no un río heredado de
+     * `primaria-1` (era literalmente el mismo arreglo de puntos, nunca
+     * rediseñado). Trazado leyendo el archivo real: 15 puntos de control
+     * siguiendo el camino claro y arenoso de la ilustración (una curva en
+     * "S" entre las palmeras de abajo y las dunas lejanas), con los
+     * últimos 2 puntos extendidos sobre la cresta de la duna más lejana
+     * —donde el camino se difumina en la ilustración— para llegar cerca
+     * de la cima del mundo, igual que `primaria-1`.
+     *
+     * Conversión: la imagen nativa es 800×1600px; `worldWidth`/`worldHeight`
+     * (1000×2400) la estiran con factores DISTINTOS en x (×1.25) e y
+     * (×1.5) — `MapScene.ts` usa `setDisplaySize()`, que no conserva el
+     * aspecto. Cada punto de abajo es su coordenada nativa multiplicada
+     * por esos factores, verificado dibujando los puntos SOBRE la imagen
+     * real antes de darlos por buenos (nunca a ciegas).
+     */
     pathData: [
-      { x: 500, y: 2320 },
-      { x: 340, y: 2000 },
-      { x: 660, y: 1700 },
-      { x: 400, y: 1380 },
-      { x: 640, y: 1060 },
-      { x: 360, y: 760 },
-      { x: 560, y: 420 },
-      { x: 500, y: 120 },
+      { x: 425, y: 2325 },
+      { x: 500, y: 2205 },
+      { x: 600, y: 2100 },
+      { x: 750, y: 1950 },
+      { x: 694, y: 1800 },
+      { x: 525, y: 1650 },
+      { x: 425, y: 1500 },
+      { x: 488, y: 1275 },
+      { x: 600, y: 1125 },
+      { x: 700, y: 1020 },
+      { x: 575, y: 870 },
+      { x: 500, y: 705 },
+      { x: 413, y: 570 },
+      { x: 350, y: 375 },
+      { x: 400, y: 150 },
     ],
     vegetationLayers: [
       {

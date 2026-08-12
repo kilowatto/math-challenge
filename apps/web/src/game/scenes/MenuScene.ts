@@ -24,6 +24,9 @@ import Phaser from "phaser";
 import { ProgressManager } from "../managers/ProgressManager";
 import { capituloPorId } from "../data/story";
 import { BotonSonido } from "../objects/BotonSonido";
+import { BotonMusica } from "../objects/BotonMusica";
+import { MusicManager } from "../managers/MusicManager";
+import { SfxManager } from "../managers/SfxManager";
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -34,10 +37,11 @@ export class MenuScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const progreso = this.registry.get("progressManager") as ProgressManager;
 
-    // Mismo fondo que el primer capítulo — MenuScene es la puerta de
-    // entrada al mundo, no una pantalla aparte con su propia identidad
-    // visual todavía (eso es del selector de mundo, fase posterior).
-    const capitulo = capituloPorId("primaria-1");
+    // Mismo fondo que el capítulo real de este niño — Mundo Kinder
+    // multi-bioma: antes era el literal "primaria-1", que solo servía
+    // porque un único capítulo existía. `progreso.chapterId` lo decide
+    // `kids/mapa.astro` server-side (banda real + bioma activo).
+    const capitulo = capituloPorId(progreso.chapterId);
     if (capitulo) {
       this.add
         .image(width / 2, height / 2, capitulo.backgroundKey)
@@ -50,6 +54,7 @@ export class MenuScene extends Phaser.Scene {
     const letrero = this.add.image(width / 2, height * 0.38, "letrero-madera").setDepth(1);
     const escala = Math.min((width * 0.7) / letrero.width, 260 / letrero.height);
     letrero.setScale(escala);
+    this.registrarVientoEnLetrero(letrero);
 
     const larry = this.add.image(width / 2, letrero.y - letrero.displayHeight / 2 - 60, "larry_menu_aplaude").setDepth(2);
     larry.setDisplaySize(140, 140);
@@ -66,6 +71,43 @@ export class MenuScene extends Phaser.Scene {
     // esquina superior derecha — un bug real, encontrado probando en un
     // simulador real, los tenía superpuestos ahí.
     new BotonSonido(this, 44, 44).setDepth(5);
+    // D-198: control de música, separado del de voz — mismo criterio de
+    // ubicación, 64px a la derecha del de sonido (56px de diámetro + margen).
+    new BotonMusica(this, 108, 44).setDepth(5);
+
+    // "calma" — explorar el mapa/menú, nunca resolver. Idempotente: si ya
+    // sonaba "calma" (se volvió del reto), no reinicia el loop.
+    (this.registry.get("musicManager") as MusicManager).reproducir("calma");
+  }
+
+  /**
+   * "Que tenga efecto de aire que se mueva un poco porque sopla el aire"
+   * (D-199, ronda 5) — el letrero cuelga de dos cuerdas, así que se mece
+   * como un péndulo alrededor de ARRIBA, no de su centro. Cambiar el
+   * origen a (0.5, 0) mueve el punto de anclaje del giro sin mover la
+   * imagen (se reposiciona en el mismo paso para que el letrero se quede
+   * exactamente donde ya estaba). Amplitud chica (±1.8°) y lenta (3.2s):
+   * es madera pesada, no una hoja — mismo respeto por
+   * `prefers-reduced-motion` que `SwayingPlant.ts` ya aplica a la
+   * vegetación.
+   */
+  private registrarVientoEnLetrero(letrero: Phaser.GameObjects.Image): void {
+    const reducido =
+      typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reducido) return;
+
+    const centroY = letrero.y;
+    letrero.setOrigin(0.5, 0);
+    letrero.y = centroY - letrero.displayHeight / 2;
+
+    this.tweens.add({
+      targets: letrero,
+      angle: { from: -1.8, to: 1.8 },
+      duration: 3200,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
   }
 
   /** Un ligero rebote — Larry no se queda "congelado" en el menú. */
@@ -102,6 +144,7 @@ export class MenuScene extends Phaser.Scene {
     // de exigir DOWN+UP sobre el mismo objeto, que en algunos entornos de
     // prueba automatizados no llega a dispararse dos veces.
     boton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+      (this.registry.get("sfxManager") as SfxManager).reproducir("toque");
       this.tweens.add({
         targets: [boton, etiqueta],
         scaleX: 0.94,
@@ -115,7 +158,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private irAModoHistoria(): void {
-    this.scene.start("MapScene", { chapterId: "primaria-1" });
+    const progreso = this.registry.get("progressManager") as ProgressManager;
+    this.scene.start("MapScene", { chapterId: progreso.chapterId });
   }
 
   private irARetos(progreso: ProgressManager): void {

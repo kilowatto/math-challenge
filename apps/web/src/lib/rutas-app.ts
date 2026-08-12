@@ -33,6 +33,15 @@ export const rutaKids = (locale: Locale | string) => `/${locale}/app/kids/`;
 export const rutaPin = (locale: Locale | string) => `/${locale}/app/kids/pin`;
 
 /**
+ * El adulto FIJA/CAMBIA el PIN de un hijo, desde el panel de ajustes de
+ * "¿Quién juega?" (D-198, ronda 3) — distinta de `rutaPin`, que es donde el
+ * NIÑO lo escribe para entrar. `childId` va en la query porque esta ruta no
+ * tiene segmento dinámico propio (es una sola página para cualquier hijo).
+ */
+export const rutaPerfilPin = (locale: Locale | string, childId: string) =>
+  `/${locale}/app/kids/perfil-pin/?childId=${encodeURIComponent(childId)}`;
+
+/**
  * Donde el niño JUEGA. Es el destino real de todo el embudo infantil.
  *
  * Vive aquí y no escrito a mano en cada archivo por lo mismo que las otras: el

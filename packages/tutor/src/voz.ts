@@ -72,6 +72,18 @@ import { LOCALES, type Locale } from "../../motor/src/convenciones.ts";
  *
  * De ahí que sean dos presupuestos y no uno: mezclarlos produce una app con
  * musiquita de fondo mientras un niño cuenta.
+ *
+ * ═══ D-198 reversa `musica` a `true` en los dos regímenes ═════════════════
+ *
+ * El dueño vio esta misma evidencia explicada y confirmó que quiere música de
+ * fondo real, incluyendo mientras se resuelve un ítem — no se borra el
+ * argumento de arriba, se anota que se decidió en contra de él. Lo que SÍ
+ * mitiga el riesgo que `mc-42`/Mayer señalan: la música nunca es
+ * `espontanea` (no arranca sola a mitad de una pregunta, ver `MusicManager.ts`,
+ * que solo la cambia entre escenas completas) y queda lista para agacharse
+ * (`MusicManager.agachar()`) en cuanto exista voz de Larry que la dispare —
+ * hoy no existe (P-19/P-20 de `docs/dudas.md`, sin contestar), así que el
+ * ducking está construido pero inerte.
  */
 export type Regimen = "mientras_resuelve" | "al_resolver";
 
@@ -91,12 +103,12 @@ export const PRESUPUESTO: Record<Regimen, {
    * petición —«dilo otra vez» va a ser el botón más usado del producto— y no
    * arranca solo una segunda vez.
    */
-  mientras_resuelve: { audioMs: 6_000, animacionMs: 0, musica: false, espontaneo: false },
+  mientras_resuelve: { audioMs: 6_000, animacionMs: 0, musica: true, espontaneo: false },
   /**
    * El instante de recompensa o de error. Aquí sí hay juice, y cabe entero en
    * menos de lo que tarda en llegar la siguiente pregunta (`mc-42` §12).
    */
-  al_resolver: { audioMs: 500, animacionMs: 800, musica: false, espontaneo: true },
+  al_resolver: { audioMs: 500, animacionMs: 800, musica: true, espontaneo: true },
 };
 
 /**

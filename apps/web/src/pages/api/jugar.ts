@@ -508,6 +508,14 @@ async function servirSiguiente(
   presentarDuelo: (itemId: string, locale: string) => Promise<unknown | null>,
 ): Promise<Response> {
   const childProfileId = quien.id;
+  /**
+   * Mundo Kinder multi-bioma: qué mundo está jugando este reto — solo tiene
+   * sentido en KINDER (D-190; PRIMARIA/SECUNDARIA no mandan esto). Sin
+   * `bioma` en el cuerpo, `leerModelo`/`registrarEnModelo` caen en
+   * `BIOMA_DEFECTO` dentro de `aprendiz.ts` — este endpoint no inventa un
+   * valor, solo lo deja pasar si vino.
+   */
+  const bioma = typeof cuerpo.bioma === "string" ? cuerpo.bioma : undefined;
 
   /**
    * ─── El límite de pantalla, ANTES de servir (F8 #270, #271, #273) ────────
@@ -563,7 +571,7 @@ async function servirSiguiente(
 
   const [catalogoCrudo, resumen] = await Promise.all([
     origen.catalogoAdaptativo(),
-    leerModelo(env.LEARNER_DO, childProfileId),
+    leerModelo(env.LEARNER_DO, childProfileId, bioma),
   ]);
 
   let catalogo = catalogoCrudo;
@@ -744,6 +752,8 @@ async function recibirRespuesta(
   ) => Promise<null | Awaited<ReturnType<Ingest["calificarContraBanco"]>>>,
 ): Promise<Response> {
   const childProfileId = quien.id;
+  // Mundo Kinder multi-bioma — ver el comentario gemelo en `servirSiguiente()`.
+  const bioma = typeof cuerpo.bioma === "string" ? cuerpo.bioma : undefined;
   const itemId = typeof cuerpo.itemId === "string" ? cuerpo.itemId : null;
   const eleccion = cuerpo.eleccion;
   if (!itemId) return json({ error: "falta_itemId" }, 400);
@@ -818,7 +828,7 @@ async function recibirRespuesta(
       (await env.INGEST.calificarContraBanco(itemId, eleccion)));
   if (!veredicto) return json({ error: "item_desconocido" }, 500);
 
-  const resumen = await leerModelo(env.LEARNER_DO, childProfileId);
+  const resumen = await leerModelo(env.LEARNER_DO, childProfileId, bioma);
   const { estado } = estadoDe(resumen, veredicto.habilidad, semilla);
   const dificultad = dificultadDeNivel(veredicto.nivel);
   const correcto = veredicto.acc === 1;
@@ -863,6 +873,7 @@ async function recibirRespuesta(
         ahora: Date.now(),
         banda: veredicto.banda ?? "KINDER",
         nivelSemilla: semilla,
+        bioma,
       });
 
   // ─── La telemetría, con los campos de arranque en frío (criterio #101) ───

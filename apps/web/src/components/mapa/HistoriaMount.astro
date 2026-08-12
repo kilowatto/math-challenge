@@ -54,6 +54,8 @@ interface Props {
     vozDesactivada: string;
     sinVoz: string;
     pendiente: string;
+    verlo: string;
+    otraVez: string;
   };
   /** BCP-47 ya resuelto por `ETIQUETA_DE_VOZ` (D-078) — nunca calculado aquí. */
   etiquetaVoz: string;
@@ -74,11 +76,27 @@ interface Props {
    * página de siempre) — este componente solo pinta la clase distinta.
    */
   pantallaCompleta?: boolean;
+  /**
+   * Mundo Kinder multi-bioma: qué `WorldChapter` de `story.ts` abre el
+   * botón "Modo Historia" — `"primaria-1"` para PRIMARIA/SECUNDARIA hoy,
+   * `"desierto-1"` para el piloto KINDER. `kids/mapa.astro` lo decide
+   * según banda real (D1) y, para KINDER, qué bioma está activo.
+   */
+  chapterId: string;
+  /**
+   * Mundo Kinder multi-bioma (#34): qué bioma está jugando este niño AHORA
+   * — `undefined` para PRIMARIA/SECUNDARIA y la Sabana de siempre.
+   * `GameplayScene` lo pasa a `RetoController`, que lo manda en CADA
+   * `pedir()` al servidor — ver `RetoController.ts::DatosDeArranqueReto.
+   * bioma` para por qué esto no es opcional de verdad si se quiere que el
+   * árbol de un bioma se llene con el juego real.
+   */
+  bioma?: string;
 }
 
 const {
   arbol, modo, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA, rutaRetos,
-  pantallaCompleta = false,
+  pantallaCompleta = false, chapterId, bioma,
 } = Astro.props;
 ---
 
@@ -97,7 +115,7 @@ const {
 <script
   type="application/json"
   id="historia-datos"
-  set:html={JSON.stringify({ arbol, modo, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA, rutaRetos })}
+  set:html={JSON.stringify({ arbol, modo, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA, rutaRetos, chapterId, bioma })}
 />
 
 <script src="../../game/entrada.ts"></script>

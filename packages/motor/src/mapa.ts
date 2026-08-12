@@ -194,6 +194,16 @@ export interface EntradaDeHabilidad {
    * componente pinta el identificador solo si es `null`, y eso se ve.
    */
   readonly rotulo: string | null;
+  /**
+   * Mundo Kinder multi-bioma: qué mundo es este tronco (`"desierto"`,
+   * `"sabana"`…). `undefined` para PRIMARIA/SECUNDARIA, que no tienen
+   * bioma. `construirArbol()` recibe entradas YA filtradas a UN bioma por
+   * el llamador — este campo viaja hasta `NodoDelArbol` para que
+   * `MapScene`/`LevelNode` sepan qué arte pintar, no para que esta función
+   * agrupe o encadene entre biomas (eso queda para cuando exista un
+   * segundo bioma jugable de verdad).
+   */
+  readonly bioma?: string;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -297,6 +307,8 @@ export interface NodoDelArbol {
    * primer nodo de todo el árbol nunca está bloqueado.
    */
   readonly bloqueado: boolean;
+  /** Mundo Kinder multi-bioma — ver `EntradaDeHabilidad.bioma`. `undefined` fuera de KINDER. */
+  readonly bioma?: string;
 }
 
 /**
@@ -375,6 +387,7 @@ export function construirArbol(entradas: readonly EntradaDeHabilidad[]): Arbol {
           relleno: e.skillState,
           secuencia: contador,
           bloqueado,
+          bioma: e.bioma,
         };
       }),
   }));

@@ -50,6 +50,15 @@ export interface RotulosDeReto {
   vozDesactivada: string;
   sinVoz: string;
   pendiente: string;
+  /**
+   * Mundo Kinder multi-bioma (#34): el botón del destello (`flash`, K01/K02)
+   * — mismas claves `juego.verlo`/`juego.otraVez` que ya usa `Pantalla.astro`
+   * desde F5, ya autoradas en los 7 locales. `GameplayScene` es la primera
+   * vez que Modo Historia sirve `flash` — hasta hoy solo servía PRIMARIA
+   * (`toca_la_respuesta`).
+   */
+  verlo: string;
+  otraVez: string;
 }
 
 export interface OpcionDeReto {
@@ -62,6 +71,17 @@ export interface ItemDeReto {
   enunciado: string;
   formato: string;
   opciones: OpcionDeReto[];
+  /**
+   * Mundo Kinder multi-bioma (#34): las variables YA FORMATEADAS del
+   * enunciado (`presentar.ts::ItemPresentado.vars` — números ya escritos
+   * con la convención del locale, D-034). El banco de PRIMARIA nunca las
+   * necesitó (su único formato es botones de texto); `flash`
+   * (destello, K01/K02) sí — `GameplayScene`/`AccessibleReto` la usan solo
+   * para DECORAR la escena antes de las opciones de siempre, nunca para
+   * calificar: la respuesta sigue siendo, en las dos vistas, tocar una de
+   * `opciones`.
+   */
+  vars?: Record<string, string>;
 }
 
 export interface VeredictoDeReto {
@@ -85,6 +105,17 @@ interface DatosDeArranqueReto {
   rotulos: RotulosDeReto;
   etiquetaVoz: string;
   salirA: string;
+  /**
+   * Mundo Kinder multi-bioma (#34): qué mundo está jugando este niño AHORA
+   * — `undefined` para PRIMARIA/SECUNDARIA (sin bioma) y para la Sabana de
+   * siempre. Viaja en CADA `pedir("siguiente"/"responder", ...)` para que
+   * `Aprendiz` (el Durable Object) registre el dominio bajo el bioma
+   * correcto — sin esto, jugar el árbol de Desierto seguiría escribiendo
+   * bajo el bioma por omisión (`"sabana"`, `aprendiz.ts::BIOMA_DEFECTO`) y
+   * el árbol de Desierto NUNCA se llenaría, cayendo siempre de vuelta a la
+   * Sabana en `kids/mapa.astro`.
+   */
+  bioma?: string;
 }
 
 type Evento =
@@ -118,6 +149,7 @@ export class RetoController extends Emisor {
   private readonly habilidadFija: string;
   private readonly nivelFijo: string | null;
   private readonly salirDestino: string;
+  private readonly bioma?: string;
 
   actual: ItemDeReto | null = null;
   elegido: number | string | null = null;
@@ -146,6 +178,7 @@ export class RetoController extends Emisor {
     this.rotulos = datos.rotulos;
     this.etiquetaVoz = datos.etiquetaVoz;
     this.salirDestino = datos.salirA;
+    this.bioma = datos.bioma;
 
     this.leerSolo = leerVozActivada();
     if (this.sintesis) {
@@ -289,6 +322,10 @@ export class RetoController extends Emisor {
       ultimoItemId: this.ultimoItemId,
       habilidad: this.habilidadFija,
       nivel: this.nivelFijo ?? undefined,
+      // Mundo Kinder multi-bioma (#34) — ver el comentario de `bioma` en
+      // `DatosDeArranqueReto`: sin esto, el dominio de Desierto nunca se
+      // separa del de Sabana y el árbol de Desierto no se llena jamás.
+      bioma: this.bioma,
     });
 
     if (r?.corte) {
@@ -306,6 +343,9 @@ export class RetoController extends Emisor {
       // manda `dibujo` (ver packages/motor/src/banco-primaria.ts) — el texto
       // siempre es el nombre accesible que ya autoró el banco.
       opciones: r.item.opciones.map((o: any) => ({ valor: o.valor, texto: o.texto })),
+      // Mundo Kinder multi-bioma (#34): `vars` viaja tal cual la mandó
+      // `presentarItemEstructura` — ver el comentario de `ItemDeReto.vars`.
+      vars: r.item.vars,
     };
     this.retoSesionId = r.retoSesionId ?? this.retoSesionId;
     this.ordenActual = r.contexto?.orden ?? null;
@@ -332,6 +372,7 @@ export class RetoController extends Emisor {
       habilidad: this.habilidadFija,
       retoSesionId: this.retoSesionId,
       orden: this.ordenActual,
+      bioma: this.bioma,
     });
     this.mandando = false;
 

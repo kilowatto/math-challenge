@@ -23,7 +23,9 @@ import { VegetationManager } from "../managers/VegetationManager";
 import { LevelNode } from "../objects/LevelNode";
 import { LarryAvatar } from "../objects/LarryAvatar";
 import { BotonSonido } from "../objects/BotonSonido";
+import { BotonMusica } from "../objects/BotonMusica";
 import { ProgressManager } from "../managers/ProgressManager";
+import { MusicManager } from "../managers/MusicManager";
 import type { NodoDelArbol } from "../../../../../packages/motor/src/mapa.ts";
 
 interface NodoPosicionado {
@@ -119,6 +121,12 @@ export class MapScene extends Phaser.Scene {
     // `.mapa-historia-completa__salida`, 88px, z-index 10): un bug real,
     // encontrado probando en un simulador real, los tenía superpuestos.
     new BotonSonido(this, 44, 44).setDepth(10).setScrollFactor(0);
+    // D-198: control de música, mismo criterio de ubicación que MenuScene.
+    new BotonMusica(this, 108, 44).setDepth(10).setScrollFactor(0);
+
+    // "calma" — el mapa es explorar, no resolver (D-198). Idempotente: si se
+    // vuelve de MenuScene ya sonando "calma", no reinicia el loop.
+    (this.registry.get("musicManager") as MusicManager).reproducir("calma");
   }
 
   update(time: number): void {

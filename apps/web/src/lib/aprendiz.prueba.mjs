@@ -87,6 +87,53 @@ console.log("aprendiz — el Durable Object del modelo, uno por niño\n");
     `el MISMO niño está alto en una habilidad y bajo en otra a la vez (N${alta.nivel} vs N${baja.nivel}) — mc-44 impl. 6-7`);
 }
 
+// --- Mundo Kinder multi-bioma: dominar K01 en un bioma NO domina K01 en otro ---
+//
+// SE VE FALLAR: antes de este cambio, la llave era `hab:<skillId>` sin bioma
+// — las dos series de abajo habrían escrito la MISMA fila, y `res.length`
+// habría dado 1 en vez de 2, con el nivel de Desierto pisando el de Sabana.
+{
+  const { obj } = nuevo();
+  // K01 en desierto: seis aciertos seguidos — debería subir mucho.
+  await obj.registrar(registro({ skillId: "K01", bioma: "desierto", correcto: true, nivelSemilla: 6 }));
+  for (let i = 0; i < 5; i++) {
+    await obj.registrar(registro({ skillId: "K01", bioma: "desierto", ahora: T0 + i * DIA, correcto: true }));
+  }
+  // K01 en sabana: nunca se tocó — no debe existir fila, y mucho menos
+  // heredar el progreso de desierto.
+  const res = await obj.resumen();
+  ok(res.length === 1, "sin tocar sabana, solo existe la fila de desierto");
+  ok(res[0].bioma === "desierto", "y trae el bioma correcto en el resumen");
+
+  // Ahora sí se toca K01 en sabana, con fallos — debe arrancar de CERO, no
+  // heredar el nivel alto que ya tiene en desierto.
+  await obj.registrar(registro({ skillId: "K01", bioma: "sabana", correcto: false, nivelSemilla: 6 }));
+  const res2 = await obj.resumen();
+  ok(res2.length === 2, "K01 en desierto y K01 en sabana son DOS filas, no una");
+  const enDesierto = res2.find((h) => h.bioma === "desierto");
+  const enSabana = res2.find((h) => h.bioma === "sabana");
+  ok(enDesierto.nivel > enSabana.nivel,
+    `el mismo skillId (K01) está alto en desierto y bajo en sabana a la vez (N${enDesierto.nivel} vs N${enSabana.nivel}) — dominio independiente por bioma`);
+
+  // `resumen(bioma)` filtra a un solo mundo — lo que pide el mapa de un bioma específico.
+  const soloDesierto = await obj.resumen("desierto");
+  ok(soloDesierto.length === 1 && soloDesierto[0].bioma === "desierto",
+    "resumen(bioma) trae solo ese mundo, no los dos");
+}
+
+// --- una fila escrita ANTES de Mundo Kinder multi-bioma (sin `:bioma` en la llave) ---
+{
+  const { obj, storage } = nuevo();
+  // Simula una fila de la era pre-bioma: llave vieja, sin sufijo.
+  storage.interno.set("hab:K07", {
+    habilidad: { habilidad: 0, respondidos: 3, fallosSeguidos: 0, ultimosNiveles: [4] },
+    repaso: { rachaCorrectas: 0, venceEn: null },
+  });
+  const res = await obj.resumen();
+  const fila = res.find((h) => h.skillId === "K07");
+  ok(fila?.bioma === "sabana", "una llave vieja sin bioma se lee como sabana, nunca revienta");
+}
+
 // ---------------------------------------------------------------------------
 // CRITERIO #86: estado DERIVADO, jamás el intento crudo
 // ---------------------------------------------------------------------------
@@ -115,7 +162,9 @@ console.log("aprendiz — el Durable Object del modelo, uno por niño\n");
   }
 
   // Y lo que SÍ está es derivado: números y fechas, ni una cadena del niño.
-  const fila = storage.interno.get("hab:K03");
+  // La llave lleva bioma desde Mundo Kinder multi-bioma — "sabana" es el
+  // que cae por defecto cuando `registro()` no manda uno explícito.
+  const fila = storage.interno.get("hab:K03:sabana");
   ok(typeof fila.habilidad.habilidad === "number", "lo que se guarda es la estimación, un número");
   ok(typeof fila.repaso.venceEn === "number", "y la fecha del próximo repaso");
   const claves = [...Object.keys(fila.habilidad), ...Object.keys(fila.repaso)];

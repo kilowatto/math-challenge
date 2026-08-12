@@ -48,8 +48,8 @@ for (const archivo of readdirSync(DIR).filter((f) => f.endsWith(".json"))) {
 // --- los dos regímenes no son el mismo presupuesto -------------------------
 {
   ok(
-    PRESUPUESTO.mientras_resuelve.musica === false && PRESUPUESTO.al_resolver.musica === false,
-    "ningún régimen permite música de fondo (mc-42 §3: coherencia de Mayer y efecto de sonido irrelevante)",
+    PRESUPUESTO.mientras_resuelve.musica === true && PRESUPUESTO.al_resolver.musica === true,
+    "los dos regímenes permiten música de fondo — D-198 reversa mc-42 §3/coherencia de Mayer, confirmado por el dueño",
   );
   ok(
     PRESUPUESTO.mientras_resuelve.espontaneo === false,

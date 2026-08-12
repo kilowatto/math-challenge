@@ -45,7 +45,11 @@ import { DialogueScene } from "./scenes/DialogueScene";
 import { GameplayScene } from "./scenes/GameplayScene";
 import { QuienJuegaScene, type DatosQuienJuega } from "./quien-juega/QuienJuegaScene";
 import { PinScene } from "./quien-juega/PinScene";
+import { PerfilAjustesScene } from "./quien-juega/PerfilAjustesScene";
+import { CargaGlobalScene } from "./quien-juega/CargaGlobalScene";
 import { ProgressManager, type DatosDeArranque } from "./managers/ProgressManager";
+import { MusicManager } from "./managers/MusicManager";
+import { SfxManager } from "./managers/SfxManager";
 
 /**
  * Todas las escenas del producto, con su clave.
@@ -54,9 +58,11 @@ import { ProgressManager, type DatosDeArranque } from "./managers/ProgressManage
  * pantalla para que se lea de un vistazo qué hay.
  */
 const ESCENAS: ReadonlyArray<[string, new (...args: never[]) => Phaser.Scene]> = [
-  // La puerta: rejilla de caras y PIN.
+  // La puerta: precarga global, rejilla de caras, PIN y ajustes de perfil.
+  ["CargaGlobalScene", CargaGlobalScene],
   ["QuienJuegaScene", QuienJuegaScene],
   ["PinScene", PinScene],
+  ["PerfilAjustesScene", PerfilAjustesScene],
   // Modo Historia: arranque, mapa, reto.
   ["BootScene", BootScene],
   ["PreloadScene", PreloadScene],
@@ -67,9 +73,14 @@ const ESCENAS: ReadonlyArray<[string, new (...args: never[]) => Phaser.Scene]> =
   ["GameplayScene", GameplayScene],
 ];
 
-/** Con qué pantalla abre esta sesión. */
+/**
+ * Con qué pantalla abre esta sesión.
+ *
+ * `CargaGlobalScene` es la puerta del niño: precarga el catálogo entero antes
+ * de que vea nada (D-200) y arranca `QuienJuegaScene` ella misma al terminar.
+ */
 export type Arranque =
-  | { escena: "QuienJuegaScene"; datos: DatosQuienJuega }
+  | { escena: "CargaGlobalScene"; datos: DatosQuienJuega }
   | { escena: "BootScene"; datos: DatosDeArranque };
 
 /**
@@ -114,6 +125,15 @@ export function crearJuego(contenedorId: string, arranque: Arranque): Phaser.Gam
   for (const [clave, Clase] of ESCENAS) {
     game.scene.add(clave, Clase, false);
   }
+
+  // Música y efectos (D-198). Con DOS instancias de Phaser había que
+  // registrar una pareja de managers en cada una, sobre su propio
+  // `game.sound` — y los dos `main.ts` lo documentaban como un mal necesario.
+  // Con una sola instancia hay una sola pareja, que es lo que siempre se
+  // quiso: la música no se corta al pasar de la rejilla al mapa porque nunca
+  // cambia de `Phaser.Game`.
+  game.registry.set("musicManager", new MusicManager(game.sound));
+  game.registry.set("sfxManager", new SfxManager(game.sound));
 
   // El registro se siembra ANTES de que corra ninguna escena: el constructor
   // de `Phaser.Game` ya deja `game.registry` listo, y las escenas no arrancan

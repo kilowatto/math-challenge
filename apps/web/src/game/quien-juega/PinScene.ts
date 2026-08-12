@@ -574,7 +574,7 @@ export class PinScene extends Phaser.Scene {
         // la PRIMERA salida de la rejilla — la única que empuja historial, para
         // que un toque de «atrás» vuelva a las caras (D-200.3).
         if (this.arranque.alEntrar) this.arranque.alEntrar(destino);
-        else await entrarAHistoria(this, destino, true);
+        else await entrarAHistoria(this, destino);
         return;
       }
 

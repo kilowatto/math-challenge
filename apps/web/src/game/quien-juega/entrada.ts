@@ -15,15 +15,43 @@
  * como estaba — nunca una pantalla en blanco.
  */
 import { arrancarQuienJuega } from "./main";
+import { alVolver } from "../spa/enrutador";
+import { registrarJuego, faseActual, fijarFase, detenerEscenaHistoriaActual } from "../spa/estado";
 
 const datosCrudos = document.getElementById("quien-juega-datos")?.textContent;
 if (datosCrudos) {
   try {
     const datos = JSON.parse(datosCrudos);
-    arrancarQuienJuega("quien-juega-mount", datos);
+    const game = arrancarQuienJuega("quien-juega-mount", datos);
+    registrarJuego(game);
     document.querySelector(".rejilla")?.setAttribute("hidden", "");
     const vacio = document.querySelector(".vacio");
     vacio?.setAttribute("hidden", "");
+
+    /**
+     * D-200.1: el botón atrás del sistema. `mostrarPin`/`arrancarHistoriaEn
+     * Sesion` empujan una entrada de historial cada uno — este manejador
+     * deshace UN paso desde donde esté la sesión ahora mismo, usando
+     * `estado.ts` para saber cuál. Deshacer desde "historia" salta directo
+     * a la rejilla en vez de a la pantalla de PIN intermedia — un atajo
+     * deliberado (ver el encabezado de `estado.ts`): volver a mostrar el
+     * PIN solo para tener que tocarlo otra vez no ayuda a nadie, y a nadie
+     * le gusta ver un formulario de un intento que ya pasó.
+     */
+    alVolver(() => {
+      const fase = faseActual();
+      if (fase === "historia") {
+        detenerEscenaHistoriaActual();
+        game.scene.start("QuienJuegaScene", datos);
+      }
+      // El PIN es una escena (D-201): se detiene, no se «oculta» un overlay.
+      // `isSleeping` cubre el caso de volver con la rejilla dormida debajo.
+      if (game.scene.isActive("PinScene") || game.scene.isSleeping("PinScene")) {
+        game.scene.stop("PinScene");
+        game.scene.wake("QuienJuegaScene");
+      }
+      fijarFase("rejilla");
+    });
   } catch (err) {
     // Si Phaser no pudo arrancar, la rejilla de HTML nunca se ocultó: sigue
     // siendo la pantalla real. No hay nada que reportar a un niño.

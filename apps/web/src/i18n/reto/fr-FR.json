@@ -50,6 +50,8 @@
   "k.descomponer.marco": "Il y en a déjà {parte}. Combien en manque-t-il pour {total}\u202f?",
   "k.suma.patos": "{a} canards et encore {b} canards. Combien de canards en tout\u202f?",
   "k.resta.patos": "Il y avait {a} canards. {b} sont partis. Combien en reste-t-il\u202f?",
+  "k.pop.subitiza": "Fais \u00e9clater exactement {n} bulles.",
+  "k.pop.resta": "Il y a {a} bulles. Fais-en \u00e9clater {b}. Combien en reste-t-il\u202f?",
   "k.formas.cual_sobra": "Lequel ne va pas avec les autres\u202f?",
   "juego.bien": "C’est ça\u202f!",
   "juego.aciertos": ["Oui\u202f!", "Bravo\u202f!", "Tu l’as trouvé\u202f!", "Exactement\u202f!", "Bien joué\u202f!", "Bonne réflexion\u202f!", "C’est correct\u202f!", "On continue\u202f!"],
@@ -79,6 +81,8 @@
     "Dans un motif AB, ils alternent."
   ],
   "k.unoauno.gorros": "{patos} canards et {gorros} chapeaux. Combien de canards n’ont pas de chapeau\u202f?",
+  "k.mover.gorros": "D\u00e9place chaque chapeau vers un canard. Combien de canards n\u2019ont pas de chapeau\u202f?",
+  "k.mover.resta": "D\u00e9place les canards qui s\u2019en vont. Combien en reste-t-il\u202f?",
   "k.cardinalidad.ultimo": "Larry a compté jusqu’à {n}. Alors, combien y a-t-il de canards\u202f?",
   "k.recta.hueco": "Quel nombre va dans le trou, juste après {antes}\u202f?",
   "k.marco.faltan": "La grille en a {llenas} de remplies. Combien en manque-t-il pour la remplir\u202f?",

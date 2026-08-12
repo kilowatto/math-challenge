@@ -62,6 +62,14 @@ export interface FilaDeHabilidad {
   repaso: EstadoDeRepaso;
 }
 
+/**
+ * El bioma por defecto — Mundo Kinder, antes de que existiera más de uno.
+ * Todo lo que no manda `bioma` explícito (PRIMARIA/SECUNDARIA, que no
+ * tienen concepto de bioma; o una fila vieja escrita antes de este cambio)
+ * cae aquí, nunca en un bioma real inventado.
+ */
+export const BIOMA_DEFECTO = "sabana";
+
 /** Lo que se le manda al objeto cuando el niño responde. */
 export interface Registro {
   skillId: string;
@@ -76,11 +84,20 @@ export interface Registro {
   banda: string;
   /** Solo cuando la habilidad es nueva: dónde empezar a preguntar (D-060). */
   nivelSemilla: number;
+  /**
+   * Mundo Kinder multi-bioma: dominar K01 en Desierto NO domina K01 en
+   * Sabana — cada bioma trackea su propio progreso. `undefined` cae en
+   * `BIOMA_DEFECTO` — PRIMARIA/SECUNDARIA (sin biomas) nunca necesitan
+   * mandar esto.
+   */
+  bioma?: string;
 }
 
 /** Lo que el objeto devuelve. Es lo que el panel del padre puede leer. */
 export interface Resumen {
   skillId: string;
+  /** El bioma de ESTA fila — ver `Registro.bioma`. */
+  bioma: string;
   nivel: number;
   ubicando: boolean;
   etapa: "sin_ver" | "practicando" | "provisional" | "aprendido";
@@ -109,12 +126,34 @@ export interface Resumen {
 const PREFIJO = "hab:";
 
 /**
+ * La llave de almacenamiento: `hab:<skill_id>:<bioma>` (Mundo Kinder
+ * multi-bioma). El `skill_id` nunca lleva `:` (K01…K14), así que separar
+ * por el PRIMER `:` después del prefijo es seguro y reversible.
+ */
+function llaveDe(skillId: string, bioma: string): string {
+  return `${PREFIJO}${skillId}:${bioma}`;
+}
+
+/**
+ * Deshace `llaveDe()`. Una llave escrita ANTES de este cambio no tiene
+ * `:<bioma>` — cae en `BIOMA_DEFECTO`, nunca revienta ni inventa un bioma.
+ */
+function partirLlave(llave: string): { skillId: string; bioma: string } {
+  const resto = llave.slice(PREFIJO.length);
+  const i = resto.indexOf(":");
+  return i === -1
+    ? { skillId: resto, bioma: BIOMA_DEFECTO }
+    : { skillId: resto.slice(0, i), bioma: resto.slice(i + 1) };
+}
+
+/**
  * El objeto. Una instancia por `child_profile_id`.
  *
  * El almacenamiento es el de SQLite del propio DO, y las llaves son
- * `hab:<skill_id>` — la llave compuesta `(child_profile_id, skill_id)` del
- * criterio #87 sale de que el `child_profile_id` **es el objeto**: no hace falta
- * repetirlo en cada fila, y no repetirlo es lo que impide que alguien escriba
+ * `hab:<skill_id>:<bioma>` — la llave compuesta `(child_profile_id,
+ * skill_id, bioma)` del criterio #87 (ampliado para Mundo Kinder) sale de
+ * que el `child_profile_id` **es el objeto**: no hace falta repetirlo en
+ * cada fila, y no repetirlo es lo que impide que alguien escriba
  * accidentalmente el estado de un niño dentro del objeto de otro.
  */
 export class Aprendiz {
@@ -133,7 +172,8 @@ export class Aprendiz {
         return Response.json(await this.registrar(r));
       }
       case "/resumen": {
-        return Response.json(await this.resumen());
+        const bioma = url.searchParams.get("bioma") ?? undefined;
+        return Response.json(await this.resumen(bioma));
       }
       case "/olvidar": {
         // Criterio #104: borrar el perfil borra el modelo. `deleteAll()` sobre
@@ -155,7 +195,8 @@ export class Aprendiz {
    * partir esto en dos llamadas, y no está partido.
    */
   async registrar(r: Registro): Promise<Resumen> {
-    const llave = PREFIJO + r.skillId;
+    const bioma = r.bioma ?? BIOMA_DEFECTO;
+    const llave = llaveDe(r.skillId, bioma);
     const previa = await this.state.storage.get<FilaDeHabilidad>(llave);
 
     const fila: FilaDeHabilidad = previa ?? {
@@ -179,22 +220,31 @@ export class Aprendiz {
     };
 
     await this.state.storage.put(llave, nueva);
-    return this.resumirFila(r.skillId, nueva);
+    return this.resumirFila(r.skillId, bioma, nueva);
   }
 
-  /** Todo lo que el objeto sabe de este niño. Es lo que lee el panel. */
-  async resumen(): Promise<Resumen[]> {
+  /**
+   * Todo lo que el objeto sabe de este niño. Es lo que lee el panel.
+   *
+   * `bioma`, si se da, filtra a solo ese mundo — es lo que pide el mapa de
+   * un bioma específico (D-200.x, Mundo Kinder). Sin él, devuelve TODO
+   * (los 4 biomas juntos), para cuando haga falta verlos a la vez.
+   */
+  async resumen(bioma?: string): Promise<Resumen[]> {
     const todas = await this.state.storage.list<FilaDeHabilidad>({ prefix: PREFIJO });
     const salida: Resumen[] = [];
     for (const [llave, fila] of todas) {
-      salida.push(this.resumirFila(llave.slice(PREFIJO.length), fila));
+      const { skillId, bioma: biomaDeFila } = partirLlave(llave);
+      if (bioma && biomaDeFila !== bioma) continue;
+      salida.push(this.resumirFila(skillId, biomaDeFila, fila));
     }
     return salida;
   }
 
-  private resumirFila(skillId: string, fila: FilaDeHabilidad): Resumen {
+  private resumirFila(skillId: string, bioma: string, fila: FilaDeHabilidad): Resumen {
     return {
       skillId,
+      bioma,
       nivel: nivelDeHabilidad(fila.habilidad.habilidad),
       ubicando: estaUbicando(fila.habilidad),
       etapa: etapaDe(fila.repaso),
@@ -254,15 +304,21 @@ export async function registrarEnModelo(
   }
 }
 
-/** Lo que el panel del padre puede leer. Devuelve vacío si el objeto no está. */
+/**
+ * Lo que el panel del padre —o el mapa de un bioma— puede leer. Devuelve
+ * vacío si el objeto no está. `bioma`, si se da, filtra a solo ese mundo
+ * (Mundo Kinder multi-bioma); sin él, trae los 4 biomas juntos.
+ */
 export async function leerModelo(
   ns: DurableObjectNamespace | undefined,
   childProfileId: string,
+  bioma?: string,
 ): Promise<Resumen[]> {
   if (!ns) return [];
   try {
     const stub = objetoDe(ns, childProfileId);
-    return (await (await stub.fetch("https://aprendiz/resumen")).json()) as Resumen[];
+    const url = bioma ? `https://aprendiz/resumen?bioma=${encodeURIComponent(bioma)}` : "https://aprendiz/resumen";
+    return (await (await stub.fetch(url)).json()) as Resumen[];
   } catch {
     return [];
   }

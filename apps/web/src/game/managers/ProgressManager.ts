@@ -42,6 +42,8 @@ export const REGISTRY_ROTULOS_RETO = "historia:rotulosReto";
 export const REGISTRY_ETIQUETA_VOZ = "historia:etiquetaVoz";
 export const REGISTRY_SALIR_A = "historia:salirA";
 export const REGISTRY_RUTA_RETOS = "historia:rutaRetos";
+export const REGISTRY_CHAPTER_ID = "historia:chapterId";
+export const REGISTRY_BIOMA = "historia:bioma";
 
 /**
  * Los textos, YA RESUELTOS por el locale de la página — mismo patrón que
@@ -82,6 +84,24 @@ export interface DatosDeArranque {
   salirA: string;
   /** D-190: a dónde lleva el botón "Retos" de MenuScene. `undefined` en modo "arbol". */
   rutaRetos?: string;
+  /**
+   * Mundo Kinder multi-bioma: qué `WorldChapter` de `story.ts` abre el
+   * botón "Modo Historia" de `MenuScene` — antes era el literal
+   * `"primaria-1"` escrito a mano en dos sitios (`PreloadScene.ts`,
+   * `MenuScene.ts`), que solo servía porque un único capítulo existía.
+   * Server-side, `kids/mapa.astro` decide cuál según banda real (D1) y,
+   * para KINDER, qué bioma está activo — nunca esta escena adivinándolo.
+   */
+  chapterId: string;
+  /**
+   * Mundo Kinder multi-bioma (#34): qué mundo está jugando este niño AHORA
+   * — `undefined` para PRIMARIA/SECUNDARIA y para la Sabana de siempre.
+   * `GameplayScene` lo pasa tal cual a `RetoController`, que lo manda en
+   * CADA `pedir()` — ver el comentario largo en
+   * `RetoController.ts::DatosDeArranqueReto.bioma` para por qué esto no es
+   * opcional de verdad si se quiere que el árbol de un bioma se llene.
+   */
+  bioma?: string;
 }
 
 export class ProgressManager {
@@ -99,6 +119,8 @@ export class ProgressManager {
     this.registry.set(REGISTRY_ETIQUETA_VOZ, datos.etiquetaVoz);
     this.registry.set(REGISTRY_SALIR_A, datos.salirA);
     this.registry.set(REGISTRY_RUTA_RETOS, datos.rutaRetos ?? null);
+    this.registry.set(REGISTRY_CHAPTER_ID, datos.chapterId);
+    this.registry.set(REGISTRY_BIOMA, datos.bioma ?? null);
   }
 
   get grupos(): readonly GrupoDelArbol[] {
@@ -136,6 +158,21 @@ export class ProgressManager {
 
   get rutaRetos(): string | null {
     return this.registry.get(REGISTRY_RUTA_RETOS) as string | null;
+  }
+
+  /** Mundo Kinder multi-bioma — qué `WorldChapter` abre "Modo Historia". */
+  get chapterId(): string {
+    return this.registry.get(REGISTRY_CHAPTER_ID) as string;
+  }
+
+  /**
+   * Mundo Kinder multi-bioma (#34) — qué bioma está jugando este niño
+   * ahora, o `undefined` para PRIMARIA/SECUNDARIA y la Sabana de siempre.
+   * `GameplayScene` lo pasa a `RetoController` para que cada `pedir()`
+   * registre el dominio bajo el bioma correcto.
+   */
+  get bioma(): string | undefined {
+    return (this.registry.get(REGISTRY_BIOMA) as string | null) ?? undefined;
   }
 
   buscarNodo(habilidad: string): NodoDelArbol | null {

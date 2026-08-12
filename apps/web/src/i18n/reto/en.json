@@ -50,6 +50,8 @@
   "k.descomponer.marco": "{parte} are already here. How many more make {total}?",
   "k.suma.patos": "{a} ducks and {b} more ducks. How many ducks now?",
   "k.resta.patos": "There were {a} ducks. {b} swam away. How many are left?",
+  "k.pop.subitiza": "Pop exactly {n} bubbles.",
+  "k.pop.resta": "There are {a} bubbles. Pop {b} of them. How many are left?",
   "k.formas.cual_sobra": "Which one does not belong?",
   "juego.bien": "That's it!",
   "juego.aciertos": ["Yes!", "Nicely done!", "You found it!", "Exactly!", "You got it!", "Good thinking!", "That is correct!", "On we go!"],
@@ -79,6 +81,8 @@
     "In an AB pattern they take turns."
   ],
   "k.unoauno.gorros": "{patos} ducks and {gorros} hats. How many ducks get no hat?",
+  "k.mover.gorros": "Move each hat to a duck. How many ducks get no hat?",
+  "k.mover.resta": "Move the ducks that swim away. How many are left?",
   "k.cardinalidad.ultimo": "Larry counted up to {n}. So how many ducks are there?",
   "k.recta.hueco": "Which number goes in the empty spot, right after {antes}?",
   "k.marco.faltan": "The ten-frame has {llenas} filled. How many more to fill it?",

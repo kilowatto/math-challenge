@@ -1,0 +1,472 @@
+---
+/**
+ * `/{locale}/app/kids/perfil-pin/?childId=…` — el ADULTO fija/cambia el PIN
+ * de un hijo, desde el engrane de "¿Quién juega?" (D-198, ronda 3 — 55.10).
+ *
+ * ─── Por qué es una página aparte, y no un panel más dentro de Phaser ──────
+ *
+ * `PerfilAjustesScene.ts` resuelve idioma/banda/avatar/alias/borrar sin
+ * salir del lienzo — las cinco son elegir entre opciones fijas. El PIN de
+ * KINDER no: la rejilla de 9 imágenes se DERIVA del secreto del servidor
+ * (`pin-imagenes.ts::rejillaDe`), la misma pieza de seguridad que ya usa
+ * `kids/pin.astro` para la verificación. Calcularla en el cliente exigiría
+ * exponer el secreto o duplicar la derivación fuera del servidor — ninguna
+ * de las dos es aceptable, así que esta pantalla es una página real,
+ * servida por el Worker, exactamente como la de verificación.
+ *
+ * ─── A diferencia de `kids/pin.astro`, esta SÍ exige sesión de adulto ──────
+ *
+ * `kids/pin.astro` verifica un PIN con solo el dispositivo marcado como de
+ * la casa (D-012) — un niño lo usa sin que el adulto esté presente. Esta
+ * pantalla ESCRIBE un PIN nuevo, así que exige `leerSesionAdulto` +
+ * pertenencia del `childId` al hogar, igual que los demás endpoints de
+ * D-197. Sin sesión, redirige a `entrar` — mismo patrón que cualquier
+ * página adulta de este sitio.
+ */
+export const prerender = false;
+
+import { t, isLocale, type Locale } from "../../../../i18n";
+import { ruta } from "../../../../i18n/rutas";
+import { rutaKids } from "../../../../lib/rutas-app";
+import { COOKIE_ADULTO, leerCookies, leerSesionAdulto } from "../../../../lib/sesiones";
+import { hogarIds } from "../../../../lib/familia";
+import { animalElegido, claveDeAnimal } from "../../../../lib/avatares-animal";
+import type { TemaVisual } from "../../../../lib/quien-juega-datos";
+import { LARGO_PIN, rejillaDe, type Dibujo } from "../../../../../../../packages/motor/src/pin-imagenes.ts";
+import { LARGO_PIN_NUMERICO } from "../../../../../../../packages/motor/src/pin-numerico.ts";
+import "../../../../styles/fonts.css";
+import "../../../../styles/tokens.css";
+
+const { locale: rawLocale } = Astro.params;
+if (!isLocale(rawLocale)) return Astro.redirect("/en/");
+const locale: Locale = rawLocale;
+const m = t(locale);
+
+const env = (Astro.locals as any).runtime?.env;
+if (!env?.DB || !env?.SESSION_KV || !env?.PIN_PAD_SECRET) return Astro.redirect(rutaKids(locale));
+
+const sesion = await leerSesionAdulto(env.SESSION_KV, leerCookies(Astro.request.headers.get("cookie"))[COOKIE_ADULTO]);
+if (!sesion) return Astro.redirect(`${ruta(locale, "entrar")}?cambiar=1`);
+
+const childId = Astro.url.searchParams.get("childId") ?? "";
+
+const links = (
+  await env.DB.prepare(
+    "SELECT inviter_user_id, user_id FROM household_link WHERE revoked_at IS NULL AND (inviter_user_id = ? OR user_id = ?)",
+  )
+    .bind(sesion.userId, sesion.userId)
+    .all()
+).results as Array<{ inviter_user_id: string; user_id: string }>;
+const ids = hogarIds(links, sesion.userId);
+const marcadores = ids.map(() => "?").join(",");
+
+const hijo = childId
+  ? ((await env.DB.prepare(
+      `SELECT id, alias, theme_band, avatar_parts FROM child_profiles WHERE id = ? AND parent_user_id IN (${marcadores}) AND deleted_at IS NULL`,
+    )
+      .bind(childId, ...ids)
+      .first()) as { id: string; alias: string; theme_band: TemaVisual; avatar_parts: string } | null)
+  : null;
+
+// Sin hijo válido (query rota, hijo de otra casa, ya borrado) no hay nada que
+// mostrar — de vuelta a la rejilla, nunca un formulario para un id ajeno.
+if (!hijo) return Astro.redirect(rutaKids(locale));
+
+// KINDER usa imágenes; PRIMARIA/SECUNDARIA usan teclado numérico — MISMA
+// regla que `perfil-pin.ts::tipoDePin`, duplicada a propósito (D-197 §2 ya
+// documenta por qué: son dos sistemas de PIN independientes, y una función
+// compartida acoplaría un endpoint con una página sin necesidad real).
+const esNumerico = hijo.theme_band !== "KINDER";
+
+const rejilla: Dibujo[] = esNumerico ? [] : await rejillaDe(env.PIN_PAD_SECRET, hijo.id);
+
+// D-199.3, ronda 3: "¿dónde está la madera? todo lo trabajado" — el dueño
+// pidió que esta pantalla reuse EXACTO el mismo atrezo fotorrealista de
+// D-197.1 (`kids/pin.astro`), no una versión aparte. Mismo cálculo de
+// avatar, mismos archivos — nada nuevo que generar ni revisar.
+const avatarId = esNumerico ? animalElegido(hijo.avatar_parts, hijo.theme_band) : null;
+const avatarUrl = avatarId ? `/avatares/${claveDeAnimal(avatarId)}.webp` : null;
+
+const EMOJI: Record<Dibujo, string> = {
+  sol: "☀️", luna: "🌙", estrella: "⭐", nube: "☁️",
+  arbol: "🌳", flor: "🌻", manzana: "🍎", platano: "🍌",
+  pez: "🐟", gato: "🐱", perro: "🐶", pajaro: "🐦",
+  mariposa: "🦋", abeja: "🐝", rana: "🐸", tortuga: "🐢",
+  casa: "🏠", coche: "🚗", barco: "⛵", avion: "✈️",
+  pelota: "⚽", globo: "🎈", tambor: "🥁", campana: "🔔",
+};
+const NOMBRE: Record<Dibujo, string> = {
+  sol: m.pinDrawSun, luna: m.pinDrawMoon, estrella: m.pinDrawStar, nube: m.pinDrawCloud,
+  arbol: m.pinDrawTree, flor: m.pinDrawFlower, manzana: m.pinDrawApple, platano: m.pinDrawBanana,
+  pez: m.pinDrawFish, gato: m.pinDrawCat, perro: m.pinDrawDog, pajaro: m.pinDrawBird,
+  mariposa: m.pinDrawButterfly, abeja: m.pinDrawBee, rana: m.pinDrawFrog, tortuga: m.pinDrawTurtle,
+  casa: m.pinDrawHouse, coche: m.pinDrawCar, barco: m.pinDrawBoat, avion: m.pinDrawPlane,
+  pelota: m.pinDrawBall, globo: m.pinDrawBalloon, tambor: m.pinDrawDrum, campana: m.pinDrawBell,
+};
+
+const TECLADO_NUMERICO = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+const rutaVolver = rutaKids(locale);
+const rutaEntrar = `${ruta(locale, "entrar")}?cambiar=1`;
+---
+
+<!doctype html>
+<html lang={m.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{m.settingsPinButton}</title>
+    <meta name="theme-color" content="#F36B1C" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <link rel="preload" href="/fonts/raleway-var-latin.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body data-pin-tipo={esNumerico ? "numerico" : "imagenes"}>
+    <main class="pantalla">
+      <a class="volver" id="volver" href={rutaVolver}>← {m.kidsTitle}</a>
+
+      <div class="tarjeta">
+        {avatarUrl && (
+          <div class="cuadro-avatar">
+            <img class="cuadro-avatar-foto" src={avatarUrl} alt="" />
+            <img class="cuadro-avatar-marco" src="/juego/pin-numerico-marco.webp" alt="" />
+          </div>
+        )}
+        <div class="encabezado">
+          <div class="encabezado-texto">
+            <p class="alias">{hijo.alias}</p>
+            <h1>{m.settingsPinButton}</h1>
+          </div>
+        </div>
+        <p class="ayuda">{esNumerico ? m.pinHelpNumeric : m.pinHelp}</p>
+
+        <form id="forma" data-child-id={hijo.id} data-largo={esNumerico ? LARGO_PIN_NUMERICO : LARGO_PIN}>
+          <div class="rejilla" data-numerico={esNumerico ? "1" : undefined}>
+            {esNumerico
+              ? TECLADO_NUMERICO.map((digito) => (
+                  <button
+                    type="button"
+                    class="casilla"
+                    data-valor={digito}
+                    aria-label={String(digito)}
+                    style={`--foto-normal: url("/juego/pin-numerico-digito-${digito}.webp"); --foto-presionado: url("/juego/pin-numerico-digito-${digito}-presionado.webp")`}
+                  />
+                ))
+              : rejilla.map((dibujo, i) => (
+                  <button type="button" class="casilla" data-valor={i} aria-label={NOMBRE[dibujo]}>
+                    {EMOJI[dibujo]}
+                  </button>
+                ))}
+          </div>
+          <button type="button" id="reiniciar" class="reiniciar">{m.pinClear}</button>
+        </form>
+
+        <p id="error" class="error" role="alert" hidden>{m.settingsErrorGeneric}</p>
+      </div>
+    </main>
+
+    <style>
+      /*
+       * D-199.3, ronda 3 — "¿dónde está la madera? todo lo trabajado" — el
+       * dueño rechazó la primera versión (una tarjeta CSS plana, sin
+       * fotografía) y pidió reusar EXACTO el atrezo fotorrealista de D-197.1
+       * (`kids/pin.astro`): el portón, el letrero colgante, el cuadro con el
+       * avatar, los diez dígitos tallados en madera de verdad. Son las
+       * MISMAS imágenes (`/juego/pin-numerico-*.webp`), el mismo CSS —
+       * copiado a propósito, no reinventado, porque ya está aprobado
+       * (D-080) y funcionando en la pantalla de verificación. Solo la rama
+       * `esNumerico` lleva este tratamiento — la rejilla de imágenes de
+       * KINDER se queda en el pergamino simple (D-199.2), igual que en
+       * `kids/pin.astro`.
+       */
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        background: #f7f7f8; /* superficie-clara */
+        font-family: var(--font-sistema);
+      }
+      .pantalla {
+        box-sizing: border-box;
+        max-inline-size: 30rem;
+        margin-inline: auto;
+        padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+        text-align: center;
+      }
+      .volver {
+        display: inline-flex;
+        align-items: center;
+        min-block-size: 24px;
+        margin-block-end: 12px;
+        color: #8a5a2b; /* madera-oscura — excepción D-199.2 */
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      body[data-pin-tipo="numerico"] .volver {
+        color: #434547;
+        text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+      }
+
+      /* La rama de imágenes (KINDER) — pergamino simple, sin fotografía. */
+      .tarjeta {
+        background: #f3e4c8; /* pergamino — excepción D-199.2 */
+        border: 3px solid #8a5a2b; /* madera-oscura */
+        border-radius: 20px;
+        padding: 24px 20px;
+        box-shadow: 0 8px 24px rgba(58, 38, 15, 0.18);
+      }
+      h1 {
+        font-family: var(--font-marca);
+        font-size: 22px;
+        color: #3e2712; /* madera-texto — excepción D-199.2 */
+        margin: 0 0 4px;
+      }
+      .alias {
+        font-weight: 700;
+        color: #f36b1c;
+        margin: 0 0 8px;
+      }
+      .ayuda {
+        color: #8a5a2b;
+        font-size: 13px;
+        margin: 0 0 22px;
+      }
+      .cuadro-avatar {
+        display: none;
+      }
+      .encabezado {
+        margin-bottom: 8px;
+      }
+
+      /* ─── La rama numérica: EXACTO el mismo atrezo que kids/pin.astro ────── */
+
+      body[data-pin-tipo="numerico"] {
+        background-image: url("/juego/pin-numerico-fondo.webp");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+      }
+      body[data-pin-tipo="numerico"] .tarjeta {
+        background: none;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+      body[data-pin-tipo="numerico"] .cuadro-avatar {
+        display: block;
+        position: relative;
+        inline-size: 3.5rem;
+        aspect-ratio: 420 / 480;
+        margin: 0 auto -0.75rem;
+      }
+      .cuadro-avatar-foto {
+        /* `inset` por sí solo no redimensiona un `<img>` — hace falta fijar
+           `inline-size`/`block-size` explícitos (hallazgo de D-197.1). */
+        position: absolute;
+        inset-block-start: 42%;
+        inset-inline-start: 33%;
+        inline-size: 35%;
+        block-size: 35%;
+        object-fit: cover;
+        background: #fff;
+        display: block;
+      }
+      .cuadro-avatar-marco {
+        position: relative;
+        z-index: 1;
+        display: block;
+        inline-size: 100%;
+        block-size: 100%;
+      }
+      body[data-pin-tipo="numerico"] .encabezado {
+        position: relative;
+        aspect-ratio: 900 / 420;
+        max-inline-size: 78%;
+        margin: 0 auto 0.5rem;
+        background-image: url("/juego/pin-numerico-letrero.webp");
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+      }
+      body[data-pin-tipo="numerico"] .encabezado-texto {
+        position: absolute;
+        inset: 46% 12% 12%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.15rem;
+      }
+      body[data-pin-tipo="numerico"] .encabezado-texto .alias,
+      body[data-pin-tipo="numerico"] .encabezado-texto h1 {
+        margin: 0;
+        color: #3e2712;
+        text-shadow: 0 0 6px rgba(255, 255, 255, 0.7), 0 0 2px rgba(255, 255, 255, 0.9);
+      }
+      body[data-pin-tipo="numerico"] .encabezado-texto h1 {
+        font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+      }
+      body[data-pin-tipo="numerico"] .ayuda {
+        color: #3e2712;
+        text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+      }
+
+      .rejilla {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(64px, 1fr));
+        gap: 12px;
+        margin-block-end: 18px;
+      }
+      .rejilla[data-numerico="1"] {
+        grid-template-columns: repeat(3, var(--tap-kinder, 88px));
+        gap: 0.5rem;
+        justify-content: center;
+      }
+      .casilla:last-child:nth-child(3n + 1) {
+        grid-column: 1 / -1;
+        justify-self: center;
+      }
+      .casilla {
+        aspect-ratio: 1;
+        min-block-size: 64px;
+        border-radius: 14px;
+        border: 2px solid #8a5a2b; /* madera-oscura */
+        background: #ffffff;
+        font-family: var(--font-sistema);
+        font-size: 26px;
+        font-weight: 700;
+        color: #3e2712;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .casilla[aria-pressed="true"] {
+        border-color: #f36b1c;
+        background: #fdedd7; /* pergamino-activo */
+      }
+      /* Cada botón trae su propio dígito tallado por `style` inline — el
+         respaldo aquí es la textura en blanco (`audits/hojas-de-estilo.mjs`
+         bloquea un `var()` sin definir en ningún lado de la hoja). */
+      body[data-pin-tipo="numerico"] .casilla {
+        --foto-normal: url("/juego/pin-numerico-boton.webp");
+        --foto-presionado: url("/juego/pin-numerico-boton.webp");
+        background-image: var(--foto-normal);
+        background-size: cover;
+        background-position: center;
+        border: none;
+        border-radius: 12px;
+      }
+      body[data-pin-tipo="numerico"] .casilla[aria-pressed="true"] {
+        background-image: var(--foto-presionado);
+        outline: 4px solid #f36b1c;
+        outline-offset: -4px;
+      }
+      body[data-pin-tipo="numerico"] .reiniciar {
+        background-image: url("/juego/pin-numerico-boton.webp");
+        background-size: cover;
+        padding: 6px 16px;
+        border-radius: 10px;
+        color: #3e2712;
+        text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+      }
+
+      .reiniciar {
+        border: none;
+        background: none;
+        color: #8a5a2b;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .error {
+        color: #ffffff;
+        background: #ce4912;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-block-start: 16px;
+      }
+    </style>
+
+    <script define:vars={{ rutaVolver, rutaEntrar }}>
+      const forma = document.getElementById("forma");
+      const childId = forma.dataset.childId;
+      const largo = Number(forma.dataset.largo);
+      const numerico = forma.querySelector(".rejilla").dataset.numerico === "1";
+      const errorEl = document.getElementById("error");
+      let hechos = [];
+
+      function pintar() {
+        forma.querySelectorAll("[data-valor]").forEach((b) => {
+          const valor = Number(b.dataset.valor);
+          b.setAttribute("aria-pressed", hechos.includes(valor) ? "true" : "false");
+        });
+      }
+
+      function reiniciar() {
+        hechos = [];
+        pintar();
+        errorEl.hidden = true;
+      }
+
+      document.getElementById("reiniciar").addEventListener("click", reiniciar);
+
+      // El link "volver" era una navegación de ida a `kids/index.astro`, no
+      // un regreso — eso EMPUJA una entrada nueva al historial en vez de
+      // consumir la que ya trajo hasta acá. Resultado real, reportado por el
+      // dueño: entrar por el engrane → "Cambiar PIN" → volver deja el
+      // historial en […, ¿quién-juega?, perfil-pin, ¿quién-juega?] — y la
+      // flecha de "¿Quién juega?" (`FlechaAtras.ts`, que sí usa
+      // `history.back()`) aterriza de vuelta en ESTA pantalla en vez de
+      // donde el dueño esperaba. Mismo criterio que `FlechaAtras.ts`: volver
+      // consume el historial, no agrega una entrada nueva. El `href` se deja
+      // intacto como respaldo sin JavaScript (D-012).
+      function volver() {
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = rutaVolver;
+        }
+      }
+      document.getElementById("volver").addEventListener("click", (evento) => {
+        evento.preventDefault();
+        volver();
+      });
+
+      forma.querySelectorAll("[data-valor]").forEach((boton) => {
+        boton.addEventListener("click", async () => {
+          const valor = Number(boton.dataset.valor);
+          // Los dígitos numéricos SÍ admiten repetidos (PIN de teléfono); las
+          // posiciones de imágenes NO (mismo criterio que `pin-imagenes.ts`).
+          if (!numerico && hechos.includes(valor)) return;
+          hechos.push(valor);
+          pintar();
+          if (hechos.length < largo) return;
+
+          const cuerpo = numerico ? { childId, digitos: hechos } : { childId, posiciones: hechos };
+          try {
+            const res = await fetch("/api/perfil-pin", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(cuerpo),
+            });
+            if (res.status === 401) {
+              window.location.href = rutaEntrar;
+              return;
+            }
+            const datos = await res.json().catch(() => ({ ok: false }));
+            if (datos.ok) {
+              volver();
+            } else {
+              errorEl.hidden = false;
+              reiniciar();
+            }
+          } catch {
+            errorEl.hidden = false;
+            reiniciar();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

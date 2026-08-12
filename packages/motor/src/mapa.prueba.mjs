@@ -201,6 +201,21 @@ caso("secuencia del árbol (D-190) cruza los grupos: 1..4 seguidos, nunca reinic
   igual(secuencias, [1, 2, 3, 4], "secuencia continua a través de los grupos");
 });
 
+caso("Mundo Kinder multi-bioma: el bioma de la entrada viaja tal cual al nodo", () => {
+  const a = construirArbol([
+    { habilidad: "K01", nivel: 1, skillState: 0.2, rotulo: null, bioma: "desierto" },
+    { habilidad: "K02", nivel: 1, skillState: 0.5, rotulo: null, bioma: "desierto" },
+  ]);
+  const nodos = a.grupos.flatMap((g) => g.nodos);
+  igual(nodos.map((n) => n.bioma), ["desierto", "desierto"], "las dos entradas de Desierto llegan marcadas como Desierto");
+});
+
+caso("Mundo Kinder multi-bioma: sin bioma (PRIMARIA/SECUNDARIA), el nodo no lo inventa", () => {
+  const a = construirArbol(HABILIDADES); // HABILIDADES no trae `bioma`
+  const nodos = a.grupos.flatMap((g) => g.nodos);
+  cierto(nodos.every((n) => n.bioma === undefined), "sin bioma en la entrada, sin bioma en el nodo — nunca un valor inventado");
+});
+
 caso("bloqueado del árbol (D-190): nunca el primer nodo, y sale de pericia real", () => {
   // P01 skillState=1 (dominada), P02 skillState=0.1 (asomando) — P02 no está
   // bloqueado porque el anterior (P01) sí tiene pericia. P05 skillState=0.4

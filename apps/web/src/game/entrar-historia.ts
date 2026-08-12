@@ -36,6 +36,7 @@
  */
 import Phaser from "phaser";
 import { sembrarHistoria } from "./juego";
+import { reemplazarHistorial } from "./spa/enrutador";
 import type { DatosDeArranque } from "./managers/ProgressManager";
 
 /** Lo que `/api/historia-datos` devuelve cuando todo va bien. */
@@ -47,16 +48,8 @@ interface RespuestaHistoria extends DatosDeArranque {
  * @param scene la escena viva desde la que se entra (PinScene, GameplayScene…)
  * @param respaldo a dónde navegar si la petición falla — nunca dejar al niño
  *   mirando una pantalla que no responde
- * @param empujarHistorial `true` solo la PRIMERA salida de la rejilla.
- *   D-200.3: tres `pushState` seguidos hacían que el botón atrás se comportara
- *   «como el del navegador» y hicieran falta varios toques para salir. Las
- *   transiciones internas usan `replaceState`.
  */
-export async function entrarAHistoria(
-  scene: Phaser.Scene,
-  respaldo: string,
-  empujarHistorial = false,
-): Promise<void> {
+export async function entrarAHistoria(scene: Phaser.Scene, respaldo: string): Promise<void> {
   let datos: RespuestaHistoria | null = null;
   try {
     const res = await fetch("/api/historia-datos", { credentials: "same-origin" });
@@ -80,70 +73,13 @@ export async function entrarAHistoria(
   // respaldo real: si algún día la vuelta falla, navegar sigue funcionando.
   const arranque: DatosDeArranque = { ...datos, salirA: respaldo };
 
-  try {
-    if (empujarHistorial) window.history.pushState({ mcSpa: true }, "", respaldo);
-    else window.history.replaceState({ mcSpa: true }, "", respaldo);
-  } catch {
-    /* un navegador que no deja tocar el historial no impide jugar */
-  }
+  // El historial lo lleva `spa/enrutador.ts`, que ya distingue empujar de
+  // reemplazar por la lección de D-200.3: apilar una entrada por cada paso
+  // interno hacía que «atrás» se comportara como el botón del navegador y
+  // costara varios toques salir. Aquí SIEMPRE se reemplaza — quien empuja es
+  // `QuienJuegaScene` al salir de la rejilla, una sola vez por sesión.
+  reemplazarHistorial(respaldo);
 
   sembrarHistoria(scene.game, arranque);
-  vigilarAtras(scene.game);
   scene.scene.start("BootScene");
-}
-
-/** Una sola suscripción por sesión, aunque se entre y salga varias veces. */
-let vigilando = false;
-
-/**
- * El botón «atrás» del sistema, cuando la pantalla ya no es un documento.
- *
- * ─── El bug que esto arregla, encontrado con el dedo ────────────────────────
- *
- * Sin esto, tocar «atrás» desde el mapa deshacía la entrada de historial —la
- * URL volvía a `/app/kids/`— pero **la escena de Phaser se quedaba en el
- * menú**. La barra decía una cosa y la pantalla otra, y el segundo toque
- * sacaba del sitio entero.
- *
- * No es un descuido evitable leyendo el código: con dos instancias de Phaser
- * el problema no existía, porque «atrás» era una navegación de verdad y el
- * navegador repintaba la página anterior él solo. Al fusionarlas, deshacer el
- * historial dejó de deshacer la pantalla. Lo encontró un toque en el
- * simulador, con `astro check` en 0 errores y el gate en verde.
- *
- * ─── Por qué se relee la isla del DOM ──────────────────────────────────────
- *
- * `QuienJuegaScene` necesita sus tarjetas, y siguen exactamente donde estaban:
- * **no hubo recarga**, así que `#quien-juega-datos` continúa en el documento.
- * Releerla es más barato y más honesto que guardarnos una copia en memoria,
- * que sería una segunda fuente de verdad de los perfiles.
- *
- * Si la isla no está —se llegó por carga directa a `/mapa/`, donde nunca hubo
- * rejilla— se navega de verdad. Ahí «atrás» sí es un documento anterior.
- */
-function vigilarAtras(game: Phaser.Game): void {
-  if (vigilando) return;
-  vigilando = true;
-
-  window.addEventListener("popstate", () => {
-    const isla = document.getElementById("quien-juega-datos");
-    if (!isla?.textContent) {
-      window.location.reload();
-      return;
-    }
-    try {
-      const datos = JSON.parse(isla.textContent);
-      // `stop` de todo lo de Historia antes de volver: `scene.start` sobre una
-      // escena solo detiene la que lo llama, y aquí puede haber varias vivas
-      // (MapScene con ChallengeScene lanzada encima).
-      for (const clave of ["BootScene", "PreloadScene", "MenuScene", "MapScene", "ChallengeScene", "DialogueScene", "GameplayScene"]) {
-        if (game.scene.isActive(clave) || game.scene.isPaused(clave) || game.scene.isSleeping(clave)) {
-          game.scene.stop(clave);
-        }
-      }
-      game.scene.start("QuienJuegaScene", datos);
-    } catch {
-      window.location.reload();
-    }
-  });
 }

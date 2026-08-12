@@ -64,5 +64,10 @@ export function entradasDelArbol(
       nivel: nivelDeHabilidad(fila.habilidad),
       skillState: SKILLSTATE_POR_ETAPA[fila.etapa],
       rotulo: habilidades[fila.skillId] ?? null,
+      // Mundo Kinder multi-bioma: `fila.bioma` ya viene resuelto por
+      // `leerModelo()` (D-200.x) — si el llamador pidió un bioma
+      // específico, `resumen` ya está filtrado a ese único mundo; este
+      // adaptador solo deja pasar el dato, nunca lo calcula.
+      bioma: fila.bioma,
     }));
 }

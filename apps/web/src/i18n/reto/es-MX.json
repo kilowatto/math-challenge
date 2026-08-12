@@ -50,6 +50,8 @@
   "k.descomponer.marco": "Ya hay {parte}. ¿Cuántos faltan para {total}?",
   "k.suma.patos": "{a} patitos y {b} patitos más. ¿Cuántos patitos hay?",
   "k.resta.patos": "Había {a} patitos. Se fueron {b}. ¿Cuántos quedan?",
+  "k.pop.subitiza": "Revienta exactamente {n} burbujas.",
+  "k.pop.resta": "Hay {a} burbujas. Revienta {b}. ¿Cuántas quedan?",
   "k.formas.cual_sobra": "¿Cuál no va con los demás?",
   "juego.bien": "¡Eso es!",
   "juego.aciertos": ["¡Sí!", "¡Muy bien!", "¡Lo encontraste!", "¡Exacto!", "¡Eso!", "¡Bien pensado!", "¡Acertaste!", "¡Vamos!"],
@@ -79,6 +81,8 @@
     "En un patrón AB se van turnando."
   ],
   "k.unoauno.gorros": "{patos} patitos y {gorros} gorros. ¿Cuántos patitos se quedan sin gorro?",
+  "k.mover.gorros": "Mueve cada gorro a un patito. ¿Cuántos patitos se quedan sin gorro?",
+  "k.mover.resta": "Mueve los patitos que se van. ¿Cuántos quedan?",
   "k.cardinalidad.ultimo": "Larry contó hasta {n}. Entonces, ¿cuántos patitos hay?",
   "k.recta.hueco": "¿Qué número va en el hueco, justo después del {antes}?",
   "k.marco.faltan": "El marco tiene {llenas} llenas. ¿Cuántas faltan para llenarlo?",

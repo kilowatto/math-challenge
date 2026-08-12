@@ -45,12 +45,17 @@
  */
 import Phaser from "phaser";
 import { BotonSonido } from "../objects/BotonSonido";
+import { BotonMusica } from "../objects/BotonMusica";
+import { MusicManager } from "../managers/MusicManager";
+import { SfxManager } from "../managers/SfxManager";
 import { FlechaAtras } from "../objects/FlechaAtras";
-import { LarryFotorrealista, LARRY_FOTO_CLAVES, LARRY_FOTO_ESENCIALES } from "../objects/LarryFotorrealista";
-import { TODOS_LOS_ANIMALES, claveDeAnimal, type AnimalId } from "../../lib/avatares-animal";
-import { CLAVES_ATREZO_PIN, clavePinDibujo, urlPinDibujo } from "../pin-dibujos";
+import { LarryFotorrealista } from "../objects/LarryFotorrealista";
+import { claveDeAnimal, type AnimalId } from "../../lib/avatares-animal";
+import { BotonEngrane, VARIANTES_ENGRANE, RADIO_ENGRANE } from "../objects/BotonEngrane";
+import { IMAGENES_QUIEN_JUEGA, AUDIOS_QUIEN_JUEGA } from "../assets-manifest";
+import { empujarHistorial } from "../spa/enrutador";
 import type { ArranquePin } from "./PinScene";
-import { CATALOGO } from "../../../../../packages/motor/src/pin-imagenes";
+import { fijarFase } from "../spa/estado";
 
 /** Los mismos seis tokens de `docs/guia-de-estilo.md`, copiados a hex — Phaser no lee `var(--…)`. */
 const PALETA: ReadonlyArray<{ relleno: number; tinta: number }> = [
@@ -79,6 +84,14 @@ export interface TarjetaPerfil {
   href: string;
   /** En qué idioma hace sus retos ESTE perfil — el dueño pidió mostrarlo por tarjeta (D-194, segunda ronda). Uno de `LOCALES` (`i18n/index.ts`). */
   locale: string;
+  /**
+   * D-198, ronda 3 (ajustes de perfil): la banda actual del NIÑO —
+   * `child_profiles.theme_band`, uno de "KINDER"|"PRIMARIA"|"SECUNDARIA".
+   * `undefined` en la tarjeta del adulto (no aplica). Se manda ya resuelta
+   * por el servidor, igual que el resto de la tarjeta — esta escena nunca
+   * deriva una banda a partir de la edad.
+   */
+  themeBand?: string;
 }
 
 /**
@@ -87,7 +100,23 @@ export interface TarjetaPerfil {
  * "es-ES" son dialectos distintos, no solo "español" — la misma distinción
  * que ya hace `packages/motor/src/alias.ts` con sus siete listas separadas).
  */
-const BANDERA_POR_LOCALE: Readonly<Record<string, string>> = Object.freeze({
+/**
+ * D-199, ronda 5: qué imagen de letrero tallado corresponde a cada locale
+ * de PÁGINA (`DatosQuienJuega.locale`) — `es-MX`/`es-ES` comparten UNA
+ * imagen porque el texto es idéntico en los dos (ver el comentario de
+ * `scripts/gen-letrero-quien-juega.mjs`).
+ */
+const LETRERO_POR_LOCALE: Readonly<Record<string, string>> = Object.freeze({
+  en: "letrero-quien-juega-en",
+  "es-MX": "letrero-quien-juega-es",
+  "es-ES": "letrero-quien-juega-es",
+  "fr-FR": "letrero-quien-juega-fr-FR",
+  "pt-BR": "letrero-quien-juega-pt-BR",
+  "pt-PT": "letrero-quien-juega-pt-PT",
+  "de-DE": "letrero-quien-juega-de-DE",
+});
+
+export const BANDERA_POR_LOCALE: Readonly<Record<string, string>> = Object.freeze({
   en: "🇺🇸",
   "es-MX": "🇲🇽",
   "es-ES": "🇪🇸",
@@ -102,11 +131,51 @@ export interface RotulosQuienJuega {
   pista: string;
   jugarComo: string;
   rango: string;
+  /** D-200: los dos rótulos de `CargaGlobalScene` — "Cargando imágenes…"/"Cargando sonidos…" en el locale de la página. */
+  carga: {
+    imagenes: string;
+    sonidos: string;
+  };
+  /**
+   * D-198, ronda 3: los rótulos del panel de ajustes (engrane por tarjeta de
+   * niño). Todos YA RESUELTOS por el servidor en el locale de la página —
+   * mismo criterio que el resto de `RotulosQuienJuega`, nunca una clave de
+   * i18n importada dentro de una escena de Phaser.
+   */
+  ajustes: {
+    titulo: string;
+    idioma: string;
+    comoSeVe: string;
+    kinder: string;
+    primaria: string;
+    secundaria: string;
+    fueraDeMargen: string;
+    alias: string;
+    otroAlias: string;
+    pin: string;
+    peligro: string;
+    borrar: string;
+    /** Con `{alias}` a reemplazar — mismo patrón que `profileThemeLevels`. */
+    confirmarBorrar: string;
+    siBorrar: string;
+    cancelar: string;
+    errorGenerico: string;
+    /** D-199, ronda 2: "un botón de salvar o guardar" — cierra el panel. */
+    guardar: string;
+  };
 }
 
 export interface DatosQuienJuega {
   tarjetas: TarjetaPerfil[];
   rotulos: RotulosQuienJuega;
+  /**
+   * D-198, ronda 3: el locale de ESTA PÁGINA (el segmento de la URL,
+   * `Astro.params.locale`) — distinto del `locale` de cada tarjeta (en qué
+   * idioma ese perfil hace sus retos). Hace falta para construir
+   * `ruta(locale, "entrar")` si una llamada del panel de ajustes devuelve
+   * `401 sin_sesion` a mitad de la visita.
+   */
+  locale: string;
 }
 
 const RADIO = 56; // 112px de diámetro — por encima del piso de 88px de KINDER (mc-20), con margen para el anillo del adulto.
@@ -130,92 +199,17 @@ export class QuienJuegaScene extends Phaser.Scene {
    * aparte (avatares bespoke, D-193), pero el fondo/Larry/ícono de sonido
    * no tenían por qué esperar a esa ronda.
    */
-  preload(): void {
-    this.load.image("fondo-primaria-1", "/juego/fondo-primaria-1.webp");
-    // Props de madera (D-194, segunda ronda): reemplazan los fondos blancos
-    // procedurales del título y de la flecha de regreso.
-    this.load.image("letrero-madera", "/juego/letrero-madera.webp");
-    this.load.image("flecha-madera", "/juego/flecha-madera.webp");
-    // Larry fotorrealista (D-196). Los 38 cuadros pesan 900 KB y solo DOS
-    // hacen falta para que exista sin huecos: la pose de reposo y la silla,
-    // que el constructor dibuja de inmediato. Los demás son caminata y siete
-    // comportamientos que empiezan segundos después, y van en `segundaFase()`.
-    //
-    // Decir «solo el primero» fue un error que llegó a producción: la silla
-    // salió como el cuadro con diagonal verde de Phaser —su placeholder de
-    // textura faltante— junto a Larry. `LARRY_FOTO_ESENCIALES` existe para que
-    // esa lista viva al lado del constructor que la necesita, no aquí.
-    for (const clave of LARRY_FOTO_ESENCIALES) {
-      this.load.image(clave, `/mapa/${clave}.webp`);
-    }
-    // Los avatares que ESTA casa usa — no los 16.
-    //
-    // `init()` corre antes que `preload()`, así que aquí ya se sabe qué animal
-    // eligió cada perfil. Una casa con dos hijos usaba 673 KB para pintar dos
-    // caras. El resto se sigue cargando, pero DESPUÉS (ver `segundaFase`).
-    for (const id of this.animalesUsados()) {
-      this.load.image(claveDeAnimal(id), `/avatares/${claveDeAnimal(id)}.webp`);
-    }
-  }
-
-  /** Los animales que de verdad aparecen en esta rejilla, sin repetir. */
-  private animalesUsados(): AnimalId[] {
-    const vistos = new Set<AnimalId>();
-    for (const t of this.datos.tarjetas) if (t.animal) vistos.add(t.animal);
-    return [...vistos];
-  }
-
   /**
-   * Lo que NO hace falta para pintar esta pantalla, cargado después de
-   * pintarla.
-   *
-   * ─── Por qué existe esta segunda fase ──────────────────────────────────
-   *
-   * Medido: `preload()` llegó a pedir **2.5 MB** antes de enseñar nada — 38
-   * cuadros de Larry, 16 avatares, y los 48 archivos del PIN. En el
-   * dispositivo de referencia (Android de gama baja sobre 4G lento, `mc-47`)
-   * son ~14 segundos de pantalla de carga, y ~51 en 3G. El niño no puede
-   * tocar su cara en todo ese rato.
-   *
-   * Nada de eso hace falta para pintar la rejilla. Lo que sí hace falta —el
-   * fondo, la madera y los avatares de esta casa— son ~400 KB.
-   *
-   * ─── Y por qué SIGUEN precargándose, en vez de cargarse al usarlos ─────
-   *
-   * Porque el PIN es la SEGUNDA pantalla, y cargarlo en el momento del toque
-   * reintroduce el hueco que D-200 existe para cerrar. La respuesta correcta
-   * no era «al vuelo» ni «todo antes de empezar»: es **antes de empezar, pero
-   * sin bloquear**. Cuando el dedo llega al PIN, los archivos llevan segundos
-   * en la caché de texturas.
-   *
-   * `Loader` de Phaser admite encolar y arrancar de nuevo sobre una escena ya
-   * creada; los `load.image()` de claves ya cargadas se ignoran solos.
+   * D-200: la lista de archivos vive en `assets-manifest.ts`, no aquí — es
+   * la misma fuente que usa `CargaGlobalScene` para precargar TODO (esta
+   * pantalla + Modo Historia) desde el primer toque. Si `CargaGlobalScene`
+   * ya corrió, Phaser ve las claves ya en caché y no vuelve a pedirlas
+   * (`Loader` las salta) — este `preload()` sigue existiendo para que la
+   * escena funcione sola si alguna vez se arranca sin pasar por la global.
    */
-  private segundaFase(): void {
-    const pendientes: Array<[string, string]> = [];
-
-    // El resto de cuadros de Larry: caminata y comportamientos.
-    for (const clave of LARRY_FOTO_CLAVES) {
-      if (!this.textures.exists(clave)) pendientes.push([clave, `/mapa/${clave}.webp`]);
-    }
-    // El resto de avatares: los necesita el selector de avatar del engrane,
-    // que puede abrirse en cualquier momento.
-    for (const id of TODOS_LOS_ANIMALES) {
-      const clave = claveDeAnimal(id);
-      if (!this.textures.exists(clave)) pendientes.push([clave, `/avatares/${clave}.webp`]);
-    }
-    // El atrezo del PIN y los 24 dibujos (D-201).
-    for (const clave of CLAVES_ATREZO_PIN) {
-      if (!this.textures.exists(clave)) pendientes.push([clave, `/juego/${clave}.webp`]);
-    }
-    for (const id of CATALOGO) {
-      const clave = clavePinDibujo(id);
-      if (!this.textures.exists(clave)) pendientes.push([clave, urlPinDibujo(id)]);
-    }
-
-    if (pendientes.length === 0) return;
-    for (const [clave, url] of pendientes) this.load.image(clave, url);
-    this.load.start();
+  preload(): void {
+    for (const { clave, url } of IMAGENES_QUIEN_JUEGA) this.load.image(clave, url);
+    for (const { clave, url } of AUDIOS_QUIEN_JUEGA) this.load.audio(clave, url);
   }
 
   /**
@@ -242,13 +236,17 @@ export class QuienJuegaScene extends Phaser.Scene {
       .setDisplaySize(width, height)
       .setDepth(0);
 
-    // El letrero de madera del título (D-194, segunda ronda) — reemplaza el
-    // panel blanco: "demasiados fondos blancos flotando" fue la crítica
-    // exacta del dueño viendo esta pantalla. Mismo prop que ya usa
-    // `MenuScene` para "Modo Historia/Retos" (`letrero-madera`,
-    // `gen-mapa-historia.mjs`) — el texto se PINTA encima con Phaser, nunca
-    // horneado en la imagen (D-019: la Sábana no habla en texto fijo, y de
-    // todas formas hace falta en los siete locales).
+    // El letrero de madera del título (D-194, segunda ronda; TALLADO de
+    // verdad desde D-199 ronda 5) — reemplaza el panel blanco: "demasiados
+    // fondos blancos flotando" fue la crítica exacta del dueño viendo esta
+    // pantalla. Primero el texto se pintaba con Phaser ENCIMA de una imagen
+    // en blanco (mismo criterio que `MenuScene`); el dueño lo vio en vivo y
+    // pidió el texto tallado de verdad en la madera, con efecto de viento —
+    // "que no vuelen las letras, que se vean esculpidas". Una imagen por
+    // locale (`scripts/gen-letrero-quien-juega.mjs`, revisada letra por
+    // letra antes de commitear, D-080) en vez de texto de Phaser encima.
+    // Si por lo que sea la imagen del locale no cargó, cae a `letrero-
+    // madera` CON el texto pintado — nunca un letrero en blanco y mudo.
     //
     // El letrero NO se centra en el ancho completo: la flecha de regreso
     // vive en la esquina superior izquierda y en un teléfono angosto un
@@ -257,34 +255,40 @@ export class QuienJuegaScene extends Phaser.Scene {
     const zonaIcono = 90;
     const anchoLetrero = Math.min(360, width - zonaIcono - 20);
 
-    const letrero = this.add.image(0, 0, "letrero-madera").setDepth(1);
+    const claveLetrero = LETRERO_POR_LOCALE[this.datos.locale];
+    const letreroTallado = claveLetrero && this.textures.exists(claveLetrero);
+    const letrero = this.add.image(0, 0, letreroTallado ? claveLetrero : "letrero-madera").setDepth(1);
     const escalaLetrero = anchoLetrero / letrero.width;
     letrero.setScale(escalaLetrero);
     letrero.setPosition(zonaIcono + anchoLetrero / 2 + 10, letrero.displayHeight / 2 - 6);
     const centroPanel = letrero.x;
 
-    this.add
-      .text(centroPanel, letrero.y - 20, this.datos.rotulos.titulo, {
-        fontFamily: "system-ui, sans-serif",
-        fontSize: "26px",
-        fontStyle: "700",
-        color: "#3E2712", // marrón oscuro — legible sobre la veta clara de la madera
-        stroke: "#F3E4C8",
-        strokeThickness: 3,
-      })
-      .setOrigin(0.5, 0.5)
-      .setDepth(2);
+    if (!letreroTallado) {
+      this.add
+        .text(centroPanel, letrero.y - 20, this.datos.rotulos.titulo, {
+          fontFamily: "system-ui, sans-serif",
+          fontSize: "26px",
+          fontStyle: "700",
+          color: "#3E2712", // marrón oscuro — legible sobre la veta clara de la madera
+          stroke: "#F3E4C8",
+          strokeThickness: 3,
+        })
+        .setOrigin(0.5, 0.5)
+        .setDepth(2);
 
-    this.add
-      .text(centroPanel, letrero.y + 12, this.datos.rotulos.pista, {
-        fontFamily: "system-ui, sans-serif",
-        fontSize: "16px",
-        color: "#3E2712",
-        stroke: "#F3E4C8",
-        strokeThickness: 2,
-      })
-      .setOrigin(0.5, 0.5)
-      .setDepth(2);
+      this.add
+        .text(centroPanel, letrero.y + 12, this.datos.rotulos.pista, {
+          fontFamily: "system-ui, sans-serif",
+          fontSize: "16px",
+          color: "#3E2712",
+          stroke: "#F3E4C8",
+          strokeThickness: 2,
+        })
+        .setOrigin(0.5, 0.5)
+        .setDepth(2);
+    }
+
+    this.registrarVientoEnLetrero(letrero);
 
     // Larry fotorrealista (D-196) — SUELTO sobre la escena, nunca dentro de
     // una tarjeta/panel (el dueño lo confirmó viendo D-195: "eso está
@@ -302,6 +306,11 @@ export class QuienJuegaScene extends Phaser.Scene {
     // pidió que dejara de compartir esquina con la flecha nueva, y sin
     // círculo blanco detrás (ver `BotonSonido.ts`).
     new BotonSonido(this, 44, height - 44).setDepth(10).setScrollFactor(0);
+    // D-198, ronda 2: control de música, mismo criterio de ubicación que el
+    // resto de las pantallas — 64px a la derecha del de voz.
+    new BotonMusica(this, 108, height - 44).setDepth(10).setScrollFactor(0);
+    // "calma" — es una pantalla de elegir, no de resolver.
+    (this.registry.get("musicManager") as MusicManager).reproducir("calma");
 
     // Reinicio de la escena, con RESIZE debounced (D-196.1). El Scale
     // Manager puede emitir varios eventos RESIZE seguidos mientras el
@@ -312,14 +321,27 @@ export class QuienJuegaScene extends Phaser.Scene {
     // se reiniciaba una y otra vez antes de completar el recorrido, así que
     // nunca llegaba a salir de cuadro. Se espera a que los eventos dejen de
     // llegar 300ms antes de reiniciar de verdad.
-    this.scale.on(Phaser.Scale.Events.RESIZE, () => {
+    //
+    // **`this.scale` es el ScaleManager GLOBAL, no de esta escena** — sobrevive
+    // a `scene.restart()`. La primera versión de este código nunca quitaba el
+    // listener, así que cada reinicio agregaba uno más: al segundo giro de
+    // pantalla ya había dos (o más) reinicios disparándose en cascada, cada
+    // uno leyendo `this.scale.width/height` en un instante distinto de la
+    // transición — la escena quedaba armada con el tamaño de un giro que ya
+    // no era el actual (encontrado en vivo: "si roto el teléfono o lo
+    // regreso, se queda así", una tarjeta enorme y descuadrada). `.off()` en
+    // el SHUTDOWN, mismo patrón que el listener de `deviceorientation` de
+    // `activarParallax()` un poco más abajo, asegura que solo exista un
+    // listener vivo a la vez, sin importar cuántas veces se haya reiniciado.
+    const alRedimensionar = () => {
       this.eventoRedimension?.remove();
       this.eventoRedimension = this.time.delayedCall(300, () => this.scene.restart(this.datos));
+    };
+    this.scale.on(Phaser.Scale.Events.RESIZE, alRedimensionar);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, alRedimensionar);
+      this.eventoRedimension?.remove();
     });
-
-    // Lo pesado que no hacía falta para pintar ESTA pantalla, ya con la
-    // rejilla delante del niño. Ver `segundaFase()`.
-    this.segundaFase();
   }
 
   private eventoRedimension: Phaser.Time.TimerEvent | null = null;
@@ -338,6 +360,37 @@ export class QuienJuegaScene extends Phaser.Scene {
    * se niega o el navegador no lo soporta, la pantalla se queda plana sin
    * romper nada.
    */
+  /**
+   * "Que tenga efecto de aire que se mueva un poco porque sopla el aire"
+   * (D-199, ronda 5) — mismo patrón que `MenuScene.registrarVientoEnLetrero`,
+   * adaptado: ESTE letrero no se centra en `width/2` (vive corrido a la
+   * derecha de `zonaIcono`, ver `create()`), así que el pivote de arriba se
+   * calcula a partir de la propia posición del letrero, nunca del centro de
+   * pantalla. Cuelga de dos cuerdas → se mece como un péndulo desde ARRIBA,
+   * no desde su centro; cambiar el origen a (0.5, 0) mueve el punto de giro
+   * sin mover la imagen (se reposiciona `y` en el mismo paso). Amplitud
+   * chica (±1.8°) y lenta (3.2s) — es madera pesada, no una hoja — y respeta
+   * `prefers-reduced-motion` igual que `SwayingPlant.ts`.
+   */
+  private registrarVientoEnLetrero(letrero: Phaser.GameObjects.Image): void {
+    const reducido =
+      typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reducido) return;
+
+    const centroY = letrero.y;
+    letrero.setOrigin(0.5, 0);
+    letrero.y = centroY - letrero.displayHeight / 2;
+
+    this.tweens.add({
+      targets: letrero,
+      angle: { from: -1.8, to: 1.8 },
+      duration: 3200,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
   private activarParallax(fondo: Phaser.GameObjects.Image): void {
     // Solo la capa de fondo se desplaza — Larry y las tarjetas se quedan
     // quietos. `LarryFotorrealista` ya mueve su propio `x`/`y` con tweens
@@ -503,15 +556,43 @@ export class QuienJuegaScene extends Phaser.Scene {
     // Alto mínimo del mundo — si hay más filas de las que caben, la cámara
     // no recorta la última: mismo criterio de "nada se corta" que el resto
     // del producto.
+    //
+    // D-199.3: el dueño preguntó qué pasa con 8 hijos más el adulto (9
+    // tarjetas) — y la respuesta real, encontrada leyendo el código y no
+    // adivinada, era un bug: este bloque SÍ calculaba el mundo más alto que
+    // la pantalla, pero el único scroll que conectaba era la RUEDA del
+    // mouse (`"wheel"`). Un iPhone no tiene rueda — con más de ~4 hijos las
+    // tarjetas de abajo habrían quedado completamente inalcanzables por
+    // toque. Se agrega arrastre vertical, mismo patrón que
+    // `MapScene::configurarArrastre` (pointerdown/pointermove/pointerup
+    // globales, sin estorbar el toque de una tarjeta: un toque corto sin
+    // arrastre real sigue disparando `onTocado` normal).
     const altoNecesario = inicioY + filas * altoFila + 60;
     if (altoNecesario > height) {
       this.cameras.main.setBounds(0, 0, width, altoNecesario);
+      const limiteScroll = altoNecesario - height;
+
       this.input.on("wheel", (_p: unknown, _go: unknown, _dx: number, dy: number) => {
+        this.cameras.main.scrollY = Phaser.Math.Clamp(this.cameras.main.scrollY + dy, 0, limiteScroll);
+      });
+
+      let arrastrando = false;
+      let ultimoY = 0;
+      this.input.on(Phaser.Input.Events.POINTER_DOWN, (p: Phaser.Input.Pointer) => {
+        arrastrando = true;
+        ultimoY = p.y;
+      });
+      this.input.on(Phaser.Input.Events.POINTER_UP, () => {
+        arrastrando = false;
+      });
+      this.input.on(Phaser.Input.Events.POINTER_MOVE, (p: Phaser.Input.Pointer) => {
+        if (!arrastrando || !p.isDown) return;
         this.cameras.main.scrollY = Phaser.Math.Clamp(
-          this.cameras.main.scrollY + dy,
+          this.cameras.main.scrollY - (p.y - ultimoY),
           0,
-          altoNecesario - height,
+          limiteScroll,
         );
+        ultimoY = p.y;
       });
     }
   }
@@ -655,6 +736,45 @@ export class QuienJuegaScene extends Phaser.Scene {
     contenedor.add(zona);
     zona.setInteractive({ useHandCursor: true });
     zona.on(Phaser.Input.Events.POINTER_DOWN, () => this.onTocado(tarjeta, contenedor));
+
+    // D-198, ronda 3 (corregido dos veces en D-199.3): el engrane de
+    // ajustes — SOLO en tarjetas de niño (el nombre/usuario del adulto es
+    // trabajo de 55.11). El dueño lo vio en vivo asomándose fuera de la
+    // esquina redondeada del panel. El primer arreglo (centrar el engrane
+    // exacto en el arco de la esquina, mismo radio que el arco) lo dejaba
+    // TANGENTE al borde — sin superponerse, pero también sin aire, tocando
+    // el límite exacto. Este deja un margen real de 4px hacia adentro,
+    // además de un engrane más chico (18→15, ver `BotonEngrane.ts`).
+    if (!tarjeta.esAdulto) {
+      const MARGEN_ESQUINA = 4;
+      const xEngrane = RADIO + 14 - RADIO_ENGRANE - MARGEN_ESQUINA;
+      // Variante 1-5 por índice de tarjeta — mismo criterio que
+      // `formasUsadas`/`coloresUsados` en `kids/index.astro`: determinista,
+      // no aleatorio en cada render, para que dos hermanos no se vean con el
+      // MISMO engrane por casualidad en la mayoría de los casos.
+      const variante = (indice % VARIANTES_ENGRANE) + 1;
+      const engrane = new BotonEngrane(this, xEngrane, -xEngrane, variante, () => this.abrirAjustes(tarjeta, x, y));
+      contenedor.add(engrane);
+    }
+  }
+
+  /**
+   * `origenX/origenY` son la posición REAL de la tarjeta tocada (mismo
+   * patrón que `ChallengeScene::origen` con los nodos del mapa) — D-199,
+   * ronda 2: el dueño pidió que el panel "se vuelta la tarjeta y crezca
+   * animadamente", no que aparezca centrado de la nada. El sonido de abrir
+   * lo dispara `PerfilAjustesScene` cuando de verdad empieza su animación,
+   * no aquí — un solo sonido por apertura, no dos pisándose.
+   */
+  private abrirAjustes(tarjeta: TarjetaPerfil, origenX: number, origenY: number): void {
+    this.scene.pause();
+    this.scene.launch("PerfilAjustesScene", {
+      tarjeta,
+      rotulos: this.datos.rotulos.ajustes,
+      locale: this.datos.locale,
+      origenX,
+      origenY,
+    });
   }
 
   private textoDeDato(dato: DatoDeTarjeta): string | null {
@@ -706,6 +826,7 @@ export class QuienJuegaScene extends Phaser.Scene {
   }
 
   private onTocado(tarjeta: TarjetaPerfil, contenedor: Phaser.GameObjects.Container): void {
+    (this.registry.get("sfxManager") as SfxManager).reproducir("toque");
     // Para la respiración antes del squash — dos tweens escribiendo la misma
     // escala a la vez se ve como un tirón, no como dos animaciones.
     this.tweens.killTweensOf(contenedor);
@@ -718,26 +839,33 @@ export class QuienJuegaScene extends Phaser.Scene {
       yoyo: true,
       ease: "Sine.easeInOut",
       onComplete: () => {
-        // El adulto sigue saliendo a su propia página: su área no es una
-        // superficie de niño y no vive en esta sesión de Phaser (D-201 cubre
-        // la del niño, no la del adulto).
+        // D-200.1, fase 1: la tarjeta del adulto sigue siendo una
+        // navegación real (fuera de alcance, /practicar/ es DOM puro a
+        // propósito). La de un hijo intenta mostrarse sin recargar; si
+        // `enrutador.irA` falla por lo que sea (sin red, HTML inesperado),
+        // cae a la navegación real de siempre — nunca un estado roto.
         if (tarjeta.esAdulto) {
           window.location.href = tarjeta.href;
           return;
         }
-        // El niño NO navega: el PIN es una escena de esta misma sesión
-        // (D-201). `sleep` y no `stop` — al volver de un PIN cancelado, la
-        // rejilla despierta tal cual estaba, sin recargar ni volver a pedir
-        // los perfiles al servidor. Y `sleep` y no `pause`: una escena pausada
-        // deja de actualizarse pero SIGUE renderizando, así que estas caras se
-        // verían por debajo del PIN.
+        // El PIN es una ESCENA (D-201), no un transplante de HTML.
+        //
+        // Antes esto llamaba a `mostrarPin()`, que pedía `kids/pin.astro` con
+        // `fetch`, extraía su `<main>` y lo metía en un `<div>` sobre el
+        // canvas. Ese atajo —declarado a propósito en D-200.1— costó una
+        // sesión entera de defectos en cadena: overlay transparente que
+        // dejaba ver estas caras a través del PIN, el CSS que nunca llegaba
+        // porque Astro lo emite como `<link>`, y franjas blancas de 41 pt que
+        // no se reprodujeron en Chrome y quedaron sin causa raíz.
+        //
+        // `sleep` y no `pause`: una escena pausada deja de actualizarse pero
+        // SIGUE renderizando, así que estas caras se verían por debajo.
         this.scene.sleep();
         this.scene.launch("PinScene", {
           childId: tarjeta.id,
-          alEntrar: (destino: string) => {
-            window.location.href = destino;
-          },
         } satisfies ArranquePin);
+        fijarFase("pin");
+        empujarHistorial(tarjeta.href);
       },
     });
   }

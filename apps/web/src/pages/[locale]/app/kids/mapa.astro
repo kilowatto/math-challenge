@@ -188,16 +188,43 @@ if (env?.DB && await f9Habilitado(env.CONFIG_KV, locale)) {
 // --- El progreso, compuesto de piezas que ya existen -------------------------
 
 /**
- * El resumen del aprendiz (F4). `leerModelo` falla ABIERTO —devuelve `[]`— y
- * aquí eso significa un mapa entero por visitar, que es honesto: si no se
- * pudo leer el progreso, no se puede enseñar. El juego nunca se niega por
- * esto — es el MISMO resumen para las dos ramas, KINDER y PRIMARIA+.
+ * Mundo Kinder multi-bioma (#34): Desierto es el piloto — el único bioma
+ * real hasta que Sabana/Nieve/Costa migren. El dueño decidió dominio
+ * INDEPENDIENTE por bioma: el resumen sin acotar (abajo) sigue dando
+ * continuidad a la Sabana de siempre; el árbol de Desierto se pide con su
+ * propio resumen, acotado, más abajo en la rama KINDER.
+ */
+const BIOMA_PILOTO_KINDER = "desierto";
+
+/**
+ * El resumen del aprendiz (F4), SIN acotar por bioma. `leerModelo` falla
+ * ABIERTO —devuelve `[]`— y aquí eso significa un mapa entero por visitar,
+ * que es honesto: si no se pudo leer el progreso, no se puede enseñar. Es
+ * el resumen de PRIMARIA/SECUNDARIA (que no tienen bioma) y el de la
+ * Sabana de KINDER (continuidad de siempre, D-152) — nunca el del piloto
+ * de Desierto, que se pide aparte.
  */
 const resumen = await leerModelo(env?.LEARNER_DO, nino.childProfileId);
 
 let sendero: ReturnType<typeof construirSendero> | null = null;
 let accesorios: string[] = [];
 let arbol: ReturnType<typeof construirArbol> | null = null;
+/**
+ * Mundo Kinder multi-bioma (#34): qué `WorldChapter` de `story.ts` abre
+ * Modo Historia. `"primaria-1"` es el respaldo de siempre (PRIMARIA/
+ * SECUNDARIA, sin cambios); la rama KINDER de abajo lo cambia a
+ * `"desierto-1"` cuando el piloto tiene algo real que mostrar.
+ */
+let chapterId = "primaria-1";
+/**
+ * El GEMELO de `chapterId`, para el RETO — `undefined` para PRIMARIA/
+ * SECUNDARIA (sin bioma). `GameplayScene` lo manda en cada `pedir()` al
+ * servidor para que el dominio se registre bajo el bioma correcto: sin
+ * esto, jugar el árbol de Desierto seguiría escribiendo bajo el bioma por
+ * omisión y el árbol de Desierto no se llenaría nunca (ver el comentario
+ * largo en `RetoController.ts::DatosDeArranqueReto.bioma`).
+ */
+let biomaActivo: string | undefined;
 /**
  * Los mismos rótulos que `Pantalla.astro`/`jugar.astro` resuelven para el
  * reto en HTML (`i18n/reto/{locale}.json`, claves `juego.*`) — ver
@@ -209,47 +236,77 @@ let rotulosReto: {
   bien: string; otra: string; siguiente: string; salir: string; cargando: string;
   mirar: string; confirmar: string; reintentar: string; elige: string;
   escuchar: string; vozActivada: string; vozDesactivada: string; sinVoz: string; pendiente: string;
+  verlo: string; otraVez: string;
 } | null = null;
+
+/**
+ * Las etiquetas `habilidad.*` y `juego.*` del catálogo de reto — las
+ * mismas para las dos ramas (D-184 las autora una vez por locale, sin
+ * distinción de banda). Se resuelven ANTES del `if` porque el piloto de
+ * Desierto (#34) las necesita en la rama KINDER exactamente igual que
+ * PRIMARIA/SECUNDARIA ya las usaba — duplicarlas sería el mismo texto
+ * copiado dos veces.
+ */
+const CATALOGOS_RETO: Record<string, Record<string, unknown>> = {
+  en: enReto, "es-MX": esMXReto, "es-ES": esESReto, "fr-FR": frFRReto,
+  "pt-BR": ptBRReto, "pt-PT": ptPTReto, "de-DE": deDEReto,
+};
+const catalogoReto = CATALOGOS_RETO[locale] ?? enReto;
+const habilidadesReto: Record<string, string> = {};
+for (const clave of Object.keys(catalogoReto)) {
+  if (clave.startsWith("habilidad.") && typeof catalogoReto[clave] === "string") {
+    habilidadesReto[clave.slice("habilidad.".length)] = catalogoReto[clave] as string;
+  }
+}
+const textoReto = (clave: string, respaldo: string) =>
+  typeof catalogoReto[clave] === "string" ? (catalogoReto[clave] as string) : respaldo;
+const rotulosRetoResueltos = {
+  bien: textoReto("juego.bien", "That's it!"),
+  otra: textoReto("juego.otra", "Not this time. Have another go."),
+  siguiente: textoReto("juego.siguiente", "Next"),
+  salir: textoReto("juego.salir", "Done for now"),
+  cargando: textoReto("juego.cargando", "Here it comes…"),
+  mirar: textoReto("juego.mirar", "Look!"),
+  confirmar: textoReto("juego.confirmar", "Ready!"),
+  reintentar: textoReto("juego.reintentar", "Try it again"),
+  elige: textoReto("juego.elige", "Tap one, then Ready."),
+  escuchar: textoReto("juego.escuchar", "Listen"),
+  vozActivada: textoReto("juego.vozActivada", "Voice on"),
+  vozDesactivada: textoReto("juego.vozDesactivada", "Voice off"),
+  sinVoz: textoReto("juego.sinVoz", "This device has no voice installed for this language, so Larry can’t read out loud here."),
+  pendiente: textoReto("juego.pendiente", "Saved on this device; it will be checked when you reconnect."),
+  // Mundo Kinder multi-bioma (#34): el botón del destello (`flash`) —
+  // mismas claves que ya usa `Pantalla.astro` desde F5.
+  verlo: textoReto("juego.verlo", "I'm ready"),
+  otraVez: textoReto("juego.otraVez", "See it again"),
+};
 
 if (esPrimariaOMas) {
   // --- D-184: el árbol real de PRIMARIA/SECUNDARIA, para Modo Historia -----
-  const CATALOGOS_RETO: Record<string, Record<string, unknown>> = {
-    en: enReto, "es-MX": esMXReto, "es-ES": esESReto, "fr-FR": frFRReto,
-    "pt-BR": ptBRReto, "pt-PT": ptPTReto, "de-DE": deDEReto,
-  };
-  const catalogoReto = CATALOGOS_RETO[locale] ?? enReto;
-  const habilidades: Record<string, string> = {};
-  for (const clave of Object.keys(catalogoReto)) {
-    if (clave.startsWith("habilidad.") && typeof catalogoReto[clave] === "string") {
-      habilidades[clave.slice("habilidad.".length)] = catalogoReto[clave] as string;
-    }
-  }
-  arbol = construirArbol(entradasDelArbol(resumen, habilidades));
-
-  const textoReto = (clave: string, respaldo: string) =>
-    typeof catalogoReto[clave] === "string" ? (catalogoReto[clave] as string) : respaldo;
-  rotulosReto = {
-    bien: textoReto("juego.bien", "That's it!"),
-    otra: textoReto("juego.otra", "Not this time. Have another go."),
-    siguiente: textoReto("juego.siguiente", "Next"),
-    salir: textoReto("juego.salir", "Done for now"),
-    cargando: textoReto("juego.cargando", "Here it comes…"),
-    mirar: textoReto("juego.mirar", "Look!"),
-    confirmar: textoReto("juego.confirmar", "Ready!"),
-    reintentar: textoReto("juego.reintentar", "Try it again"),
-    elige: textoReto("juego.elige", "Tap one, then Ready."),
-    escuchar: textoReto("juego.escuchar", "Listen"),
-    vozActivada: textoReto("juego.vozActivada", "Voice on"),
-    vozDesactivada: textoReto("juego.vozDesactivada", "Voice off"),
-    sinVoz: textoReto("juego.sinVoz", "This device has no voice installed for this language, so Larry can’t read out loud here."),
-    pendiente: textoReto("juego.pendiente", "Saved on this device; it will be checked when you reconnect."),
-  };
+  arbol = construirArbol(entradasDelArbol(resumen, habilidadesReto));
+  rotulosReto = rotulosRetoResueltos;
 } else {
-  // --- KINDER: exactamente el mismo código de siempre, sin tocar ----------
+  // --- KINDER: Sabana de siempre (D-152, continuidad real) ---------------
 
   /** Los catorce lugares de la Sabana, en el orden en que se recorren (D-019). */
   const orden = Object.keys(HABILIDADES_KINDER);
   sendero = construirSendero(orden, fasesDelSendero(resumen));
+
+  /**
+   * Mundo Kinder multi-bioma (#34): el piloto de Desierto, en Phaser —
+   * MISMA construcción que PRIMARIA/SECUNDARIA arriba (`construirArbol` +
+   * `entradasDelArbol`), pero con su PROPIO resumen acotado a
+   * `BIOMA_PILOTO_KINDER` (dominio independiente por bioma, decisión del
+   * dueño): la Sabana de arriba nunca se lee acotada, para no romper la
+   * continuidad de quien ya juega hoy. Si el niño no tocó nada todavía en
+   * Desierto, `arbol.grupos` sale vacío y `historiaFullscreen` cae a la
+   * Sabana de siempre — nunca a una pantalla en blanco.
+   */
+  const resumenDesierto = await leerModelo(env?.LEARNER_DO, nino.childProfileId, BIOMA_PILOTO_KINDER);
+  arbol = construirArbol(entradasDelArbol(resumenDesierto, habilidadesReto));
+  rotulosReto = rotulosRetoResueltos;
+  chapterId = "desierto-1";
+  biomaActivo = BIOMA_PILOTO_KINDER;
 
   /**
    * Lo que Larry lleva puesto (#235, D-080). Una preferencia, no progreso: si
@@ -279,8 +336,13 @@ if (esPrimariaOMas) {
  * y el marco de siempre para no verse como un error). `arbol!`/`rotulosReto!`
  * más abajo son seguros por esto: TypeScript no encadena la comprobación a
  * través de una variable separada, pero este booleano ya la hizo.
+ *
+ * Mundo Kinder multi-bioma (#34): ya NO exige `esPrimariaOMas` — KINDER
+ * entra aquí también, en cuanto el piloto de Desierto tenga al menos una
+ * habilidad tocada. Antes de eso, `arbol.grupos.length === 0` mantiene a
+ * KINDER en la Sabana de siempre (rama de abajo), exactamente como hoy.
  */
-const historiaFullscreen = Boolean(esPrimariaOMas && arbol && arbol.grupos.length > 0 && rotulosReto);
+const historiaFullscreen = Boolean(arbol && arbol.grupos.length > 0 && rotulosReto);
 
 /**
  * D-190: PRIMARIA usa el mismo camino de troncos que KINDER (reemplaza el
@@ -342,6 +404,8 @@ const modoDelMapa: "arbol" | "camino" = banda === "SECUNDARIA" ? "arbol" : "cami
           etiquetaVoz={ETIQUETA_DE_VOZ[locale]}
           salirA={rutaMapaKids(locale)}
           rutaRetos={rutaRetosKids(locale)}
+          chapterId={chapterId}
+          bioma={biomaActivo}
           pantallaCompleta
         />
         <a class="mapa-historia-completa__salida" href={rutaKids(locale)} aria-label={m.kidsTitle}>

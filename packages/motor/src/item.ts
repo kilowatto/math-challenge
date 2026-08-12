@@ -17,13 +17,36 @@
 
 import type { Locale } from "./convenciones.ts";
 
-/** Los cinco formatos de kinder, todos de tocar (plan §9). */
+/**
+ * Los formatos de kinder, todos de tocar — nunca arrastrar, doble-toque ni
+ * sacudir el dispositivo (`mc-20`: los tres gestos que más fallan a los
+ * 4-6 años). Los cinco primeros son el banco original (plan §9); los trece
+ * siguientes son Mundo Kinder multi-bioma
+ * (`docs/planes/2026-08-09-mundo-kinder-multi-bioma.md` §2-3): cada
+ * habilidad conserva su formato original y gana dos de estos nuevos, mismo
+ * contenido numérico con un gesto distinto (`mc-02`, enseñanza con
+ * variación china). El gesto #16 del plan (tap-and-hold) NO está aquí a
+ * propósito: es solo pista opcional, nunca un formato calificado.
+ */
 export type Formato =
   | "toca_la_respuesta"
   | "toca_para_contar"
   | "flash"
   | "arma_el_numero"
-  | "cual_sobra";
+  | "cual_sobra"
+  | "tap_secuencia"
+  | "toca_para_reventar"
+  | "toca_origen_destino"
+  | "desliza_con_tope"
+  | "compara_y_toca"
+  | "toca_para_clasificar"
+  | "empareja_tocando"
+  | "toca_el_ritmo"
+  | "toca_hasta_el_objetivo"
+  | "traza_el_camino"
+  | "toca_para_fusionar"
+  | "toca_para_incrementar"
+  | "toca_el_blanco_movil";
 
 /**
  * Un error con causa nombrada.

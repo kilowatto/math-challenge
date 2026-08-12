@@ -126,12 +126,13 @@ const FONDOS = [
       "soft green terrain (#5B8C3A base, #8FC461 highlights) on one side, calm flat turquoise water on the other, " +
       "a pale sky with a few simple clouds at the very top, " +
       "gentle top-down/isometric game map perspective, completely empty open grassy patch in the center for game pieces to sit on, " +
+      "one continuous unbroken grassy surface from edge to edge, seamless untouched turf with no worn ground of any kind, not even a faint line, " +
       "the hills are bare and untouched by any trail or structure, pure untouched grassland, " +
       "no dirt path of any kind, no paved path, no road, no trail, no track, no walkway, no stepping stones, no bridge, " +
-      "no boats, no ships, no sailboats, no canoes, no rafts, no docks, no piers, no anchors, no sails, " +
-      "no buildings, no houses, no huts, no cabins, no lighthouse, no tower, no roofs, no fences, no village, no civilization, " +
-      "no characters, no people, no faces, no animals, no creatures, no fish, no birds, no seagulls, no crabs, " +
-      "no text, no numbers, no digits, no letters, no signs, no logos, no watermarks, no signatures",
+      "no boats, no ships, no docks, no sails, " +
+      "no buildings, no houses, no huts, no lighthouse, no fences, no village, " +
+      "no characters, no people, no faces, no animals, no birds, no crabs, " +
+      "no text, no numbers, no letters, no logos, no watermarks, no signatures",
   },
 ];
 
@@ -196,8 +197,62 @@ const ESTILO_COSTA =
   "no text, no numbers, no letters, no logos, no watermarks, no signatures";
 const VEGETACION_COSTA = [
   ["palmera", `a single tropical palm tree, ${BLANCO}, ${ESTILO_COSTA}`, 200, 280],
-  ["roca-costa", `a single smooth beach rock, ${BLANCO}, ${ESTILO_COSTA}`, 200, 150],
+  ["roca-costa", `extreme close-up crop of a smooth rounded beach stone filling the entire frame, plain unmarked stone surface, geological mineral object, not a creature, isolated single object, no scene, no other objects, ${BLANCO}, ${ESTILO_COSTA}`, 200, 150],
   ["concha", `a single seashell, ${BLANCO}, ${ESTILO_COSTA}`, 140, 120],
+];
+
+// ─── Material del tronco por bioma (plan de mundo multi-bioma, 2026-08-09) ──
+//
+// `tronco-a`/`tronco-b` (madera) solo tienen sentido donde hay árboles —
+// Sabana y Costa (madera de deriva, mismo material visual). Un tronco de
+// madera sobre dunas o nieve es exactamente el "flotando, no coherente con
+// el terreno" que el dueño señaló: Desierto y Nieve necesitan su propio
+// material de apoyo, mismo lenguaje visual que `tronco-a`/`tronco-b`
+// (superficie superior limpia para que Phaser pinte `secuencia` encima,
+// nunca horneado en la imagen — D-190) pero con el material del terreno.
+const TRONCOS_BIOMA = [
+  [
+    "roca-arenisca-tronco",
+    `a single round flat stepping stone made of sandstone viewed from a slight top-down angle, ` +
+      `smooth flat sandy-orange stone surface with subtle rock striations, rounded weathered edges, ` +
+      `empty clean flat top surface with no carving, no engraving, no picture, no scene, ` +
+      `warm sandstone tan and terracotta tones (#D9A066 base, #E8C48A highlights), ${BLANCO}, ` +
+      `simple flat vector game asset illustration, clean shape that reads well at small size, ` +
+      `no people, no characters, no faces, no eyes, no animals, no text, no numbers, no letters, ` +
+      `no logos, no watermarks, no signatures`,
+    200,
+    200,
+  ],
+  // "bloque-nieve-tronco" — PENDIENTE DE REVISIÓN HUMANA DEL PROMPT (2026-08-10).
+  // Tres intentos, tres fallos distintos, y no se genera un cuarto (límite de
+  // 2 reintentos de esta sesión):
+  //   1. Prompt original (sin "extreme close-up crop"): coló un excursionista
+  //      diminuto con bastones sobre el bloque — una persona, prohibido.
+  //   2. + "extreme close-up crop... filling the entire frame" (la misma
+  //      corrección que sí funcionó para roca-costa/roca-desierto): en vez de
+  //      aislar el objeto, "compacted snow and ice" + el encuadre cerrado
+  //      hicieron que Recraft devolviera FOTOGRAFÍA realista de un ventisquero
+  //      completo — nunca ilustración plana, y sin fondo blanco que recortar.
+  //   3. + "not photorealistic, flat cartoon illustration style" + anti-gente:
+  //      volvió a la ilustración plana pero coló sombra azul, pasto en la
+  //      base y marcas parecidas a huellas de animal sobre la superficie —
+  //      otra vez una escena, no un ícono aislado.
+  // La palabra "snow" parece jalar fuerte hacia fotografía de paisaje de
+  // invierno sin importar el resto del prompt — el mismo tipo de sobre-ajuste
+  // que ya documentó [[feedback_recraft-overfitting-fixes]] punto 9. Arreglo
+  // real (2026-08-10): evitar la palabra "snow" por completo, igual que ya
+  // resuelve `roca-nieve` dos líneas arriba ("frost-covered mineral
+  // formation", nunca "snow") — mismo patrón, superficie plana en vez de
+  // formación angular.
+  [
+    "bloque-nieve-tronco",
+    `extreme close-up crop of exactly ONE single flat rounded frost-covered stepping stone filling the ` +
+      `entire frame, only one stone and nothing else, smooth pale ice-glazed mineral surface, geological ` +
+      `object, not a creature, empty clean flat top with no carving, no picture, no scene, ` +
+      `no path, no row of stones, no additional stones, no other objects, ${BLANCO}, ${ESTILO_NIEVE}`,
+    200,
+    200,
+  ],
 ];
 
 // ─── El letrero del reto: un prop, no un ser vivo — mucho más seguro que la
@@ -228,6 +283,19 @@ const PROPS = [
   // lenguaje visual que el letrero/los troncos — nunca un ícono UI genérico
   // flotando sobre la escena ilustrada.
   ["flecha-madera", `a flat vector game icon of a chevron arrow button, the icon is shaped like a thick left-pointing arrow, filled with a warm brown wood grain texture pattern, simple UI button icon design, ${BLANCO}, ${ESTILO_PROP}`, 130, 90],
+  // El engrane de ajustes de "¿Quién juega?" (D-199, corrección tras verlo
+  // en vivo): el dueño vio la primera versión —un engrane gris, dibujado a
+  // mano con `Phaser.Graphics`, idéntico en cada tarjeta— y pidió madera,
+  // como el resto de los props de esta pantalla, y 4-5 variantes para que
+  // no se vea repetido de tarjeta a tarjeta (mismo criterio que
+  // `tronco-a`/`tronco-b`). Cinco engranes, cada uno con un número de
+  // dientes y un tono de madera distinto — la MISMA familia visual, nunca
+  // cinco estilos que no combinen entre sí.
+  ["engrane-madera-1", `a flat vector game icon of a mechanical gear/cog wheel with 6 teeth, filled with a warm light honey-brown wood grain texture pattern, simple UI button icon design, ${BLANCO}, ${ESTILO_PROP}`, 110, 110],
+  ["engrane-madera-2", `a flat vector game icon of a mechanical gear/cog wheel with 8 teeth, filled with a plain warm medium brown wood grain texture pattern only — no carving, no engraving, no picture, no scene, no landscape, no medallion, just flat wood grain, simple UI button icon design, ${BLANCO}, ${ESTILO_PROP}`, 110, 110],
+  ["engrane-madera-3", `a flat vector game icon of a mechanical gear/cog wheel with 5 teeth, filled with a darker walnut-brown wood grain texture pattern, simple UI button icon design, ${BLANCO}, ${ESTILO_PROP}`, 110, 110],
+  ["engrane-madera-4", `a flat vector game icon of a mechanical gear/cog wheel with 7 teeth, filled with a warm reddish-brown wood grain texture pattern with a visible wood knot, simple UI button icon design, ${BLANCO}, ${ESTILO_PROP}`, 110, 110],
+  ["engrane-madera-5", `a flat vector game icon of a mechanical gear/cog wheel with 10 small teeth, filled with a pale tan wood grain texture pattern, simple UI button icon design, ${BLANCO}, ${ESTILO_PROP}`, 110, 110],
   // Intentado y ABANDONADO (D-194, tercera ronda): una placa de madera para
   // el fondo de cada tarjeta de "¿Quién juega?", pidiendo desde "ícono de UI"
   // hasta "textura de swatch" hasta "patrón sin costura" — las SEIS rondas,
@@ -319,6 +387,7 @@ for (const fondo of FONDOS) {
 
 for (const [clave, prompt, w, h] of [
   ...VEGETACION, ...VEGETACION_DESIERTO, ...VEGETACION_NIEVE, ...VEGETACION_COSTA, ...PROPS,
+  ...TRONCOS_BIOMA,
 ]) {
   if (solo && !clave.includes(solo)) continue;
   const destino = join(OUT, `${clave}.webp`);

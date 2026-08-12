@@ -21,6 +21,7 @@
  */
 import Phaser from "phaser";
 import { ProgressManager } from "../managers/ProgressManager";
+import { SfxManager } from "../managers/SfxManager";
 
 type Nivel = "facil" | "medio" | "dificil";
 
@@ -124,6 +125,7 @@ export class ChallengeScene extends Phaser.Scene {
           })
           .setOrigin(0.5, 0.5);
         boton.on("pointerdown", () => {
+          (this.registry.get("sfxManager") as SfxManager).reproducir("toque");
           progreso.elegirNivel(nivel);
           for (const b of botonesNivel) {
             b.setFillStyle(0xf7f7f8); // superficie-clara
@@ -159,6 +161,7 @@ export class ChallengeScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
     });
     jugar.on("pointerdown", () => {
+      (this.registry.get("sfxManager") as SfxManager).reproducir("toque");
       jugar.setScale(0.94);
       jugarTexto.setScale(0.94);
     });

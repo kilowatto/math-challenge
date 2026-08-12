@@ -1,6 +1,7 @@
 // @ts-check
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
 import { redirecciones } from "./src/i18n/rutas-tabla.mjs";
@@ -41,6 +42,70 @@ function redireccionesD049() {
   };
 }
 
+/**
+ * Escribe `dist/assets-version.json` con un hash de los BYTES reales de
+ * `public/{juego,mapa,avatares}` (D-200).
+ *
+ * El dueño pidió explícito "un sistema de versiones... que si sube sepa que
+ * tiene que bajar de nuevo toda la aplicación" — para que `CargaGlobalScene`
+ * sepa cuándo el catálogo de Phaser (imágenes/audio) cambió y hay que
+ * refrescar el caché del service worker, en vez de servir bytes viejos para
+ * siempre. Automático a propósito, y limitado a estas tres carpetas — no a
+ * `dist` entero — por la MISMA razón que `sw.js` fija su `VERSION` a mano:
+ * un hash del sitio completo invalidaría el catálogo en cada deploy de HTML
+ * aunque ni una imagen hubiera cambiado, y en 4G lento eso son megabytes que
+ * el niño vuelve a pagar sin motivo. Solo cambia cuando de verdad cambia un
+ * archivo dentro de estas tres carpetas — agregar uno nuevo, borrar uno,
+ * o regenerar el mismo nombre con arte distinto.
+ */
+function activosVersionD200() {
+  const CARPETAS = ["juego", "mapa", "avatares"];
+
+  function archivosOrdenados(base) {
+    const resultado = [];
+    const recorrer = (ruta) => {
+      for (const nombre of readdirSync(ruta).sort()) {
+        const completa = `${ruta}/${nombre}`;
+        if (statSync(completa).isDirectory()) recorrer(completa);
+        else resultado.push(completa);
+      }
+    };
+    recorrer(base);
+    return resultado;
+  }
+
+  return {
+    name: "mc-activos-version-d200",
+    hooks: {
+      "astro:build:done": ({ dir, logger }) => {
+        const hash = createHash("sha256");
+        let total = 0;
+        for (const carpeta of CARPETAS) {
+          const base = fileURLToPath(new URL(`${carpeta}/`, dir));
+          let archivos;
+          try {
+            archivos = archivosOrdenados(base);
+          } catch {
+            continue; // Carpeta ausente en este build — no es un error.
+          }
+          for (const ruta of archivos) {
+            hash.update(ruta.slice(base.length));
+            hash.update(readFileSync(ruta));
+            total++;
+          }
+        }
+        const version = hash.digest("hex").slice(0, 16);
+        writeFileSync(
+          fileURLToPath(new URL("assets-version.json", dir)),
+          JSON.stringify({ version, archivos: total }),
+          "utf8",
+        );
+        logger.info(`assets-version.json — ${version} (${total} archivos en ${CARPETAS.join("/")})`);
+      },
+    },
+  };
+}
+
 // Los siete locales (D-022). No cinco idiomas: es-MX y es-ES no comparten
 // separador decimal, pt-BR y pt-PT no comparten escala numérica (mc-34).
 // El auditor audits/locales-complete.mjs verifica que esta lista y la de
@@ -66,7 +131,7 @@ export default defineConfig({
       namedExports: ["RateLimiter", "Aprendiz", "Liga", "Misiones", "Salon"],
     },
   }),
-  integrations: [redireccionesD049()],
+  integrations: [redireccionesD049(), activosVersionD200()],
 
   // D-033: mismo host, sitio en la raíz y app en rutas autenticadas, para que
   // la autoridad de dominio se concentre en un lugar (mc-48).

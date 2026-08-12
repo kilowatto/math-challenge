@@ -1227,6 +1227,171 @@ export const PLANTILLAS: Plantilla[] = [
   K01, K02, K03, K04, K05, K06, K07, K08, K09, K10, K11, K12, K13, K14,
 ];
 
+// ---------------------------------------------------------------------------
+// Mundo Kinder multi-bioma (#34) — mecánicas ADICIONALES sobre habilidades
+// que ya tienen su `Plantilla` de siempre
+// ---------------------------------------------------------------------------
+//
+// `docs/planes/2026-08-09-mundo-kinder-multi-bioma.md` §3 pide que cada
+// habilidad conserve su mecánica actual y gane hasta dos mecánicas nuevas,
+// **reusando el mismo `parametros()` ya escrito** — mismo contenido
+// numérico, distinto gesto (§6-7). Por eso esto NO restructura `Plantilla`:
+// las 14 de arriba, y todo lo que las consume (`PLANTILLAS`,
+// `generarBanco()`, los auditores de `audits/`), siguen exactamente igual.
+// Una `MecanicaAdicional` es más delgada a propósito — apunta a la
+// `Plantilla` base solo para tomar prestado su `parametros()`.
+//
+// El piloto de esta ronda (Desierto, decisión del dueño 2026-08-10) es
+// **4 pares, no los 28 del plan completo**: tap-to-pop sobre K01 y K12,
+// tap origen→destino sobre K05 y K12 — las dos mecánicas más reutilizadas
+// (plan §7) sobre el subconjunto de habilidades ya elegido para el piloto.
+// Los 24 pares restantes (K02,K03,K11 de tap-to-pop; K09,K10 de
+// origen-destino; y las 11 mecánicas que ni siquiera tienen `Formato`
+// todavía) quedan explícitamente para cuando el piloto se dé por bueno.
+export interface MecanicaAdicional {
+  /** De dónde sale `parametros()` — nunca se recalcula ni se amplía aquí. */
+  base: Plantilla;
+  formato: Formato;
+  generar(params: Record<string, number>, variacion: Variacion | null): Item;
+}
+
+export const K01_REVIENTA: MecanicaAdicional = {
+  base: K01,
+  formato: "toca_para_reventar",
+  generar({ n, disp, cosa }, variacion) {
+    // `disp`/`cosa` viajan en los parámetros (vienen del `parametros()` de
+    // K01, sin tocar) pero esta mecánica no los dibuja: reventar burbujas
+    // no tiene "disposición" ni objeto — es una plantilla de burbujas, no
+    // el destello. Se ignoran a propósito, no por descuido.
+    return {
+      id: id("K01-pop", { n, disp, cosa }),
+      habilidad: "K01",
+      nivel: 1,
+      formato: "toca_para_reventar",
+      enunciado: { clave: "k.pop.subitiza", vars: { n } },
+      respuesta: { valor: n, tol: 0 },
+      errores: [
+        { valor: n - 1, causa: "error.subestimo" },
+        { valor: n + 1, causa: "error.sobreestimo" },
+      ].filter((e) => e.valor >= 1),
+      proposito: "clasificar",
+      variacion,
+    };
+  },
+};
+
+export const K12_REVIENTA: MecanicaAdicional = {
+  base: K12,
+  formato: "toca_para_reventar",
+  generar({ a, b, ctx }, variacion) {
+    return {
+      id: id("K12-pop", { a, b, ctx }),
+      habilidad: "K12",
+      nivel: 2,
+      formato: "toca_para_reventar",
+      enunciado: { clave: "k.pop.resta", vars: { a, b } },
+      respuesta: { valor: a - b, tol: 0 },
+      // Mismas tres causas que la plantilla base (`K12.generar`) — es el
+      // mismo hecho matemático con otro gesto, no una habilidad distinta.
+      errores: sinColision([
+        { valor: a + b, causa: "error.sumo" },
+        { valor: a - b - 1, causa: "error.conto_el_que_quita" },
+        { valor: a - b + 1, causa: "error.se_salto_uno" },
+      ]).filter((e) => e.valor !== a - b && e.valor >= 0),
+      proposito: "interpretar",
+      contexto: "burbujas que se revientan para quitar",
+      variacion,
+    };
+  },
+};
+
+export const K05_MUEVE: MecanicaAdicional = {
+  base: K05,
+  formato: "toca_origen_destino",
+  generar({ patos, gorros }, variacion) {
+    const sobran = patos - gorros;
+    return {
+      id: id("K05-mueve", { patos, gorros }),
+      habilidad: "K05",
+      nivel: 1,
+      formato: "toca_origen_destino",
+      // `glifo` viaja para que `GameplayScene::pintarOrigenDestino()` sepa
+      // QUÉ salta (#347: el banco manda el dibujo, la escena nunca inventa
+      // un emoji) — mismo glifo que ya usa la mecánica existente de K05.
+      enunciado: { clave: "k.mover.gorros", vars: { glifo: "🎩" } },
+      respuesta: { valor: sobran, tol: 0 },
+      errores: sinColision([
+        { valor: patos + gorros, causa: "error.conto_los_dos_grupos" },
+        { valor: patos, causa: "error.puso_el_total" },
+        { valor: gorros, causa: "error.repitio_la_parte" },
+      ]).filter((e) => e.valor !== sobran),
+      proposito: "analizar",
+      contexto: "los patos del lago de Larry",
+      variacion,
+    };
+  },
+};
+
+export const K12_MUEVE: MecanicaAdicional = {
+  base: K12,
+  formato: "toca_origen_destino",
+  generar({ a, b, ctx }, variacion) {
+    return {
+      id: id("K12-mueve", { a, b, ctx }),
+      habilidad: "K12",
+      nivel: 2,
+      formato: "toca_origen_destino",
+      // Mismo glifo que el contexto de siempre de K12 — un pato que se va.
+      enunciado: { clave: "k.mover.resta", vars: { glifo: "🦆" } },
+      respuesta: { valor: a - b, tol: 0 },
+      errores: sinColision([
+        { valor: a + b, causa: "error.sumo" },
+        { valor: a - b - 1, causa: "error.conto_el_que_quita" },
+        { valor: a - b + 1, causa: "error.se_salto_uno" },
+      ]).filter((e) => e.valor !== a - b && e.valor >= 0),
+      proposito: "interpretar",
+      contexto: "los patos que se van volando",
+      variacion,
+    };
+  },
+};
+
+/** El piloto de Desierto (#34): 4 pares, sobre 2 mecánicas nuevas. */
+export const MECANICAS_ADICIONALES: MecanicaAdicional[] = [
+  K01_REVIENTA, K12_REVIENTA, K05_MUEVE, K12_MUEVE,
+];
+
+/**
+ * Fase 5 del piloto de Desierto (#34): **6 combinaciones por mecánica
+ * nueva**, elegidas por el eje de variación de la propia plantilla —
+ * nunca al azar (plan §5: "un orden aleatorio no es variación, es
+ * ruido"). Se ordenan los `parametros()` de la plantilla base por `eje` y
+ * se toman 6 espaciadas uniformemente a lo largo del rango entero — el
+ * mismo criterio que el plan recomienda para repartir combinaciones entre
+ * biomas ("tomar bloques consecutivos... así Sabana ve los casos más
+ * simples... y Costa los más complejos").
+ */
+function curar6(mecanica: MecanicaAdicional, eje: (p: Record<string, number>) => number): Item[] {
+  const combos = [...mecanica.base.parametros()].sort((a, b) => eje(a.params) - eje(b.params));
+  const paso = (combos.length - 1) / 5;
+  const elegidos = Array.from({ length: 6 }, (_, i) => combos[Math.round(i * paso)]);
+  return elegidos.map(({ params, variacion }) => mecanica.generar(params, variacion));
+}
+
+/**
+ * Los 24 ítems curados del piloto (4 pares × 6) — la Fase 5 del plan. Las
+ * combinaciones existentes de K01/K05/K12 (`flash`/`toca_la_respuesta`,
+ * en `PLANTILLAS`) no se tocan: siguen siendo el banco completo de
+ * siempre. Esto solo AGREGA los 2 gestos nuevos como una vía más de
+ * practicar la MISMA habilidad — nunca reemplaza la existente.
+ */
+export const BANCO_PILOTO_DESIERTO: Item[] = [
+  ...curar6(K01_REVIENTA, (p) => p.n),
+  ...curar6(K12_REVIENTA, (p) => p.a - p.b),
+  ...curar6(K05_MUEVE, (p) => p.patos - p.gorros),
+  ...curar6(K12_MUEVE, (p) => p.a - p.b),
+];
+
 /** Habilidades sin plantilla todavía, dichas en voz alta y no escondidas. */
 /**
  * Las habilidades sin plantilla. **Vacío desde F5**: las catorce están.
@@ -1256,9 +1421,17 @@ export const SIN_PLANTILLA: HabilidadKinder[] = [];
  * niño.
  */
 export function generarBanco(): Item[] {
-  const banco = PLANTILLAS.flatMap((p) =>
-    p.parametros().map(({ params, variacion }) => p.generar(params, variacion)),
-  );
+  const banco = [
+    ...PLANTILLAS.flatMap((p) =>
+      p.parametros().map(({ params, variacion }) => p.generar(params, variacion)),
+    ),
+    // Mundo Kinder multi-bioma (#34, Fase 5): los 24 ítems curados del
+    // piloto de Desierto — una vía MÁS de practicar K01/K05/K12, nunca un
+    // reemplazo de sus combinaciones de siempre. El contenido no tiene
+    // dimensión de bioma (#231, mapa.ts): el mismo ítem sirve para
+    // cualquier banda/mundo que pida esa habilidad.
+    ...BANCO_PILOTO_DESIERTO,
+  ];
   const malos = banco.flatMap((item) =>
     validarItem(item).map((problema) => `${item.id}: ${problema}`),
   );

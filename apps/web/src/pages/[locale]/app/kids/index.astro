@@ -614,6 +614,7 @@ try {
         dato,
         href: rutaDelPin(locale, perfil.id),
         locale: perfil.locale,
+        themeBand: tema,
       };
     }),
   );
@@ -679,6 +680,17 @@ try {
     {/* Pantalla autenticada: fuera del índice, y sin seguir enlaces desde ella.
         La cabecera `x-robots-tag` dice lo mismo para quien no ejecuta HTML. */}
     <meta name="robots" content="noindex, nofollow" />
+
+    {/* El alias del niño (`FrailecilloRadiante1427`, alfanumérico con
+        dígitos) salía en azul y subrayado — Safari lo detecta como un
+        posible dato reconocible y lo enlaza solo, sin que ningún CSS de
+        esta app lo pida. Esta página es el `<body>` REAL que vive durante
+        toda la sesión SPA (D-200.1) — el mismo candado hace falta aquí
+        para que la pantalla de PIN, transplantada DENTRO de este
+        documento, tampoco lo muestre (encontrado en vivo en el
+        simulador, 2026-08-10; ver el comentario gemelo en `kids/pin.astro`
+        para la carga directa). */}
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
 
     <title>{m.kidsTitle}</title>
     <meta name="theme-color" content="#F36B1C" />
@@ -804,7 +816,41 @@ try {
     {tarjetas.length > 0 && (
       <QuienJuegaMount
         tarjetas={tarjetas}
-        rotulos={{ titulo: m.kidsTitle, pista: m.kidsPick, jugarComo: m.kidsPlayAs, rango: m.kidsRango }}
+        locale={localeUrl}
+        rotulos={{
+          titulo: m.kidsTitle,
+          pista: m.kidsPick,
+          jugarComo: m.kidsPlayAs,
+          rango: m.kidsRango,
+          carga: {
+            imagenes: m.kidsLoadingImages,
+            sonidos: m.kidsLoadingSounds,
+          },
+          // D-198, ronda 3: el panel de ajustes reusa TODO lo que ya existía
+          // en el asistente de crear-perfil (`PerfilNuevo.astro`) en vez de
+          // inventar rótulos nuevos para el mismo concepto — solo las nueve
+          // claves genuinamente nuevas (`settings*`) se agregaron a los 7
+          // locales para esta pantalla.
+          ajustes: {
+            titulo: m.settingsTitle,
+            idioma: m.settingsLanguageLegend,
+            comoSeVe: m.profileThemeLegend,
+            kinder: m.profileThemeKinder,
+            primaria: m.profileThemePrimaria,
+            secundaria: m.profileThemeSecundaria,
+            fueraDeMargen: m.profileThemeOutOfRange,
+            alias: m.profileAliasLegend,
+            otroAlias: m.profileAliasAnother,
+            pin: m.settingsPinButton,
+            peligro: m.settingsDangerLegend,
+            borrar: m.settingsDeleteButton,
+            confirmarBorrar: m.settingsDeleteConfirmBody,
+            siBorrar: m.settingsDeleteConfirmYes,
+            cancelar: m.settingsCancel,
+            errorGenerico: m.settingsErrorGeneric,
+            guardar: m.settingsSave,
+          },
+        }}
       />
     )}
 

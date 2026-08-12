@@ -41,6 +41,7 @@
  */
 import Phaser from "phaser";
 import type { NodoDelArbol } from "../../../../../packages/motor/src/mapa.ts";
+import type { SfxManager } from "../managers/SfxManager";
 
 export type ModoDeNodo = "arbol" | "camino";
 
@@ -205,6 +206,7 @@ export class LevelNode extends Phaser.GameObjects.Container {
   }
 
   private onTocado(): void {
+    (this.scene.registry.get("sfxManager") as SfxManager).reproducir("toque");
     // Se pausa el pulso durante el squash: dos tweens escribiendo la misma
     // escala a la vez se ven como un tirón, no como dos animaciones.
     this.pulso?.pause();

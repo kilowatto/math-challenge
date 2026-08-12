@@ -7,12 +7,26 @@
  * `AccessibleReto.ts` cumple del lado del DOM oculto, para que las dos vistas
  * nunca diverjan.
  *
- * Formato único: el banco de PRIMARIA (`packages/motor/src/banco-primaria.ts`)
- * es enteramente `toca_la_respuesta` — enunciado de texto y opciones
- * numéricas/de texto, sin dibujo. Por eso esta escena no porta el `switch` de
- * cinco formatos de `Pantalla.astro`: no hace falta todavía. El día que
- * PRIMARIA tenga un formato con dibujo, esta es la escena que gana un método
- * `pintarEscena()` — no una nueva.
+ * ─── `pintarEscena()` — Mundo Kinder multi-bioma (#34) ──────────────────────
+ *
+ * Hasta hoy Modo Historia solo servía PRIMARIA (`toca_la_respuesta`: texto y
+ * botones, sin dibujo), así que esta escena nunca necesitó el `switch` de
+ * formatos que `Pantalla.astro` ya tenía. El piloto de Desierto trae a
+ * Modo Historia el PRIMER formato de kinder con dibujo (`flash`, K01/K02) más
+ * dos mecánicas nuevas (`toca_para_reventar`, `toca_origen_destino`) — de
+ * ahí `pintarEscena()`.
+ *
+ * **La respuesta que se califica sigue siendo, siempre, tocar una de
+ * `item.opciones`** — exactamente como en `Pantalla.astro`: el destello, las
+ * burbujas y el salto de origen→destino son la ESCENA (práctica/dramatización
+ * de la habilidad), nunca un segundo camino de calificar. Es el mismo patrón
+ * que ya usa `toca_para_contar` en `Pantalla.astro` (tocar cada objeto es
+ * práctica de conteo; la respuesta real se elige de las opciones de abajo).
+ * Por eso `AccessibleReto.ts` no necesita cambios: su `onItem()` genérico
+ * (opciones numéricas, sin dibujo) sigue siendo un camino real y completo
+ * para calificar estos formatos — la gesticulación en canvas es la única
+ * pieza que no tiene equivalente accesible todavía (deuda conocida,
+ * documentada en `docs/decisions.md`, nunca en silencio).
  */
 import Phaser from "phaser";
 import {
@@ -23,7 +37,13 @@ import {
 } from "../reto/RetoController";
 import { entrarAHistoria } from "../entrar-historia";
 import { AccessibleReto } from "../reto/AccessibleReto";
-import { ProgressManager } from "../managers/ProgressManager";
+import { ProgressManager, type DatosDeArranque } from "../managers/ProgressManager";
+import { MusicManager } from "../managers/MusicManager";
+import { SfxManager } from "../managers/SfxManager";
+import { irA, extraerIsla, reemplazarHistorial } from "../spa/enrutador";
+import { arrancarHistoriaEnSesion } from "../spa/puente-historia";
+import { fijarFase } from "../spa/estado";
+import { ZonaDestino } from "../objects/ZonaDestino";
 
 const COLOR_TARJETA = 0xffffff;
 const COLOR_BORDE = 0x434547; // gris-900
@@ -43,6 +63,13 @@ export class GameplayScene extends Phaser.Scene {
 
   private enunciadoTexto!: Phaser.GameObjects.Text;
   private avisoTexto!: Phaser.GameObjects.Text;
+  /**
+   * Mundo Kinder multi-bioma (#34): la escena de `pintarEscena()` — el
+   * destello, las burbujas, el salto de origen→destino. Vive SIEMPRE arriba
+   * de `opcionesContenedor` y se limpia con ella en cada ítem nuevo; para
+   * `toca_la_respuesta` (PRIMARIA, K05/K12 tal cual) queda vacía, como hoy.
+   */
+  private escenaContenedor!: Phaser.GameObjects.Container;
   private opcionesContenedor!: Phaser.GameObjects.Container;
   private opcionBotones: Array<{ rect: Phaser.GameObjects.Rectangle; texto: Phaser.GameObjects.Text; valor: number | string }> = [];
   private veredictoContenedor!: Phaser.GameObjects.Container;
@@ -70,6 +97,11 @@ export class GameplayScene extends Phaser.Scene {
     const { width } = this.scale;
     this.salirA = progreso.salirA;
 
+    // "energía" — resolver, no explorar (D-198, reversa de `PRESUPUESTO.
+    // mientras_resuelve.musica`/`.al_resolver.musica` en voz.ts, que hasta
+    // hoy eran `false` en los dos regímenes).
+    (this.registry.get("musicManager") as MusicManager).reproducir("energia");
+
     this.controller = new RetoController({
       locale: progreso.locale,
       habilidad: data.habilidad,
@@ -77,6 +109,7 @@ export class GameplayScene extends Phaser.Scene {
       rotulos: progreso.rotulosReto,
       etiquetaVoz: progreso.etiquetaVoz,
       salirA: progreso.salirA,
+      bioma: progreso.bioma,
     });
 
     const contenedorAccesible = document.getElementById("historia-accesible");
@@ -113,6 +146,7 @@ export class GameplayScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setDepth(2);
 
+    this.escenaContenedor = this.add.container(0, 0).setDepth(2);
     this.opcionesContenedor = this.add.container(0, 0).setDepth(2);
     this.veredictoContenedor = this.add.container(0, 0).setDepth(2);
     this.accionesContenedor = this.add.container(0, 0).setDepth(2);
@@ -278,6 +312,7 @@ export class GameplayScene extends Phaser.Scene {
 
   private onCargando(): void {
     this.enunciadoTexto.setText(this.controller.rotulos.cargando);
+    this.escenaContenedor.removeAll(true);
     this.opcionesContenedor.removeAll(true);
     this.opcionBotones = [];
     this.avisoTexto.setText("");
@@ -286,11 +321,35 @@ export class GameplayScene extends Phaser.Scene {
 
   private onItem(item: ItemDeReto): void {
     this.enunciadoTexto.setText(item.enunciado);
-    this.pintarOpciones(item);
+    const hayEscena = this.pintarEscena(item);
+    this.pintarOpciones(item, hayEscena);
     this.escucharBoton.setVisible(true);
   }
 
-  private pintarOpciones(item: ItemDeReto): void {
+  /**
+   * Mundo Kinder multi-bioma (#34): la dramatización de la habilidad, arriba
+   * de las opciones de siempre — ver el encabezado de la clase para por qué
+   * esto NUNCA es un segundo camino de calificar. Devuelve si dibujó algo,
+   * para que `pintarOpciones()` sepa si tiene que bajar su punto de arranque.
+   */
+  private pintarEscena(item: ItemDeReto): boolean {
+    this.escenaContenedor.removeAll(true);
+    switch (item.formato) {
+      case "flash":
+        this.prepararDestello(item);
+        return true;
+      case "toca_para_reventar":
+        this.pintarBurbujas(item);
+        return true;
+      case "toca_origen_destino":
+        this.pintarOrigenDestino(item);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private pintarOpciones(item: ItemDeReto, hayEscena = false): void {
     this.opcionesContenedor.removeAll(true);
     this.opcionBotones = [];
 
@@ -300,7 +359,10 @@ export class GameplayScene extends Phaser.Scene {
     const espacio = 14;
     const porFila = item.opciones.length > 3 ? 2 : item.opciones.length;
     const filas = Math.ceil(item.opciones.length / porFila);
-    const inicioY = 220; // debajo del botón Escuchar (165) — ver crearBotonEscuchar
+    // Debajo del botón Escuchar (165, ver crearBotonEscuchar) — o debajo de
+    // `escenaContenedor` cuando hay dramatización (#34), que vive en la
+    // banda 185-230.
+    const inicioY = hayEscena ? 275 : 220;
 
     item.opciones.forEach((op, i) => {
       const fila = Math.floor(i / porFila);
@@ -333,6 +395,203 @@ export class GameplayScene extends Phaser.Scene {
     });
 
     void filas;
+  }
+
+  /**
+   * `flash` (K01/K02, destello) — la PRIMERA vez que Modo Historia sirve un
+   * formato con dibujo (#34). Mismo ritmo que `Pantalla.astro::
+   * prepararDestello()`: un botón "ver" muestra `n` glifos durante
+   * `EXPOSICION_MS`, los oculta, y queda listo para "ver otra vez" —
+   * repetible sin límite ni penalización (línea roja #6 no aplica aquí,
+   * pero el espíritu es el mismo: mirar de nuevo nunca cuesta nada). La
+   * respuesta se sigue dando en los botones de `pintarOpciones()`.
+   */
+  private static readonly EXPOSICION_MS = 900;
+
+  private prepararDestello(item: ItemDeReto): void {
+    const { width } = this.scale;
+    const y = 205;
+    const vars = item.vars ?? {};
+    const n = Number(vars.n ?? 0);
+    const glifo = vars.glifo && vars.glifo !== "" ? vars.glifo : null;
+    const disposicion = vars.disposicion ?? "linea";
+    const posiciones = this.posicionesDestello(disposicion, n, width / 2, y);
+
+    const boton = this.add
+      .rectangle(width / 2, y, 150, 36, COLOR_TARJETA, 1)
+      .setStrokeStyle(2, COLOR_BORDE)
+      .setInteractive({ useHandCursor: true });
+    const etiqueta = this.add
+      .text(width / 2, y, this.controller.rotulos.verlo, {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "14px",
+        fontStyle: "600",
+        color: "#434547",
+      })
+      .setOrigin(0.5, 0.5);
+
+    let visto = false;
+    let mostrando = false;
+    boton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+      if (mostrando) return;
+      mostrando = true;
+      const glifos = posiciones.map(([px, py]) =>
+        glifo
+          ? this.add.text(px, py, glifo, { fontSize: "22px" }).setOrigin(0.5, 0.5)
+          : this.add.circle(px, py, 8, 0x434547, 1),
+      );
+      this.escenaContenedor.add(glifos);
+      this.time.delayedCall(GameplayScene.EXPOSICION_MS, () => {
+        glifos.forEach((g) => g.destroy());
+        mostrando = false;
+        if (!visto) {
+          visto = true;
+          etiqueta.setText(this.controller.rotulos.otraVez);
+        }
+      });
+    });
+
+    this.escenaContenedor.add([boton, etiqueta]);
+  }
+
+  /**
+   * Las posiciones de los `n` glifos del destello, alrededor de `(cx, cy)`.
+   * "disperso" usa desplazamientos FIJOS por índice, nunca `Math.random()`
+   * — el mismo criterio que el resto del motor (mc-02): la variación es la
+   * disposición en sí, elegida por el banco, no ruido en cada repintado.
+   */
+  private posicionesDestello(disposicion: string, n: number, cx: number, cy: number): Array<[number, number]> {
+    const paso = 24;
+    if (n <= 0) return [];
+    if (disposicion === "linea") {
+      const inicio = cx - (paso * (n - 1)) / 2;
+      return Array.from({ length: n }, (_, i) => [inicio + i * paso, cy]);
+    }
+    if (disposicion === "par") {
+      const columnas = Math.ceil(n / 2);
+      const inicio = cx - (paso * (columnas - 1)) / 2;
+      return Array.from({ length: n }, (_, i) => {
+        const col = Math.floor(i / 2);
+        const fila = i % 2;
+        return [inicio + col * paso, cy - 10 + fila * 20];
+      });
+    }
+    if (disposicion === "dado") {
+      const PATRONES: Record<number, Array<[number, number]>> = {
+        1: [[0, 0]],
+        2: [[-1, -1], [1, 1]],
+        3: [[-1, -1], [0, 0], [1, 1]],
+        4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
+        5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
+        6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]],
+      };
+      const patron = PATRONES[Math.min(6, Math.max(1, n))];
+      return patron.map(([dx, dy]) => [cx + dx * 14, cy + dy * 14]);
+    }
+    // "disperso"
+    const OFFSETS: Array<[number, number]> = [
+      [-16, -10], [10, -14], [-6, 6], [18, 4], [2, -2], [-14, 12], [-20, 0], [20, -6],
+    ];
+    return Array.from({ length: n }, (_, i) => {
+      const [dx, dy] = OFFSETS[i % OFFSETS.length];
+      return [cx + dx, cy + dy];
+    });
+  }
+
+  /**
+   * `toca_para_reventar` (tap-to-pop, #34) — burbujas decorativas que
+   * revientan al tocarlas. Usa el arte bespoke de Desierto
+   * (`burbuja-desierto`/`burbuja-pop-desierto`, `assets-manifest.ts`) si ya
+   * está cargado; si no (otro bioma, o el asset todavía no llegó), cae a un
+   * círculo genérico — degradar, nunca reventar el reto por un asset
+   * faltante.
+   *
+   * La cantidad es decorativa (no se cuenta ni se valida aquí): usa `a`
+   * (K12, "de cuántas se parte") o `n` (K01) de `item.vars`, la que exista.
+   */
+  private pintarBurbujas(item: ItemDeReto): void {
+    const { width } = this.scale;
+    const y = 205;
+    const vars = item.vars ?? {};
+    const cantidad = Math.min(10, Math.max(1, Number(vars.a ?? vars.n ?? 3)));
+    const espacio = Math.min(38, (width - 80) / Math.max(1, cantidad - 1 || 1));
+    const inicioX = width / 2 - (espacio * (cantidad - 1)) / 2;
+    const tieneTextura = this.textures.exists("burbuja-desierto");
+
+    for (let i = 0; i < cantidad; i++) {
+      const x = inicioX + i * espacio;
+      const burbuja: Phaser.GameObjects.Image | Phaser.GameObjects.Arc = tieneTextura
+        ? this.add.image(x, y, "burbuja-desierto").setDisplaySize(30, 30)
+        : this.add.circle(x, y, 15, 0x8ecae6, 0.85);
+      burbuja.setInteractive({ useHandCursor: true });
+
+      let reventada = false;
+      burbuja.on(Phaser.Input.Events.POINTER_DOWN, () => {
+        if (reventada) return;
+        reventada = true;
+        (this.registry.get("sfxManager") as SfxManager).reproducir("toque");
+        if (tieneTextura && this.textures.exists("burbuja-pop-desierto")) {
+          (burbuja as Phaser.GameObjects.Image).setTexture("burbuja-pop-desierto");
+        }
+        this.tweens.add({
+          targets: burbuja,
+          alpha: 0,
+          scale: 1.3,
+          duration: 220,
+          onComplete: () => burbuja.destroy(),
+        });
+      });
+
+      this.escenaContenedor.add(burbuja);
+    }
+  }
+
+  /**
+   * `toca_origen_destino` (#34) — toca el objeto, toca el aro, salta solo:
+   * el sustituto de arrastrar que pide `mc-20` para preescolares (nunca
+   * arrastre libre). `ZonaDestino` ya la construyó la sesión paralela de
+   * este mismo proyecto — se reusa tal cual, sin variar por bioma (es
+   * interfaz, no ambientación: ver su propio encabezado).
+   *
+   * El glifo que salta es el que declaró el ítem (`item.vars.glifo`) — el
+   * MISMO principio de #347 (el banco manda qué se dibuja, la escena nunca
+   * inventa un emoji). Repetible sin límite: cada toque vuelve a saltar.
+   */
+  private pintarOrigenDestino(item: ItemDeReto): void {
+    const { width } = this.scale;
+    const y = 205;
+    const glifo = item.vars?.glifo && item.vars.glifo !== "" ? item.vars.glifo : "●";
+    const xOrigen = width / 2 - 70;
+    const xDestino = width / 2 + 70;
+
+    const destino = new ZonaDestino(this, xDestino, y, 24);
+    destino.pulsar();
+
+    const origen = this.add
+      .text(xOrigen, y, glifo, { fontSize: "28px" })
+      .setOrigin(0.5, 0.5)
+      .setInteractive({ useHandCursor: true });
+
+    let saltando = false;
+    origen.on(Phaser.Input.Events.POINTER_DOWN, () => {
+      if (saltando) return;
+      saltando = true;
+      (this.registry.get("sfxManager") as SfxManager).reproducir("toque");
+      this.tweens.add({
+        targets: origen,
+        x: xDestino,
+        y,
+        scale: 0.6,
+        duration: 380,
+        ease: "Cubic.easeIn",
+        onComplete: () => {
+          origen.setPosition(xOrigen, y).setScale(1);
+          saltando = false;
+        },
+      });
+    });
+
+    this.escenaContenedor.add([destino, origen]);
   }
 
   /**
@@ -382,6 +641,14 @@ export class GameplayScene extends Phaser.Scene {
     // ni pendiente de conexión: línea roja #7, Larry no avergüenza, y
     // tampoco festeja un veredicto que todavía no es definitivo (offline).
     if (v.correcto && !v.offline) this.celebrar();
+
+    // D-198, ronda 2: el mismo criterio de la línea roja #7 en sonido —
+    // "acierto" es una campanita alegre; "error" es neutral, nunca un
+    // zumbador de castigo. Ninguno de los dos suena offline: el veredicto
+    // todavía no es definitivo (mismo motivo que `celebrar()` de arriba).
+    if (!v.offline) {
+      (this.registry.get("sfxManager") as SfxManager).reproducir(v.correcto ? "acierto" : "error");
+    }
 
     const barra = this.add.rectangle(width / 2 - 150, y, 4, 60, color).setOrigin(0, 0);
     const titulo = this.add
@@ -538,26 +805,35 @@ export class GameplayScene extends Phaser.Scene {
   }
 
   /**
-   * Vuelve al mapa pidiendo el árbol de nuevo, no con `scene.resume` — `MapScene`
-   * quedó DETENIDA (no pausada, `ChallengeScene.irAlReto()`) al entrar aquí, y
-   * `resume()` sobre una escena detenida no hace nada. Pero la razón de fondo
-   * no es esa: aunque `resume()` funcionara, mostraría la MISMA pericia que
-   * había antes de jugar, no la que el servidor acaba de recalcular al
-   * calificar la última respuesta. `packages/motor/src/mapa.ts` (#231)
-   * prohíbe una segunda fuente de verdad para el árbol; una vuelta que
-   * reusara el árbol viejo sería exactamente eso, con el usuario viéndolo.
+   * Vuelve al mapa SIN recargar la página (D-200.1, fase 3) — pero
+   * `scene.resume()` sigue prohibido, por la misma razón de siempre: el
+   * mapa tiene que mostrar la pericia que el servidor ACABA de recalcular
+   * al calificar la última respuesta, nunca la que había antes de jugar
+   * (`packages/motor/src/mapa.ts` #231, ninguna segunda fuente de verdad
+   * para el árbol). La diferencia con antes no es SI se piden datos
+   * frescos del servidor — siempre se piden — sino CÓMO: en vez de una
+   * navegación real de página, `enrutador.irA` pide la MISMA URL
+   * (`this.salirA`, la de siempre) con `fetch`, y `arrancarHistoriaEnSesion`
+   * (D-200.1) arranca `MapScene`/`MenuScene` fresca con esos datos, en la
+   * MISMA sesión de Phaser — funciona igual reachado desde la SPA de
+   * "¿quién juega?" o desde `/mapa/` cargada directo, porque no le importa
+   * cuál `Phaser.Game` sea. Si el `fetch` falla por lo que sea, cae a la
+   * navegación real de siempre — nunca un mapa a medias.
    */
   private volverAlMapa(): void {
-    // Ya no recarga la página (D-201). La razón por la que NO bastaba un
-    // `resume()` sigue siendo verdad y por eso se piden datos frescos: el
-    // árbol que el servidor acaba de recalcular al calificar la última
-    // respuesta, nunca el que había antes de jugar. Lo único que cambió es que
-    // pedirlos cuesta una petición en vez de un documento entero.
+    // Los datos frescos salen de `/api/historia-datos`, no de pedir
+    // `kids/mapa.astro` con `fetch` y extraerle la isla.
     //
-    // `false`: esta transición es INTERNA, así que reemplaza la entrada de
-    // historial en vez de apilar otra (D-200.3 — con tres apiladas, salir
-    // costaba varios toques de «atrás»).
-    void entrarAHistoria(this, this.salirA, false);
+    // Las dos vías funcionan; el endpoint gana por dos razones concretas: no
+    // arrastra el HTML entero de una página que nadie va a pintar, y no
+    // depende de la FORMA del marcado — un `id` renombrado en el componente
+    // rompía la extracción sin que nada fallara al compilar.
+    //
+    // Lo que NO cambia es por qué se piden datos frescos en vez de un
+    // `resume()`: mostraría la pericia de ANTES de jugar, no la que el
+    // servidor acaba de recalcular al calificar la última respuesta
+    // (`packages/motor/src/mapa.ts` #231, ninguna segunda fuente de verdad).
+    void entrarAHistoria(this, this.salirA);
   }
 
   private mostrarCortina(opts: { titulo?: string; cuerpo?: string; nota?: string; boton: string; onBoton: () => void }): void {

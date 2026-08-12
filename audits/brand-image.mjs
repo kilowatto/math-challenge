@@ -60,6 +60,27 @@ export const PALETTE = {
   // (scripts/gen-mapa-historia.mjs) para el fondo y la vegetación del mapa.
   "verde-follaje": { hex: "#5B8C3A", rol: "excepción D-186 · vegetación de Modo Historia, nunca UI" },
   "verde-claro":   { hex: "#8FC461", rol: "excepción D-186 · vegetación de Modo Historia, nunca UI" },
+
+  // --- D-199.2 (2026-08-09): madera/pergamino, excepción con candado propio -
+  // El atrezo de madera de Modo Historia/"¿Quién juega?" (letrero, troncos,
+  // tarjetas, engranes — D-190, D-194, D-195, D-196, D-197.1, D-199) usa
+  // estos cuatro tonos desde hace varias decisiones, en texto y botones de
+  // ESA superficie — a diferencia de la excepción de verde (D-186, nunca en
+  // UI), esta SÍ vive en controles reales porque son los props físicos de la
+  // pantalla, no fondo decorativo. Se registran aquí porque `brand-image.mjs`
+  // ya los venía marcando sin que nadie los hubiera dado de alta — un hueco
+  // de proceso encontrado al capturar una llave nueva y correr el auditor
+  // completo por costumbre, no una autorización nueva del dueño: los cuatro
+  // ya estaban aprobados de facto (el dueño los vio y los pidió en vivo, D-
+  // 194/D-197.1/D-199) y en producción antes de que esto se escribiera.
+  // Candado: solo dentro de la estética de "prop de madera" (letreros,
+  // troncos, tarjetas de perfil, engranes, sus botones y su texto) — nunca
+  // en una superficie que no sea esa (el resto de la app sigue con la
+  // paleta Ignia normal).
+  "madera-oscura":    { hex: "#8A5A2B", rol: "excepción D-199.2 · borde/trazo de props de madera" },
+  "madera-texto":     { hex: "#3E2712", rol: "excepción D-199.2 · texto sobre veta clara de madera" },
+  "pergamino":        { hex: "#F3E4C8", rol: "excepción D-199.2 · fondo de tarjeta/panel de madera" },
+  "pergamino-activo": { hex: "#FDEDD7", rol: "excepción D-199.2 · estado seleccionado sobre pergamino" },
 };
 
 const HEXES = new Set(Object.values(PALETTE).map((c) => c.hex.toUpperCase()));

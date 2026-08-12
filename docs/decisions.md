@@ -6364,6 +6364,40 @@ comportamientos, mismo Larry suelto sobre la escena, misma ropa deportiva
 sin marca real, mismo parallax 2.5D. Es una corrección de producción, no
 una decisión nueva de producto.
 
+### D-196.2 — El debounce de RESIZE de D-196.1 arregló un síntoma y dejó la causa — girar la pantalla varias veces descuadraba todo · 2026-08-09
+
+El dueño mandó tres capturas en secuencia (5:34 vertical, 5:35 horizontal,
+5:35 vertical otra vez) con el mensaje "si roto el teléfono u lo regresó se
+queda así": al volver a vertical después de un giro, una tarjeta aparecía
+enorme y descuadrada, con una barra de scroll horizontal visible — un bug
+real, en producción, no una sospecha.
+
+**La causa: el propio arreglo de D-196.1, incompleto.** El debounce de
+RESIZE de esa entrada sí evita reiniciar en CADA evento, pero el
+`this.scale.on(Phaser.Scale.Events.RESIZE, ...)` que lo registra vive en
+`create()`, y `create()` vuelve a correr en CADA `scene.restart()` —
+mientras que `this.scale` es el `ScaleManager` GLOBAL del `Phaser.Game`,
+que sobrevive al reinicio. Cada giro de pantalla agregaba un listener más,
+sin quitar nunca los anteriores: al segundo giro ya había dos reinicios
+programados por separado, cada uno leyendo el ancho/alto en un instante
+distinto de la transición, y el resultado era exactamente lo que se ve en
+las capturas. El listener de `deviceorientation` de `activarParallax()`,
+dos métodos más abajo en el mismo archivo, ya limpiaba el suyo en
+`Phaser.Scenes.Events.SHUTDOWN` — el de RESIZE nunca lo hacía.
+
+**Arreglo:** el handler de RESIZE ahora es una función nombrada,
+`this.scale.off(...)` en el `SHUTDOWN` de la escena, mismo patrón que el
+listener de `deviceorientation` ya usaba al lado. Nunca hay más de un
+listener vivo, sin importar cuántas veces se haya reiniciado la escena.
+
+**No verificado con un giro real todavía** — el cambio corrige la causa
+raíz identificada leyendo el código (acumulación de listeners, confirmada
+contra el propio texto de D-196.1 y no solo contra la captura), pero falta
+desplegar y que el dueño gire el teléfono de verdad para confirmarlo. Se
+documenta el mecanismo exacto para que, si el síntoma vuelve a aparecer,
+la primera sospecha no sea "otro bug nuevo" sino "¿de verdad se quitó el
+listener viejo, o hay un tercer lugar que también reinicia sin limpiar?".
+
 ---
 
 ## D-197 — Pantalla de ajustes de perfil (engrane en "¿Quién juega?") — reversa D-003 para el adulto, PIN por banda, borrar con papelera · 2026-08-09
@@ -6593,6 +6627,1082 @@ primera versión, y la ayuda para el adulto se oculta del todo bajo 700px de
 alto (es apoyo puro, nunca necesaria para entrar, `mc-20`). Verificado con
 medición real de `scrollHeight` contra `innerHeight` en un viewport de
 375×667 (iPhone SE), no a ojo: 654px de contenido en 667px de viewport.
+
+## D-198 — Música de fondo en Modo Historia, con dos ánimos — reversa `PRESUPUESTO.musica` (`voz.ts`) y reversa puntual de D-035 · 2026-08-09
+
+**El pedido llegó como pregunta abierta, no como especificación:** *"Y la
+música de todo el phaser?"*. Antes de escribir código se investigó qué
+existía y qué lo bloqueaba, y se le devolvió al dueño en preguntas de
+opción múltiple, con las alternativas explicadas — su propia preferencia
+ya documentada ([[prefers-interactive-questions]]). Confirmó las cuatro:
+
+1. **Música también mientras se resuelve un ítem**, no solo en mapa/menú —
+   reversa explícita de `PRESUPUESTO.mientras_resuelve.musica` y
+   `PRESUPUESTO.al_resolver.musica` en `packages/tutor/src/voz.ts`, que
+   hasta hoy eran `false` en los dos regímenes citando `mc-42` §3 (el habla/
+   sonido irrelevante degrada el recuerdo serial aunque no se atienda) y el
+   principio de coherencia de Mayer (quitar material decorativo que compite
+   por capacidad limitada). **Esa evidencia no se borra** — sigue en el
+   encabezado del archivo — se anota que el dueño decidió en contra de ella,
+   viéndola explicada primero.
+2. **Ducking automático** cuando Larry hable: la música baja de volumen
+   sola, nadie la sube ni la baja a mano.
+3. **Dos controles separados** — voz y música cada una con su propio
+   interruptor, no uno que apague las dos juntas.
+4. **Dos pistas por ánimo** ("calma" / "energía"), no una sola pista
+   genérica ni un catálogo más grande.
+
+**El bloqueo real, encontrado durante la propia investigación y mostrado
+al dueño antes de generar nada:** Cloudflare Workers AI no tiene ningún
+modelo de generación de música — la única vía real es un proveedor externo
+(ElevenLabs Music, `POST /v1/music`), lo que toca **D-035** ("solo vamos a
+trabajar con Cloudflare"). El dueño lo autorizó explícito, con la pregunta
+planteada así, para este caso puntual — D-035 se queda intacta para todo
+lo demás. **Nota sobre un plan anterior:** un documento previo de
+planeación había asumido que este permiso "ya se dio en esta conversación"
+y proponía reusar el número D-193 — ninguna de las dos cosas era cierta al
+momento de implementar: D-193 ya estaba tomado por una decisión distinta y
+ya enviada a producción (§ arriba, "¿Quién juega? pasa a Phaser"), y el
+permiso no estaba escrito en ningún lado hasta que se volvió a pedir aquí.
+Se trató el documento viejo como no verificado, no como autorización
+vigente.
+
+**Por qué el ducking existe en código pero no lo dispara nada todavía:**
+la voz de Larry (D-192 en el plan, sin construir) no tiene ni un clip
+grabado — el propio encabezado de `voz.ts` ya lo decía antes de esta
+sesión: *"Ningún clip existe todavía... P-19 y P-20 de `docs/dudas.md`
+están sin contestar"*, y P-19 es en sí mismo un conflicto sin resolver
+entre D-035 (cuatro de los siete locales no tienen voz verificada en
+Workers AI) y D-022 (paridad en los siete). Construir el ducking contra un
+evento de voz que no existe sería inventar una integración sin nada que
+integrar — en cambio, `MusicManager.agachar()`/`.restaurar()` quedan
+públicos y listos: el día que exista un evento real de "Larry empezó/
+terminó de hablar", lo llama y el ducking funciona sin tocar este código
+otra vez.
+
+**Arquitectura:** `MusicManager.ts` envuelve `game.sound` (no una escena)
+para sobrevivir a los `scene.start()` del mapa → panel de nivel → el reto
+en sí, exactamente como `ProgressManager` envuelve `game.registry` por la
+misma razón. Se guarda una sola vez en el registro
+(`game/main.ts::iniciarHistoria`). `reproducir("calma"|"energia")` es
+idempotente — volver a llamarla con el ánimo que ya suena no reinicia el
+loop — y nunca lanza si el archivo de audio no cargó (Android de gama baja,
+red lenta o el par de pistas aún no generado): el mapa se juega en
+silencio, nunca con una excepción sin capturar. "calma" suena en
+`MenuScene`/`MapScene` (explorar); "energía" en `GameplayScene` (resolver).
+`BotonMusica.ts` es el mismo patrón exacto que `BotonSonido.ts` (D-190) —
+Zone invisible para el toque, halo blanco sin círculo de fondo (D-194),
+glifo distinto (corchea en vez de bocina) — con su propia clave de
+`localStorage` (`preferencia-musica.ts`, `mc:musica`, separada de
+`preferencia-voz.ts`).
+
+**Generación:** `scripts/gen-musica-fondo.mjs` (las 2 pistas, `POST
+/v1/music`) y `scripts/gen-sfx.mjs` (los 3 efectos, `POST
+/v1/sound-generation`) — mismo patrón que los scripts de arte de
+Recraft/Gemini, misma llave (`ELEVENLABS_API_KEY`, capturada vía
+`./scripts/set-keys.sh`, nunca commiteada). **Pendiente de ejecutar y de la
+revisión de OÍDO del dueño (D-080)** — este PR deja el código listo;
+ningún archivo de audio se generó ni se commiteó todavía.
+
+### Ronda 2 — "todo el phaser", y efectos de un solo disparo, no solo música
+
+El dueño probó la pantalla "¿Quién juega?" (D-193), la vio muda, y mandó una
+captura preguntando: *"Yo sigo sin escuchar"*. La primera versión de esta
+decisión había dejado esa pantalla fuera A PROPÓSITO ("selección corta, sin
+el par de ánimos al que sirve esta música") — pero eso era un alcance no
+confirmado, ofrecido de vuelta como pregunta. La respuesta, textual:
+*"Tiene que sonar en todo el phaser. Siempre música y efectos especiales y
+en los settings se prenden o pagan [sic, "apagan"]. Grábalo. Porque sigues
+sin hacerlo. Confirma que entiendes que esto en un juego, que debe ser
+adictivo como angry bird y es de matemáticas."*
+
+Dos cambios reales sobre la ronda 1:
+
+1. **`QuienJuegaScene` entra al alcance.** Tiene su propia instancia de
+   `MusicManager`/`SfxManager` (es un `Phaser.Game` separado,
+   `quien-juega/main.ts`, ya documentado como tal desde D-193) — "calma" al
+   entrar, `BotonMusica` junto al `BotonSonido` ya existente, `sfx-toque` al
+   elegir una tarjeta.
+2. **Efectos de un solo disparo, nuevos, separados de la música en el
+   CÓDIGO pero NO en el control:** `SfxManager.ts` es su propia clase (un
+   loop con fundidos y un disparo-y-olvido son responsabilidades
+   distintas), pero lee la MISMA preferencia que `MusicManager`
+   (`preferencia-musica.ts`) — **juicio del equipo, no una palabra textual
+   del dueño**: pidió "música Y efectos" como una sola idea de "sonido del
+   juego", nunca un tercer botón. La línea que sí se pidió explícita es voz
+   de Larry (narración) contra todo lo demás — un control más en la esquina
+   por algo que nadie nombró como necesitando su propio interruptor habría
+   sido la fragmentación que D-032 advierte contra inventar sin pedido.
+   Tres efectos, generados con OTRO endpoint de ElevenLabs
+   (`POST /v1/sound-generation`, `eleven_text_to_sound_v2` — pensado para
+   sonidos cortos, no pistas musicales largas): `sfx-toque` (cualquier botón
+   o nodo), `sfx-acierto` (veredicto correcto, junto a `celebrar()`),
+   `sfx-error` (veredicto incorrecto — **explícitamente neutral, nunca un
+   zumbador de castigo: línea roja #7, Larry no avergüenza, y el sonido
+   tampoco**). "Racha"/celebración de sesión se dejó fuera: no existe
+   todavía una pantalla de esa celebración en Phaser — generar un sonido
+   para un momento que no existe sería adivinar, y es trabajo futuro real,
+   no un olvido de esta ronda.
+
+**Sobre "confirma que entiendes que esto es un juego... adictivo como angry
+bird":** confirmado — la ronda 1 ya cubría música continua sin cortes por
+resolver un ítem, y esta ronda añade el "juice" de retroalimentación
+inmediata (sonido en cada toque, cada acierto, cada intento) que un loop
+mudo de fondo no daba por sí solo. Lo que seguirá sin existir hasta que el
+dueño lo autorice explícito son mecánicas de retención basadas en
+variabilidad de recompensa (cajas de botín, rachas compradas) — esas SÍ
+cruzan líneas rojas del proyecto (#5, #6) y ninguna palabra de esta
+conversación las pidió; "adictivo" aquí se interpretó como "con buen
+feedback sensorial", no como diseño de compulsión.
+
+**Lo que esta decisión NO hizo:**
+
+- **No hay presupuesto de peso auditado para audio.** `audits/bundle-
+  budget.mjs` solo mide imágenes (mc-47 §4); el bitrate de 96kbps es un
+  juicio razonable, no una regla que un auditor haga cumplir. Si el dueño
+  quiere ese piso auditado, es un auditor nuevo, no parte de este cambio.
+- **Las dos pistas NO entran a `PRECACHE` de `sw.js`.** `audits/precache-
+  budget.mjs` ya existe, ya construido, esperando F5 (`audits/run.mjs`, lista
+  `PENDING`) con un límite de 5 MB de audio citando `mc-42` §13 — pero ese
+  límite es para lo que se baja en la PRIMERA instalación, antes de que
+  nadie pida nada. La música de Modo Historia se carga con
+  `this.load.audio()` de Phaser cuando el niño de verdad entra a jugar, y de
+  ahí en adelante cae en el cache-first de `sw.js` para estático (mismo
+  camino que cualquier WebP de `/juego/`) — RUNTIME, no INSTALL. Meterla a
+  `PRECACHE` sería descargar 1-2 MB de música a cualquiera que visite el
+  sitio, incluyendo quien nunca juega. `precache-budget` se queda
+  correctamente en espera de F5: esto no es esa fase.
+- **No resuelve P-19/P-20** ni la voz de Larry — quedan exactamente donde
+  estaban, documentados en `docs/dudas.md` y en el encabezado de `voz.ts`.
+- **El loop de 60s no se verificó "sin costura" al oído** — ElevenLabs no
+  garantiza un loop perfecto solo por pedirlo en el prompt; esa
+  verificación es parte de la revisión pendiente de arriba, no algo que
+  este código pueda confirmar por sí solo.
+
+**Investigación relacionada:** D-022, D-035, D-190, D-193 (la de "¿Quién
+juega?", no la del plan viejo), `mc-42` §3, `docs/dudas.md` P-19/P-20.
+
+## D-199 — PerfilAjustesScene: el engrane de "¿Quién juega?" abre ajustes reales (D-197 §55.10)
+
+Segunda de las dos pantallas de Phaser que D-197 dejó pendientes (la
+primera, el teclado numérico del PIN, ya está en producción como D-197.1).
+Un engrane nuevo en cada tarjeta de NIÑO (nunca en la del adulto — ver
+alcance abajo) abre un panel con cinco acciones de solo-toque: idioma,
+banda ("cómo se va a ver el juego", reusando el texto ya autorado de
+`PerfilNuevo.astro`), avatar, otro alias, y borrar con papelera de 30 días
+— los cinco endpoints de D-197 que ya estaban en producción sin ninguna
+pantalla que los llamara.
+
+**Por qué el panel necesitó ampliar los datos que ya viajaban a Phaser.**
+`TarjetaPerfil` (la que `kids/index.astro` inyecta como JSON) solo traía lo
+necesario para PINTAR la rejilla — nunca la banda actual del niño. Se
+amplió con `themeBand` (child_profiles.theme_band, ya resuelta por el
+servidor) y con un nuevo bloque `rotulos.ajustes` en el JSON, reusando
+CASI TODO de claves ya existentes (`profileThemeKinder/Primaria/Secundaria`,
+`profileThemeLegend`, `profileThemeOutOfRange`, `profileAliasLegend`,
+`profileAliasAnother`) — solo nueve claves (`settings*`) eran genuinamente
+nuevas, y se agregaron a los 7 locales con traducción real, no placeholder.
+
+**Por qué "cambiar PIN" navega a una página aparte y no vive en el mismo
+lienzo.** La rejilla de 9 imágenes de KINDER se DERIVA del secreto del
+servidor (`pin-imagenes.ts::rejillaDe`) — el mismo cálculo que
+`kids/pin.astro` ya usa para la verificación. Reconstruirlo en el cliente
+exigiría exponer el secreto o duplicar esa pieza de seguridad fuera del
+servidor; ninguna de las dos es aceptable por un ahorro de una navegación.
+`kids/perfil-pin.astro` es una página real, nueva, gateada por
+`leerSesionAdulto` + pertenencia de hogar (igual que los 6 endpoints),
+que reusa el mismo catálogo de emoji/nombres que la pantalla de
+verificación — nunca los assets fotorrealistas de madera de D-197.1, que
+son decoración específica de esa pantalla, no del sistema de PIN en sí.
+
+**El hallazgo real, encontrado investigando y no asumido: las sesión del
+adulto puede estar vencida en un dispositivo que sigue siendo "de la
+casa".** `COOKIE_ADULTO` dura 30 días (`VIDA_ADULTO_S`); `COOKIE_HOGAR`
+dura 400 (`VIDA_HOGAR_S`, "el techo de Chrome"). Un tablet de uso diario
+puede llegar a "¿Quién juega?" con el dispositivo confiable de sobra y la
+sesión del adulto ya vencida — exactamente el mismo caso que CUALQUIER
+página adulta del sitio ya resuelve. `PerfilAjustesScene` y
+`perfil-pin.astro` hacen lo mismo ante `401 sin_sesion`: navegación real a
+`ruta(locale, "entrar")+"?cambiar=1"`, nunca un mensaje de reautenticación
+inventado dentro del lienzo.
+
+**Un juicio de diseño, documentado para que se pueda revertir:** el gear
+NO aparece en la tarjeta del adulto. Su propio nombre/@usuario (D-197 §1)
+queda para 55.11, junto con el asistente de crear-perfil reconstruido —
+los dos tocan el mismo problema de fondo (texto libre del adulto dentro de
+Phaser, que hoy no tiene ningún patrón de input de texto) y tiene más
+sentido resolverlo una sola vez ahí que a medias aquí.
+
+**Verificación — lo que se hizo y lo que NO:**
+
+- `astro check`: 0 errores. `pnpm build` (`apps/web`): completo sin
+  errores. `node audits/run.mjs`: verde salvo las mismas 2 fallas
+  pre-existentes y ajenas (`brand-image` en `pin.astro`/`retos.astro`,
+  `bundle-budget` de JS por Phaser) — ya documentadas en D-198 y antes.
+  Tres fallas NUEVAS sí aparecieron y se corrigieron antes de seguir:
+  `band-typography` (una `font-family` literal en vez de
+  `var(--font-sistema)`), `touch-targets` (el enlace "volver" medía 22.4px,
+  bajo el piso de 24px de WCAG 2.2 AA 2.5.8) y `hojas-de-estilo` (un
+  `data-band` en el `<html>` que ninguna regla leía — se quitó en vez de
+  inventarle uso, porque esta pantalla no necesita variar por banda).
+- **NO se verificó de punta a punta en un navegador con un perfil real.**
+  Se intentó sembrar una cuenta de prueba contra `wrangler dev` local y
+  Turnstile lo bloqueó dos veces: la `TURNSTILE_SITE_KEY` de `.env` es la
+  de PRODUCCIÓN (restringida a `math.kilowatto.com`, no a `localhost`), y
+  el secreto de siempre-pasa de `.dev.vars` no llegó al Worker del entorno
+  de previsualización usado en esta sesión (`turnstile:no_configurado`
+  incluso apuntando el POST directo a `/api/registro`). No se intentó
+  sembrar D1/KV a mano por el riesgo de un cookie/hash mal formado dando
+  una falsa sensación de "sí se probó". La pieza queda respaldada por
+  tipos, build y auditores deterministas, pero **no por un clic real** —
+  eso es trabajo pendiente antes de dar 55.10 por completamente cerrado.
+
+**Investigación relacionada:** D-197, D-197.1, D-065, D-012, D-070
+(`rutas-app-con-locale.mjs`).
+
+### D-199.1 — Correcciones tras verlo en vivo, dos rondas: engranes de madera y el panel "como un videojuego" · 2026-08-09
+
+Desplegado 55.10 (D-199), el dueño lo probó de verdad en su teléfono y
+mandó dos rondas de feedback en vivo — la primera con una captura, la
+segunda solo texto.
+
+**Ronda 1 — "Los engranes no funcionan bien, deben ser de madera 🪵 y ten 4
+o 5 diferentes."** El engrane original era un glifo gris de
+`Phaser.Graphics`, idéntico en cada tarjeta — funcionaba (el panel sí
+abría), pero desentonaba con el resto del atrezo de esta pantalla
+(`letrero-madera`, `flecha-madera`, `tronco-a/b`, todos madera de Recraft).
+Se generaron 5 variantes (`engrane-madera-1` a `-5`, `scripts/gen-mapa-
+historia.mjs`) — distinto número de dientes/rayos y tono de madera cada
+una, mismo criterio que `tronco-a`/`tronco-b` para que el camino/la rejilla
+no se vea repetido. Una ronda de regeneración: la primera versión de
+`engrane-madera-2` salió con una escena de paisaje tallada en el centro
+(el mismo tipo de "sobre-interpretación" que ya documentó el intento
+abandonado de placa de madera para las tarjetas, más arriba en este mismo
+archivo) — se regeneró con "no carving, no picture, no scene" explícito en
+el prompt. `BotonEngrane.ts` ahora pinta la textura si cargó y cae al
+glifo gris de antes si no (offline, red lenta) — nunca un botón invisible.
+La variante es determinista por índice de tarjeta (`indice % 5`), mismo
+patrón que `formasUsadas`/`coloresUsados` en `kids/index.astro`.
+
+**Ronda 2 — cuatro pedidos sobre el panel mismo, sin captura, solo texto:**
+
+1. **"Un poco más grande el modal."** De 320×500 a 356×560.
+2. **"El botón de eliminar más pequeño. Solo un bote de basura."** La fila
+   completa "Borrar perfil" con su botón de ancho completo se quitó del
+   flujo; en su lugar, un ícono chico de bote de basura (`Graphics`, tono
+   de peligro) vive en el encabezado, junto al cierre. Sigue exigiendo el
+   MISMO paso de confirmación de dos toques que ya existía — lo que cambió
+   es el tamaño del gatillo, nunca la seguridad detrás: ni un borrado
+   accidental se volvió más fácil.
+3. **"Un botón de salvar o guardar."** Un botón naranja de ancho completo
+   al final del panel, `this.rotulos.guardar` (nueva clave `settingsSave`,
+   7 locales). Cierra el panel — cada acción individual ya se guarda sola
+   al tocarla (D-199 original), así que "Guardar" no dispara una segunda
+   llamada de red: es la vía principal y esperada de terminar, con la X de
+   la esquina como salida rápida alternativa. Las dos pasan por el mismo
+   `cerrar()`.
+4. **"Cuando se abra que se vuelta la tarjeta y crezca animadamente. Como
+   un vídeo juego con efecto especial de sonido cuando se abra y se
+   cierre."** El panel ya no aparece centrado de la nada: nace en la
+   posición REAL de la tarjeta tocada (`origenX/origenY`, mismo patrón que
+   `ChallengeScene::origen` con los nodos del mapa) y anima en DOS fases —
+   se adelgaza a un canto vertical ahí mismo (el "volteo"), salta al centro
+   ya de canto, y crece a tamaño completo con `Back.easeOut`. Cerrar hace
+   lo mismo al revés, terminando de vuelta en la tarjeta. Dos efectos
+   nuevos, `sfx-panel-abre`/`sfx-panel-cierra` (un "pop" de madera al
+   abrir, un golpe suave al cerrar — no un "whoosh" digital genérico,
+   mismo lenguaje sonoro que el resto del atrezo), agregados a
+   `SfxManager`/`scripts/gen-sfx.mjs`. **Silenciosos hasta que exista
+   `ELEVENLABS_API_KEY`** — mismo bloqueo que las 5 pistas/efectos de
+   D-198, sin resolver todavía.
+
+**Verificación:** `astro check` (0 errores), `pnpm build`, `node
+audits/run.mjs` (verde salvo las mismas 2 fallas ajenas de siempre) y
+`node audits/live.mjs` (51/51) — dos despliegues a producción en la misma
+sesión, uno por ronda. **Seguimos sin un clic real registrado por esta
+sesión** (el dueño probó en su teléfono y mandó las capturas/texto que
+motivaron estas dos rondas, pero eso es SU verificación, no una que yo haya
+hecho y pueda dar por escrita aquí como propia).
+
+**Investigación relacionada:** D-199, D-196.1, D-196.2, D-194 (props de
+madera), D-080.
+
+### D-199.2 — `brand-image.mjs` llevaba tiempo marcando la madera/pergamino sin que nadie la hubiera dado de alta · 2026-08-09
+
+Al capturar `ELEVENLABS_API_KEY`, `set-keys.sh` corre `brand-image.mjs` por
+costumbre (no por sospecha) y salió en rojo: 9 líneas con `#8A5A2B`
+(borde de madera), `#3E2712` (texto sobre veta clara), `#F3E4C8`
+(pergamino) y `#FDEDD7` (pergamino activo) — en `PerfilAjustesScene.ts`,
+`QuienJuegaScene.ts` y `pin.astro`/`perfil-pin.astro`. Ninguno es un color
+nuevo: son el mismo atrezo de madera que D-190/D-194/D-195/D-196/D-197.1
+ya construyeron y el dueño ya vio y pidió en vivo — el hueco es de
+proceso, no de diseño: nadie los dio de alta en `PALETTE`
+(`audits/brand-image.mjs`) cuando se introdujeron, así que el auditor los
+venía marcando en cada corrida y nadie lo notó porque la corrida normal
+solo imprime el NOMBRE del auditor que falla (`✗ auditor brand-image`),
+no la lista de líneas — hay que pedir el detalle a propósito para verlo,
+y esta sesión no lo había estado haciendo tras cada cambio.
+
+Se registran los cuatro como excepción con candado, mismo formato que la
+excepción de verde de D-186 pero con un candado DISTINTO: D-186 dice
+"nunca en UI"; éste dice "solo dentro de la estética de prop de madera
+(letreros, troncos, tarjetas, engranes, y su texto/botones) — nunca fuera
+de esa superficie", porque a diferencia del verde, la madera SÍ vive en
+controles reales de esa pantalla a propósito. No es una decisión nueva del
+dueño: es poner por escrito lo que ya estaba aprobado de facto y en
+producción.
+
+**Queda igual, sin tocar:** `apps/web/src/pages/[locale]/app/kids/
+retos.astro:71` — `var(--ignia-naranja-900, #7a3a10)`, un color DISTINTO
+(un fallback de una variable CSS nunca definida), ya fallando desde antes
+de esta sesión y sin relación con la madera. No se resuelve aquí.
+
+**Investigación relacionada:** D-186, D-190, D-194, D-197.1, D-199.1.
+
+### D-199.3 — Video analizado cuadro por cuadro: engrane fuera de la tarjeta, salto en la animación, "toque" inaudible, y el bug real detrás de "8 hijos" · 2026-08-09
+
+El dueño mandó una grabación de pantalla (sin audio — el emulador no
+captura sonido, confirmado con `ffprobe`) más texto, y pidió explícito
+"analiza a detalle el video". Se extrajeron cuadros con `ffmpeg` y se
+revisaron uno por uno. Cuatro hallazgos reales, los cuatro corregidos:
+
+1. **El engrane se salía del panel.** Su centro estaba en `(RADIO+1,
+   -RADIO-1)` con radio 18 — más allá de donde el panel empieza a
+   redondear la esquina (radio 18 también, centrado en `(RADIO+14-18,
+   -(RADIO+14-18))`). Confirmado en tres cuadros distintos del video: el
+   engrane asoma visiblemente fuera del borde marrón de la tarjeta.
+   Corregido moviéndolo exacto al centro del arco de esa esquina — con el
+   mismo radio, lo inscribe sin asomarse. (La "talla" de verdad — que el
+   engrane se vea grabado EN la misma madera de la tarjeta y no como una
+   moneda separada encima — sigue pendiente: eso es arte nuevo de Recraft
+   referenciado contra el pergamino de cada tarjeta, no una corrección de
+   posición, y no se atacó en esta ronda.)
+2. **"Brinca la modal al centro sin estar conectada la animación" — el
+   dueño tenía razón, y era un bug real, no percepción.** La animación de
+   abrir/cerrar corría en DOS tweens separados con un `panel.setPosition()`
+   SUELTO entre uno y otro — un salto de posición sin interpolar, aunque
+   ocurriera con el panel casi invisible de canto. Se unificó a UN solo
+   tween: posición y escala se mueven juntas del punto de la tarjeta al
+   centro, siempre interpoladas. El aire de "volteo" ahora viene de que
+   `scaleX` arranca más angosto que `scaleY` y los dos llegan a 1 al mismo
+   tiempo — se ve desdoblar, nunca saltar.
+3. **"El audio sí se escucha, música... ningún efecto especial de abrir o
+   cerrar."** Se midió el volumen real de los 5 efectos con
+   `ffmpeg -af volumedetect` en vez de adivinar (no se puede escuchar
+   audio): `sfx-toque` salió a **-62.6 dB de media**, entre 25 y 40 dB más
+   bajo que los otros cuatro (-21 a -27 dB) — prácticamente inaudible, un
+   defecto real de esa generación específica de ElevenLabs, no del código.
+   `sfx-panel-abre`/`sfx-panel-cierra`, en cambio, salieron con volumen
+   NORMAL (-26/-27 dB, igual que acierto/error) — la revisión del código
+   que los dispara (`PerfilAjustesScene.ts::create()/cerrar()`) no encontró
+   ningún defecto: misma llamada, mismo `SfxManager`, mismas claves ya
+   cargadas en `QuienJuegaScene.preload()`. **No se pudo confirmar la causa
+   de que no se escuchen** — queda como sospecha sin resolver, no como bug
+   cerrado. Se agregó `loudnorm` (EBU R128, -14 LUFS) al pipeline de
+   conversión (`scripts/gen-sfx.mjs`) y se re-normalizaron los 5 archivos
+   ya generados — `sfx-toque` quedó en -20.1 dB, ya parejo con el resto.
+4. **"No entendí cómo se va a ver con 8 hijos más el padre" — la
+   pregunta escondía un bug real, no solo una duda de diseño.** Leyendo
+   `dibujarRejilla()`: cuando hay más filas de tarjetas de las que caben en
+   pantalla, el código YA calcula el mundo más alto y mueve la cámara —
+   pero el único scroll conectado era la RUEDA DEL MOUSE
+   (`this.input.on("wheel", ...)`). Un iPhone no tiene rueda: con más de
+   ~4 hijos, las tarjetas de abajo habrían quedado completamente
+   inalcanzables por toque, sin ningún aviso. Se agregó arrastre vertical
+   táctil, mismo patrón que `MapScene::configurarArrastre`
+   (pointerdown/pointermove/pointerup globales) — coexiste con el toque de
+   cada tarjeta exactamente como ya coexiste en el mapa.
+
+**Además, de paso:** se restyleó `kids/perfil-pin.astro` — "esa pantalla
+horrible en blanco" era la primera versión, sin ningún color de marca,
+mientras el resto de la app usa pergamino/madera. Ahora reusa EXACTAMENTE
+la excepción de paleta ya registrada en D-199.2 (pergamino, madera-oscura,
+madera-texto, pergamino-activo) — ninguna paleta nueva.
+
+**Verificación:** `astro check` (0 errores), `node audits/run.mjs` (verde
+salvo las mismas 2 fallas ajenas), `pnpm build`, despliegue, `node
+audits/live.mjs` (51/51). **Lo que sigue sin verificarse con certeza:**
+si el efecto de abrir/cerrar panel ya se escucha de verdad — el arreglo de
+loudness es la mejor corrección disponible sin poder oír el resultado,
+pero no hay una prueba humana todavía que confirme que resolvió la causa
+raíz (que sigue sin identificarse con certeza).
+
+**Investigación relacionada:** D-199, D-199.1, D-199.2.
+
+### D-199.4 — Tercera ronda en vivo: más aire para el engrane, los efectos se agrupan con la voz (no la música), y "¿dónde está la madera?" en `perfil-pin.astro` · 2026-08-09
+
+Tres correcciones más, todas desde feedback en vivo tras D-199.3:
+
+1. **El engrane seguía "no del todo dentro" — la primera corrección lo
+   dejaba TANGENTE al borde, no con margen de verdad.** Centrar un círculo
+   del mismo radio que el arco de la esquina hace que su borde COINCIDA
+   con el borde del panel — cero superposición, pero también cero aire, y
+   a esa escala se sigue leyendo "en el borde". Se achicó el engrane (18→15
+   px de radio, `BotonEngrane.RADIO_ENGRANE`, ahora exportado para que
+   `QuienJuegaScene` calcule la posición contra el mismo número) y se le
+   sumaron 4px de margen real hacia adentro.
+2. **"Los efectos también se paran con el ícono de la nota y no de la
+   bocina, y eso está mal."** D-198 había agrupado `SfxManager` con
+   `preferencia-musica.ts` razonando que "música y efectos" eran una sola
+   idea frente a la voz. El dueño lo corrigió: la bocina es el interruptor
+   general de sonido de INTERFAZ (toque, acierto, error, abrir/cerrar un
+   panel) — la nota es solo música de fondo. `SfxManager` ahora lee
+   `preferencia-voz.ts`, la misma preferencia que ya usaba `BotonSonido.ts`
+   para la voz de Larry.
+3. **"No me digas que este es el modelo de pin que queríamos!! ¿dónde está
+   la madera? todo lo trabajado!!!"** El restyle de D-199.3 (una tarjeta
+   CSS plana con la paleta pergamino) no era lo pedido — el dueño esperaba
+   que esta pantalla reusara EXACTO el atrezo fotorrealista de D-197.1: el
+   portón (`pin-numerico-fondo.webp`), el letrero colgante
+   (`pin-numerico-letrero.webp`), el cuadro con el avatar
+   (`pin-numerico-marco.webp`) y los diez dígitos tallados
+   (`pin-numerico-digito-N[-presionado].webp`) — las MISMAS imágenes que
+   `kids/pin.astro` ya usa, copiadas a propósito y no reinventadas, porque
+   ya están aprobadas (D-080) y en producción. Se amplió la consulta SQL
+   para traer `avatar_parts` (antes no se pedía) y se calculó el avatar con
+   el mismo `animalElegido()`/`claveDeAnimal()` que usa la pantalla de
+   verificación. La rama de KINDER (imágenes) se queda en el pergamino
+   simple de D-199.2 — igual que en `kids/pin.astro`, ese tratamiento
+   fotorrealista es solo del teclado numérico.
+
+**Verificación:** `astro check` (0 errores), `node audits/run.mjs` (verde
+salvo las mismas 2 fallas ajenas), `pnpm build`, despliegue, `node
+audits/live.mjs` (51/51). El margen del engrane y la reagrupación de
+`SfxManager` son correcciones geométricas/de código, verificables por
+lectura; el restyle de `perfil-pin.astro` reusa imágenes ya revisadas por
+el dueño en D-197.1, así que no exige una revisión de arte nueva — pero
+**sigue sin confirmarse con un clic real en el dispositivo del dueño**.
+
+**Investigación relacionada:** D-199, D-199.1, D-199.2, D-199.3, D-197.1.
+
+### D-199.5 — El letrero de "¿Quién juega?" pasa de texto pintado por Phaser a texto TALLADO en la madera, uno por locale, con efecto de viento · 2026-08-09
+
+Pedido explícito del dueño viendo el letrero en vivo: *"no puedes hacer este
+en 7 imágenes (una por cada idioma) para que se integre bien a la imagen? y
+no vuelen las letras? para que se vean esculpidas en la madera??? y que
+tenga efecto de aire que se mueva un poco porque sopla el aire?"* — el
+letrero de D-194/D-199 pintaba el título y la pista con `Phaser.Text` ENCIMA
+de una imagen de madera en blanco (mismo patrón que `MenuScene`); el dueño
+lo vio y pidió el texto tallado de verdad, no pintado, y con el mismo efecto
+de viento que ya existía en `MenuScene`.
+
+**Riesgo conocido y MEDIDO antes de generar el lote completo, no supuesto.**
+Antes de pedir las 7 imágenes se generó UNA prueba en español
+(`scripts/prueba-letrero-tallado.mjs`, descartable) con título grande
+("¿Quién juega?") y subtítulo chico ("Toca tu dibujo."): el título salió
+perfecto, el subtítulo salió con una letra de más ("dibuijo"). Se le mostró
+esa prueba al dueño, con el fallo señalado, y se le preguntó cómo seguir
+(`AskUserQuestion`, tres opciones: solo tallar el título grande y dejar la
+pista pintada por Phaser — más seguro; tallar las dos líneas en las 7,
+sabiendo que hace falta revisar ortografía letra por letra; o no tallar
+nada y dejarlo como está). **Eligió tallar las dos líneas, las 7 completas**,
+sabiendo el riesgo.
+
+**Qué se construyó — `scripts/gen-letrero-quien-juega.mjs` (nuevo):**
+Gemini (`gemini-2.5-flash-image`) con el letrero en blanco ya aprobado
+(`.arte-crudo/letrero-madera-alfa.png`) como referencia visual estricta
+(mismo prop, misma veta, mismas cuerdas), un archivo por locale — es-MX y
+es-ES comparten UNA imagen porque el texto es idéntico en los dos
+("¿Quién juega?"/"Toca tu dibujo."), así que son 6 imágenes para 7 locales,
+no 7. El prompt final pide tallado profundo con sombra dentro de cada
+trazo, prohíbe explícitamente texto pintado/pegatina, exige revisar la
+ortografía letra por letra antes de dibujar, y excluye fondo/pasto/tierra —
+el fondo debe quedar blanco puro y aislado para que `ffmpeg colorkey`
+recorte el alfa igual que el resto de los props de madera.
+
+**Revisión humana de las 6, letra por letra contra el string exacto de
+`i18n/*.json` (D-080) — no "se ve bien", sino comparación pixel por
+pixel.** Dos fallaron en la primera pasada, exactamente donde la prueba ya
+había anticipado que fallaría:
+
+- `es`: subtítulo con una letra de más ("dibubo" en vez de "dibujo" — un
+  error DISTINTO al de la prueba, no el mismo, confirmando que el fallo es
+  de la clase "texto chico", no un typo fijo).
+- `pt-BR`: texto correcto pero con pasto/vegetación filtrándose al fondo
+  pese a pedir "aislado en blanco".
+
+Ambas se regeneraron con el prompt reforzado (instrucción explícita de
+doble-checar ortografía + lista explícita de exclusiones de escenario) y
+salieron correctas al primer reintento. Las 6 quedaron verificadas antes de
+commitear: `en`, `es` (MX/ES), `fr-FR`, `pt-BR`, `pt-PT`, `de-DE`.
+
+**Wiring en `QuienJuegaScene.ts`:** `LETRERO_POR_LOCALE` mapea el locale de
+PÁGINA (`DatosQuienJuega.locale`, no el de la tarjeta) a la clave de textura
+tallada; si la textura no cargó por lo que sea, cae a `letrero-madera` CON
+el texto pintado por Phaser como respaldo — nunca un letrero mudo. Se quitó
+el `this.add.text()` de título y pista cuando SÍ hay imagen tallada. El
+efecto de viento (`registrarVientoEnLetrero`) es el mismo patrón ya escrito
+para `MenuScene` — pivote en la cuerda de arriba (origen `(0.5, 0)`,
+reposicionado para no mover la imagen), ±1.8° cada 3.2s, respeta
+`prefers-reduced-motion` — adaptado porque este letrero NO se centra en
+`width/2` como el de `MenuScene` (vive corrido a la derecha de la flecha de
+regreso), así que el pivote se calcula desde la posición propia del
+letrero, no desde el centro de pantalla.
+
+**Verificación:** `astro check` (0 errores), `node audits/run.mjs` (verde
+salvo las mismas 2 fallas ajenas y ya conocidas: `bundle-budget` por Phaser,
+`brand-image` por `retos.astro:71`), `astro build`, despliegue
+(`2d4032c2-890c-4a6f-ab73-52e6c2bf3f78`), `node audits/live.mjs` (51/51).
+Las 6 imágenes se confirmaron servidas en producción (200, tamaños entre 52
+y 60 KB) tras el retraso de propagación del manifest ya documentado en
+`CLAUDE.md` (`pt-PT` dio 404 en el primer chequeo, 200 quince segundos
+después — el mismo patrón medido en F0, no una falla nueva).
+
+**Lo que esto NO hizo:** no se tocó el efecto de viento ya agregado a
+`MenuScene.ts` en la misma sesión (letrero de "Modo Historia"/"Retos",
+escena distinta) — sigue ahí como mejora independiente, no es lo que el
+dueño pidió esta vez pero tampoco estorba. No se confirmó todavía con un
+clic real en el dispositivo del dueño — pendiente, igual que D-199.4.
+
+**Investigación relacionada:** D-199, D-199.1–D-199.4, D-080 (revisión
+humana de arte generado), D-194 (mismo patrón de referencia visual estricta
+para el arte de Larry).
+
+### D-199.6 — Encontrada la causa real de "¿por qué la flecha de salir me manda a esta pantalla?": un enlace "volver" que EMPUJA historial en vez de consumirlo · 2026-08-09
+
+El dueño había dejado esta pregunta pendiente, explícitamente aplazada
+("continúa y después resuelve esto"): *"solo quiero entender también por
+qué cuando le doy a la flecha de salir sale esta pantalla?"* — la flecha
+de "¿Quién juega?" (`FlechaAtras.ts`) lo mandaba, sin patrón aparente, a la
+pantalla de cambiar PIN. Se investigó a fondo (agente de exploración, sin
+adivinar) en vez de suponer que era caché.
+
+**Causa real, encontrada leyendo el código, no supuesta:** `FlechaAtras.ts`
+llama `window.history.back()` a propósito (mismo patrón documentado en su
+propio comentario: esta pantalla se llega desde más de un lugar, y el
+historial ya sabe cuál es el correcto). Pero el link "volver" de
+`perfil-pin.astro:126` NO hacía lo mismo — era un `<a href={rutaVolver}>`
+normal, es decir, una navegación de IDA a `kids/index.astro`, que EMPUJA
+una entrada nueva al historial en vez de consumir la que trajo hasta ahí.
+
+Secuencia real reconstruida:
+
+1. Niño en "¿Quién juega?" (`kids/index.astro`) — historial: `[…, quienJuegaA]`.
+2. Adulto toca el engrane de un perfil → `PerfilAjustesScene` (overlay de
+   Phaser, misma página, historial sin cambios).
+3. Toca "Cambiar PIN" → navegación real a `perfil-pin.astro` — historial:
+   `[…, quienJuegaA, perfilPin]`.
+4. Toca "volver" → navegación real (de ida) a `kids/index.astro` —
+   historial: `[…, quienJuegaA, perfilPin, quienJuegaB]`.
+5. Ahora en `quienJuegaB`, toca la flecha de salir → `history.back()` →
+   aterriza en la entrada anterior, que es **`perfilPin`** — la pantalla
+   de cambiar PIN reaparece sin que nada la haya pedido.
+
+Esto explica el síntoma exacto: una flecha que dice "salir" y en cambio
+muestra una pantalla de ajustes.
+
+**Arreglo:** el link "volver" ahora llama `window.history.back()` (mismo
+criterio que `FlechaAtras.ts`) en vez de navegar de ida a
+`kids/index.astro` — con el `href` original intacto como respaldo si
+JavaScript no corrió (D-012, mejora progresiva). Se aplicó el mismo cambio
+al redireccionamiento tras guardar un PIN nuevo (`window.location.href =
+rutaVolver` → `volver()`), porque tenía exactamente el mismo defecto: cada
+PIN cambiado con éxito también empujaba una entrada nueva al historial.
+
+**Verificación:** `astro check` (0 errores), `node audits/run.mjs` (verde
+salvo las mismas 2 fallas ajenas y ya conocidas), `astro build`,
+despliegue (`0200fe9b-7ff5-4980-a613-324cf530f6d9`), `node
+audits/live.mjs` (51/51). **No confirmado todavía con un clic real en el
+dispositivo del dueño** — pendiente, como el resto de D-199.x.
+
+**Lo que esto NO hizo:** no se tocó `FlechaAtras.ts` (ya se comportaba
+bien) ni ningún otro enlace de salida — el agente de exploración revisó
+`GameplayScene.ts`, `ChallengeScene.ts`, `Pantalla.astro` y `mapa.astro` y
+confirmó que sus flechas de salida van todas a mapa/selector de perfil,
+nunca a una pantalla de PIN; el único punto roto era este.
+
+**Investigación relacionada:** D-199, D-199.1–D-199.5.
+
+## D-200 — Un solo precargador global para toda la app de niño, con candado de versión automático · 2026-08-09
+
+**El problema, señalado en vivo:** "¿por qué al cargar quien juega primero me muestra la versión vieja y después carga la nueva?" — y, aparte, "el loader está cuando entro a la cebra [el perfil del avatar cebra] en lugar de cuando entro al phaser a la primera parte." Las dos observaciones son la MISMA causa: `QuienJuegaScene` y `PreloadScene` (Modo Historia) son dos `Phaser.Game` separados (páginas distintas, D-192), cada uno con su propia lista de imágenes/audio, y cada uno descubre sus archivos nuevos justo cuando los necesita — nunca antes. La "versión vieja" que se ve primero es la rejilla HTML real (D-012, mejora progresiva — eso está bien y no se toca); el hueco hasta que Phaser termina de pintar crece porque, entre las dos páginas, hay ~82 archivos únicos (~5.6 MB) que se piden la primera vez que cada pantalla los necesita, nunca antes.
+
+**Alcance, decidido por el dueño vía preguntas de opción múltiple:**
+1. **Catálogo completo** (quien-juega + Modo Historia + reto — confirmado que `GameplayScene.ts` no carga nada propio, reusa la cola de `PreloadScene`, así que "considera los retos" ya estaba cubierto) — no un subconjunto por perfil.
+2. **Cachear los archivos**, no fusionar las páginas en una sola sesión de Phaser — cambio acotado, no toca cómo navegan las pantallas hoy.
+3. **Texto de progreso visible en pantalla** ("Cargando imágenes…"/"Cargando sonidos…"), no solo una animación muda.
+
+**Qué se construyó:**
+
+1. **`apps/web/src/game/assets-manifest.ts`** (nuevo) — la lista única de todo lo que carga Phaser: `IMAGENES_QUIEN_JUEGA`, `IMAGENES_MODO_HISTORIA`, `TODAS_LAS_IMAGENES` (la unión, deduplicada), y el mismo patrón para audio (`AUDIOS_QUIEN_JUEGA`/`AUDIOS_MODO_HISTORIA`/`TODOS_LOS_AUDIOS`). `QuienJuegaScene.preload()` y `PreloadScene.preload()` ahora importan de aquí en vez de repetir rutas a mano — un archivo nuevo agregado a una escena no puede quedar fuera del precargador global por descuido. Ambas escenas siguen funcionando SOLAS si algo impide que el precargador global corra (nunca dependen de él para existir).
+2. **`CargaGlobalScene.ts`** (nuevo) — primera escena que arranca `main.ts::arrancarQuienJuega()` (antes arrancaba `QuienJuegaScene` directo). Sin imagen propia — su interfaz es `Graphics`/`Text` puro a propósito, porque es la única pantalla que tiene que dibujarse ANTES de que exista una sola imagen en caché. Carga imágenes primero y audio después (en ese orden, como pidió el dueño), con el texto de la etapa actual visible en el idioma de la página (`RotulosQuienJuega.carga.{imagenes,sonidos}`, dos claves nuevas en los 7 locales: `kidsLoadingImages`/`kidsLoadingSounds`).
+3. **`public/sw.js` no se tocó** — su estrategia "Estático" (cache-first, sin cambios) ya cachea cualquier archivo que pase por `fetch`, sin importar qué lo pidió. Al precargar TODO desde el primer toque, esos mismos archivos ya están en caché cuando Modo Historia los vuelve a pedir minutos después — se sirven al instante, sin red.
+4. **El candado de versión — "que nunca se vuelva a ver un loader" sin volver a bajar todo en cada deploy sin necesidad.** `astro.config.mjs::activosVersionD200()` (mismo patrón que `mc-redirecciones-d049`, un hook `astro:build:done`) hashea los BYTES reales de `public/{juego,mapa,avatares}` en cada build y escribe `dist/assets-version.json`. `CargaGlobalScene` compara ese hash contra un marcador en `localStorage`: si coinciden, NI SIQUIERA dibuja su UI — pasa directo a `QuienJuegaScene`. Si un deploy cambió una sola imagen (el hash cambia solo, sin que nadie suba un número a mano), se vuelve a precargar todo automáticamente.
+
+   **Por qué un hash automático aquí y no el `VERSION = "v2"` manual que ya tiene `sw.js`:** el propio `sw.js` explica su elección — "un hash automático invalidaría en cada build aunque nada cambiara, y en 4G lento eso son megabytes que el usuario vuelve a pagar sin razón." Esa razón sigue siendo válida para el SHELL (HTML/fuentes/íconos), que cambia con CADA deploy de código aunque ningún asset se toque — y este proyecto despliega varias veces por hora. Por eso `activosVersionD200()` hashea SOLO tres carpetas (`juego`/`mapa`/`avatares`), nunca `dist` entero: el hash cambia ÚNICAMENTE cuando de verdad cambia un archivo ahí adentro (uno nuevo, uno borrado, o el mismo nombre con arte distinto) — no en un deploy de código que no toca ni una imagen, como el de D-199.6 unas horas antes. Las dos filosofías (manual para el shell, automático para los assets pesados de Phaser) conviven sin contradecirse: cada una resuelve el riesgo real de su propia superficie.
+
+**Verificación:** `astro check` (0 errores), `node audits/run.mjs` (verde salvo las mismas 2 fallas ajenas ya conocidas: `bundle-budget` por Phaser, `brand-image` por `retos.astro:71`), `astro build` (el hook nuevo corrió: `assets-version.json — 3fae6caaf3c4e424, 168 archivos`), despliegue (`0baad5da-308d-4070-9e00-e51f9539f6da`), `node audits/live.mjs` (51/51, incluyendo `assets-version.json` sirviendo 200 en producción).
+
+**Lo que esto NO hizo:**
+- **No se probó con un clic real en el dispositivo del dueño** — ni el candado de versión, ni el texto de progreso, ni la mejora real del hueco entre pantallas. `audits/live.mjs` verifica HTTP (páginas, códigos, tamaños), no ejecución de JavaScript en un navegador de verdad — no puede confirmar que la barra de progreso se vea bien ni que el `fetch` de `assets-version.json` se resuelva a tiempo. Firmar esto como "funciona" sin ese clic sería la aserción en tono seguro que D-032 prohíbe.
+- **No se fusionaron las páginas en una sola sesión de Phaser** (la alternativa más invasiva que se ofreció y el dueño no eligió) — quien-juega, el mapa y el reto siguen siendo navegaciones reales de página. El precargador global reduce el hueco de la SEGUNDA pantalla en adelante a lo que tarde el caché en responder, pero no lo elimina estructuralmente.
+- **No se investigó ni se tocó** el reporte de música silenciada de la misma sesión (D-201, si aplica) — son cambios independientes en archivos distintos.
+
+**Investigación relacionada:** D-192 (por qué "¿quién juega?" y el mapa son `Phaser.Game` separados), D-199.5 (el letrero tallado que agregó las primeras 6 imágenes nuevas de esta ronda), la nota de `public/sw.js` sobre `VERSION` manual.
+
+### D-200.1 — `PreloadScene` seguía dibujando su barra siempre; el dueño pide evaluar una SPA de verdad · 2026-08-09
+
+El dueño probó D-200 en vivo (dos capturas: "¿quién juega?" con el ícono de nota tachado otra vez, y `MenuScene` con un loading visible justo después de tocar el perfil de la cebra) y reportó: "la música no cargó otra vez. Y cuando le di en la zebra me salió un loading antes de la siguiente pantalla."
+
+**Causa encontrada al releer el propio código, no supuesta:** `PreloadScene.preload()` dibujaba su caja+barra de forma INCONDICIONAL, en la primera línea, antes de preguntar si hacía falta. El candado de versión de D-200 solo se había aplicado a la escena NUEVA (`CargaGlobalScene`) — `PreloadScene` (la que corre al entrar al mapa) nunca se tocó, así que seguía mostrando su UI de carga SIEMPRE, sin importar si `CargaGlobalScene` ya había precargado todo minutos antes. El síntoma que el dueño vio ("el loading sigue apareciendo") era 100% consistente con este hueco, sin necesidad de que el cacheo del service worker fallara.
+
+**Arreglo:** se extrajo `carga-assets.ts` (candado de versión + `cargarLoteConProgreso`) como código compartido entre `CargaGlobalScene` y `PreloadScene` — antes vivía duplicado dentro de la escena nueva. `PreloadScene.create()` ahora pregunta `activosYaPrecargados()` PRIMERO: si coincide, carga los archivos igual (hace falta que ESTE `Phaser.Game`, página distinta, los tenga en su propio caché de textura) pero SIN dibujar caja ni barra — la petición de red la sirve el service worker casi al instante. Si no coincide, dibuja la UI exactamente como antes.
+
+**Sobre la música:** sigue sin encontrarse una causa nueva — es el mismo hallazgo de la ronda anterior (el único código que escribe "apagado" es tocar el ícono). No se tocó nada de `preferencia-musica.ts`/`BotonMusica.ts` en esta ronda.
+
+**La pregunta más grande — "esto debe sentirse como una SPA":** ante la posibilidad de que el arreglo de arriba no fuera suficiente, se le preguntó al dueño cuánto quería invertir (arreglo chico / transición con marca / SPA de verdad). **Eligió SPA de verdad: fusionar "¿quién juega?", el mapa y el reto en una sola sesión de Phaser, cero recargas de página.** Es una reversa de facto de la elección "cachear los archivos, no fusionar páginas" que había hecho unas horas antes en D-200 — el dueño vio el resultado en vivo y cambió de opinión con evidencia real, no en abstracto. Queda pendiente de investigación y plan antes de tocar código: toca autenticación por pantalla, historial del navegador, y la estructura de URLs de D-033 — no es una extensión de este parche.
+
+**Verificación:** `astro check` (0 errores), `node audits/run.mjs` (verde salvo las mismas 2 fallas ajenas), `astro build`, despliegue (`eb85a008-48f5-4e1e-80ff-47f19e1fbf5d`), `node audits/live.mjs` (51/51). **No confirmado con un clic real** — como todo D-199.x/D-200.x de hoy.
+
+**Investigación relacionada:** D-200, D-192.
+
+## D-200.2 — La fusión en una sola sesión de Phaser: "¿quién juega?" → PIN → mapa → reto, cero recargas · 2026-08-09
+
+Implementación del plan aprobado en D-200.1 tras tres agentes de
+exploración (mapa de autenticación/sesión, árbol real de escenas de
+Phaser, y conflictos con decisiones ya documentadas) y dos preguntas de
+opción múltiple al dueño:
+
+- **Retos (botón directo) y `/practicar/` del adulto quedan FUERA de esta
+  ronda** — "fuera ahora pero sabemos que lo haremos". `RetoController.ts`
+  sigue siendo DOM puro a propósito, sin tocar.
+- **"Cambiar de jugador" sigue siendo una recarga de página real** — a
+  propósito, para que la limpieza de datos del hermano anterior (D-186)
+  quede garantizada por construcción, no por disciplina de código sin
+  probar.
+
+**El mecanismo — reusar las páginas reales, nunca duplicar su lógica.**
+`QuienJuegaMount.astro`/`HistoriaMount.astro` ya serializan los datos de
+su pantalla en un `<script type="application/json" id="...">` dentro del
+HTML real que el servidor arma (con toda su autenticación, `mc_h`/`mc_k`).
+`game/spa/enrutador.ts` (nuevo) pide esa MISMA URL con `fetch`
+(`credentials: "same-origin"`), deja que el navegador siga cualquier
+redirección, y extrae esa isla — o un fragmento de DOM, para pantallas sin
+isla — del HTML devuelto. Si cualquier paso falla (sin red, HTML
+inesperado), cae a `window.location.href` real. Cero endpoints JSON
+nuevos: el mismo riesgo de duplicar lógica de servidor que
+`assets-manifest.ts` ya evitó hoy para los assets.
+
+**Piezas nuevas:**
+
+1. **`game/spa/enrutador.ts`** — `irA()`, `extraerIsla()`,
+   `extraerFragmento()`, `empujarHistorial()`/`alVolver()` (pushState/
+   popstate).
+2. **`game/spa/pin-interaccion.ts`** — la lógica de toque de
+   `kids/pin.astro` EXTRAÍDA de esa página a un módulo importable
+   (`conectarFormularioPin(forma, opts)`), con un parámetro opcional
+   `interceptarEnvioFinal` que, sin usarse, deja el comportamiento
+   IDÉNTICO al de siempre (protección de reenvío por 0-RTT vía 425, sin
+   `requestSubmit()` por iOS Safari 15, los dos primeros toques en
+   cliente). `pin.astro` ahora importa esta función en vez de tener la
+   lógica inline — una sola copia, no dos que puedan separarse.
+3. **`game/spa/puente-pin.ts`** — muestra el PIN sobre "¿quién juega?" sin
+   recargar: extrae `<main class="pin">` de la página real, transplanta
+   sus `<style>` (el scoping de Astro solo agrega el hash al ÚLTIMO tramo
+   de cada selector, así que copiar el `<style>` tal cual y replicar los
+   atributos del `<body>` real sobre el `<body>` de la sesión basta para
+   que se vea idéntico), y usa `pin-interaccion.ts` CON intercepción: el
+   tercer toque va por `fetch` en vez de navegar. Si acierta y el destino
+   trae `#historia-datos`, entra al mapa; si falla, el servidor repinta la
+   MISMA pantalla con "esos tres no eran" y se reconecta (recursivo, sin
+   límite de intentos, línea roja #8).
+4. **`game/spa/puente-historia.ts`** — arranca Modo Historia (`MenuScene`,
+   `MapScene`, `ChallengeScene`, `DialogueScene`, `GameplayScene` — las
+   MISMAS clases que usa la página independiente) dentro del
+   `Phaser.Game` que ya está corriendo, sin `BootScene`/`PreloadScene`
+   (`CargaGlobalScene` ya precargó todo, D-200) y con un `ProgressManager`
+   nuevo por cada entrada (pericia fresca del servidor, nunca la de la
+   visita anterior). `game/main.ts::iniciarHistoria()` NO se tocó — sigue
+   siendo lo que arranca `/mapa/` cargada directo (enlace, refresco,
+   JavaScript deshabilitado — D-012 exige que esa página funcione sola).
+5. **`GameplayScene.ts::volverAlMapa()`** — el comentario original explicaba
+   por qué era una navegación real y no un `scene.resume()`: el mapa tiene
+   que mostrar la pericia que el servidor ACABA de recalcular, nunca la de
+   antes de jugar (`packages/motor/src/mapa.ts` #231, ninguna segunda
+   fuente de verdad). Esa razón sigue intacta — lo que cambia es CÓMO se
+   piden los datos frescos: `enrutador.irA(this.salirA)` en vez de una
+   recarga de página, y `arrancarHistoriaEnSesion()` de nuevo arranca el
+   mapa fresco en la misma sesión. Funciona igual reachado desde la SPA o
+   desde `/mapa/` cargada directo — no le importa cuál `Phaser.Game` sea.
+6. **`game/spa/estado.ts`** — qué pantalla muestra la sesión ahora mismo
+   (`"rejilla" | "pin" | "historia"`), para que el botón atrás del sistema
+   sepa qué deshacer.
+
+**Lo que el botón atrás NO resuelve del todo, dicho de frente:** deshacer
+UN paso desde "historia" salta directo a la rejilla, no a la pantalla de
+PIN intermedia — atajo deliberado (mostrar el PIN otra vez solo para
+tocarlo de nuevo no ayuda a nadie). Pero un `popstate` que salta MÁS de un
+paso de una sola vez (pulsar atrás dos veces muy rápido) puede dejar la
+URL de la barra de direcciones sin corresponder exactamente a lo que se
+ve — no rompe nada (no hay estado corrupto ni una pantalla en blanco),
+pero no está resuelto con precisión. Anotado en el propio código de
+`estado.ts`, no escondido.
+
+**Verificación:** `astro check` (0 errores), `node audits/run.mjs` (verde
+salvo las mismas 2 fallas ajenas y ya conocidas — `bundle-budget` subió de
+386.7 KB a 399.9 KB gz, esperado: el motor completo de Modo Historia ahora
+tiene que poder cargarse desde la página de "¿quién juega?" también, no
+solo desde `/mapa/`), `astro build`, despliegue
+(`2fe62662-ef24-47b5-979d-b6d968e60e00`), `node audits/live.mjs` (51/51).
+
+**Lo que esto NO verificó, dicho de frente:** todo este mecanismo — el
+`fetch` del PIN, la extracción de las islas, el transplante de estilos, el
+arranque de Modo Historia dentro de la misma sesión, el botón atrás — vive
+detrás de sesión autenticada y depende de JavaScript ejecutándose de
+verdad en un navegador. `audits/live.mjs` verifica HTTP (códigos, tamaños
+de página), no ejecución de cliente: no puede confirmar que la transición
+se sienta sin recarga, que el PIN se vea idéntico al transplantado, ni que
+el botón atrás haga lo que este documento dice que hace. Esto se construyó
+con cuidado (agentes de exploración antes de diseñar, un plan aprobado
+explícitamente, extracción en vez de duplicación de la lógica de PIN con
+sus protecciones de reenvío) pero **nada de esto se ha probado con un
+clic real en un dispositivo real** — es la verificación pendiente más
+importante de todo el día de hoy, y no se puede saltar.
+
+**Investigación relacionada:** D-200, D-200.1, D-192, D-012, D-186,
+`packages/motor/src/mapa.ts` (#231).
+
+### D-200.3 — Primera prueba real en dispositivo de D-200.2: la flecha se apilaba, no faltaba caché · 2026-08-09
+
+El dueño probó D-200.2 en vivo — la primera confirmación real de todo el
+trabajo de hoy — y reportó tres cosas. Dos resultaron ser lo esperado; una
+era un bug real, encontrado y corregido en la misma sesión:
+
+1. **"La flecha me regresa como el navegador en lugar de regresarme a la
+   pantalla fuera de SPA, a la de tu casa."** Bug real. `empujarHistorial`
+   se llamaba TRES veces por sesión (rejilla→PIN, PIN→mapa, salir del
+   reto→mapa fresco) — cada una apilaba una entrada nueva de historial. El
+   botón atrás (sea `FlechaAtras.ts` o el gesto del sistema) deshace UNA
+   entrada por toque: con tres apiladas, el primer toque no cambiaba nada
+   visible (el manejador de `popstate` siempre reseteaba a "rejilla" sin
+   importar cuántas quedaran), y hacían falta varios toques más para que
+   el navegador por fin cruzara a un documento real distinto ("Tu casa") —
+   exactamente "se comporta como el navegador" en vez de salir de un solo
+   toque. **Arreglo:** `enrutador.ts` ahora distingue `empujarHistorial`
+   (SOLO la primera salida de la rejilla) de `reemplazarHistorial` (las
+   transiciones DENTRO de la sesión — PIN→mapa, reto→mapa fresco — que
+   actualizan la URL sin apilar una entrada nueva). Con una sola entrada
+   apilada por sesión, un toque de "atrás" desde cualquier profundidad
+   vuelve a la rejilla, y un segundo toque desde ahí sale de verdad a lo
+   que había antes (D-012 no cambia: la rejilla sigue siendo la misma
+   página real de siempre).
+2. **"Nunca vi un loading al darle clic a ir a pantalla de niños."**
+   Esperado, no un bug — confirmado releyendo los logs de build de hoy:
+   `assets-version.json` reportó el MISMO hash (`3fae6caaf3c4e424`) en
+   CADA build desde D-199.5, porque ninguno de los cambios de D-200/
+   D-200.1/D-200.2 tocó un solo archivo dentro de `public/{juego,mapa,
+   avatares}` — todos fueron cambios de código (`.ts`/`.astro`), y el hash
+   solo mira esas tres carpetas a propósito (ver D-200). El dispositivo del
+   dueño ya había precargado ese catálogo exacto en una prueba anterior de
+   HOY mismo, así que el candado de versión hizo justo lo que se pidió:
+   no volver a mostrar el loader para nada que ya está caliente. Para ver
+   el loader de verdad hace falta un deploy que SÍ cambie un archivo
+   de esas carpetas, o probar en una ventana/dispositivo sin ese
+   `localStorage`.
+3. **La música sigue sin sonar.** Sin causa nueva encontrada — mismo
+   resultado que las dos rondas anteriores (D-199.6, D-200.1): el único
+   código que escribe "apagada" es tocar el propio ícono, y no se tocó
+   `preferencia-musica.ts`/`BotonMusica.ts` en ninguna ronda de hoy. Sigue
+   sin confirmarse si es una preferencia real guardada en el dispositivo
+   (de una prueba de sonido de hace horas) o un bug que ninguna lectura de
+   código ha encontrado en tres intentos — la prueba que de verdad lo
+   resolvería es abrir el sitio en una ventana privada/incógnito (sin
+   `localStorage` previo) y ver si ahí SÍ suena sola.
+
+**Verificación:** `astro check` (0 errores), `node audits/run.mjs` (verde
+salvo las mismas 2 fallas ajenas), `astro build`, despliegue
+(`ddb73b67-133a-4ed8-be52-87d520da7480`), `node audits/live.mjs` (51/51).
+El arreglo de historial es la primera pieza de D-200.2 que el dueño
+efectivamente ejerció en vivo — las demás (transplante de estilos del PIN,
+arranque de Modo Historia en la misma sesión) quedaron implícitamente
+confirmadas al reportar que SÍ llegó hasta el mapa y jugó un reto, pero
+ninguna se confirmó explícitamente todavía.
+
+**Investigación relacionada:** D-200, D-200.1, D-200.2.
+
+### D-200.4 — El candado de versión saltaba el `return` sin cargar nada: el bug real detrás de "no suena y no hay splash" · 2026-08-09
+
+El dueño diagnosticó esto ÉL MISMO en vivo, con una intuición correcta
+aunque la causa exacta no era la que suponía: "ya descubrí porque no
+suena, se queda cargando y hasta que no llega... esto porque no hay un
+loading, un splash donde se carguen todos los archivos... ya había uno y
+desapareció, me refiero a uno donde se carga la lista de los jugadores."
+
+**La causa real, releyendo `CargaGlobalScene.ts` línea por línea:** la
+rama `if (await activosYaPrecargados())` hacía `return` INMEDIATO tras
+`this.scene.start("QuienJuegaScene", ...)`, sin llamar
+`cargarLoteConProgreso` para nada. El candado de versión (D-200) solo dice
+que los BYTES ya están calientes en el caché del NAVEGADOR — pero esta
+escena vive en un `Phaser.Game` recién creado en CADA carga de página, con
+su propio administrador de texturas/audio TOTALMENTE VACÍO en memoria,
+sin importar qué tan caliente esté el caché del navegador por debajo. Al
+saltar el `return` sin cargar nada, todo ese trabajo real (bajar,
+decodificar, subir a memoria ~30 archivos, incluida la música) quedaba
+corriendo DENTRO de `QuienJuegaScene.preload()` — en silencio, con la
+pantalla en blanco, exactamente el "splash que desapareció" que el dueño
+recordaba y extrañaba. Y si esa decodificación no terminaba a tiempo,
+`create()` intentaba reproducir música que técnicamente todavía no estaba
+lista — la conexión que el dueño hizo entre "no hay splash" y "no suena"
+tenía la intuición correcta (las dos cosas SÍ estaban relacionadas),
+aunque la causa de fondo era una sola: la rama rápida nunca cargaba nada.
+
+**Arreglo:** la rama rápida ahora SIGUE cargando todo con
+`cargarLoteConProgreso` (rápido, porque de verdad está en caché) — lo
+único que se salta es el texto/barra DETALLADOS ("Cargando imágenes…"),
+reemplazados por un spinner mínimo (`Graphics` puro, sin depender de
+ninguna imagen) que nunca deja la pantalla en blanco. Se aplicó el mismo
+arreglo a `PreloadScene.ts`, que tenía la misma clase de hueco (más chico,
+solo alcanzable entrando directo a `/mapa/` con el candado ya puesto) —
+esa escena SÍ seguía cargando en su rama silenciosa, pero tampoco
+mostraba nada mientras tanto.
+
+**Verificación:** `astro check` (0 errores), `node audits/run.mjs` (verde
+salvo las mismas 2 fallas ajenas), `astro build`, despliegue
+(`93804d96-b9cb-42e0-9908-e25e8aa310b2`), `node audits/live.mjs` (51/51).
+**No confirmado todavía si esto resuelve el silencio de la música** — es
+la hipótesis más fuerte encontrada hasta ahora (a diferencia de D-199.6/
+D-200.1/D-200.3, que no encontraron ninguna causa), pero sigue pendiente
+de una prueba real: si después de este despliegue la música arranca sola
+al entrar, esto era la causa; si sigue sin sonar, el ícono seguía
+mostrando "apagada" por una preferencia guardada real, no por esto.
+
+**Investigación relacionada:** D-200, D-200.1, D-200.2, D-200.3.
+
+### D-200.5 — La causa real de la música muda: Phaser nunca reintenta `play()` sobre un `AudioContext` bloqueado · 2026-08-09
+
+El dueño mandó un video (12s) de la pantalla "¿quién juega?" reportando,
+por cuarta vez, "no hay un loading" y música muda. Análisis del video
+cuadro por cuadro (`ffmpeg`, extracción de fotogramas + `volumedetect`)
+dio dos hallazgos concretos, no supuestos:
+
+1. **El spinner de D-200.4 SÍ se ve** — visible en los fotogramas justo
+   después de tocar "Ir a la pantalla de los niños" (confirmado extrayendo
+   y leyendo esos fotogramas). Dura menos de un segundo — el candado de
+   versión hace su trabajo y todo carga casi al instante — probablemente
+   por eso no se percibió como "un loading" a simple vista.
+2. **El ícono de música, por primera vez en toda la sesión, aparece SIN
+   la X** (confirmado con un recorte del fotograma) — la preferencia
+   estaba en verdad ACTIVADA. Y aun así, `ffmpeg -af volumedetect` sobre
+   los 12 segundos completos dio `mean_volume: -91.0 dB` / `max_volume:
+   -91.0 dB` — silencio digital absoluto, no un volumen bajo. Esto
+   descarta de forma concluyente la hipótesis de las tres rondas
+   anteriores (D-199.6, D-200.1, D-200.3): NO es una preferencia guardada
+   en "apagado". Es un fallo real de reproducción con la preferencia en
+   "encendido".
+
+**La causa, encontrada leyendo el CÓDIGO FUENTE de Phaser 4.2.1
+instalado** (`node_modules/.pnpm/phaser@4.2.1/.../sound/webaudio/
+WebAudioSound.js` y `WebAudioSoundManager.js`, no la documentación —
+para tener la versión exacta que corre en este proyecto):
+`WebAudioSound.prototype.play()` llama `createAndStartBufferSource()`
+INCONDICIONALMENTE — nunca comprueba si `this.manager.locked` sigue en
+`true` (el `AudioContext` suspendido por la política de autoplay del
+navegador). Y el propio `unlock()` de Phaser, una vez que el contexto de
+verdad se reanuda, NO reintenta reproducir nada que ya se haya intentado
+mientras estaba bloqueado — solo marca `locked = false` y emite
+`Events.UNLOCKED`. Todo el trabajo de este proyecto se prueba como PWA
+instalada en pantalla de inicio de iOS (ninguna captura de todo el día
+muestra la barra de Safari) — un contexto donde el bloqueo de audio de
+iOS es más frágil que en una pestaña normal, y donde Phaser simplemente
+no tiene ninguna lógica de reintento.
+
+**Arreglo, en `MusicManager.ts` y `SfxManager.ts`:** antes de llamar
+`sonido.play()`, se comprueba `this.manager.locked`. Si sigue bloqueado,
+se espera el evento real `Phaser.Sound.Events.UNLOCKED` (confirmado que
+existe en esta versión: `src/sound/events/UNLOCKED_EVENT.js`) antes de
+reproducir — en vez de lanzar `play()` a ciegas y confiar en que Phaser lo
+arregle solo. Se aplicó a los dos manejadores por igual: el mismo riesgo
+explica también el misterio nunca resuelto de D-199.3 sobre
+`sfx-panel-abre`/`sfx-panel-cierra`.
+
+**Verificación:** `astro check` (0 errores, confirmado que `Phaser.Sound.
+Events.UNLOCKED` existe leyendo el código fuente instalado), `node
+audits/run.mjs` (verde salvo las mismas 2 fallas ajenas), `astro build`,
+despliegue (`ee1d406f-8698-4cb5-9994-65310914f5ea`), `node audits/live.mjs`
+(51/51).
+
+**Lo que esto NO confirma, dicho de frente:** que `context.resume()`
+efectivamente TERMINE resolviéndose en el contexto específico de una PWA
+de iOS instalada — si el bloqueo de audio de iOS en modo standalone es
+más profundo que "esperar el próximo toque" (hay reportes históricos de
+WebKit de esto), esperar `UNLOCKED` podría no ser suficiente y hacer
+falta una segunda pieza (p. ej. reproducir un buffer silencioso desde el
+gesto de toque más próximo a la creación del `AudioContext`). Esta es la
+hipótesis mejor fundamentada de las cuatro rondas — la primera basada en
+leer el código fuente de Phaser en vez de solo el código propio — pero
+sigue pendiente de una prueba real.
+
+**Investigación relacionada:** D-199.3, D-199.6, D-200.1, D-200.3, D-200.4.
+
+### D-201 — Mundo Kinder multi-bioma: piloto de Desierto, de punta a punta
+
+Implementación del piloto descrito en `docs/planes/2026-08-09-mundo-
+kinder-multi-bioma.md`: Desierto como el primer bioma real de KINDER en
+Modo Historia (Phaser), sobre un subconjunto deliberadamente chico —
+decisión del dueño, confirmada en esta sesión— de K01/K05/K12 y 2
+mecánicas nuevas (tap-to-pop, tap origen→destino), no las 14 habilidades
+ni las 13 mecánicas completas del plan.
+
+**Fase 0 — dominio por bioma.** Hallazgo que reencuadró el resto del
+trabajo: la tabla D1 `skill_state` no tenía NINGÚN escritor en producción
+(el único `INSERT` en todo el repo era un fixture de prueba) — el
+dominio real vive por completo en el almacenamiento del Durable Object
+`Aprendiz`. La migración de "dominio por bioma" es entonces
+principalmente un cambio de código en `aprendiz.ts` (llave
+`hab:<skillId>:<bioma>`, con `bioma` opcional para compatibilidad hacia
+atrás con las llaves viejas, que se leen como `"sabana"`), más un
+`ALTER` de consistencia en D1 (migración `0028_skill_state_bioma.sql`,
+sin datos vivos que migrar). `packages/motor/src/mapa.ts` gana un campo
+`bioma` que viaja de `EntradaDeHabilidad` a `NodoDelArbol` sin tocar la
+lógica de agrupar/secuenciar/bloquear — el encadenado de `bloqueado`
+ENTRE biomas queda explícitamente diferido hasta que exista un segundo
+bioma real.
+
+**Hallazgo intermedio, no anticipado: KINDER nunca estuvo conectado al
+sistema de Phaser.** `kids/mapa.astro` gateaba TODO el camino de
+`construirArbol()`+`HistoriaMount` detrás de `esPrimariaOMas` — la rama
+KINDER seguía siendo 100% el sendero HTML de Sabana (D-152), sin tocar.
+Confirmado con el dueño antes de tocarlo ("¿lo construyo yo, o ya lo
+estás construyendo tú del otro lado?" → "sí, constrúyelo tú"). Se
+resolvió extendiendo la rama KINDER para construir el mismo `arbol` que
+PRIMARIA/SECUNDARIA, con SU PROPIO resumen acotado a `bioma: "desierto"`
+(la Sabana de siempre sigue leyendo el resumen SIN acotar, para no
+romper la continuidad de quien ya juega hoy) — si el árbol de Desierto
+sale vacío (nadie lo ha tocado todavía), la pantalla cae a la Sabana de
+siempre, nunca a un estado vacío. Se descubrió una SEGUNDA capa de
+hardcoding en la misma pasada: `"primaria-1"` estaba escrito a mano en
+cuatro sitios (`PreloadScene.ts`, `MenuScene.ts` ×2, `puente-historia.ts`)
+sin que `chapterId` existiera como dato en ningún lado — se modeló como
+campo real en `ProgressManager`/`DatosDeArranque`, servido por
+`kids/mapa.astro` según banda+bioma, y threadeado a través de
+`HistoriaMount.astro`, con lo que el mismo cable que arregla KINDER
+también deja `chapterId` disponible en el flujo SPA (`puente-historia.ts`)
+sin trabajo aparte.
+
+**Fases 1-3 — el catálogo de `Formato` y el primer contenido con dibujo
+en Modo Historia.** `Formato` en `item.ts` gana 13 valores nuevos (de
+las 19 mecánicas del plan, menos las 5 existentes y el gesto #16
+transversal de solo-pista). `banco-kinder.ts` NO restructura `Plantilla`
+—que sigue exactamente igual, y con ella los 14 exports y todo lo que
+los consume (`PLANTILLAS`, `generarBanco()`, los auditores)— sino que
+agrega el concepto, más delgado, de `MecanicaAdicional`: apunta a una
+`Plantilla` base solo para tomar prestado su `parametros()` ya escrito,
+y envuelve el MISMO contenido numérico en un `formato`/`generar()`
+distinto (plan §6: "envolver los mismos parámetros en el formato nuevo").
+Los 4 pares construidos: K01×reventar, K12×reventar, K05×mueve,
+K12×mueve.
+
+Al conectar esto a `GameplayScene.ts` (Fase 3) se encontró un tercer
+hueco: la escena nunca tuvo el `switch` de formatos que `Pantalla.astro`
+ya tenía desde F5 — nunca hizo falta, porque Modo Historia solo servía
+PRIMARIA (`toca_la_respuesta`, sin dibujo). El piloto trae el PRIMER
+formato de kinder con dibujo (`flash`, la mecánica ya existente de K01)
+además de los 2 nuevos — confirmado con el dueño construir los tres
+juntos en vez de dejar `flash` sin Phaser. Se agregó `pintarEscena()`
+(destello con posiciones deterministas por disposición —dado/línea/
+disperso/par—, nunca `Math.random()`; burbujas que revientan con el
+arte bespoke de Desierto si está cargado, si no un círculo genérico;
+salto origen→destino reusando `ZonaDestino.ts`, ya construida por la
+sesión paralela). **Regla de diseño, la misma en las tres:** la escena
+es SIEMPRE dramatización, nunca un segundo camino de calificar — la
+respuesta se sigue dando tocando una de `item.opciones`, exactamente
+como ya hace `toca_para_contar` en `Pantalla.astro`. Por eso
+`AccessibleReto.ts` no necesitó ni un cambio: su render genérico de
+opciones numéricas sigue siendo un camino real y completo para
+calificar estos formatos — el hueco de accesibilidad real, documentado
+y no escondido, es que el GESTO (reventar, saltar) no tiene equivalente
+en el DOM, decisión explícita del dueño esta sesión ("todo debe ser en
+Phaser, pierdo mucho tiempo en el DOM").
+
+**Fase 4 — el `pathData` de Desierto.** Era, literalmente, el mismo
+arreglo de puntos que `primaria-1` (un río nunca rediseñado para dunas).
+Se trazó de verdad: se leyó `fondo-desierto-1.webp` (800×1600px) con un
+script que detecta el color del camino (arena clara, brillo>195,
+azul>135) fila por fila con seguimiento por continuidad, y el resultado
+se verificó dibujando los puntos ENCIMA de la imagen real antes de
+aceptarlos — dos iteraciones fallaron visiblemente (el primer intento
+automático se enganchó a bordes de duna equivocados) y se corrigieron a
+mano con una rejilla de coordenadas superpuesta. 15 puntos de control,
+convertidos de píxel nativo a coordenada de mundo con factores DISTINTOS
+en x (×1.25) e y (×1.5) — `MapScene.ts` usa `setDisplaySize()`, que no
+conserva el aspecto (800:1600 nativo vs. 1000:2400 de mundo). Los
+últimos 2 puntos son una extensión razonada sobre la cresta de la duna
+más lejana, donde el camino dibujado se difumina en la ilustración —
+igual que `primaria-1` termina cerca de la cima del mundo.
+
+**Fase 5 — 24 ítems curados, no 54.** El piloto de esta ronda cubre 4
+pares (no las 9 combinaciones completas de K01/K05/K12 con sus 2
+mecánicas nuevas cada una): K01×reventar, K12×reventar, K05×mueve,
+K12×mueve, 6 combinaciones cada uno. Elegidas por el eje de variación de
+la propia plantilla (`n` para K01, la diferencia `a-b`/`patos-gorros`
+para K12/K05), espaciadas uniformemente sobre el rango entero — el
+criterio que el plan mismo recomienda para repartir combinaciones
+("un orden aleatorio no es variación, es ruido"), no un sorteo. Se
+agregan a `generarBanco()` sin tocar las combinaciones existentes de
+K01/K05/K12: el contenido no tiene dimensión de bioma (#231) — el mismo
+ítem sirve a cualquier banda/mundo que pida esa habilidad.
+
+**Hallazgo tardío, encontrado al responderle al dueño "¿ya puedo
+empezar?": la ESCRITURA de bioma nunca se conectó.** Todo lo de arriba
+construyó la LECTURA (`kids/mapa.astro` pide el resumen de Desierto
+acotado) pero `GameplayScene`/`RetoController` nunca mandaban `bioma` en
+sus llamadas a `/api/jugar` — el servidor (`jugar.ts`) ya sabía leer
+`cuerpo.bioma` desde la Fase 0, pero nadie se lo mandaba. Sin este cable,
+jugar el árbol de Desierto habría escrito el dominio bajo el bioma por
+omisión (`aprendiz.ts::BIOMA_DEFECTO`, `"sabana"`) para siempre, y el
+árbol de Desierto jamás se habría llenado — el piloto se habría visto
+"terminado" en el código y habría fallado en silencio en cuanto un niño
+de verdad lo jugara. Cerrado threadeando `bioma` desde
+`kids/mapa.astro` (`biomaActivo`, gemelo de `chapterId`) →
+`HistoriaMount.astro` (prop nueva, en el mismo `#historia-datos`) →
+`ProgressManager`/`DatosDeArranque` → `GameplayScene` → `RetoController`
+→ cada `pedir("siguiente"/"responder", ...)`. El camino SPA
+(`puente-historia.ts`) lo hereda gratis: lee el mismo JSON del island.
+
+**Verificación (Fase 6).** `astro check` (0 errores) y las pruebas de
+regresión de `mapa.ts`/`aprendiz.ts`/`item.ts`/`presentar.ts` en cada
+fase, no solo al final. `node audits/run.mjs`: verde salvo las mismas 2
+fallas preexistentes y ajenas a esta sesión (`brand-image` sobre
+`kids/retos.astro`, `bundle-budget` por el peso de Phaser) — confirmado
+que ninguna de las dos tiene diff en `git status` de esta sesión.
+`astro build` limpio. `wrangler dev` local: el worker arranca sin
+errores, la rejilla de "¿quién juega?" carga un perfil real desde D1 —
+pero el flujo autenticado completo (tocar el perfil → PIN → mapa) no se
+pudo probar de punta a punta en local: `kids/pin.astro` devuelve 503 a
+propósito cuando falta `PIN_PAD_SECRET` (secreto de producción, nunca en
+`/tmp/vacio.env`) — limitación conocida del entorno local, no un defecto
+de este cambio.
+
+**Desplegado** a pedido explícito del dueño ("¡despliégalo!"), con
+`--env-file /tmp/vacio.env` (el candado de siempre contra el
+`CLOUDFLARE_API_TOKEN` de Workers AI, D-200). Versión
+`fe9eecfa-4d48-4a6c-a042-1348df6d11d9`. `node audits/live.mjs`: **51/51**,
+incluido "camino del niño completo: rejilla → PIN → mapa 200" y
+Turnstile funcionando en los 7 locales (confirma que `.env` sí se leyó
+en el build — el incidente de D-200.2 con un worktree sin `.env` no se
+repitió porque este build se hizo desde el checkout compartido, no
+desde un worktree aislado).
+
+**Lo que esto NO hace, dicho de frente:**
+
+- **No se probó en un dispositivo real** — la única prueba pendiente de
+  verdad (D-012/D-032 lo piden siempre para lo que toca un niño). El
+  dueño se ofreció a autenticar desde su propio dispositivo/simulador
+  para la siguiente pasada.
+- Las 11 mecánicas restantes del plan, sus `generar()` y sus escenas de
+  Phaser: fuera de alcance de este piloto.
+- El encadenado de `bloqueado` ENTRE biomas: no hay un segundo bioma
+  real todavía.
+- Sabana sigue siendo HTML — no se migró a Phaser.
+- Nieve/Costa: sin cambios (Nieve ya tenía capítulo y arte pero sigue
+  inalcanzable; Costa sigue sin arte).
+- `padre-panel.ts`/`reportes-datos.ts`: siguen sin datos reales que leer
+  de `skill_state` — hueco preexistente de F4, no de esta sesión.
+- La voz de Larry con la voz clonada de Kilowatto (ElevenLabs) sigue sin
+  conectarse al juego — lo que se oye hoy es la síntesis del sistema.
+
+**Investigación relacionada:** `docs/planes/2026-08-09-mundo-kinder-
+multi-bioma.md`, D-190, D-184, D-152, D-017.
 
 ---
 

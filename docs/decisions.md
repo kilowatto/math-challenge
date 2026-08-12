@@ -8073,3 +8073,93 @@ correcto en cualquier proporción de pantalla, tal como se esperaba.
 Ningún fondo se regeneró: el plan de resoluciones (`/Users/estebanrey/.
 claude/plans/nifty-cuddling-hamster.md`) seguía abierto en la pregunta de
 si migrar la política de encuadre — esto la resuelve sin gastar en Recraft.
+
+---
+
+## El gancho pre-commit nunca se activó — en ningún checkout, nunca (D-032) · 2026-08-12
+
+**El hallazgo central de auditar a los auditores no fue ningún auditor
+individual: fue que la flota entera llevaba corriendo en el vacío.**
+
+`.githooks/pre-commit` dice, en su propio encabezado, "se activa una vez por
+clon: `git config core.hooksPath .githooks`" — una instrucción manual, en un
+comentario, que nadie ejecutó nunca. `git config core.hooksPath` devolvía
+vacío tanto en el checkout principal como en este worktree. Sin esa línea,
+Git usa `.git/hooks/` por default —vacío— y `.githooks/pre-commit` es un
+archivo que nadie invoca: todo commit de este proyecto, de cualquier sesión,
+pasó sin que `audits/run.mjs` ni `pruebas-auditores.mjs` corrieran ni una
+vez.
+
+**Esto explica hallazgos de hoy que antes no tenían por qué explicarse solo
+por descuido individual:** el letterboxing horneado en `pin-imagenes-fondo`
+(D-080), el archivo de costa rechazado que se filtró a `public/juego`
+(#534), y que "✗ 2 auditor(es) bloquearon" se leyera, sesión tras sesión,
+como un estado tolerado en vez de una alarma — porque nunca bloqueaba nada
+de verdad.
+
+**Verificado, no supuesto:** un commit de prueba real, con el hook recién
+activado, se rechazó (`✗ commit bloqueado por un auditor`) y no quedó
+registrado en `git log`. Antes de activar el hook, el mismo commit habría
+pasado sin que nada lo detuviera.
+
+**La corrección, en dos capas:**
+
+1. `git config core.hooksPath .githooks` corrido YA en los dos checkouts.
+2. `package.json` gana un script `"prepare"` que hace lo mismo — npm/pnpm lo
+   corren solos tras cada `install`, así que un clon nuevo (o un worktree
+   nuevo, que es exactamente cómo se creó éste) lo activa sin que nadie
+   tenga que acordarse de leer un comentario dentro de un script de shell.
+
+**Consecuencia inmediata:** con el hook vivo de verdad, los "2 auditores de
+siempre" (`brand-image`, `bundle-budget`) bloqueaban el commit de esta misma
+corrección. Se arreglaron los tres hallazgos reales detrás de ellos —no se
+maquilló el número—: dos colores fuera de paleta (`PinScene.ts`,
+`retos.astro`, mismo patrón de siempre) y la exención de peso de Modo
+Historia (`PREFIJO_HISTORIA`) apuntando a un nombre de chunk
+(`HistoriaMount.astro_astro_type_script...`) que dejó de existir desde que
+D-201 fusionó la interfaz del niño en un solo Phaser — hoy el chunk se llama
+`juego.<hash>.js` y, sin la exención al día, TODO su peso (406 KB gz) se
+sumaba contra un presupuesto de 60 KB pensado para páginas de marketing. El
+comentario se corrigió también en lo que ya no era cierto: la excepción
+decía "solo lo paga PRIMARIA+ en el mapa" y desde la fusión lo paga
+cualquier niño que entra a `/app/kids/`. Se añadieron además dos excepciones
+de imagen que faltaban (`icon-192/512.png`, el ícono de instalación;
+`loader-fondo-4k.webp`, que solo baja a pantallas grandes).
+
+**Tres auditores más, encontrados en la misma pasada:**
+
+- `audits/fondos-sin-bandas.mjs` (nuevo de hoy) nunca se había agregado a
+  `ACTIVE` en `run.mjs` — un descuido propio de la misma sesión que lo
+  escribió. Conectado.
+- `audits/pwa-installable.mjs` existía completo (los criterios reales de
+  instalabilidad de Chrome) y **nadie lo invocaba, nunca** — no vive en
+  `run.mjs` (necesita red) ni estaba encadenado desde `live.mjs`. Reemplazó
+  el chequeo superficial que `live.mjs` sí tenía (`manifest.icons.length >=
+  2`) por una llamada real a este auditor.
+- `audits/corpus-integridad.mjs` — determinista, rápido (0.35s), y
+  **actualmente en rojo de verdad**: varios documentos del corpus traducido
+  tienen cifras que cambiaron al traducir, y 4 documentos (mc-49..52) nunca
+  se tradujeron. No se conectó al gate — es deuda de contenido preexistente,
+  no un bug de código, y conectarlo hoy pararía todo commit futuro por algo
+  que no tiene que ver con el cambio de nadie. Queda como tarea de fondo
+  (`task_6c65f72e`), a conectar cuando el corpus esté limpio.
+
+**Lo que esto NO resuelve:** los auditores que dependen de red
+(`live.mjs`, `perf-vitals.mjs`, y ahora `pwa-installable.mjs` desde
+`live.mjs`) siguen siendo manuales por diseño — D-032 los excluye a
+propósito del gate de cada commit. Lo que se cerró es que dejaran de
+invocarse NUNCA, no que empezaran a bloquear cada commit.
+
+**Un cuarto hallazgo, y es el que de verdad prueba que el mecanismo
+funciona:** al intentar este mismo commit con el gancho ya activo,
+`pruebas-auditores.mjs` se bloqueó a SÍ MISMO — "1 de 204 auditor(es) no
+atraparon su propia violación". El caso `mapa-sin-numero-de-nivel` ("el
+sendero de KINDER gana un campo numérico de progreso") parcheaba una línea
+de `packages/motor/src/mapa.ts` que ya no existía —el código real ganó
+`secuencia`/`bloqueado` (D-190) después de escrito este caso— así que
+`.replace()` era un no-op silencioso: la violación nunca se inyectaba, el
+auditor "pasaba" porque no había nada que atrapar, y el resultado se habría
+leído como un ✓ verdadero para siempre. El propio auto-chequeo de
+`pruebas-auditores.mjs` ("el parche... no cambió NADA") es lo que lo
+detectó, sin intervención humana — exactamente el caso para el que existe.
+Corregido para apuntar a la línea real.

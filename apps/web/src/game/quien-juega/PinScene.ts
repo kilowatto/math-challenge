@@ -205,8 +205,11 @@ export class PinScene extends Phaser.Scene {
       fondo.setScale(escala).setDepth(-10);
       this.capa.add(fondo);
     } else {
-      // verde-follaje (D-186), nunca un blanco de formulario.
-      this.cameras.main.setBackgroundColor("#2E6B3E");
+      // verde-follaje (D-186), nunca un blanco de formulario. El mismo verde
+      // de la excepción D-186 que ya conoce `audits/brand-image.mjs` —no un
+      // verde inventado para esta pantalla, que es justo lo que este mismo
+      // auditor encontró y bloqueó (2026-08-12).
+      this.cameras.main.setBackgroundColor("#5B8C3A");
     }
   }
 

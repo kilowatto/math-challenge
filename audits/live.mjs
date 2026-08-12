@@ -731,13 +731,30 @@ if (!SEMBRAR) {
 }
 
 // 6. Instalabilidad
-const { default: _ } = { default: null };
-const manifest = await (await get("/manifest.webmanifest")).json();
+//
+// El chequeo de aquí solo miraba `manifest.icons.length >= 2` — cierto pero
+// superficial. `audits/pwa-installable.mjs` ya existía con la lista completa
+// de criterios de Chrome (name/short_name, start_url, display,
+// prefer_related_applications, tipos MIME e íconos maskable) y **nadie lo
+// invocaba nunca**: no vivía en `run.mjs` (necesita red, no puede — igual que
+// este archivo) ni aquí, así que llevaba escrito y sin correr desde que se
+// construyó. Encontrado auditando a los auditores (2026-08-12). Se llama
+// como subproceso, contra el mismo `ORIGIN` que ya se está verificando.
 const sw = await get("/sw.js");
-if (manifest?.icons?.length >= 2) ok.push("manifest con íconos");
-else problems.push("manifest sin los íconos requeridos");
 if (sw?.ok) ok.push("service worker servido");
 else problems.push(`/sw.js devolvió ${sw?.status}`);
+
+const { spawnSync } = await import("node:child_process");
+const instalable = spawnSync(
+  "node",
+  ["--experimental-strip-types", "--no-warnings", "audits/pwa-installable.mjs", ORIGIN],
+  { encoding: "utf8" },
+);
+if (instalable.status === 0) ok.push("instalabilidad de la PWA (pwa-installable.mjs)");
+else {
+  const salida = (instalable.stdout || instalable.stderr || "").trim().split("\n").slice(1).join(" / ");
+  problems.push(`instalabilidad de la PWA: ${salida || "pwa-installable.mjs falló"}`);
+}
 
 console.log(`Verificación en vivo — ${ORIGIN}\n`);
 for (const p of problems) console.error(`  ✗ ${p}`);

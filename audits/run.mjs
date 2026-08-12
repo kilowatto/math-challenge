@@ -436,6 +436,7 @@ const ACTIVE = [
   // commit, y cuando una se migra su renglón queda rancio y el auditor exige
   // borrarlo. Sus dos controles negativos son violaciones PLANTADAS.
   ["spa-phaser",              "la interfaz del niño es Phaser, nunca HTML",     "D-201, D-200.2, CLAUDE.md § SPA"],
+  ["fondos-sin-bandas",       "ningún fondo trae letterboxing horneado en el archivo", "D-080, D-201, mc-47 §5"],
   // El otro lado de D-201: `CATALOGO` y `public/juego/pin-dibujo-*.webp` son
   // dos listas que tienen que decir lo mismo, y nada las ata. Un dibujo del
   // catálogo sin archivo deja una casilla vacía solo a ALGUNOS perfiles —la

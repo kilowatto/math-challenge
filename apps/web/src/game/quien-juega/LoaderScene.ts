@@ -31,6 +31,8 @@
 import Phaser from "phaser";
 import type { DatosQuienJuega } from "./QuienJuegaScene";
 import { TODAS_LAS_IMAGENES } from "../assets-manifest";
+import { MusicManager } from "../managers/MusicManager";
+import { BotonMusica } from "../objects/BotonMusica";
 
 const TOTAL_CUADROS = 100;
 /** Fracción del alto de pantalla que puede ocupar la pila. */
@@ -124,6 +126,7 @@ export class LoaderScene extends Phaser.Scene {
     this.construirHud();
     this.construirMundo();
     this.construirBotonInclinacion();
+    this.construirBotonMusica();
     this.escucharLaCarga();
 
     this.scale.on(Phaser.Scale.Events.RESIZE, this.reacomodar, this);
@@ -270,6 +273,7 @@ export class LoaderScene extends Phaser.Scene {
     this.textoPorcentaje.setPosition(this.textoPct.x + this.textoPct.width + 4, 26);
     this.textoAsset.setPosition(24, this.textoPct.y + this.textoPct.height + 22);
     this.selloVersion.setPosition(width - 12, height - 10);
+    this.botonMusica.setPosition(44, height - 44);
     this.techoY = this.textoAsset.y + this.textoAsset.height + 46;
 
     this.encuadrarFondo();
@@ -311,6 +315,20 @@ export class LoaderScene extends Phaser.Scene {
     carga.events.on("listo", () => {
       traza("carga lista");
       this.progresoReal = 1;
+    });
+    /**
+     * La música del loader (E): arranca en cuanto SU archivo entra, no cuando
+     * termina todo lo demás. `CargaAssetsScene` la pide primero que las otras
+     * 243 piezas — ver `CLAVE_MUSICA_LOADER` ahí— así que en la práctica esto
+     * dispara segundos antes de que el catálogo entero esté dentro.
+     *
+     * "calma" es el mismo ánimo que `QuienJuegaScene` arranca justo después
+     * del loader (D-198): `reproducir()` es idempotente, así que la música NO
+     * se reinicia al cambiar de escena — sigue exactamente donde iba.
+     */
+    carga.events.on("musica-lista", () => {
+      traza("musica lista");
+      (this.registry.get("musicManager") as MusicManager).reproducir("calma");
     });
     // Un catálogo vacío o ilegible no encierra al niño en el loader: los 100
     // cuadros caen igual y se entra con lo que haya.
@@ -616,6 +634,25 @@ export class LoaderScene extends Phaser.Scene {
    * soporta, los cuadros caen rectos y no pasa nada — el loader nunca depende
    * de esto para terminar.
    */
+  /**
+   * El interruptor de música (loader E), visible desde el primer fotograma.
+   *
+   * Se construye SIEMPRE, aunque la música todavía no haya llegado — igual
+   * que el botón de inclinación se ofrece antes de que haga falta. Si el
+   * niño lo apaga antes de que `musica-lista` dispare, `BotonMusica` ya
+   * guardó la preferencia; cuando la pista sí llegue, `reproducir()` la lee
+   * de nuevo y no suena nada que se acabara de apagar.
+   *
+   * Mismo lenguaje visual que el resto del producto (D-194): la corchea de
+   * `BotonMusica`, no un ícono propio de esta pantalla.
+   */
+  private botonMusica!: BotonMusica;
+
+  private construirBotonMusica(): void {
+    const { height } = this.medidas();
+    this.botonMusica = new BotonMusica(this, 44, height - 44).setDepth(20);
+  }
+
   private construirBotonInclinacion(): void {
     type ConPermiso = typeof DeviceOrientationEvent & {
       requestPermission?: () => Promise<"granted" | "denied">;

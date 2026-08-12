@@ -7973,3 +7973,35 @@ fallar 3 de 7 con el gate roto antes de arreglarlo). El caso preexistente
 abrió sesión" eran la misma aserción porque KV solo se usaba para sesiones;
 ahora `anotarFallo` también escribe ahí, a propósito, y la aserción vieja se
 habría puesto en rojo por el motivo correcto sin ser una regresión.
+
+---
+
+## Loader E — música desde el primer fotograma, con mute (D-198, D-201) · 2026-08-12
+
+`musica-calma` (el ánimo de "explorar" que D-198 ya usaba en «¿Quién juega?»)
+se pide PRIMERO en la cola de `CargaAssetsScene`, delante de los otros 243
+archivos — es lo único que hace posible "desde el primer fotograma" en vez de
+"cuando le toque el turno". En cuanto ese archivo entra, `LoaderScene` la
+arranca vía `MusicManager.reproducir("calma")`; como `reproducir()` es
+idempotente, la música no se reinicia al pasar del loader a «¿Quién juega?»
+— sigue exactamente donde iba.
+
+El botón de silencio (`BotonMusica`, ya existente, mismo lenguaje visual de
+D-194) se construye SIEMPRE desde `create()`, aunque la pista todavía no haya
+llegado: si el niño lo apaga antes de que la música exista, la preferencia ya
+quedó guardada y `reproducir()` la respeta cuando la pista sí llegue.
+
+**Verificado en el simulador, con la cuenta real**: el loader corre entero
+sin errores y entrega a «¿Quién juega?» correctamente, con el ícono de
+música visible desde el primer fotograma en la esquina inferior izquierda.
+
+**Nota de campo, para quien depure este loader después:** el Browser pane de
+este entorno (Chromium headless) se queda con `CargaAssetsScene` clavada en
+`INIT` — nunca llega a `preload()` — de forma reproducible, mientras el mismo
+build corre perfecto en Safari real (simulador) sin ningún error. No se
+encontró la causa exacta tras un rato de diagnóstico (se revisó
+`SceneManager.launch()`, el estado del loop, excepciones síncronas — ninguna
+explica el bloqueo) y no vale la pena seguir: el simulador es la fuente de
+verdad de este proyecto para todo lo que toca Phaser (regla ya escrita), y
+ahí funciona. Si alguien vuelve a ver `CargaAssetsScene` sin arrancar, mirar
+primero si está en el Browser pane antes de sospechar del código.

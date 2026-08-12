@@ -32,6 +32,7 @@
  *  · `version` (string)  — el sello del manifiesto, en cuanto llega
  *  · `progreso` (0..1)   — ponderado por bytes cuando hay plan, por archivos si no
  *  · `asset` (string)    — el rótulo del último archivo que entró
+ *  · `musica-lista` ()   — `musica-calma` ya está en caché de audio (loader E)
  *  · `listo` ()          — todo dentro; se puede salir
  *  · `sin-manifiesto` () — no hubo catálogo que cargar (ver abajo)
  *
@@ -45,6 +46,17 @@ import { planDeCarga, pesoDe, anotarGuardados, type PlanDeCarga } from "../asset
 import { cacheDeAssets, type AssetDelManifiesto } from "../assets/AssetCache";
 
 const CLAVE_MANIFIESTO = "mc-manifiesto";
+
+/**
+ * Se pide PRIMERO, delante de los otros 243 archivos — es lo que hace posible
+ * "música desde el primer fotograma" y no "música cuando le toque el turno".
+ *
+ * `musica-calma` es la única de las diez pistas del catálogo que sirve aquí:
+ * es el ánimo de explorar (D-198), el mismo que suena en «¿Quién juega?»
+ * justo después del loader, así que empezarla aquí no es un sonido de más —
+ * es el mismo sonido, empezando un poco antes de lo que empezaría solo.
+ */
+const CLAVE_MUSICA_LOADER = "musica-calma";
 
 export class CargaAssetsScene extends Phaser.Scene {
   private plan: PlanDeCarga | null = null;
@@ -110,7 +122,16 @@ export class CargaAssetsScene extends Phaser.Scene {
          * throw ocurre en el ciclo del loader, la escena se quedaba viva y
          * muda. `astro check` no lo veía: `load.json()` devuelve `any`.
          */
-        for (const a of [...this.plan.descargar, ...this.plan.desdeCache]) {
+        /**
+         * `CLAVE_MUSICA_LOADER` se encola PRIMERO, sea que venga de red o de
+         * caché — el orden en que se llama a `this.load.*` es el orden en que
+         * Phaser abre las peticiones, y ninguna otra señal de prioridad existe
+         * en este loader.
+         */
+        const orden = [...this.plan.descargar, ...this.plan.desdeCache].sort(
+          (a, b) => Number(b.key === CLAVE_MUSICA_LOADER) - Number(a.key === CLAVE_MUSICA_LOADER),
+        );
+        for (const a of orden) {
           if (a.url.endsWith(".mp3")) this.load.audio(a.key, a.url);
           else this.load.image(a.key, a.url);
         }
@@ -123,6 +144,7 @@ export class CargaAssetsScene extends Phaser.Scene {
       this.hecho += pesoDe(a, this.cacheados.has(a.key));
       this.guardados.push({ clave: a.key, hash: a.hash });
       this.events.emit("asset", a.label);
+      if (clave === CLAVE_MUSICA_LOADER) this.events.emit("musica-lista");
     });
 
     /**

@@ -8040,3 +8040,36 @@ catálogo) — correcto: es un asset de INSTALACIÓN de la PWA, no del juego.
 y 174 KB con paleta de 256 colores (`palettegen`/`paletteuse` de ffmpeg,
 sin diferencia visible) — no hay `pngquant` en este entorno, y la
 ilustración ya usa pocos colores por diseño.
+
+---
+
+## MapScene/MenuScene dejan de estirar en dos ejes distintos (D-186, revisión) · 2026-08-12
+
+Al revisar todas las pantallas de Phaser para el plan de resoluciones (tarea
+posterior al loader), se leyó el propio comentario que justificaba el
+estiramiento de D-186: "la proporción del archivo no tiene que calzar exacto"
+porque de todos modos se estira al tamaño del mundo. Cierto en cuanto a que
+hace falta estirar — falso en que estirar en DOS EJES DISTINTOS (ancho y alto
+por separado) sea la única forma. `setDisplaySize(worldWidth, worldHeight)`
+tomaba el archivo (800×1600 hoy) y lo forzaba a 1000×2400: ~17% más alto sin
+tocar el ancho, deformando cada colina.
+
+El arreglo no generó arte nuevo — es el mismo cálculo de "cubrir" que
+`LoaderScene`/`PinScene` ya usan para sus fondos de pantalla completa:
+`Math.max(destino/origen)` en un solo factor, aplicado a los dos ejes por
+igual. La imagen sale más grande que el destino en el eje que sobra, se
+centra, y lo que sobra simplemente no se ve — en `MapScene` porque los nodos
+y el camino viven dentro de `[0, worldWidth]` y quedan cubiertos igual; en
+`MenuScene` porque la pantalla no scrollea.
+
+**Verificado con números, no a ojo** (inyectando la escena directamente vía
+consola, sin arriesgar el PIN real de un perfil de producción): con el
+archivo real (800×1600) y mundo 1000×2400, la escala sale 1.5 exacta —
+alto 2400=2400 sin diferencia, ancho 1200 centrado con -100 de cada lado.
+En `MenuScene`, con un viewport de escritorio (1024×768), la escala sale
+1.28 y cubre por el eje ancho en vez del alto — la fórmula elige el eje
+correcto en cualquier proporción de pantalla, tal como se esperaba.
+
+Ningún fondo se regeneró: el plan de resoluciones (`/Users/estebanrey/.
+claude/plans/nifty-cuddling-hamster.md`) seguía abierto en la pregunta de
+si migrar la política de encuadre — esto la resuelve sin gastar en Recraft.

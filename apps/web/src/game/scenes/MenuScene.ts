@@ -43,10 +43,21 @@ export class MenuScene extends Phaser.Scene {
     // `kids/mapa.astro` server-side (banda real + bioma activo).
     const capitulo = capituloPorId(progreso.chapterId);
     if (capitulo) {
-      this.add
-        .image(width / 2, height / 2, capitulo.backgroundKey)
-        .setDisplaySize(width, height)
-        .setDepth(0);
+      /**
+       * Cubre la pantalla, no la estira a su forma exacta.
+       *
+       * `setDisplaySize(width, height)` forzaba la imagen (1024x2048, ≈0.5
+       * de proporción) al ancho/alto EXACTOS de la pantalla — que en un
+       * teléfono vertical anda cerca (≈0.46), pero en una tablet o un
+       * escritorio en horizontal está lejísimos (1.6 o más), deformando la
+       * escena de forma grosera. Mismo cálculo de "cubrir" que `MapScene`
+       * ahora usa para el mismo fondo — aquí cubre el VIEWPORT en vez del
+       * mundo, y no hace falta camino ni nodos que cuidar: esta pantalla no
+       * scrollea, así que lo que sobre por los lados simplemente no se ve.
+       */
+      const fondo = this.add.image(width / 2, height / 2, capitulo.backgroundKey).setDepth(0);
+      const escala = Math.max(width / fondo.width, height / fondo.height);
+      fondo.setScale(escala);
     } else {
       this.cameras.main.setBackgroundColor(0x5b8c3a); // verde-follaje (D-186)
     }

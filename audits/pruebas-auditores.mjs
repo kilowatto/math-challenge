@@ -2222,6 +2222,20 @@ const CASOS = [
     espera: "pinta interfaz propia",
   },
   {
+    // D-201, la tercera mitad de la regla: «una sola SPA, una sola Phaser».
+    // Se planta una SEGUNDA instancia — el estado del que este proyecto viene
+    // (dos `new Phaser.Game()`, uno por pantalla), y al que no puede volver:
+    // con dos, entrar al mapa tras el PIN destruye una sesión entera y
+    // construye otra, tirando todo lo precargado.
+    auditor: "spa-phaser",
+    que: "una segunda instancia de Phaser",
+    archivo: "apps/web/src/game/sonda-instancia.ts",
+    contenido:
+      'import Phaser from "phaser";\n' +
+      "export const otra = () => new Phaser.Game({ type: Phaser.AUTO });\n",
+    espera: "instancias de Phaser",
+  },
+  {
     // D-201. Un dibujo NUEVO en el catálogo del motor sin su archivo — el
     // fallo real que este auditor caza. Se degrada `pin-imagenes.ts` en vez de
     // borrar un `.webp` porque así se prueba la dirección que de verdad ocurre:
@@ -2656,17 +2670,17 @@ const CASOS = [
   {
     // El bug literal, reintroducido: el action del PIN sin el segmento de
     // locale. Es la cadena exacta que el dueño tocó en producción.
+    // RETIRADO (D-201): este caso degradaba el `action` del formulario del PIN
+    // en `kids/pin.astro`. Esa página dejó de ser una pantalla —ahora es una
+    // redirección 303 de 68 líneas— y no arma ninguna ruta, así que el parche
+    // no encontraba nada que cambiar y la prueba fallaba anunciando que el
+    // auditor «no atrapó su violación», cuando lo cierto es que la violación ya
+    // no puede existir.
+    //
+    // El auditor NO se queda sin control negativo: el caso de abajo, sobre la
+    // rejilla de `kids/index.astro`, sigue armando el enlace de la cara con
+    // `rutaPin()` y sigue siendo degradable.
     auditor: "rutas-app-con-locale",
-    que: "el action del PIN escrito a mano sin locale — el bug del 2026-08-04",
-    archivo: "apps/web/src/pages/[locale]/app/kids/pin.astro",
-    parche: (t) =>
-      t.replace(
-        "const accion = `${rutaPin(locale)}?p=${encodeURIComponent(perfil.id)}`;",
-        "const accion = `/app/kids/pin?p=${encodeURIComponent(perfil.id)}`;",
-      ),
-    espera: "literal",
-  },
-  {
     // Y en la rejilla: el enlace de la cara vuelve a armarse a mano.
     auditor: "rutas-app-con-locale",
     que: "el enlace de la cara sin locale en la rejilla de kids",

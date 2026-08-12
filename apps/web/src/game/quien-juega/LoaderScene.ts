@@ -122,6 +122,7 @@ export class LoaderScene extends Phaser.Scene {
 
     this.lado = this.ladoDeCuadro();
     this.hornearCuadro();
+    this.cargarIconoApp();
     this.construirFondo();
     this.construirHud();
     this.construirMundo();
@@ -216,6 +217,34 @@ export class LoaderScene extends Phaser.Scene {
     };
     // Sin fondo se sigue jugando: queda el verde-follaje y nadie se entera.
     img.onerror = () => traza("fondo no cargó — se queda el verde");
+  }
+
+  /**
+   * El ícono real de Larry (loader F), cargado FUERA de la cola del
+   * catálogo — igual que el fondo, y por el mismo motivo.
+   *
+   * `apps/web/public/icons/` nunca lo escanea `manifiestoDeAssets()`
+   * (`astro.config.mjs` solo mira `juego/mapa/avatares/cosmeticos`): es el
+   * ícono de INSTALACIÓN de la PWA, no un asset del juego. Antes de esto, la
+   * clave `"icono-app"` que `texturaDeCuadro()` ya buscaba nunca existía —
+   * `this.textures.exists("icono-app")` era siempre falso, así que el ícono
+   * jamás caía entre los cuadros: solo caían avatares, y antes de que
+   * llegara el primero, el cuadrado naranja liso.
+   *
+   * Se pide el de 192px, no el de 512: los cuadros miden como mucho 42px de
+   * lado (`LADO_MAX`), y el archivo más chico ya sobra de resolución.
+   */
+  private cargarIconoApp(): void {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = "/icons/icon-192.png";
+    img.onload = () => {
+      if (!this.scene.isActive("LoaderScene")) return;
+      if (!this.textures.exists("icono-app")) this.textures.addImage("icono-app", img);
+    };
+    // Sin ícono, los cuadros siguen cayendo con avatares o con el naranja
+    // liso — nunca bloquea nada.
+    img.onerror = () => traza("icono-app no cargó — se sigue sin él");
   }
 
   /** Escala para CUBRIR y centra: nunca deforma, recorta lo que sobre. */

@@ -115,10 +115,16 @@ export const IMAGENES_MODO_HISTORIA: Activo[] = [
   { clave: "larry_idle_1", url: "/mapa/larry_idle_1.webp" },
   { clave: "larry_idle_2", url: "/mapa/larry_idle_2.webp" },
 
-  // ─── Costa bioma, complete (D-201 / multi-biome #34) ────────────────────
-  { clave: "fondo-costa-1", url: "/juego/fondo-costa-1.webp" },
-  // Background scene for the Costa bioma chapter — grassy hills next to the
-  // ocean, no path/characters baked in (MapScene draws the path separately).
+  // ─── Costa bioma — vegetation only, background still pending ───────────
+  //
+  // There is no `fondo-costa-1` entry here. A file with that name landed in
+  // #534 alongside these props, but it never passed review — see
+  // `apps/web/src/game/data/story.ts:129`: Recraft let people, houses,
+  // sailboats or a lighthouse slip in three times despite explicit
+  // exclusions, and the comment there says on purpose not to force a
+  // background that failed review. The stray file was deleted 2026-08-12;
+  // these three props stay, ready for whichever background eventually
+  // passes.
   { clave: "palmera", url: "/juego/palmera.webp" },
   // Vegetation prop for Costa — a single palm tree, cutout with alpha,
   // decoration layer (VegetationLayerConfig).

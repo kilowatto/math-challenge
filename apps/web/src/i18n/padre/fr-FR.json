@@ -73,5 +73,7 @@
   "padre.habilidad.K11": "Additionner en comptant",
   "padre.habilidad.K12": "Soustraire en retirant",
   "padre.habilidad.K13": "Formes de base",
-  "padre.habilidad.K14": "Suites AB"
+  "padre.habilidad.K14": "Suites AB",
+  "padre.pinBloqueado.aviso": "Code PIN en pause un instant",
+  "padre.pinBloqueado.desbloquear": "Débloquer maintenant"
 }

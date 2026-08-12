@@ -7,11 +7,6 @@
  *
  * ─── Lo que este endpoint NO hace, y son decisiones ────────────────────────
  *
- *  · **No bloquea tras fallar.** Sin contador de intentos, sin retraso, sin
- *    candado. Son 504 combinaciones (o 10 000) y D-012 dice que la protección
- *    real la da el dispositivo del hogar, ya comprobado antes de leer nada. Un
- *    candado por intentos castigaría a un niño de cuatro años por equivocarse
- *    — justo lo que la línea roja #4 y el espíritu de la #8 prohíben.
  *  · **No dice en qué falló.** Un PIN incorrecto y un PIN mal formado
  *    responden lo mismo: `{ ok: false }`, HTTP 200. Ni 401 ni 403 — un código
  *    distinto por caso convertiría la ruta en un oráculo.
@@ -21,10 +16,24 @@
  *    nuevo caía en esa rama y un hermano abría el perfil de otro tocando su
  *    cara. Ahora se responde `sin_pin` y la escena manda a elegir. El hueco se
  *    cierra por construcción: no queda ninguna ruta que abra sesión sin PIN.
+ *
+ * ─── El límite de intentos SÍ existe, desde D-202 ──────────────────────────
+ *
+ * Esta cabecera decía, con fecha de antes de D-202: «no bloquea tras fallar
+ * — son 504 combinaciones y D-012 dice que la protección real la da el
+ * dispositivo». D-202 quitó el orden del PIN de imágenes (KINDER no
+ * memoriza secuencias) y el espacio bajó a 84. Con 504 se podía vivir sin
+ * límite; con 84 ya no. El diseño completo, con los números y el porqué de
+ * cada uno, vive en `lib/pin-intentos.ts` — en corto: sin contador visible,
+ * sin mensaje de castigo (línea roja #7), y el adulto puede desbloquear
+ * desde su panel (`api/pin-desbloquear.ts`) sin que el niño tenga que
+ * esperar. El PIN numérico (PRIMARIA/SECUNDARIA) usa el mismo límite: es un
+ * solo contador por perfil, no por tipo de PIN.
  */
 import type { APIRoute } from "astro";
 import { accesoAlPin, esEarlyData, json, localeSeguro, tipoDePin, type Env } from "../../lib/pin-acceso.ts";
 import { COOKIE_NINO, abrirSesionNino, leerCookies } from "../../lib/sesiones.ts";
+import { puedeIntentar, anotarFallo, limpiarFallos } from "../../lib/pin-intentos.ts";
 import {
   hashearPin,
   hashearPinConOrden,
@@ -61,6 +70,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   // Un perfil sin PIN no se verifica: se manda a elegir uno. Ver el encabezado.
   if (!perfil.pin_hash) return json({ ok: false, error: "sin_pin" });
+
+  /**
+   * El gate del límite de intentos, ANTES de tocar el PIN que llegó.
+   *
+   * A propósito antes de comparar: si se dejara comparar durante el bloqueo,
+   * un hermano que por azar tocara los tres correctos entraría igual, y toda
+   * la fricción de `pin-intentos.ts` no protegería nada. La respuesta es
+   * `no_eran_esos` — la misma de un PIN mal tocado — porque el niño nunca
+   * debe poder distinguir "estás bloqueado" de "no eran esos".
+   */
+  if (env?.SESSION_KV && !(await puedeIntentar(env.SESSION_KV, perfil.id))) {
+    return json({ ok: false, error: "no_eran_esos" });
+  }
 
   // El tipo lo dice la BASE (`child_image_pin.tipo`), nunca el cliente: es lo
   // único que sabe cómo se calculó el hash guardado.
@@ -115,8 +137,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
   }
 
-  // Se vuelve a empezar sin penalización de ningún tipo (líneas rojas #4 y #8).
-  if (!acerto) return json({ ok: false, error: "no_eran_esos" });
+  // Se vuelve a empezar sin penalización VISIBLE de ningún tipo (líneas rojas
+  // #4 y #8) — pero el fallo SÍ se cuenta, en silencio, para el límite de
+  // arriba. `anotarFallo` no cambia esta respuesta ni la retrasa: el niño ve
+  // exactamente lo mismo al primer fallo que al quinto.
+  if (!acerto) {
+    if (env?.SESSION_KV) await anotarFallo(env.SESSION_KV, perfil.id);
+    return json({ ok: false, error: "no_eran_esos" });
+  }
+  if (env?.SESSION_KV) await limpiarFallos(env.SESSION_KV, perfil.id);
 
   const cookies = leerCookies(request.headers.get("cookie"));
   const { cookie } = await abrirSesionNino(

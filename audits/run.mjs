@@ -627,6 +627,7 @@ for (const prueba of [
   // con arte viejo para siempre, y contar archivos en vez de bytes hace que la
   // barra mienta. Los dos se vieron fallar degradándolos.
   "apps/web/src/lib/plan-de-carga.prueba.mjs",
+  "apps/web/src/lib/pin-intentos.prueba.mjs",
   "apps/web/src/lib/webauthn.prueba.mjs",
   "apps/web/src/lib/passwords.prueba.mjs",
   "apps/web/src/lib/sesiones.prueba.mjs",

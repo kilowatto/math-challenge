@@ -7902,3 +7902,74 @@ otra vez». No es la traducción literal de una frase inglesa — en alemán es
 afirmaba «el ORDEN importa: 0-4-7 no es 7-4-0» se **invirtió** en vez de
 borrarse: es el que fija la decisión, y quien lo vuelva a cambiar tiene que
 leer este renglón antes.
+
+---
+
+## Deuda cerrada — `fondo-costa-1.webp` se borra, no se conserva huérfano · 2026-08-12
+
+`apps/web/public/juego/fondo-costa-1.webp` llegó en #534 (reconciliación de
+la sesión paralela de multi-bioma), junto con los tres props de costa que sí
+pasaron revisión (`palmera`, `roca-costa`, `concha`). Pero el fondo mismo
+**nunca pasó revisión**: `story.ts:129` ya documentaba que Recraft lo intentó
+tres veces y las tres coló gente, casas, veleros o un faro pese a las
+exclusiones explícitas. El archivo que quedó en disco era uno de esos
+intentos rechazados, filtrado por error a `public/juego` en vez de quedarse
+fuera.
+
+El dueño decidió borrarlo en vez de dejarlo como deuda fechada: un archivo
+generado, sin usar y sin capítulo que lo reclame es exactamente lo que
+`audits/manifiesto-assets.mjs` existe para cazar, y dejarlo ahí solo esperaba
+a que alguien lo conectara sin revisar que nunca pasó el filtro.
+
+Los tres props de costa **se quedan** — no fueron parte de esta decisión y
+siguen listos para el día que un fondo de costa sí pase revisión.
+
+**Verificación:** `node audits/manifiesto-assets.mjs` en verde tras el borrado
+(96 entradas, todas con archivo; todo archivo de `juego/`, en el manifiesto).
+
+---
+
+## Límite de intentos del PIN de KINDER, versión conservadora — cierra la duda de D-202 · 2026-08-12
+
+Consecuencia directa de D-202: con 84 combinaciones (antes 504), el límite de
+intentos dejó de ser un adorno. `docs/dudas.md` dejaba tres preguntas
+abiertas; esta decisión las cierra las tres.
+
+**El diseño, decidido por el dueño ("una versión conservadora ya"):**
+
+- **5 fallos seguidos** bloquean el perfil (no el dispositivo — cada
+  `childProfileId` lleva su propio contador, así que un hermano no bloquea al
+  otro).
+- **30 segundos de espera**, y se resuelve SOLO — nadie tiene que intervenir
+  para que el niño vuelva a jugar.
+- **Sin contador visible, sin mensaje de castigo** (línea roja #7): durante el
+  bloqueo, `pin-entrar` sigue respondiendo exactamente `no_eran_esos`, la
+  misma respuesta amable de un PIN mal tocado. El niño nunca puede distinguir
+  "estás bloqueado" de "no eran esos".
+- **El adulto puede desbloquear sin esperar**, desde un botón en `/app/`
+  ("Desbloquear ahora") que solo aparece cuando de verdad hay algo bloqueado —
+  nunca un control que revisar por si acaso.
+
+**Por qué 5 y no menos:** el PIN de imágenes ya no depende del orden (D-202),
+así que 5 fallos SEGUIDOS es una señal real de que quien toca no es el niño,
+no un accidente de puntería de cuatro años.
+
+**Verificado extremo a extremo en el simulador, con la cuenta real:** 5 fallos
+tocando combinaciones equivocadas, el sexto intento (durante el bloqueo) se ve
+IDÉNTICO a un fallo normal — mismo reseteo silencioso, sin texto distinto—; el
+botón "Desbloquear ahora" aparece en `/app/` solo para el hijo bloqueado, no
+para su hermano; al tocarlo, el botón desaparece y el perfil vuelve a poder
+intentar.
+
+**Implementación:** `lib/pin-intentos.ts` (el módulo, con el razonamiento
+completo de cada número), gate en `api/pin-entrar.ts` antes de comparar el PIN
+que llegó, `api/pin-desbloquear.ts` con la misma autorización por
+`parent_user_id` que ya usa `/api/pausa`.
+
+**Verificación:** `apps/web/src/lib/pin-intentos.prueba.mjs` (7 casos, se vio
+fallar 3 de 7 con el gate roto antes de arreglarlo). El caso preexistente
+"el PIN incorrecto NO entra, sin castigo y sin decir por qué"
+(`pin-endpoints.prueba.mjs`) se corrigió: antes de D-202 "nada en KV" y "no se
+abrió sesión" eran la misma aserción porque KV solo se usaba para sesiones;
+ahora `anotarFallo` también escribe ahí, a propósito, y la aserción vieja se
+habría puesto en rojo por el motivo correcto sin ser una regresión.

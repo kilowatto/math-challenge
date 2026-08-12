@@ -73,5 +73,7 @@
   "padre.habilidad.K11": "Addieren durch Weiterzählen",
   "padre.habilidad.K12": "Subtrahieren durch Wegnehmen",
   "padre.habilidad.K13": "Grundformen",
-  "padre.habilidad.K14": "AB-Muster"
+  "padre.habilidad.K14": "AB-Muster",
+  "padre.pinBloqueado.aviso": "PIN kurz pausiert",
+  "padre.pinBloqueado.desbloquear": "Jetzt entsperren"
 }

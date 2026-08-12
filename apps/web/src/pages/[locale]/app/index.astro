@@ -58,6 +58,7 @@ import { t, isLocale, type Locale } from "../../../i18n";
 import { COOKIE_ADULTO, leerCookies, leerSesionAdulto, COOKIE_HOGAR } from "../../../lib/sesiones";
 import { rutaKids, rutaPerfilNuevo, rutaLimiteHijo, rutaTablero, rutaTableroHijo, rutaLiga, rutaPanel, rutaGrupos, rutaGruposNuevo } from "../../../lib/rutas-app";
 import { estadoDeParticipacion } from "../../../lib/liga-membresia";
+import { estaBloqueado } from "../../../lib/pin-intentos";
 import { TEXTOS_PADRE } from "../../../components/parent/textos";
 import { TEXTOS_TABLERO } from "../../../components/tablero/textos";
 import { TEXTOS_GRUPOS } from "../../../components/grupos/textos";
@@ -155,6 +156,21 @@ if (env?.DB) {
   for (const h of hijos) {
     const p = await estadoDeParticipacion(env, { id: h.id, esAdulto: false });
     ligaPorHijo.set(h.id, p !== null);
+  }
+}
+
+/**
+ * ¿Tiene este hijo el PIN bloqueado ahora mismo? (D-202, límite de intentos)
+ *
+ * El bloqueo se resuelve solo en 30 segundos — este botón no es necesario
+ * para que el niño vuelva a jugar, así que solo se muestra cuando SÍ hay algo
+ * que desbloquear. Un botón de "desbloquear PIN" visible siempre, sin que
+ * nada esté bloqueado, es ruido: el adulto se pregunta si debería tocarlo.
+ */
+const pinBloqueadoPorHijo = new Map<string, boolean>();
+if (env?.SESSION_KV) {
+  for (const h of hijos) {
+    pinBloqueadoPorHijo.set(h.id, await estaBloqueado(env.SESSION_KV, h.id));
   }
 }
 
@@ -313,7 +329,26 @@ const gGrupos = TEXTOS_GRUPOS[locale];
                     El opt-in del tablero, por hijo (F7 #247, D-040) — y en
                     KINDER, el único lugar donde su tablero existe (D-081).
                   */}
-                  <a class="pausa" href={rutaTableroHijo(locale, h.id)}>{TEXTOS_TABLERO[locale]["tablero.padre.abrir"]}</a>{/*
+                  <a class="pausa" href={rutaTableroHijo(locale, h.id)}>{TEXTOS_TABLERO[locale]["tablero.padre.abrir"]}</a>
+                  {/*
+                    El desbloqueo del PIN (D-202) — SOLO cuando de verdad está
+                    bloqueado. Se resuelve solo en 30s; este botón es para el
+                    adulto que está mirando y no quiere esperar, no un control
+                    que hay que revisar cada vez que se entra a esta pantalla.
+                    Formulario real, sin JS, mismo patrón que el opt-in de liga
+                    de abajo.
+                  */}
+                  {pinBloqueadoPorHijo.get(h.id) && (
+                    <form class="ligaOptin" method="post" action="/api/pin-desbloquear">
+                      <input type="hidden" name="hijo" value={h.id} />
+                      <input type="hidden" name="locale" value={locale} />
+                      <span class="estado">{TEXTOS_PADRE[locale]["padre.pinBloqueado.aviso"]}</span>
+                      <button type="submit" class="boton">
+                        {TEXTOS_PADRE[locale]["padre.pinBloqueado.desbloquear"]}
+                      </button>
+                    </form>
+                  )}
+                  {/*
                     El interruptor de la liga (F7 #243, D-081): la banda más
                     chica arranca apagada y el padre la activa aquí; de PRIMARIA
                     en adelante arranca encendida y aquí se puede apagar. La

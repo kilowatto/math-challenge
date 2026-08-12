@@ -107,11 +107,17 @@ export function crearJuego(contenedorId: string, arranque: Arranque): Phaser.Gam
     type: Phaser.AUTO,
     parent: contenedorId,
     backgroundColor: "#F7F7F8",
-    scale: {
-      mode: Phaser.Scale.RESIZE,
-      width: "100%",
-      height: "100%",
-    },
+    /**
+     * `NONE`, y el tamaño lo pone `fijarTamanoAlViewport()`. Ver ahí el porqué
+     * completo; en corto: con `RESIZE` Phaser **sondea la caja del contenedor**
+     * cada pocos cientos de milisegundos y adopta lo que mida. Cuando esa
+     * medición salía mal, pisaba el tamaño correcto un instante después de
+     * pintar — que es exactamente el síntoma que reportó el dueño: «entras, sale
+     * el PIN correcto con el fondo de la puerta, y luego se cambia por el
+     * viejo». No era otro PIN: era el mismo, redibujado con 354x834 en vez de
+     * 402x874.
+     */
+    scale: { mode: Phaser.Scale.NONE },
     // WebGL con `pixelArt` en false: el arte es ilustración, no píxeles —
     // `mc-47` §5 (Android de gama baja) es la razón de mantener el renderer lo
     // más simple posible.
@@ -146,8 +152,81 @@ export function crearJuego(contenedorId: string, arranque: Arranque): Phaser.Gam
     game.registry.set("progressManager", new ProgressManager(game.registry, arranque.datos));
   }
 
+  fijarTamanoAlViewport(game);
+
   game.scene.start(arranque.escena, arranque.datos);
   return game;
+}
+
+/**
+ * El juego mide contra el VIEWPORT, no contra la caja de su contenedor.
+ *
+ * `Scale.RESIZE` con `width: "100%"` deja que Phaser calcule el tamaño desde
+ * `parent.getBoundingClientRect()`, **y lo recalcula solo, por sondeo, cada
+ * pocos cientos de milisegundos**. Eso funciona mientras esa caja sea el
+ * viewport, y dejó de funcionar en producción sin que nadie tocara el CSS.
+ *
+ * Medido en el simulador el 2026-08-11: al entrar al PIN, el primer pintado
+ * salía a 402 pt de ancho —correcto, con el portón de madera— y unos cientos
+ * de milisegundos después, cuando llegaban los datos y la escena se
+ * redibujaba, salía a **354x834**: exactamente la caja de contenido del
+ * `<body>` con su padding de 24 pt. El dueño lo describió como «sale el PIN
+ * correcto y luego se cambia por el viejo», y esa frase fue la que localizó el
+ * defecto: no eran dos pantallas, era la misma medida dos veces, la segunda
+ * mal.
+ *
+ * Perseguir QUÉ medía mal costó tres despliegues y tres hipótesis falsas: el
+ * CSS con ámbito que llega tarde (se puso el estilo en línea y siguió), un
+ * segundo `<div>` de montaje escondido en el HTML viejo (no existe), y fijar
+ * el tamaño dejando `RESIZE` puesto (el sondeo lo volvía a pisar).
+ *
+ * Así que se le quita la pregunta entera: `Scale.NONE`, sin sondeo y sin
+ * medición de contenedor, y el tamaño se fija aquí contra el viewport en cada
+ * `resize` y en cada cambio del `visualViewport` —que es el que se mueve
+ * cuando Safari esconde o muestra su barra—. Ya no hay ninguna caja intermedia
+ * que pueda mentir.
+ *
+ * `visualViewport` se prefiere cuando existe porque en iOS `innerHeight`
+ * incluye el área bajo la barra de herramientas; su `height` es lo que de
+ * verdad se ve.
+ */
+function fijarTamanoAlViewport(game: Phaser.Game): void {
+  const aplicar = () => {
+    const w = Math.round(visualViewport?.width ?? innerWidth);
+    const h = Math.round(visualViewport?.height ?? innerHeight);
+    if (w <= 0 || h <= 0) return;
+    game.scale.resize(w, h);
+
+    /**
+     * El tamaño CSS del `<canvas>`, a mano — y aquí estaba el defecto.
+     *
+     * `game.scale.resize()` cambia el tamaño LÓGICO del juego; en modo `NONE`
+     * no vuelve a escribir el estilo del elemento. El canvas se quedaba con el
+     * ancho que le tocó al arrancar y la escena se dibujaba a 402x714 dentro de
+     * un elemento de 354 px: todo el contenido encogido y centrado, con el
+     * blanco del contenedor asomando a los lados.
+     *
+     * Se midió en el dispositivo pintando los números en el letrero del PIN
+     * —`?traza=1`—, que fue lo único que despejó la duda: el juego decía
+     * 402x714 (correcto) mientras la pantalla mostraba 354. Sin ese número, las
+     * cuatro hipótesis anteriores eran igual de plausibles y todas falsas.
+     */
+    const cv = game.canvas;
+    if (cv) {
+      cv.style.width = `${w}px`;
+      cv.style.height = `${h}px`;
+      cv.style.display = "block";
+    }
+  };
+  aplicar();
+  addEventListener("resize", aplicar);
+  addEventListener("orientationchange", aplicar);
+  visualViewport?.addEventListener("resize", aplicar);
+  game.events.once(Phaser.Core.Events.DESTROY, () => {
+    removeEventListener("resize", aplicar);
+    removeEventListener("orientationchange", aplicar);
+    visualViewport?.removeEventListener("resize", aplicar);
+  });
 }
 
 /**

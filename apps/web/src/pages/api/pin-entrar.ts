@@ -25,7 +25,12 @@
 import type { APIRoute } from "astro";
 import { accesoAlPin, esEarlyData, json, localeSeguro, tipoDePin, type Env } from "../../lib/pin-acceso.ts";
 import { COOKIE_NINO, abrirSesionNino, leerCookies } from "../../lib/sesiones.ts";
-import { hashearPin, pinValido, pinesIguales } from "../../../../../packages/motor/src/pin-imagenes.ts";
+import {
+  hashearPin,
+  hashearPinConOrden,
+  pinValido,
+  pinesIguales,
+} from "../../../../../packages/motor/src/pin-imagenes.ts";
 import {
   hashearPinNumerico,
   pinNumericoValido,
@@ -71,8 +76,42 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } else {
     const posiciones = Array.isArray(body.posiciones) ? body.posiciones.map(Number) : [];
     if (pinValido(posiciones)) {
-      const hash = await hashearPin(secreto, perfil.id, posiciones);
-      acerto = pinesIguales(hash, perfil.pin_hash);
+      acerto = pinesIguales(await hashearPin(secreto, perfil.id, posiciones), perfil.pin_hash);
+
+      /**
+       * El camino de migración de D-202, y por qué está aquí y no en un script.
+       *
+       * Desde D-202 el orden no cuenta: el hash se deriva de las posiciones
+       * ORDENADAS. Los PIN elegidos antes llevan el orden dentro del hash, así
+       * que el de arriba no los reconoce. Reescribirlos en masa es imposible:
+       * el hash no se puede invertir, y el servidor no sabe qué tres dibujos
+       * eligió cada niño hasta que el niño los toca.
+       *
+       * Así que se migra en el único momento en que el dato existe: cuando el
+       * niño acierta. Si el hash nuevo falla y el viejo acierta, es el mismo
+       * PIN de siempre —el niño entra— y de paso se guarda ya sin orden. Cada
+       * perfil migra solo, en su primera entrada, sin que nadie note nada.
+       *
+       * Si el `UPDATE` falla, se entra igual: el niño acertó, y castigarlo por
+       * un problema de base de datos cruzaría la línea roja #7. Migrará en la
+       * siguiente.
+       */
+      if (!acerto) {
+        const viejo = await hashearPinConOrden(secreto, perfil.id, posiciones);
+        if (pinesIguales(viejo, perfil.pin_hash)) {
+          acerto = true;
+          const nuevo = await hashearPin(secreto, perfil.id, posiciones);
+          try {
+            await env!.DB.prepare(
+              "UPDATE child_image_pin SET pin_hash = ?1 WHERE child_profile_id = ?2 AND pin_hash = ?3",
+            )
+              .bind(nuevo, perfil.id, perfil.pin_hash)
+              .run();
+          } catch {
+            /* se entra igual; migrará en la siguiente. Ver arriba. */
+          }
+        }
+      }
     }
   }
 

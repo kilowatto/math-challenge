@@ -77,6 +77,23 @@ const TECLADO = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] as const;
 const CASILLA = 88;
 const HUECO = 12;
 
+/**
+ * ¿Está encendida la traza de diagnóstico?
+ *
+ * Se enciende con `?traza=1` en la URL de entrada y se recuerda en
+ * `sessionStorage` mientras dure la pestaña. Vive fuera de la clase porque la
+ * misma pregunta la hacen varias escenas del SPA, donde la URL ya cambió.
+ */
+export function trazaEncendida(): boolean {
+  if (typeof location === "undefined") return false;
+  try {
+    if (location.search.includes("traza=1")) sessionStorage.setItem("mc:traza", "1");
+    return sessionStorage.getItem("mc:traza") === "1";
+  } catch {
+    return location.search.includes("traza=1");
+  }
+}
+
 export class PinScene extends Phaser.Scene {
   private arranque!: ArranquePin;
   private datos: DatosDelPin | null = null;
@@ -121,7 +138,109 @@ export class PinScene extends Phaser.Scene {
       this.temporizadorResize?.remove();
     });
 
+    this.medirEnPantalla();
     void this.cargarDatos();
+  }
+
+  /**
+   * Si el tamaño cambió, se repinta — comprobado por fotograma.
+   *
+   * `create()` pinta con las medidas de ESE instante, y en iOS ese instante
+   * suele ser antes de que Safari termine de acomodar su barra: la escena
+   * quedaba dibujada contra 319x638 mientras el juego, el canvas y la cámara
+   * ya decían 402x714. En pantalla se veía como bandas blancas a los lados —el
+   * fondo cubría 319 pt de los 402 que había—, y el dueño lo describió exacto:
+   * «entras, sale el PIN correcto con el fondo de la puerta, y luego se cambia
+   * por el viejo». No cambiaba de pantalla: se quedaba con la primera medida.
+   *
+   * El manejador de `RESIZE` que ya existía no basta porque **no siempre hay
+   * evento**: el cambio viene de que el contenedor se acomode, no de que el
+   * navegador avise. Comparar dos números cada fotograma sí lo cubre, cuesta
+   * nada, y es el mismo remedio que cerró el defecto gemelo en `LoaderScene`.
+   */
+  private ultimoAncho = 0;
+  private ultimoAlto = 0;
+
+  update(): void {
+    const { width, height } = this.scale;
+    if (width === this.ultimoAncho && height === this.ultimoAlto) return;
+    this.ultimoAncho = width;
+    this.ultimoAlto = height;
+    // En el primer fotograma `create()` ya pintó con estas medidas.
+    if (this.datos) this.redibujar();
+    else this.pintarFondoDeNuevo();
+  }
+
+  /** El fondo, repintado antes de que lleguen los datos. Ver `update()`. */
+  private pintarFondoDeNuevo(): void {
+    this.capa.removeAll(true);
+    this.pintarFondo();
+  }
+
+  /**
+   * La cadena de medidas que se pinta en el letrero con `?traza=1`.
+   *
+   * La primera versión solo daba el tamaño del JUEGO, y con eso se supo que la
+   * escena no tenía la culpa: decía 402x714, que es el viewport exacto. Lo que
+   * faltaba era la caja del ELEMENTO `<canvas>` y la de su contenedor — porque
+   * el hueco blanco solo puede estar entre esos dos.
+   */
+  private medidasDelLienzo(width: number, height: number): string {
+    const c = this.game.canvas?.getBoundingClientRect();
+    const div = document.getElementById("quien-juega-mount")?.getBoundingClientRect();
+    const est = this.game.canvas ? getComputedStyle(this.game.canvas) : null;
+    const cam = this.cameras.main;
+    return (
+      `j ${Math.round(width)}x${Math.round(height)} · ` +
+      `cv ${Math.round(c?.width ?? -1)} css ${est?.width ?? "?"} · ` +
+      `buf ${this.game.canvas?.width}x${this.game.canvas?.height} · ` +
+      `cam ${Math.round(cam.width)}x${Math.round(cam.height)} z${cam.zoom}`
+    );
+  }
+
+  /**
+   * Los números de la pantalla, pintados en la pantalla — solo con `?traza=1`.
+   *
+   * En el simulador no hay consola, y este defecto no se reproduce en el
+   * navegador: el PIN aparecía con 24 pt de margen blanco a cada lado mientras
+   * «¿Quién juega?», en la MISMA sesión y sobre el MISMO canvas, ocupaba el
+   * ancho entero. Dos hipótesis razonables —el CSS con ámbito que llega tarde,
+   * y el `<div>` medido en flujo normal— resultaron falsas al probarlas, y
+   * cada intento costó un despliegue.
+   *
+   * Así que la pantalla dice lo que mide: tamaño del juego, caja real del
+   * contenedor y del canvas, y el zoom del navegador. Con eso el diagnóstico
+   * es una lectura, no una conjetura. Apagado salvo que se pida, y en un
+   * tamaño que no estorba a nadie que llegue aquí por accidente.
+   */
+  private medirEnPantalla(): void {
+    // El interruptor se lee de `sessionStorage`, no de la URL: al tocar una
+    // tarjeta, `empujarHistorial` cambia la ruta a `/pin?p=...` y con ella se
+    // pierde el `?traza=1` con el que se entró. Guardarlo al verlo la primera
+    // vez hace que sobreviva a los cambios de escena de toda la sesión — y es
+    // lo que hizo falta para poder diagnosticar en el simulador, donde no hay
+    // consola que leer.
+    if (!trazaEncendida()) return;
+    const div = document.getElementById("quien-juega-mount");
+    const lienzo = this.game.canvas;
+    const r = div?.getBoundingClientRect();
+    const c = lienzo?.getBoundingClientRect();
+    const texto =
+      `juego ${Math.round(this.scale.width)}x${Math.round(this.scale.height)} · ` +
+      `div ${Math.round(r?.width ?? -1)}x${Math.round(r?.height ?? -1)} ` +
+      `@${Math.round(r?.left ?? -1)},${Math.round(r?.top ?? -1)} · ` +
+      `canvas ${Math.round(c?.width ?? -1)}x${Math.round(c?.height ?? -1)} · ` +
+      `win ${innerWidth}x${innerHeight} dpr${devicePixelRatio} · ` +
+      `pos ${div ? getComputedStyle(div).position : "?"}`;
+    this.add
+      .text(6, 6, texto, {
+        fontFamily: "ui-monospace, Menlo, monospace",
+        fontSize: "9px",
+        color: "#FFFFFF",
+        backgroundColor: "#000000",
+        wordWrap: { width: Math.max(200, this.scale.width - 12) },
+      })
+      .setDepth(9999);
   }
 
   /**
@@ -196,7 +315,20 @@ export class PinScene extends Phaser.Scene {
     const ayuda =
       this.modo === "elegir" ? r.ayudaElegir : this.modo === "confirmar" ? r.ayudaConfirmar : r.ayuda;
 
-    const yTrasLetrero = this.pintarLetrero(titulo);
+    /**
+     * Con `?traza=1`, el letrero dice los números en vez del título.
+     *
+     * El texto de diagnóstico suelto que se probó antes (una caja negra en la
+     * esquina) NUNCA llegó a verse en el dispositivo, y esa es justo la clase
+     * de callejón que hace perder una sesión: no se sabe si el código no corre
+     * o si el objeto no se pinta. El letrero SÍ se pinta —es lo que se está
+     * mirando— así que aquí el mensaje no se puede perder.
+     *
+     * Se va en cuanto el defecto esté cerrado; mientras tanto no molesta a
+     * nadie: hace falta escribir `?traza=1` a mano para verlo.
+     */
+    const rotulo = trazaEncendida() ? this.medidasDelLienzo(width, height) : titulo;
+    const yTrasLetrero = this.pintarLetrero(rotulo);
     const yTrasRejilla = this.pintarRejilla(yTrasLetrero);
     const yTrasPasos = this.pintarPasos(yTrasRejilla + 26);
     const yTrasAyuda = this.pintarAyuda(ayuda, yTrasPasos + 14);

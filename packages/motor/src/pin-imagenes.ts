@@ -111,6 +111,28 @@ export async function rejillaDe(secreto: string, childProfileId: string): Promis
  *
  * Se sala con el `childProfileId` a través de HKDF, así que dos niños que elijan
  * las mismas tres posiciones tienen hashes distintos.
+ *
+ * ─── EL ORDEN NO CUENTA (D-202, 2026-08-11) ────────────────────────────────
+ *
+ * Las posiciones se **ordenan** antes de derivar, así que «estrella, rana,
+ * casa» abre igual que «casa, estrella, rana». Lo pidió el dueño viendo a la
+ * banda a la que esto sirve: **KINDER no lee y no memoriza secuencias**.
+ * Acordarse de tres dibujos es un ejercicio de reconocimiento; acordarse de
+ * tres dibujos EN ORDEN es uno de memoria de trabajo, y es otro problema —
+ * más difícil, y no el que queríamos plantear.
+ *
+ * **Lo que cuesta, dicho de frente:** el espacio pasa de 9·8·7 = 504
+ * combinaciones ordenadas a C(9,3) = 84 sin orden. Es una sexta parte. Contra
+ * quién protege este PIN sigue siendo la pregunta que decide si eso importa:
+ * protege de un HERMANO que quiere entrar al perfil ajeno, no de un atacante
+ * remoto —no hay superficie pública que acepte intentos: hace falta la cookie
+ * del dispositivo del hogar—. Para un hermano con un dedo, 84 intentos a mano
+ * ya es más de lo que nadie hace. Aun así, el límite de intentos deja de ser
+ * un adorno y pasa a ser lo que sostiene esta decisión: ver `docs/dudas.md`.
+ *
+ * El PIN NUMÉRICO (PRIMARIA/SECUNDARIA, `pin-numerico.ts`) **conserva el
+ * orden**: ahí sí se lee, cuatro dígitos sin orden serían 210 combinaciones, y
+ * un PIN de banda mayor no puede ser más débil que el de KINDER.
  */
 export async function hashearPin(
   secreto: string,
@@ -118,6 +140,34 @@ export async function hashearPin(
   posiciones: number[],
 ): Promise<string> {
   if (!pinValido(posiciones)) throw new Error("pin: posiciones inválidas");
+  return hashDeClave(secreto, childProfileId, [...posiciones].sort((a, b) => a - b));
+}
+
+/**
+ * El hash tal como se calculaba ANTES de D-202: con el orden del toque.
+ *
+ * Existe solo para migrar. Los PIN elegidos antes del 2026-08-11 están
+ * guardados con el orden dentro del hash, así que ordenar de golpe se los
+ * habría invalidado a todos —un niño tocando sus tres dibujos correctos y una
+ * pantalla diciéndole que no, que es exactamente lo que la línea roja #7 no
+ * permite—. `pin-entrar` prueba primero el nuevo y, si falla, éste; cuando
+ * éste acierta, reescribe el guardado en el formato nuevo. El día que no
+ * quede ningún hash viejo, esta función se borra.
+ */
+export async function hashearPinConOrden(
+  secreto: string,
+  childProfileId: string,
+  posiciones: number[],
+): Promise<string> {
+  if (!pinValido(posiciones)) throw new Error("pin: posiciones inválidas");
+  return hashDeClave(secreto, childProfileId, posiciones);
+}
+
+async function hashDeClave(
+  secreto: string,
+  childProfileId: string,
+  posiciones: readonly number[],
+): Promise<string> {
   const bytes = await derivarBytes(secreto, childProfileId, `pin:${posiciones.join(",")}`, 32);
   return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -139,8 +189,8 @@ export function pinValido(posiciones: number[]): boolean {
  * Compara dos hashes de PIN en tiempo constante.
  *
  * Misma razón que en las contraseñas: un `===` sale antes en el primer carácter
- * distinto. Aquí importa menos —504 combinaciones se agotan por fuerza bruta
- * antes que por temporización— pero cuesta cuatro líneas.
+ * distinto. Aquí importa menos —84 combinaciones (D-202) se agotan por fuerza
+ * bruta antes que por temporización— pero cuesta cuatro líneas.
  */
 export function pinesIguales(a: string, b: string): boolean {
   let dif = a.length ^ b.length;
@@ -149,5 +199,15 @@ export function pinesIguales(a: string, b: string): boolean {
   return dif === 0;
 }
 
-/** Cuántas combinaciones hay. Se publica para que nadie la confunda con seguridad. */
-export const COMBINACIONES = CASILLAS * (CASILLAS - 1) * (CASILLAS - 2); // 504
+/**
+ * Cuántas combinaciones hay. Se publica para que nadie la confunda con
+ * seguridad, y desde D-202 para que el precio de esa decisión sea un número
+ * en el código y no una frase en un documento.
+ *
+ * Antes de D-202 eran las variaciones ordenadas —9·8·7 = 504—. Ahora que el
+ * orden no cuenta son las COMBINACIONES: C(9,3) = 84. Sigue sin ser seguridad
+ * contra un adulto; D-012 dice que la protección real la da el dispositivo del
+ * hogar, y esta cifra existe para que nadie lo olvide.
+ */
+export const COMBINACIONES =
+  (CASILLAS * (CASILLAS - 1) * (CASILLAS - 2)) / (LARGO_PIN * (LARGO_PIN - 1)); // 84

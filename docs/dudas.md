@@ -1085,3 +1085,26 @@ dueño:** `0016` = F8 panel (#278), `0017` = F8 reportes (#287),
 `0018` = F9 grupos (#380), `0019` = F10 clubs (#412),
 `0020` = F11 push suscripciones (#429), `0021` = F12 `household_link`
 (#445). Los planes ya quedaron renumerados.
+
+## Límite de intentos del PIN de imágenes — obligatorio desde D-202 (2026-08-11)
+
+D-202 quitó el orden del PIN de KINDER, y con eso el espacio pasó de 504
+combinaciones a 84. La decisión es correcta para la banda —un niño de cuatro
+años no memoriza secuencias— pero **cambia lo que hay que tener**: con 504 se
+podía vivir sin límite de intentos; con 84 es lo que sostiene la decisión.
+
+Hoy `POST /api/pin-entrar` acepta intentos sin contarlos. La puerta real sigue
+siendo la cookie del dispositivo del hogar (`mc_h`), así que esto no es una
+superficie pública — pero el escenario que D-012 nombra, **el hermano que
+quiere entrar al perfil ajeno**, es exactamente el que tiene esa cookie.
+
+Lo que hace falta decidir, y es del dueño porque toca la experiencia del niño:
+
+  · cuántos intentos antes de esperar, y cuánto se espera;
+  · qué ve el niño mientras espera — la línea roja #7 dice que Larry nunca
+    avergüenza, así que no puede ser un mensaje de castigo;
+  · si el adulto puede desbloquear desde su panel sin esperar.
+
+Ninguna de las tres tiene respuesta obvia, y elegir mal aquí es peor que
+esperar: un niño bloqueado de su propio juego por tocar mal tres veces es un
+defecto de producto, no una medida de seguridad.

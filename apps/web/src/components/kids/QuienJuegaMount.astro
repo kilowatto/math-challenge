@@ -23,27 +23,64 @@ interface Props {
 const { tarjetas, rotulos, locale } = Astro.props;
 ---
 
-<div id="quien-juega-mount" class="quien-juega-mount"></div>
-
 {/*
-  D-200.1: el PIN de un perfil, mostrado SIN recargar la página — ver
-  `game/spa/puente-pin.ts`. Vacío y oculto por defecto; solo se llena si
-  el niño toca una tarjeta y `enrutador.irA` consigue traer la pantalla
-  real de PIN. Por encima del canvas de Phaser (z-index mayor).
+  El tamaño va EN LÍNEA, no en la hoja de estilos de abajo, y esto no es
+  descuido: es la corrección de un defecto medido.
+
+  Phaser calcula el tamaño del canvas contra la CAJA DE ESTE DIV
+  (`Scale.RESIZE` con `width: "100%"`). Si el div todavía no tiene su
+  `position: fixed; inset: 0`, su caja es la del flujo normal del
+  documento — con el padding de la página — y el canvas nace ahí dentro.
+
+  Pasó en producción el 2026-08-11, medido en el simulador: «¿Quién
+  juega?» ocupaba los 1206 px de ancho y el PIN, en la misma sesión y
+  sobre el mismo canvas, ocupaba de 72 a 1133 — exactamente 24 pt de
+  margen a cada lado, que es el padding de `kids/index.astro`. La regla
+  vivía en el `<style>` de este componente, y Astro emite las hojas
+  grandes como `<link>`: llegan cuando llegan. Es el mismo golpe que
+  CLAUDE.md ya narra de D-200.1, ahora en otra pieza.
+
+  Un `style` en línea no puede llegar tarde: viaja en el mismo byte que
+  el elemento. La regla de abajo se queda como respaldo y por el fondo.
 */}
-<div id="mc-pin-overlay" class="mc-pin-overlay" hidden>
-  {/*
-    El fondo vive en `#mc-pin-overlay` (fijo, SIN scroll — nunca se
-    encoge ni deja hueco). `#mc-pin-scroll`, adentro, es el único que
-    scrollea si `<main class="pin">` no cabe entero — separarlos existe
-    porque `overflow-y: auto` + `background-image` en el MISMO elemento
-    dejaba, en el simulador de iOS (2026-08-10), un corte seco entre la
-    imagen y un blanco liso más abajo: el área de fondo se calculaba mal
-    contra la caja de scroll en vez de contra el viewport fijo. Con el
-    fondo en una caja que NUNCA scrollea, ese cálculo no tiene margen de
-    error.
-  */}
-  <div id="mc-pin-scroll" class="mc-pin-scroll"></div>
+{/*
+  La sabana del loader se pide DESDE EL HTML, no desde el juego.
+
+  Sin esto, la petición del fondo no arranca hasta que el navegador descargó,
+  parseó y ejecutó el bundle de Phaser — cientos de KB por delante de una
+  imagen de 58 KB que es lo PRIMERO que hay que ver. Un `preload` en el
+  documento la pone en la cola desde el primer byte, en paralelo con el JS, y
+  para cuando `LoaderScene` la pide ya está en caché del navegador.
+
+  Las dos variantes están detrás de una media query con el MISMO corte que usa
+  `LoaderScene::archivoDeFondo()` (800 px CSS). Si los dos criterios se
+  separaran, el documento precargaría una y el juego pediría la otra: se
+  bajarían las dos y la precarga costaría en vez de ahorrar.
+
+  `fetchpriority="high"` porque esto es el splash: va antes que cualquier otro
+  arte. Y `Cache-Control` de `/juego/*` (ver `public/_headers`) hace que en la
+  segunda visita ni siquiera haya petición.
+*/}
+<link
+  rel="preload"
+  as="image"
+  href="/juego/loader-fondo.webp"
+  media="(max-width: 800px)"
+  fetchpriority="high"
+/>
+<link
+  rel="preload"
+  as="image"
+  href="/juego/loader-fondo-4k.webp"
+  media="(min-width: 801px)"
+  fetchpriority="high"
+/>
+
+<div
+  id="quien-juega-mount"
+  class="quien-juega-mount"
+  style="position:fixed;inset:0;background:#ffffff;z-index:5"
+>
 </div>
 
 {/*
@@ -77,57 +114,23 @@ const { tarjetas, rotulos, locale } = Astro.props;
   }
 
   /*
-   * El PIN va ENCIMA del canvas de Phaser (z-index 5) — `[hidden]` ya lo
-   * saca del flujo, este selector solo aplica cuando se muestra.
+   * El overlay del PIN de D-200.1 (`#mc-pin-overlay`, `#mc-pin-scroll` y sus
+   * estilos) se BORRÓ aquí, junto con el `<div>` que lo sostenía.
    *
-   * `background` es del OVERLAY, no del contenido transplantado — a
-   * propósito. `pin.astro` pinta su fondo en `body`, pero
-   * `puente-pin.ts::insertarFragmento()` solo clona `<main class="pin">`
-   * (nunca `<body>`) dentro de este `<div>`. Sin un fondo aquí, el overlay
-   * queda literalmente transparente: se ve el canvas de "¿quién juega?"
-   * (y sus tarjetas) A TRAVÉS del PIN — un bug real, encontrado por el
-   * dueño en el simulador (2026-08-10), que `audits/live.mjs` nunca pudo
-   * atrapar porque su comprobación del PIN es un `fetch` por código de
-   * estado, nunca un render real.
+   * Era el puente que transplantaba `<main class="pin">` de `pin.astro` a un
+   * div sobre el canvas. D-201 lo prohibió y `puente-pin.ts` ya se había
+   * borrado, así que este HTML llevaba días sirviendo de nada: un div oculto,
+   * un contenedor de scroll vacío y 40 líneas de CSS documentando defectos de
+   * una pantalla que ya no existe. Lo señaló el dueño mirando el PIN torcido
+   * en el simulador — «hay HTML viejo por ahí»— y tenía razón, aunque no era
+   * la causa de ESE defecto (ver el comentario del `style` en línea, arriba).
    *
-   * `background-image: var(--pin-fondo, none)` — no una URL fija — porque
-   * este overlay no sabe (ni debe saber) qué fondo trae CADA pantalla que
-   * transplanta. `puente-pin.ts::copiarAtributosDeBody()` copia
-   * `data-pin-tipo` del `<body>` fetcheado al `<body>` REAL, y
-   * `pin.astro` define `--pin-fondo` sobre ese mismo selector — una
-   * variable de CSS SÍ hereda por el árbol del DOM (este overlay es
-   * descendiente de `<body>`) sin que importe el ORDEN DE PINTADO, a
-   * diferencia de un `background-image` fijo que tendría que adivinarse
-   * o duplicarse aquí. `background-color` se queda como respaldo opaco
-   * para cualquier pantalla transplantada que no defina la variable.
+   * Se anota en vez de borrarse en silencio porque el CSS que se fue
+   * documentaba dos hallazgos reales del simulador —el overlay transparente y
+   * el corte del fondo con `overflow-y`— y quien vuelva a poner HTML sobre un
+   * canvas debe poder encontrarlos. Están en el historial de este archivo y en
+   * el encabezado de `PinScene.ts`.
    */
-  .mc-pin-overlay:not([hidden]) {
-    position: fixed;
-    inset: 0;
-    z-index: 6;
-    /* NUNCA scrollea — ver `#mc-pin-scroll` más abajo para el porqué. Sin
-       `overflow` propio, esta caja es SIEMPRE exactamente el viewport
-       (`inset: 0`), así que `background-size: cover` no tiene ambigüedad
-       posible contra la que calcular. */
-    background-color: var(--color-bg);
-    background-image: var(--pin-fondo, none);
-    background-size: cover;
-    background-position: center;
-  }
-
-  /*
-   * El scroll vive AQUÍ, separado del fondo — encontrado en vivo en el
-   * simulador de iOS (2026-08-10): con `overflow-y: auto` y el fondo en
-   * el MISMO elemento, el área de fondo se calculaba mal (un corte seco
-   * entre la imagen y un blanco liso más abajo, reproducible en varios
-   * despliegues seguidos). Separar "la caja que nunca cambia de tamaño"
-   * de "la caja que sí scrollea" quita esa ambigüedad de raíz: el fondo
-   * ya no tiene que convivir con `overflow` en el mismo cálculo.
-   */
-  .mc-pin-scroll {
-    block-size: 100%;
-    overflow-y: auto;
-  }
 
   /* Idéntica a la de `HistoriaMount.astro` — duplicada porque cada hoja de
      estilos de Astro es scoped a su propio componente (WCAG 1.4.12: clip

@@ -100,6 +100,21 @@ const DERIVADOS = [
   // separen — y `audits/pin-arte-completo.mjs` ata ese lado con el disco.
   /\/pin-dibujo-[^/]+\.webp$/,
   /\/pin-numerico-[^/]+\.webp$/,
+  // El fondo del loader NO pasa por el manifiesto, y es la única pieza de la
+  // que eso es cierto a propósito (D-201, loader D).
+  //
+  // El manifiesto es la lista que `CargaAssetsScene` descarga, y el fondo del
+  // loader no puede esperar a esa descarga: es lo que se ve MIENTRAS ocurre.
+  // `LoaderScene` lo pide con un `Image` del DOM en su primer fotograma y
+  // elige entre las dos variantes según los píxeles reales de la pantalla —
+  // meterlo en el manifiesto haría que además se bajaran las dos en todos los
+  // dispositivos, incluido el Android de gama baja al que la de 4K le sobra
+  // (mc-47 §5).
+  //
+  // La regla que el auditor defiende sigue en pie: nadie más puede tener arte
+  // fuera del manifiesto «porque sí». Ésta lleva su motivo escrito aquí y en
+  // `LoaderScene::construirFondo`.
+  /\/loader-fondo(-4k)?\.webp$/,
 ];
 
 // --- 2. Todo archivo de esas carpetas está en el manifiesto ----------------

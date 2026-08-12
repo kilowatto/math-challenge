@@ -1364,10 +1364,17 @@ const CASOS = [
     auditor: "mapa-sin-numero-de-nivel",
     que: "el sendero de KINDER gana un campo numérico de progreso",
     archivo: "packages/motor/src/mapa.ts",
+    // El parche decía "lugares.push({ lugar, estado, aqui });" — la línea real
+    // ganó `secuencia`/`bloqueado` (D-190) desde que se escribió este caso, y
+    // `.replace()` sobre una cadena que ya no existe es un no-op SILENCIOSO:
+    // el auditor "pasaba" porque la violación nunca se inyectó, no porque la
+    // atrapara. Lo encontró el propio auto-chequeo de este archivo ("el
+    // parche... no cambió NADA"), que existe exactamente para esto — sin él,
+    // esto habría sido un ✓ falso indefinidamente (2026-08-12).
     parche: (t) =>
       t.replace(
-        "    lugares.push({ lugar, estado, aqui });",
-        "    lugares.push({ lugar, estado, aqui, porcentaje: Math.round((i / orden.length) * 100) });",
+        "    lugares.push({ lugar, estado, aqui, secuencia: i + 1, bloqueado });",
+        "    lugares.push({ lugar, estado, aqui, secuencia: i + 1, bloqueado, porcentaje: Math.round((i / orden.length) * 100) });",
       ),
     espera: "cuatro años",
   },

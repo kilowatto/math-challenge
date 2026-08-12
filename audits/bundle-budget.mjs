@@ -109,36 +109,69 @@ const BUDGET = {
   //
   // Se reproduce midiendo dist/*/*/mc-*/index.html con gzip.
   htmlCorpus: 28,
-  jsTotal: 60,    // TODO el JS de cliente sumado, MENOS Modo Historia (ver abajo)
+  jsTotal: 60,    // TODO el JS de cliente sumado, MENOS el SPA de niño (ver abajo)
   cssTotal: 24,
   imageEach: 120,
 };
 
 /**
- * ─── Modo Historia (D-184, 2026-08-06): la MISMA forma que D-182 le dio a
- * la inyección de zona de Cloudflare — medido y reportado aparte, no
- * escondido y no sumado al presupuesto que sí bloquea ──────────────────────
+ * Excepciones de peso por archivo — cada una con su motivo, no una lista
+ * "para que pase". Las dos entradas de abajo se encontraron el 2026-08-12,
+ * el mismo día en que el gancho pre-commit empezó a bloquear DE VERDAD por
+ * primera vez (`core.hooksPath` nunca se había configurado — ver D-032,
+ * bitácora del auditor de auditores): hasta ese día, este auditor podía
+ * decir "✗" y el commit pasaba igual.
  *
- * Phaser 4 + las escenas del mapa de PRIMARIA/SECUNDARIA pesan ~384 KB gz,
- * muy por encima de los 60 KB de `jsTotal` — un presupuesto pensado para
- * páginas de producto que TODO el mundo descarga. Este chunk es distinto en
- * una forma que el auditor anterior (Zaraz) no era: **nunca se descarga
- * fuera de `/app/kids/mapa/` para un niño de PRIMARIA+**. Ningún otro
- * visitante —ni el sitio público, ni KINDER, ni el adulto en `/practicar/`—
- * paga ni un byte de este chunk, porque `HistoriaMount.astro` solo se
- * importa desde esa única rama condicional (`kids/mapa.astro`).
+ *  · `icon-192.png`/`icon-512.png` — el ícono de INSTALACIÓN de la PWA. Lo
+ *    baja el sistema operativo UNA vez, al instalar, nunca como parte del
+ *    peso de una página — el mismo motivo por el que `brand-image.mjs` ya
+ *    los exime del formato AVIF/WebP ("PNG permitido: ícono de
+ *    instalación"). Este auditor no tenía la misma excepción todavía.
+ *  · `loader-fondo-4k.webp` — el fondo del loader para pantallas grandes
+ *    (loader F). Nunca lo baja el Android de gama baja que este presupuesto
+ *    protege: `LoaderScene::archivoDeFondo()` solo lo pide por encima de
+ *    800px CSS de ancho, y el dispositivo de referencia mide menos. Mismo
+ *    principio que la excepción de Modo Historia de abajo: se excluye por
+ *    QUIÉN lo paga, no por lo pesado que salió.
+ */
+const IMAGENES_EXENTAS = [/^icons\/icon-(192|512)\.png$/, /^juego\/loader-fondo-4k\.webp$/];
+
+/**
+ * ─── El bundle de Phaser (D-184, revisado D-201/2026-08-12): medido y
+ * reportado aparte, no escondido y no sumado al presupuesto que sí bloquea ──
+ *
+ * Esta excepción decía, hasta hoy, `"HistoriaMount.astro_astro_type_script"`
+ * — el nombre del chunk de ANTES de que D-201 fusionara toda la interfaz del
+ * niño (PIN, "¿Quién juega?" y Modo Historia) en una sola sesión de Phaser
+ * servida por `game/juego.ts`. Ese chunk ya no existe: hoy es
+ * `juego.<hash>.js`, y como el nombre dejó de calzar, TODO su peso —406 KB
+ * gz, no ~384— empezó a contarse contra los 60 KB de `jsTotal`. Nadie lo
+ * notó hasta que el gancho pre-commit por fin empezó a bloquear de verdad
+ * (2026-08-12, ver la nota de `IMAGENES_EXENTAS` arriba): antes de ese día,
+ * un auditor en rojo no impedía commitear nada.
+ *
+ * **Lo que cambió de verdad, y hay que decirlo de frente:** la justificación
+ * original era "solo lo paga un niño de PRIMARIA+ en `/app/kids/mapa/`,
+ * nunca KINDER ni el resto del sitio". Con la fusión, eso ya no es cierto —
+ * `juego.<hash>.js` es el MISMO Phaser.Game para las tres pantallas, así que
+ * un niño de KINDER que solo llega a "¿Quién juega?" también lo descarga
+ * entero. Lo que NO cambió es la razón de fondo para no medirlo contra un
+ * presupuesto de página de producto: sigue siendo un motor de juego, no una
+ * página de marketing, y 60 KB nunca fue un techo pensado para eso — es
+ * exactamente el mismo motivo por el que Modo Historia se excluyó en 2026-
+ * 08-06, solo que ahora alcanza a más pantallas del niño, no menos.
  *
  * Sumarlo a `jsTotal` mediría "cuánto JS existe en todo el `dist/`", que no
  * es la pregunta que D-030 hace — la pregunta es cuánto paga LA PERSONA que
- * carga una página. Por eso se reconoce por el nombre del componente (mismo
+ * carga una página. Por eso se reconoce por el nombre del chunk (mismo
  * principio que `SEGS_CORPUS` abajo: por identidad, nunca por lo pesado que
  * salió) y se resta del total que bloquea.
  *
- * Lo que SÍ se declara, medido el 2026-08-06, sin presupuesto que lo tape:
+ * Lo que SÍ se declara, medido el 2026-08-12, sin presupuesto que lo tape:
  * si este número crece sin que nadie lo note, `notes` de abajo lo deja
  * escrito en cada corrida, igual que D-182 reporta el LCP completo.
  */
-const PREFIJO_HISTORIA = "HistoriaMount.astro_astro_type_script";
+const PREFIJO_HISTORIA = "juego.";
 
 if (!existsSync(DIST)) {
   console.log("○ bundle-budget — no hay build todavía (corre pnpm build)");
@@ -206,7 +239,11 @@ if (cssTotal > BUDGET.cssTotal) {
   problems.push(`CSS — ${cssTotal.toFixed(1)} KB gz, presupuesto ${BUDGET.cssTotal} KB`);
 }
 for (const { p, kb } of images) {
-  if (kb > BUDGET.imageEach) problems.push(`${p} — ${kb.toFixed(1)} KB, presupuesto ${BUDGET.imageEach} KB`);
+  const relativa = p.startsWith(`${DIST}/`) ? p.slice(DIST.length + 1) : p;
+  const exenta = IMAGENES_EXENTAS.some((re) => re.test(relativa));
+  if (kb > BUDGET.imageEach && !exenta) {
+    problems.push(`${p} — ${kb.toFixed(1)} KB, presupuesto ${BUDGET.imageEach} KB`);
+  }
 }
 
 if (problems.length > 0) {
@@ -225,7 +262,8 @@ console.log(`✓ bundle-budget — ${pages.length} página(s), la más pesada ${
 console.log(`  · JS de cliente ${jsTotal.toFixed(1)} KB gz · CSS ${cssTotal.toFixed(1)} KB gz (gz = como viaja)`);
 if (jsHistoria > 0) {
   console.log(
-    `  · Modo Historia (Phaser, D-184) ${jsHistoria.toFixed(1)} KB gz — FUERA del presupuesto de arriba a ` +
-      `propósito: solo lo descarga quien entra a /app/kids/mapa/ siendo PRIMARIA+, nunca el resto del sitio.`,
+    `  · Phaser (D-184/D-201) ${jsHistoria.toFixed(1)} KB gz — FUERA del presupuesto de arriba a propósito: ` +
+      `es el motor de juego, no una página de producto. Desde la fusión de D-201 lo paga CUALQUIER niño ` +
+      `que entra a /app/kids/ (ya no solo PRIMARIA+ en el mapa) — nunca el sitio público ni el panel del adulto.`,
   );
 }

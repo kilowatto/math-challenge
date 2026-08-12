@@ -8,6 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "dev": "pnpm --filter @math-challenge/web dev",
     "build": "pnpm --filter @math-challenge/web build",
     "typecheck": "pnpm -r typecheck",

@@ -138,7 +138,6 @@ export class PinScene extends Phaser.Scene {
       this.temporizadorResize?.remove();
     });
 
-    this.medirEnPantalla();
     void this.cargarDatos();
   }
 
@@ -177,71 +176,7 @@ export class PinScene extends Phaser.Scene {
     this.pintarFondo();
   }
 
-  /**
-   * La cadena de medidas que se pinta en el letrero con `?traza=1`.
-   *
-   * La primera versión solo daba el tamaño del JUEGO, y con eso se supo que la
-   * escena no tenía la culpa: decía 402x714, que es el viewport exacto. Lo que
-   * faltaba era la caja del ELEMENTO `<canvas>` y la de su contenedor — porque
-   * el hueco blanco solo puede estar entre esos dos.
-   */
-  private medidasDelLienzo(width: number, height: number): string {
-    const c = this.game.canvas?.getBoundingClientRect();
-    const div = document.getElementById("quien-juega-mount")?.getBoundingClientRect();
-    const est = this.game.canvas ? getComputedStyle(this.game.canvas) : null;
-    const cam = this.cameras.main;
-    return (
-      `j ${Math.round(width)}x${Math.round(height)} · ` +
-      `cv ${Math.round(c?.width ?? -1)} css ${est?.width ?? "?"} · ` +
-      `buf ${this.game.canvas?.width}x${this.game.canvas?.height} · ` +
-      `cam ${Math.round(cam.width)}x${Math.round(cam.height)} z${cam.zoom}`
-    );
-  }
 
-  /**
-   * Los números de la pantalla, pintados en la pantalla — solo con `?traza=1`.
-   *
-   * En el simulador no hay consola, y este defecto no se reproduce en el
-   * navegador: el PIN aparecía con 24 pt de margen blanco a cada lado mientras
-   * «¿Quién juega?», en la MISMA sesión y sobre el MISMO canvas, ocupaba el
-   * ancho entero. Dos hipótesis razonables —el CSS con ámbito que llega tarde,
-   * y el `<div>` medido en flujo normal— resultaron falsas al probarlas, y
-   * cada intento costó un despliegue.
-   *
-   * Así que la pantalla dice lo que mide: tamaño del juego, caja real del
-   * contenedor y del canvas, y el zoom del navegador. Con eso el diagnóstico
-   * es una lectura, no una conjetura. Apagado salvo que se pida, y en un
-   * tamaño que no estorba a nadie que llegue aquí por accidente.
-   */
-  private medirEnPantalla(): void {
-    // El interruptor se lee de `sessionStorage`, no de la URL: al tocar una
-    // tarjeta, `empujarHistorial` cambia la ruta a `/pin?p=...` y con ella se
-    // pierde el `?traza=1` con el que se entró. Guardarlo al verlo la primera
-    // vez hace que sobreviva a los cambios de escena de toda la sesión — y es
-    // lo que hizo falta para poder diagnosticar en el simulador, donde no hay
-    // consola que leer.
-    if (!trazaEncendida()) return;
-    const div = document.getElementById("quien-juega-mount");
-    const lienzo = this.game.canvas;
-    const r = div?.getBoundingClientRect();
-    const c = lienzo?.getBoundingClientRect();
-    const texto =
-      `juego ${Math.round(this.scale.width)}x${Math.round(this.scale.height)} · ` +
-      `div ${Math.round(r?.width ?? -1)}x${Math.round(r?.height ?? -1)} ` +
-      `@${Math.round(r?.left ?? -1)},${Math.round(r?.top ?? -1)} · ` +
-      `canvas ${Math.round(c?.width ?? -1)}x${Math.round(c?.height ?? -1)} · ` +
-      `win ${innerWidth}x${innerHeight} dpr${devicePixelRatio} · ` +
-      `pos ${div ? getComputedStyle(div).position : "?"}`;
-    this.add
-      .text(6, 6, texto, {
-        fontFamily: "ui-monospace, Menlo, monospace",
-        fontSize: "9px",
-        color: "#FFFFFF",
-        backgroundColor: "#000000",
-        wordWrap: { width: Math.max(200, this.scale.width - 12) },
-      })
-      .setDepth(9999);
-  }
 
   /**
    * El fondo va SIEMPRE, antes de que lleguen los datos.
@@ -315,20 +250,7 @@ export class PinScene extends Phaser.Scene {
     const ayuda =
       this.modo === "elegir" ? r.ayudaElegir : this.modo === "confirmar" ? r.ayudaConfirmar : r.ayuda;
 
-    /**
-     * Con `?traza=1`, el letrero dice los números en vez del título.
-     *
-     * El texto de diagnóstico suelto que se probó antes (una caja negra en la
-     * esquina) NUNCA llegó a verse en el dispositivo, y esa es justo la clase
-     * de callejón que hace perder una sesión: no se sabe si el código no corre
-     * o si el objeto no se pinta. El letrero SÍ se pinta —es lo que se está
-     * mirando— así que aquí el mensaje no se puede perder.
-     *
-     * Se va en cuanto el defecto esté cerrado; mientras tanto no molesta a
-     * nadie: hace falta escribir `?traza=1` a mano para verlo.
-     */
-    const rotulo = trazaEncendida() ? this.medidasDelLienzo(width, height) : titulo;
-    const yTrasLetrero = this.pintarLetrero(rotulo);
+    const yTrasLetrero = this.pintarLetrero(titulo);
     const yTrasRejilla = this.pintarRejilla(yTrasLetrero);
     const yTrasPasos = this.pintarPasos(yTrasRejilla + 26);
     const yTrasAyuda = this.pintarAyuda(ayuda, yTrasPasos + 14);

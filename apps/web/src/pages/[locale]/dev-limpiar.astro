@@ -69,6 +69,46 @@ if (!isLocale(raw)) return Astro.redirect("/en/");
           localStorage.removeItem("mc:manifiesto-assets");
           di("manifiesto local de assets: borrado");
 
+          /**
+           * La caché HTTP NATIVA de Safari, y por qué lo anterior no la toca.
+           *
+           * `caches.keys()`/`caches.delete()` son la Cache Storage API — la
+           * que usa el service worker. Es una caché DISTINTA del disco HTTP
+           * nativo del navegador, que obedece `Cache-Control` sin que el SW
+           * intervenga y que ninguna API de JavaScript puede vaciar.
+           *
+           * Se encontró el 2026-08-12 verificando el arreglo de un fondo:
+           * curl y un `fetch` con cache-busting a producción confirmaban el
+           * archivo correcto, byte a byte, mientras el simulador seguía
+           * mostrando el viejo — con esta misma página ya limpiando SW y
+           * Cache Storage. La causa era el disco de Safari, curtido por
+           * `stale-while-revalidate: 604800` (D-201, loader) tras varios
+           * despliegues seguidos contra el mismo dispositivo.
+           *
+           * No hay forma de VACIAR ese disco desde JavaScript, pero sí de
+           * FORZARLO a refrescarse: pedir cada imagen con `cache: "reload"`
+           * hace que el navegador ignore lo que tenga y traiga bytes nuevos
+           * del servidor, sobrescribiendo la entrada vieja para esa URL
+           * exacta. Solo los fondos de pantalla completa —los únicos con
+           * esta cabecera larga; todo lo demás usa nombre con hash y
+           * `immutable`, que nunca miente.
+           */
+          const FONDOS = [
+            "loader-fondo.webp",
+            "loader-fondo-4k.webp",
+            "pin-imagenes-fondo.webp",
+            "pin-numerico-fondo.webp",
+            "fondo-primaria-1.webp",
+            "fondo-desierto-1.webp",
+            "fondo-nieve-1.webp",
+            "fondo-costa-1.webp",
+          ];
+          const resultados = await Promise.allSettled(
+            FONDOS.map((f) => fetch(`/juego/${f}`, { cache: "reload" })),
+          );
+          const refrescados = resultados.filter((r) => r.status === "fulfilled").length;
+          di(`caché HTTP nativa de esos fondos: ${refrescados}/${FONDOS.length} refrescados`);
+
           di("\nlisto. Cierra la pestaña y vuelve a abrir la app.");
           document.querySelector("h1").textContent = "Limpio ✓";
         } catch (e) {

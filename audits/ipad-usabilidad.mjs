@@ -75,8 +75,28 @@ for (const f of css) {
   const preambulos = [...t.matchAll(/@media[^{]*/g)].map((m) => [m.index, m.index + m[0].length]);
   const dentroDePreambulo = (i) => preambulos.some(([a, b]) => i >= a && i < b);
 
+  /**
+   * El `media` de un `<link rel="preload">` NO es un punto de ruptura.
+   *
+   * Esa media query no decide CÓMO se ve nada: decide QUÉ ARCHIVO se precarga,
+   * entre dos versiones de la misma imagen. Un iPad en Split View a 320px cae
+   * en la rama pequeña, que es justo lo correcto — la grande son 154 KB que a
+   * esa ventana le sobran.
+   *
+   * La regla que este auditor defiende sigue intacta: un `min-width` de
+   * maquetación por encima de 320px se rompe en multitarea y se sigue
+   * marcando. Esta excepción es de una línea y mira el elemento exacto, no el
+   * archivo: si alguien escribe un `min-width` de verdad en el mismo `.astro`,
+   * lo caza igual.
+   */
+  const enPreloadDeImagen = (i) => {
+    const linea = t.slice(t.lastIndexOf("<link", i), t.indexOf(">", i) + 1);
+    return /rel=\"preload\"/.test(linea) && /as=\"image\"/.test(linea);
+  };
+
   for (const m of t.matchAll(/min-(?:width|inline-size)\s*:\s*(\d+)px/g)) {
     if (dentroDePreambulo(m.index)) continue;
+    if (enPreloadDeImagen(m.index)) continue;
     anchosRevisados++;
     const px = Number(m[1]);
     // Un min-width dentro del CUERPO de una media query de escritorio también es

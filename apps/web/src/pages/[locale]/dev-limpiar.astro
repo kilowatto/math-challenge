@@ -1,0 +1,80 @@
+---
+/**
+ * `/{locale}/dev-limpiar/` — tirar el service worker y todas las cachés.
+ *
+ * ─── Por qué existe ────────────────────────────────────────────────────────
+ *
+ * El 2026-08-11 se perdió más de una hora depurando un defecto del PIN contra
+ * un dispositivo que corría **JavaScript de hace varios despliegues**. Cuatro
+ * intentos seguidos dieron medidas idénticas al píxel —lo cual era la pista, y
+ * tardé en leerla—: el código nuevo estaba en el bundle desplegado (verificado
+ * con `grep` sobre `dist/_astro`) y aun así no corría en el simulador.
+ *
+ * La causa es el propio service worker: `sw.js` es **cache-first para todo lo
+ * estático**, que es lo correcto para una PWA en una red con pérdida de
+ * paquetes y es exactamente lo que hace imposible verificar un arreglo.
+ *
+ * Esta página existe para eso y solo para eso: se abre, borra, y dice qué
+ * borró. No es una superficie de niño ni de adulto — no hay sesión, no hay
+ * datos, no toca la base.
+ *
+ * ─── Por qué es segura de tener desplegada ─────────────────────────────────
+ *
+ * Lo peor que puede hacer es que alguien vuelva a bajar los assets que ya
+ * tenía. No borra progreso: el progreso vive en D1, no en la caché. No cierra
+ * sesión: no toca cookies. Y sin JavaScript no hace nada de nada.
+ */
+import { LOCALES, isLocale } from "../../i18n";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const { locale: raw } = Astro.params;
+if (!isLocale(raw)) return Astro.redirect("/en/");
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>dev · limpiar caché</title>
+    {/*
+      `noindex` porque esto no es una página del producto: es una herramienta
+      de mantenimiento. Sin esto, `audits/jsonld-valid.mjs` la trata como
+      indexable y exige datos estructurados —con razón: toda página que Google
+      pueda ver los lleva—, y aquí lo correcto no es inventarle un JSON-LD sino
+      decir que no se indexa.
+    */}
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body style="margin:0;padding:24px;background:#434547;color:#fff">
+    <h1 style="font-size:1.125rem">Limpiando…</h1>
+    <pre id="salida" style="font-size:0.85rem;line-height:1.6;white-space:pre-wrap"></pre>
+    <script is:inline>
+      (async () => {
+        const out = document.getElementById("salida");
+        const di = (t) => (out.textContent += t + "\n");
+        try {
+          const regs = (await navigator.serviceWorker?.getRegistrations?.()) ?? [];
+          for (const r of regs) await r.unregister();
+          di(`service workers dados de baja: ${regs.length}`);
+
+          const claves = await caches.keys();
+          for (const k of claves) await caches.delete(k);
+          di(`cachés borradas: ${claves.length}${claves.length ? " → " + claves.join(", ") : ""}`);
+
+          // El manifiesto local del loader: si se queda, el dispositivo cree
+          // tener assets que acaba de tirar y no los vuelve a pedir.
+          localStorage.removeItem("mc:manifiesto-assets");
+          di("manifiesto local de assets: borrado");
+
+          di("\nlisto. Cierra la pestaña y vuelve a abrir la app.");
+          document.querySelector("h1").textContent = "Limpio ✓";
+        } catch (e) {
+          di("error: " + String(e));
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -63,3 +63,34 @@
 
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
+
+# ─── El arte del juego: se cachea de verdad (2026-08-11) ────────────────────
+#
+# Estas carpetas salían con `max-age=0, must-revalidate`, que es el valor por
+# omisión de Cloudflare para un asset sin regla. El archivo está en el borde
+# (`cf-cache-status: HIT`), pero el NAVEGADOR pregunta en cada visita antes de
+# poder pintar: un viaje de red completo delante del primer fotograma. Lo
+# preguntó el dueño mirando el fondo del loader —«es un splash, debería poder
+# cargarse rápido»— y tenía razón: el bloqueo no estaba en el peso del archivo
+# sino en la cabecera.
+#
+# 30 días con `stale-while-revalidate`, y no `immutable` de un año: estos
+# nombres NO llevan hash de contenido —`loader-fondo.webp` se llama igual
+# después de regenerarla— así que `immutable` dejaría a quien ya la tiene con
+# el arte viejo hasta que caduque. Con `stale-while-revalidate` la segunda
+# visita pinta al instante desde disco y el navegador va a buscar la nueva por
+# detrás: nadie espera, y nadie se queda atrás más de una visita.
+#
+# El día que estos archivos lleven hash en el nombre —como `_astro/*`— esto
+# pasa a `immutable` y se acabó el compromiso.
+/juego/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/mapa/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/avatares/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+
+/cosmeticos/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800

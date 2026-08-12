@@ -7841,3 +7841,64 @@ después de quitar cada uno (exit 0).
 
 **Investigación relacionada:** D-200.2, D-200.1, D-193, D-185, D-184, D-012,
 D-197 §2, `mc-20`, `mc-47`, `mc-38`.
+
+---
+
+## D-202 — El PIN de imágenes de KINDER deja de depender del orden — enmienda D-012 · 2026-08-11
+
+**Qué pidió el dueño**, viendo la pantalla de PIN en el simulador con el
+producto ya funcionando: *«el pin de los niños del kinder no importa el orden,
+es difícil para ellos»*.
+
+**Qué cambia.** Tocar «estrella, rana, casa» abre igual que «casa, estrella,
+rana». Las tres posiciones se ordenan antes de derivar el hash
+(`packages/motor/src/pin-imagenes.ts::hashearPin`), así que el orden deja de
+existir a efectos de verificación. El niño sigue tocando tres dibujos
+distintos: repetir el mismo tres veces sigue sin valer.
+
+**Por qué es correcto para esta banda, y no una comodidad.** KINDER son 4-6
+años y **no lee** (línea roja #3 y D-019). Reconocer tres dibujos entre nueve
+es una tarea de reconocimiento visual, que es justo lo que esta banda hace
+bien. Reproducirlos EN ORDEN es una tarea de memoria de trabajo secuencial —
+otra habilidad, más tardía, y una que este producto no tiene ninguna razón
+para exigir en la puerta. La pantalla de entrada no debe ser el ejercicio más
+difícil del día.
+
+**Lo que cuesta, dicho sin adornos.** El espacio pasa de 9·8·7 = 504
+variaciones ordenadas a C(9,3) = **84** combinaciones. Es una sexta parte, y
+`COMBINACIONES` en el motor ya devuelve 84 para que el número esté en el
+código y no en un párrafo.
+
+Que eso sea aceptable descansa entero en contra QUIÉN protege este PIN, que
+D-012 ya había fijado: **protege de un hermano**, no de un atacante remoto. No
+hay superficie pública que acepte intentos — `POST /api/pin-entrar` exige la
+cookie del dispositivo del hogar (`mc_h`), así que quien no esté físicamente
+en la casa no puede ni empezar. Para un hermano con un dedo, 84 intentos a
+mano ya es más de lo que nadie sostiene.
+
+**Lo que esta decisión convierte en obligatorio:** el límite de intentos deja
+de ser un adorno. Con 504 combinaciones se podía vivir sin él; con 84 es lo
+que sostiene la decisión. Anotado en `docs/dudas.md` como lo siguiente que
+toca cerrar en esta superficie.
+
+**El PIN NUMÉRICO no cambia.** PRIMARIA y SECUNDARIA conservan el orden: ahí
+sí se lee, cuatro dígitos sin orden serían 210 combinaciones, y el PIN de una
+banda mayor no puede ser más débil que el de KINDER.
+
+**Los PIN ya elegidos no se rompen.** El hash no se puede invertir, así que no
+hay migración en masa posible: el servidor no sabe qué tres dibujos eligió
+cada niño hasta que el niño los toca. Se migra en ese instante — `pin-entrar`
+prueba el hash nuevo, y si falla prueba el viejo (con orden); cuando el viejo
+acierta, el niño entra y el hash se reescribe ya sin orden. Cada perfil migra
+solo, en su primera entrada, sin que nadie note nada y sin que un solo niño
+vea un «no eran esos» por un cambio nuestro (línea roja #7).
+
+**Texto de cara al usuario**, autorado por locale en los siete (`pinHelp`,
+`pinConfirmHelp`): «Tres dibujos, en el orden que quieras» y «Los mismos tres,
+otra vez». No es la traducción literal de una frase inglesa — en alemán es
+«in beliebiger Reihenfolge», que es como se dice de verdad.
+
+**Verificación:** `packages/motor/src/pin-imagenes.prueba.mjs`. El caso que
+afirmaba «el ORDEN importa: 0-4-7 no es 7-4-0» se **invirtió** en vez de
+borrarse: es el que fija la decisión, y quien lo vuelva a cambiar tiene que
+leer este renglón antes.

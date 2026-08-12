@@ -105,6 +105,7 @@ export class LoaderScene extends Phaser.Scene {
     this.caidos = 0;
     this.cuerpos = [];
     this.bordes = [];
+    this.fondo = null;
     this.ultimoAncho = 0;
     this.ultimoAlto = 0;
     this.ultimoLabel = "";
@@ -119,6 +120,7 @@ export class LoaderScene extends Phaser.Scene {
 
     this.lado = this.ladoDeCuadro();
     this.hornearCuadro();
+    this.construirFondo();
     this.construirHud();
     this.construirMundo();
     this.construirBotonInclinacion();
@@ -128,6 +130,107 @@ export class LoaderScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
       this.scale.off(Phaser.Scale.Events.RESIZE, this.reacomodar, this),
     );
+  }
+
+  /**
+   * La sabana del amanecer, y el único asset que NO pasa por el manifiesto.
+   *
+   * Pedido del dueño: una sabana fotorrealista con bruma de mañana y, al
+   * fondo y algo desenfocada, una manada de rinocerontes naranjas pastando
+   * (`scripts/gen-loader-fondo.mjs`). Larry es un rinoceronte y el naranja es
+   * el color de la marca, así que la manada hace de identidad sin poner un
+   * logo delante de un niño de cuatro años.
+   *
+   * ─── Por qué se carga a mano, con un `Image` del navegador ───────────────
+   *
+   * Porque el fondo del loader no puede esperar al loader. `CargaAssetsScene`
+   * ya está descargando 243 archivos; meter éste en esa cola lo pondría a
+   * competir con ellos y aparecería a mitad de la carga. Y esta escena no
+   * tiene `preload()` a propósito —es lo que le permite animar—, así que
+   * tampoco puede pedirlo por ahí.
+   *
+   * Un `Image` del DOM sí funciona con la escena viva: cuando llega, la
+   * textura entra al gestor y se funde. Los 21 KB entran antes que nada.
+   *
+   * ─── El velo, que no es decorativo ───────────────────────────────────────
+   *
+   * El cielo del amanecer es crema pálido y el porcentaje es blanco: uno
+   * sobre otro no se lee. Un degradado oscuro en la parte de arriba —de 38%
+   * a cero— devuelve el contraste sin ensuciar la foto, y funciona con
+   * cualquier fondo que se genere mañana, que es más de lo que puede decir
+   * elegir un color de texto a ojo contra ESTA imagen.
+   */
+  private fondo: Phaser.GameObjects.Image | null = null;
+  private velo!: Phaser.GameObjects.Graphics;
+
+  /**
+   * Cuál de las dos sabanas, y por qué se decide aquí y no en el servidor.
+   *
+   * Lo pidió el dueño: «estás olvidando la imagen para iPad, una desktop de 32
+   * pulgadas 4K, y demás». Cubrir un monitor 4K con la imagen de teléfono es
+   * ampliar casi cuatro veces, y en una foto eso se ve como una mancha; mandar
+   * la de 4K a un Android de gama baja es gastarle 154 KB del primer segundo
+   * (mc-47 §5).
+   *
+   * El corte está en **800 px CSS de ancho**, y ese número no es estético: es
+   * el mismo que la media query del `<link rel="preload">` en
+   * `QuienJuegaMount.astro`. Tienen que decidir IGUAL — si el HTML precarga
+   * una y el juego pide la otra, se bajan las dos y la precarga, que existe
+   * para ganar tiempo, lo pierde.
+   *
+   * Por eso se mide en píxeles CSS y no en píxeles reales: una media query no
+   * puede leer `devicePixelRatio` de la misma forma, y prefiero un criterio
+   * más tosco en los dos sitios que dos criterios finos que se contradigan. La
+   * calidad no sufre: un iPhone de 402 pt a 3x son 1206 px reales y la imagen
+   * «de teléfono» tiene 2048 de lado, así que le sobra resolución.
+   *
+   * En el cliente y no en el servidor porque el servidor no sabe el tamaño de
+   * la pantalla: `Client-Hints` lo daría, pero exige cabecera de negociación,
+   * varía la caché de Cloudflare por dispositivo y añade un viaje — para
+   * elegir entre dos archivos.
+   */
+  private archivoDeFondo(): string {
+    const ancho = typeof innerWidth === "number" && innerWidth > 0 ? innerWidth : this.medidas().width;
+    return ancho > 800 ? "/juego/loader-fondo-4k.webp" : "/juego/loader-fondo.webp";
+  }
+
+  private construirFondo(): void {
+    this.velo = this.add.graphics().setDepth(-9);
+    this.pintarVelo();
+
+    const img = new Image();
+    img.decoding = "async";
+    img.src = this.archivoDeFondo();
+    img.onload = () => {
+      // La escena pudo haberse ido mientras la imagen viajaba: entrar aquí
+      // con la escena muerta revienta el gestor de texturas.
+      if (!this.scene.isActive("LoaderScene")) return;
+      if (!this.textures.exists("loader-fondo")) this.textures.addImage("loader-fondo", img);
+      this.fondo = this.add.image(0, 0, "loader-fondo").setOrigin(0.5).setDepth(-10).setAlpha(0);
+      this.encuadrarFondo();
+      this.tweens.add({ targets: this.fondo, alpha: 1, duration: 600, ease: "Quad.easeOut" });
+      traza("fondo listo");
+    };
+    // Sin fondo se sigue jugando: queda el verde-follaje y nadie se entera.
+    img.onerror = () => traza("fondo no cargó — se queda el verde");
+  }
+
+  /** Escala para CUBRIR y centra: nunca deforma, recorta lo que sobre. */
+  private encuadrarFondo(): void {
+    if (!this.fondo) return;
+    const { width, height } = this.medidas();
+    const textura = this.textures.get("loader-fondo").getSourceImage();
+    const escala = Math.max(width / textura.width, height / textura.height);
+    this.fondo.setPosition(width / 2, height / 2).setScale(escala);
+  }
+
+  private pintarVelo(): void {
+    const { width, height } = this.medidas();
+    const alto = Math.min(height * 0.45, this.techoY + 120);
+    this.velo.clear();
+    this.velo
+      .fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.38, 0.38, 0, 0)
+      .fillRect(0, 0, width, alto);
   }
 
   /**
@@ -168,6 +271,9 @@ export class LoaderScene extends Phaser.Scene {
     this.textoAsset.setPosition(24, this.textoPct.y + this.textoPct.height + 22);
     this.selloVersion.setPosition(width - 12, height - 10);
     this.techoY = this.textoAsset.y + this.textoAsset.height + 46;
+
+    this.encuadrarFondo();
+    this.pintarVelo();
 
     // Las paredes y el suelo se rehacen: son estáticos, y dejarlos donde
     // estaban con la pantalla ya cambiada deja caer los cuadros al vacío.
@@ -374,9 +480,21 @@ export class LoaderScene extends Phaser.Scene {
     const { width } = this.medidas();
     const mitad = this.lado / 2;
     const x = Phaser.Math.Between(mitad, width - mitad);
-    // Nacen POR DEBAJO del techo del HUD: así el techo nunca bloquea la
-    // entrada de cuadros nuevos, solo impide que suban a taparlo.
-    const y = this.techoY + Phaser.Math.Between(20, 140);
+    /**
+     * Nacen ARRIBA DE LA PANTALLA, fuera de cuadro.
+     *
+     * La primera versión los soltaba justo debajo del porcentaje —para no
+     * taparlo— y el resultado era que **aparecían de la nada** a media
+     * pantalla, uno por uno. Lo cazó el dueño en el teléfono y en el
+     * escritorio: «que caigan desde arriba de la pantalla para que no se vea
+     * que se inventan».
+     *
+     * Taparon el HUD durante un instante al pasar, y da igual: el HUD está en
+     * profundidad 20 y los cuadros en la 0, así que le pasan POR DETRÁS. La
+     * altura escalonada —de 60 a 600 px por encima del borde— es lo que evita
+     * que los que caen seguidos entren en fila india.
+     */
+    const y = -Phaser.Math.Between(60, 600);
 
     // Rebote variable: la mayoría rebota poco, alguno mucho. Un valor fijo
     // hace que los 100 caigan igual y se vea mecánico.

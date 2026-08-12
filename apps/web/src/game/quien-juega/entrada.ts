@@ -16,7 +16,19 @@
  */
 import { arrancarQuienJuega } from "./main";
 import { alVolver } from "../spa/enrutador";
+import { trazaEncendida } from "./PinScene";
 import { registrarJuego, faseActual, fijarFase, detenerEscenaHistoriaActual } from "../spa/estado";
+
+/**
+ * Se captura el `?traza=1` AQUÍ, en el primer instante de la página.
+ *
+ * No sirve preguntarlo más tarde: `QuienJuegaScene` empuja una entrada de
+ * historial al tocar una tarjeta, la URL pasa a ser `/pin?p=...` y el
+ * parámetro desaparece. Dos intentos de diagnóstico se perdieron por esto —el
+ * código corría, leía la URL ya cambiada y se apagaba solo—, que es la peor
+ * clase de fallo: el que se parece a «el despliegue no llegó».
+ */
+trazaEncendida();
 
 const datosCrudos = document.getElementById("quien-juega-datos")?.textContent;
 if (datosCrudos) {

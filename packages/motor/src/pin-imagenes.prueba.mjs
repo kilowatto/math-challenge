@@ -3,6 +3,7 @@
 import {
   rejillaDe,
   hashearPin,
+  hashearPinConOrden,
   pinValido,
   pinesIguales,
   CATALOGO,
@@ -61,7 +62,20 @@ ok(!pinValido(null), "ni null");
 const h = await hashearPin(SECRETO, "nino-1", [0, 4, 7]);
 ok(/^[0-9a-f]{64}$/.test(h), "el hash son 64 hexadecimales (SHA-256)");
 ok(h === (await hashearPin(SECRETO, "nino-1", [0, 4, 7])), "el mismo PIN da el mismo hash");
-ok(h !== (await hashearPin(SECRETO, "nino-1", [7, 4, 0])), "el ORDEN importa: 0-4-7 no es 7-4-0");
+// D-202: el orden dejó de contar. Este caso decía lo contrario hasta el
+// 2026-08-11 — se invierte, no se borra: es el que fija la decisión.
+// KINDER no lee ni memoriza secuencias; acordarse de tres dibujos es
+// reconocimiento, acordarse de tres EN ORDEN es memoria de trabajo.
+ok(h === (await hashearPin(SECRETO, "nino-1", [7, 4, 0])), "el orden NO cuenta: 0-4-7 abre igual que 7-4-0");
+ok(h === (await hashearPin(SECRETO, "nino-1", [4, 0, 7])), "y cualquier otro orden de los mismos tres");
+ok(h !== (await hashearPin(SECRETO, "nino-1", [0, 4, 8])), "pero tres dibujos DISTINTOS siguen siendo otro PIN");
+
+// El camino de migración: los PIN elegidos antes de D-202 llevan el orden
+// dentro del hash, y `pin-entrar` los reconoce con esta función para poder
+// reescribirlos. Sin esto, cada niño con PIN previo se habría quedado fuera.
+const conOrden = await hashearPinConOrden(SECRETO, "nino-1", [7, 4, 0]);
+ok(conOrden !== h, "el hash viejo (con orden) NO es el nuevo — por eso hace falta migrar");
+ok(conOrden === (await hashearPinConOrden(SECRETO, "nino-1", [7, 4, 0])), "y el viejo sigue siendo estable");
 ok(h !== (await hashearPin(SECRETO, "nino-2", [0, 4, 7])), "dos niños con el mismo PIN tienen hashes distintos");
 
 // El hash no contiene los dibujos: se guardan posiciones, no «sol, gato, barco».
@@ -77,7 +91,7 @@ ok(!pinesIguales(h, "0".repeat(64)), "y distinto de otro");
 ok(!pinesIguales(h, h.slice(0, 60)), "un hash truncado no pasa");
 
 // --- lo que este PIN NO es --------------------------------------------------
-ok(COMBINACIONES === 504, `son ${COMBINACIONES} combinaciones — NO es seguridad contra un adulto, y D-012 dice que la protección real la da el dispositivo`);
+ok(COMBINACIONES === 84, `son ${COMBINACIONES} combinaciones — NO es seguridad contra un adulto, y D-012 dice que la protección real la da el dispositivo`);
 
 console.log(fallos === 0 ? "\n✓ pin-imagenes — todos los casos" : `\n✗ pin-imagenes — ${fallos} caso(s) fallaron`);
 process.exit(fallos === 0 ? 0 : 1);

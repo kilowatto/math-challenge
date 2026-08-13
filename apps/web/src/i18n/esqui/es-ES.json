@@ -1,0 +1,13 @@
+{
+  "_nota": "Borrador adaptado de es-MX, pendiente de revisión nativa (no traducción literal necesaria — el nombre y las etiquetas son iguales en este caso).",
+  "esqui": {
+    "nombreModo": "Esquí / Deslizada",
+    "resultado": {
+      "victoria": "¡Cadena completa!",
+      "descalificado": "Cadena rota"
+    },
+    "tablero": {
+      "etiqueta": "Esquí / Deslizada"
+    }
+  }
+}

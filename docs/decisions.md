@@ -8284,3 +8284,83 @@ una decisión de alcance para el dueño, no una que se deba tomar sola a
 mitad de un cierre de deuda de dos renglones.
 
 **Investigación relacionada:** D-201, D-190, D-184, D-200.2.
+
+---
+
+## El arte del modo Esquí/Deslizada se mergea y se precarga para todos, sin escena todavía · 2026-08-12
+
+`content/esqui-deslizada-assets` (rama de contenido, 4 commits, generada
+2026-08-10/12) traía 88 archivos bajo `apps/web/public/esqui/` — 64
+avatares (16 animales × 4 poses), 4 superficies de bioma, 8 placas de
+puerta, 8 pistas de música y 4 SFX — más 553 líneas de voz de Larry
+(7 locales × 79 claves) y el catálogo i18n del modo, sin ni un archivo de
+código de juego tocado. El plan completo vive en
+`docs/planes/2026-08-10-esqui-cadena-operaciones.md`.
+
+**Antes de mergear, se verificó que nada quedara huérfano — y no lo
+estaba en el sentido que se temía, pero tampoco estaba conectado del
+todo.** Ninguno de los 88 archivos vivía en ningún manifiesto:
+`assets-manifest.ts` no los mencionaba, y `astro.config.mjs` no vigilaba
+`public/esqui/` en ninguno de sus dos generadores de build
+(`assets-version.json` ni `manifest-assets.json`).
+
+**Pregunta real, con dos respuestas válidas:** ¿se precargan YA (todo
+niño los descarga al abrir la app, aunque el modo no tenga ninguna
+pantalla construida) o se declaran pero se difieren hasta que exista una
+escena que los pida? **El dueño eligió precarga inmediata**, a sabiendas
+del costo: el catálogo que `CargaAssetsScene` descarga pasó de 244
+assets/13.16 MB a 332 assets/20.02 MB — un salto de ~53% en la descarga
+obligatoria de la primera sesión, para un modo que hoy no se puede jugar.
+
+**El hallazgo que de verdad importó — hay DOS manifiestos, y solo uno es
+el que de verdad usa el niño.** `assets-manifest.ts` (`TODAS_LAS_IMAGENES`/
+`TODOS_LOS_AUDIOS`) es lo que consume `CargaGlobalScene.ts` — escena
+**no registrada en `juego.ts`**, código muerto de una ronda anterior de
+la fusión. El loader real, `CargaAssetsScene.ts`, lee `/manifest-assets.
+json` — generado en build time por `manifiestoDeAssets()` en
+`astro.config.mjs`, escaneando una lista fija de carpetas
+(`juego/mapa/avatares/cosmeticos`) sin mirar `assets-manifest.ts` para
+nada. Haber añadido las 88 claves solo a `assets-manifest.ts` habría
+dejado el gate de `manifiesto-assets.mjs` en verde y el arte real
+**sin descargarse jamás** — exactamente el modo de falla silencioso que
+ese mismo auditor existe para atrapar, solo que en el manifiesto
+equivocado.
+
+**Arreglo, en las tres piezas que hacían falta:**
+
+1. `IMAGENES_ESQUI`/`AUDIOS_ESQUI` en `assets-manifest.ts`, sumadas a
+   `TODAS_LAS_IMAGENES`/`TODOS_LOS_AUDIOS` — mantiene el auditor
+   determinista honesto aunque el consumidor real esté en otro lado.
+2. `"esqui"` agregado a los DOS arreglos `CARPETAS` de `astro.config.mjs`
+   (`activosVersionD200()` y `manifiestoDeAssets()`) — esto es lo que de
+   verdad hace que `CargaAssetsScene` descargue y cachee el catálogo.
+   Verificado releyendo el build: `343 archivos en juego/mapa/avatares/
+   esqui` (antes 255) y `332 assets, 20.02 MB` (antes 244, 13.16 MB).
+3. `audits/manifiesto-assets.mjs::VIGILADAS` extendido a `public/esqui/`
+   — para que un archivo esqui futuro sin clave no se cuele sin que nada
+   lo note, mismo criterio que ya protege `public/juego/`.
+
+**Lo que NO se tocó, a propósito:** los 553 archivos de voz
+(`public/voz/<locale>/esqui.*.mp3`) y el catálogo `i18n/esqui/` siguen
+sin ningún consumidor de código — mismo patrón ya establecido en este
+proyecto para TODA la voz de Larry pregenerada (`gen-voz-larry.mjs`, "D-
+192, reservada y hasta hoy sin escribir"), no una omisión de esta ronda.
+Meterlos al precargador global habría sido cargar 553 archivos de audio
+que absolutamente nadie reproduce todavía, un desperdicio de verdad —
+distinto del caso de las imágenes/música, que si bien tampoco tienen
+escena, SON el tipo de asset que el manifiesto de Phaser existe para
+cargar.
+
+**Verificado:** `astro check` (0 errores), `node audits/run.mjs`
+(142/142), build limpio con los conteos de arriba confirmados en el log.
+No se probó en simulador: no hay ninguna escena de Esquí que montar
+todavía — es contenido puro, sin interfaz que verificar.
+
+**La rama vivía en el checkout raíz compartido, no en un worktree, con
+230 archivos sin commitear encima (posiblemente otra sesión trabajando
+en vivo en el código del modo).** Solo se usaron los 4 commits ya
+hechos de `content/esqui-deslizada-assets`; el trabajo sin commitear de
+ese checkout no se tocó ni se incluyó.
+
+**Investigación relacionada:** D-201, D-198, D-200, mc-47 §5,
+`docs/planes/2026-08-10-esqui-cadena-operaciones.md`.

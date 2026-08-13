@@ -76,7 +76,14 @@ for (const { clave, url } of entradas) {
  * derivada (`TODOS_LOS_ANIMALES.map(claveDeAnimal)`) y no entrada por entrada,
  * así que exigirlos aquí sería pedir que se dupliquen.
  */
-const VIGILADAS = [/^apps\/web\/public\/juego\/.*\.(webp|mp3)$/];
+const VIGILADAS = [
+  /^apps\/web\/public\/juego\/.*\.(webp|mp3)$/,
+  // Modo Esquí/Deslizada (D-201, plan 2026-08-10): arte entero por bioma,
+  // sin escena de Phaser todavía que lo use — exactamente el caso para el
+  // que este auditor existe, y donde más falta hace vigilarlo (nadie va a
+  // notar un archivo huérfano aquí solo mirando la pantalla).
+  /^apps\/web\/public\/esqui\/.*\.(webp|mp3)$/,
+];
 
 /**
  * Grupos que el manifiesto declara con `.map()` en vez de entrada por entrada.
@@ -135,7 +142,7 @@ for (const ruta of huerfanos) {
   );
 }
 
-notas.push(`${entradas.length} entradas en el manifiesto, ${enDisco.length} archivo(s) vigilados en public/juego`);
+notas.push(`${entradas.length} entradas en el manifiesto, ${enDisco.length} archivo(s) vigilados en public/juego y public/esqui`);
 
 informar({
   nombre: "manifiesto-assets",

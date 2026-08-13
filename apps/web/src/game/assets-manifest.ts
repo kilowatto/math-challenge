@@ -87,6 +87,13 @@ export const IMAGENES_QUIEN_JUEGA: Activo[] = [
 /** Lo que `PreloadScene.ts` necesita — Modo Historia (mapa Y reto, D-200: `GameplayScene` no carga nada propio, reusa este mismo cargador). */
 export const IMAGENES_MODO_HISTORIA: Activo[] = [
   { clave: "fondo-primaria-1", url: "/juego/fondo-primaria-1.webp" },
+  // `RetosScene` (D-201, migración de `kids/retos.astro`) es la primera
+  // escena de Modo Historia que usa `FlechaAtras` — hasta hoy esa imagen
+  // solo vivía en `IMAGENES_QUIEN_JUEGA`. En la SPA fusionada (D-200/D-201)
+  // ya estaba cargada de todos modos, pero `PreloadScene` (la entrada FRÍA
+  // a `/mapa/`, sin pasar por la rejilla) no la traía — encontrado
+  // probando `RetosScene` en un simulador real, no leyendo el código.
+  { clave: "flecha-madera", url: "/juego/flecha-madera.webp" },
   { clave: "arbusto-a", url: "/juego/arbusto-a.webp" },
   { clave: "arbusto-b", url: "/juego/arbusto-b.webp" },
   { clave: "helecho-a", url: "/juego/helecho-a.webp" },

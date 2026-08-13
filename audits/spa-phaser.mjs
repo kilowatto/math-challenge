@@ -30,13 +30,32 @@
 //
 // ─── Nace ROJO, y eso es el diseño ─────────────────────────────────────────
 //
-// Tres páginas de `app/kids/` incumplen la regla el día que esto se escribe.
-// Van declaradas abajo con su issue, vía `separarDeuda`: bloquean lo NUEVO
-// desde el primer commit, y el día que una se migra su renglón queda rancio y
-// el propio auditor exige borrarlo. Es el mecanismo que `lib/repo.mjs` ya
-// documenta para un guardián que nace con el producto roto — la alternativa
-// (no registrarlo hasta que todo esté limpio) es cómo seis auditores acabaron
-// fallando abiertos sin que nadie lo supiera.
+// Una página de `app/kids/` incumple la regla el día que esto se escribe —
+// `app/kids/retos.astro` se migró a `RetosScene.ts` el 2026-08-12 y su
+// renglón de deuda se borró, como este mismo comentario exige. Va declarada
+// abajo con su issue, vía `separarDeuda`: bloquea lo NUEVO desde el primer
+// commit, y el día que se migre su renglón queda rancio y el propio auditor
+// exige borrarlo. Es el mecanismo que `lib/repo.mjs` ya documenta para un
+// guardián que nace con el producto roto — la alternativa (no registrarlo
+// hasta que todo esté limpio) es cómo seis auditores acabaron fallando
+// abiertos sin que nadie lo supiera.
+//
+// ─── Lo que este auditor NO ve, y por qué importa ──────────────────────────
+//
+// Revisando `jugar.astro` para planear su migración (2026-08-12) se
+// encontró que su alcance real es mucho mayor de lo que este renglón deja
+// leer: `/api/historia-datos` rechaza a KINDER a propósito (D-184 — "Modo
+// Historia en Phaser es de PRIMARIA en adelante. KINDER sigue con la Sabana
+// de siempre, que es otra pantalla y otro camino"), así que el mapa Y la
+// práctica de KINDER viven ENTERAS fuera de Phaser todavía — no solo el
+// sendero de racha y la franja de liga. Y `liga/jugador.astro`/
+// `Duelo.astro` (la liga vista por un niño) viven deliberadamente FUERA de
+// `app/kids/` para no ser "superficie de kinder" por ruta ante otros
+// auditores — lo que también las deja fuera del patrón de rutas que ESTE
+// auditor vigila. Son superficie de niño real, en HTML, sin ningún renglón
+// de deuda que lo diga. Ninguna de las dos se tocó en esta ronda: traer a
+// KINDER entero a Phaser es una decisión de alcance para el dueño, no una
+// que un auditor deba forzar solo.
 
 import { archivos, leer, informar, separarDeuda, sinComentarios } from "./lib/repo.mjs";
 
@@ -75,15 +94,11 @@ const ACCESIBILIDAD_DECLARADA = [/AccessibleReto\.ts$/];
 const DEUDA = [
   {
     id: "app/kids/jugar.astro",
-    issue: "D-201, sin fase asignada",
+    issue: "D-201/D-184, sin fase asignada",
     porQue:
-      "sendero de racha y franja de liga en HTML — encontrado por este auditor, todavía sin plan de migración",
-  },
-  {
-    id: "app/kids/retos.astro",
-    issue: "D-201, sin fase asignada",
-    porQue:
-      "el marcador de posición de Retos (D-190) nació en HTML — todavía sin plan de migración",
+      "no son solo el sendero de racha y la franja de liga: `/api/historia-datos` excluye a KINDER a " +
+      "propósito (D-184), así que el mapa Y la práctica de esa banda viven ENTERAS en HTML todavía. " +
+      "Traer a KINDER a Phaser es una decisión de alcance para el dueño (ver el comentario de arriba).",
   },
 ];
 

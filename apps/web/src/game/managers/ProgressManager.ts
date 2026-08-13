@@ -41,7 +41,6 @@ export const REGISTRY_ROTULOS = "historia:rotulos";
 export const REGISTRY_ROTULOS_RETO = "historia:rotulosReto";
 export const REGISTRY_ETIQUETA_VOZ = "historia:etiquetaVoz";
 export const REGISTRY_SALIR_A = "historia:salirA";
-export const REGISTRY_RUTA_RETOS = "historia:rutaRetos";
 export const REGISTRY_CHAPTER_ID = "historia:chapterId";
 export const REGISTRY_BIOMA = "historia:bioma";
 
@@ -62,6 +61,9 @@ export interface RotulosDeHistoria {
   /** D-190: los dos botones de MenuScene — solo se pintan en modo "camino". */
   menuHistoria: string;
   menuRetos: string;
+  /** `RetosScene` (D-201, cierre de deuda): el mensaje de "esto no existe todavía". */
+  retosTitulo: string;
+  retosCuerpo: string;
 }
 
 export interface DatosDeArranque {
@@ -82,8 +84,6 @@ export interface DatosDeArranque {
   etiquetaVoz: string;
   /** A dónde vuelve un `401` de sesión caducada — nunca un formulario (línea roja #2). */
   salirA: string;
-  /** D-190: a dónde lleva el botón "Retos" de MenuScene. `undefined` en modo "arbol". */
-  rutaRetos?: string;
   /**
    * Mundo Kinder multi-bioma: qué `WorldChapter` de `story.ts` abre el
    * botón "Modo Historia" de `MenuScene` — antes era el literal
@@ -118,7 +118,6 @@ export class ProgressManager {
     this.registry.set(REGISTRY_ROTULOS_RETO, datos.rotulosReto);
     this.registry.set(REGISTRY_ETIQUETA_VOZ, datos.etiquetaVoz);
     this.registry.set(REGISTRY_SALIR_A, datos.salirA);
-    this.registry.set(REGISTRY_RUTA_RETOS, datos.rutaRetos ?? null);
     this.registry.set(REGISTRY_CHAPTER_ID, datos.chapterId);
     this.registry.set(REGISTRY_BIOMA, datos.bioma ?? null);
   }
@@ -154,10 +153,6 @@ export class ProgressManager {
 
   get salirA(): string {
     return this.registry.get(REGISTRY_SALIR_A) as string;
-  }
-
-  get rutaRetos(): string | null {
-    return this.registry.get(REGISTRY_RUTA_RETOS) as string | null;
   }
 
   /** Mundo Kinder multi-bioma — qué `WorldChapter` abre "Modo Historia". */

@@ -37,6 +37,8 @@ interface Props {
     jugar: string;
     menuHistoria: string;
     menuRetos: string;
+    retosTitulo: string;
+    retosCuerpo: string;
   };
   /** Los mismos rótulos que usa `Pantalla.astro` para el reto (juego.*) — ver `RetoController.ts`. */
   rotulosReto: {
@@ -61,13 +63,6 @@ interface Props {
   etiquetaVoz: string;
   /** A dónde vuelve un `401` o el botón de salir — nunca un formulario (línea roja #2). */
   salirA: string;
-  /**
-   * D-190: a dónde lleva el botón "Retos" de `MenuScene` — la página real de
-   * práctica directa (`rutaJugar()`, ya existente), no una pantalla nueva.
-   * Solo se pinta en modo "camino"; `undefined` en modo "arbol" (SECUNDARIA)
-   * porque esa banda no tiene `MenuScene`.
-   */
-  rutaRetos?: string;
   /**
    * Pantalla completa (D-189): el dueño pidió el mismo nivel de inmersión
    * que su video de referencia — sin recuadro, sin esquinas redondeadas,
@@ -95,7 +90,7 @@ interface Props {
 }
 
 const {
-  arbol, modo, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA, rutaRetos,
+  arbol, modo, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA,
   pantallaCompleta = false, chapterId, bioma,
 } = Astro.props;
 ---
@@ -115,7 +110,7 @@ const {
 <script
   type="application/json"
   id="historia-datos"
-  set:html={JSON.stringify({ arbol, modo, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA, rutaRetos, chapterId, bioma })}
+  set:html={JSON.stringify({ arbol, modo, locale, puedeElegirNivel, rotulos, rotulosReto, etiquetaVoz, salirA, chapterId, bioma })}
 />
 
 <script src="../../game/entrada.ts"></script>

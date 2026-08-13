@@ -8217,3 +8217,70 @@ y no de resolución de la imagen — más píxeles no habrían arreglado nada
 sin este cambio.
 
 **Investigación relacionada:** D-186, D-080, mc-47 §5.
+
+---
+
+## `kids/retos.astro` migra a `RetosScene.ts` — cierra una de las dos deudas de `spa-phaser.mjs` · 2026-08-12
+
+Al revisar la deuda declarada en `audits/spa-phaser.mjs` (dos páginas de
+`app/kids/` sin plan de migración) se investigó el tamaño real de las dos
+antes de tocar código.
+
+**`kids/retos.astro` era exactamente lo pequeño que parecía:** el
+placeholder de "Retos todavía no existe", reachable únicamente desde el
+botón "Retos" de `MenuScene` (D-190) — que hoy solo lo alcanza la banda
+PRIMARIA, porque `/api/historia-datos` excluye a KINDER a propósito (ver
+la entrada siguiente). Migrado a `game/scenes/RetosScene.ts`: mismo fondo
+del capítulo activo (cover-fit, mismo patrón que `MenuScene`), mismo
+`letrero-madera`, mismo `larry_menu_aplaude`, y una `FlechaAtras` de
+regreso — nunca un `<h1>` sobre blanco. `MenuScene.irARetos()` pasa de
+`window.location.href` a `scene.start("RetosScene")`.
+
+**Limpieza de cadena muerta:** `rutaRetos`/`rutaRetosKids` viajaba desde
+`kids/mapa.astro` hasta `ProgressManager` sin que nadie lo leyera ya —
+`MenuScene` era su único lector y dejó de serlo. Se borró el campo
+completo (`ProgressManager.ts`, `HistoriaMount.astro`, `kids/mapa.astro`,
+`rutas-app.ts`) en vez de dejarlo como plomería fósil.
+
+**Un bug real, encontrado probando en el simulador, no leyendo el
+código:** `RetosScene` es la primera escena de Modo Historia que usa
+`FlechaAtras` (`flecha-madera`), y esa imagen solo vivía en
+`IMAGENES_QUIEN_JUEGA` — `PreloadScene` (la entrada FRÍA a `/mapa/`, sin
+pasar por la rejilla) usa su propia lista, `IMAGENES_MODO_HISTORIA`, que
+no la traía. En la SPA fusionada de siempre no se nota (`CargaAssetsScene`
+ya cargó el catálogo completo antes), pero una entrada fría a `/mapa/`
+—actualizar la página a medio mapa, o abrir el enlace desde una
+notificación— habría mostrado la textura `__MISSING` en vez de la flecha.
+Corregido agregando `flecha-madera` también a `IMAGENES_MODO_HISTORIA`.
+
+**Verificado en vivo:** `astro check` (0 errores), `node audits/run.mjs`
+(142/142), build limpio, y un banco de pruebas temporal
+(`historia-demo.astro`, montaba `HistoriaMount` con datos de mentira,
+mismo criterio que `loader-dev.astro`) confirmó en el iOS Simulator el
+ciclo completo: `MenuScene` → toca "Retos" → `RetosScene` con el fondo,
+el letrero y la flecha reales → toca la flecha → vuelve a `MenuScene`.
+El banco de pruebas se borró al terminar — no es una superficie
+permanente, era solo para esta verificación.
+
+**Lo que esto NO resolvió — la otra mitad de la deuda es mucho más
+grande de lo que parecía.** `kids/jugar.astro` NO es solo "el sendero de
+racha y la franja de liga en HTML": `/api/historia-datos` rechaza a
+KINDER con 409 a propósito (`esPrimariaOMas`, D-184 — "Modo Historia en
+Phaser es de PRIMARIA en adelante. KINDER sigue con la Sabana de
+siempre, que es otra pantalla y otro camino"), así que el mapa Y la
+práctica ENTERA de KINDER viven fuera de Phaser todavía, no solo dos
+franjas decorativas. Traerlas a Phaser significa además decidir qué pasa
+con `kids/mapa.astro`'s rama KINDER (su propio "Sabana de siempre",
+tampoco Phaser). Y al investigar se encontró una superficie hermana que
+ningún auditor vigila: `liga/jugador.astro`/`Duelo.astro` — la liga vista
+por un niño — vive deliberadamente FUERA de `app/kids/` (para no ser
+"superficie de kinder" por ruta ante otros auditores), lo que también la
+deja fuera del patrón de rutas que `spa-phaser.mjs` escanea. Es
+superficie de niño real, en HTML, sin ningún renglón de deuda que lo
+diga. Ninguna de las dos se tocó en esta ronda — `spa-phaser.mjs` ya
+queda actualizado con la descripción honesta y con esta nota, pero traer
+a KINDER entero a Phaser (y decidir si la liga del niño lo acompaña) es
+una decisión de alcance para el dueño, no una que se deba tomar sola a
+mitad de un cierre de deuda de dos renglones.
+
+**Investigación relacionada:** D-201, D-190, D-184, D-200.2.

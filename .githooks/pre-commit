@@ -13,7 +13,13 @@ set -euo pipefail
 
 echo "── auditores deterministas (D-032)"
 
-if ! node audits/run.mjs; then
+# `--diff`: solo corre los auditores cuyo alcance (audits/lib/alcance.mjs)
+# toca algo de lo que este commit se lleva — de ~62s a unos pocos segundos
+# en el caso típico, sin apagar ninguno. El alcance se equivoca hacia
+# "corre siempre" cuando no está seguro (ver el propio alcance.mjs), así que
+# esto nunca deja de vigilar algo por ahorrar tiempo. `node audits/run.mjs`
+# sin la bandera sigue corriendo las 114 siempre — para verificación manual.
+if ! node audits/run.mjs --diff; then
   echo
   echo "✗ commit bloqueado por un auditor."
   echo "  Anularlo exige --no-verify Y escribir la razón en el commit (D-032)."

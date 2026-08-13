@@ -1,0 +1,13 @@
+{
+  "_nota": "Borrador adaptado de es-MX, pendiente de revisión nativa (en-GB, ver ETIQUETA_DE_VOZ en packages/tutor/src/voz.ts).",
+  "esqui": {
+    "nombreModo": "Ski Slide",
+    "resultado": {
+      "victoria": "Chain complete!",
+      "descalificado": "Chain broken"
+    },
+    "tablero": {
+      "etiqueta": "Ski Slide"
+    }
+  }
+}

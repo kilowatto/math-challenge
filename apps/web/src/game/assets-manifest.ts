@@ -202,6 +202,99 @@ export const IMAGENES_MODO_HISTORIA: Activo[] = [
 ];
 
 /**
+ * Modo Esquí/Deslizada (D-201, plan `docs/planes/2026-08-10-esqui-cadena-
+ * operaciones.md`): el avatar del jugador se desliza sin parar y elige entre
+ * puertas con operaciones encadenadas. Reusa los 4 biomas de Mundo Kinder
+ * multi-bioma en vez de un quinto mundo visual — el avatar es el cosmético
+ * elegible del jugador, nunca Larry (Larry acompaña y narra desde fuera).
+ * Ninguna escena de Phaser lo usa todavía — el motor del modo no existe
+ * como código, solo su arte y su plan. Precargado igual que el resto
+ * (decisión del dueño, 2026-08-12): un modo sin pantalla no debe esperar a
+ * que exista para que su peso ya esté pagado.
+ */
+export const IMAGENES_ESQUI: Activo[] = [
+  // Placas de bioma (esquí, D-201/plan 2026-08-10): las puertas de la mecánica encadenada, dos orientaciones por bioma.
+  { clave: "esqui-placa-sabana-horizontal", url: "/esqui/esqui-placa-sabana-horizontal.webp" },
+  { clave: "esqui-placa-sabana-vertical", url: "/esqui/esqui-placa-sabana-vertical.webp" },
+  { clave: "esqui-placa-desierto-horizontal", url: "/esqui/esqui-placa-desierto-horizontal.webp" },
+  { clave: "esqui-placa-desierto-vertical", url: "/esqui/esqui-placa-desierto-vertical.webp" },
+  { clave: "esqui-placa-nieve-horizontal", url: "/esqui/esqui-placa-nieve-horizontal.webp" },
+  { clave: "esqui-placa-nieve-vertical", url: "/esqui/esqui-placa-nieve-vertical.webp" },
+  { clave: "esqui-placa-costa-horizontal", url: "/esqui/esqui-placa-costa-horizontal.webp" },
+  { clave: "esqui-placa-costa-vertical", url: "/esqui/esqui-placa-costa-vertical.webp" },
+  // Superficie de esquí por bioma — el terreno que se desliza bajo el avatar.
+  { clave: "esqui-superficie-sabana", url: "/esqui/esqui-superficie-sabana.webp" },
+  { clave: "esqui-superficie-desierto", url: "/esqui/esqui-superficie-desierto.webp" },
+  { clave: "esqui-superficie-nieve", url: "/esqui/esqui-superficie-nieve.webp" },
+  { clave: "esqui-superficie-costa", url: "/esqui/esqui-superficie-costa.webp" },
+  // Avatares jugables del modo esquí — 16 animales × 4 poses de deslizamiento.
+  { clave: "esqui_avatar_avestruz_1", url: "/esqui/esqui_avatar_avestruz_1.webp" },
+  { clave: "esqui_avatar_avestruz_2", url: "/esqui/esqui_avatar_avestruz_2.webp" },
+  { clave: "esqui_avatar_avestruz_3", url: "/esqui/esqui_avatar_avestruz_3.webp" },
+  { clave: "esqui_avatar_avestruz_4", url: "/esqui/esqui_avatar_avestruz_4.webp" },
+  { clave: "esqui_avatar_cebra_1", url: "/esqui/esqui_avatar_cebra_1.webp" },
+  { clave: "esqui_avatar_cebra_2", url: "/esqui/esqui_avatar_cebra_2.webp" },
+  { clave: "esqui_avatar_cebra_3", url: "/esqui/esqui_avatar_cebra_3.webp" },
+  { clave: "esqui_avatar_cebra_4", url: "/esqui/esqui_avatar_cebra_4.webp" },
+  { clave: "esqui_avatar_elefante_1", url: "/esqui/esqui_avatar_elefante_1.webp" },
+  { clave: "esqui_avatar_elefante_2", url: "/esqui/esqui_avatar_elefante_2.webp" },
+  { clave: "esqui_avatar_elefante_3", url: "/esqui/esqui_avatar_elefante_3.webp" },
+  { clave: "esqui_avatar_elefante_4", url: "/esqui/esqui_avatar_elefante_4.webp" },
+  { clave: "esqui_avatar_foto_aguila_1", url: "/esqui/esqui_avatar_foto_aguila_1.webp" },
+  { clave: "esqui_avatar_foto_aguila_2", url: "/esqui/esqui_avatar_foto_aguila_2.webp" },
+  { clave: "esqui_avatar_foto_aguila_3", url: "/esqui/esqui_avatar_foto_aguila_3.webp" },
+  { clave: "esqui_avatar_foto_aguila_4", url: "/esqui/esqui_avatar_foto_aguila_4.webp" },
+  { clave: "esqui_avatar_foto_bufalo_1", url: "/esqui/esqui_avatar_foto_bufalo_1.webp" },
+  { clave: "esqui_avatar_foto_bufalo_2", url: "/esqui/esqui_avatar_foto_bufalo_2.webp" },
+  { clave: "esqui_avatar_foto_bufalo_3", url: "/esqui/esqui_avatar_foto_bufalo_3.webp" },
+  { clave: "esqui_avatar_foto_bufalo_4", url: "/esqui/esqui_avatar_foto_bufalo_4.webp" },
+  { clave: "esqui_avatar_foto_chacal_1", url: "/esqui/esqui_avatar_foto_chacal_1.webp" },
+  { clave: "esqui_avatar_foto_chacal_2", url: "/esqui/esqui_avatar_foto_chacal_2.webp" },
+  { clave: "esqui_avatar_foto_chacal_3", url: "/esqui/esqui_avatar_foto_chacal_3.webp" },
+  { clave: "esqui_avatar_foto_chacal_4", url: "/esqui/esqui_avatar_foto_chacal_4.webp" },
+  { clave: "esqui_avatar_foto_cocodrilo_1", url: "/esqui/esqui_avatar_foto_cocodrilo_1.webp" },
+  { clave: "esqui_avatar_foto_cocodrilo_2", url: "/esqui/esqui_avatar_foto_cocodrilo_2.webp" },
+  { clave: "esqui_avatar_foto_cocodrilo_3", url: "/esqui/esqui_avatar_foto_cocodrilo_3.webp" },
+  { clave: "esqui_avatar_foto_cocodrilo_4", url: "/esqui/esqui_avatar_foto_cocodrilo_4.webp" },
+  { clave: "esqui_avatar_foto_gacela_1", url: "/esqui/esqui_avatar_foto_gacela_1.webp" },
+  { clave: "esqui_avatar_foto_gacela_2", url: "/esqui/esqui_avatar_foto_gacela_2.webp" },
+  { clave: "esqui_avatar_foto_gacela_3", url: "/esqui/esqui_avatar_foto_gacela_3.webp" },
+  { clave: "esqui_avatar_foto_gacela_4", url: "/esqui/esqui_avatar_foto_gacela_4.webp" },
+  { clave: "esqui_avatar_foto_guepardo_1", url: "/esqui/esqui_avatar_foto_guepardo_1.webp" },
+  { clave: "esqui_avatar_foto_guepardo_2", url: "/esqui/esqui_avatar_foto_guepardo_2.webp" },
+  { clave: "esqui_avatar_foto_guepardo_3", url: "/esqui/esqui_avatar_foto_guepardo_3.webp" },
+  { clave: "esqui_avatar_foto_guepardo_4", url: "/esqui/esqui_avatar_foto_guepardo_4.webp" },
+  { clave: "esqui_avatar_foto_hiena_1", url: "/esqui/esqui_avatar_foto_hiena_1.webp" },
+  { clave: "esqui_avatar_foto_hiena_2", url: "/esqui/esqui_avatar_foto_hiena_2.webp" },
+  { clave: "esqui_avatar_foto_hiena_3", url: "/esqui/esqui_avatar_foto_hiena_3.webp" },
+  { clave: "esqui_avatar_foto_hiena_4", url: "/esqui/esqui_avatar_foto_hiena_4.webp" },
+  { clave: "esqui_avatar_foto_nu_1", url: "/esqui/esqui_avatar_foto_nu_1.webp" },
+  { clave: "esqui_avatar_foto_nu_2", url: "/esqui/esqui_avatar_foto_nu_2.webp" },
+  { clave: "esqui_avatar_foto_nu_3", url: "/esqui/esqui_avatar_foto_nu_3.webp" },
+  { clave: "esqui_avatar_foto_nu_4", url: "/esqui/esqui_avatar_foto_nu_4.webp" },
+  { clave: "esqui_avatar_hipopotamo_1", url: "/esqui/esqui_avatar_hipopotamo_1.webp" },
+  { clave: "esqui_avatar_hipopotamo_2", url: "/esqui/esqui_avatar_hipopotamo_2.webp" },
+  { clave: "esqui_avatar_hipopotamo_3", url: "/esqui/esqui_avatar_hipopotamo_3.webp" },
+  { clave: "esqui_avatar_hipopotamo_4", url: "/esqui/esqui_avatar_hipopotamo_4.webp" },
+  { clave: "esqui_avatar_jirafa_1", url: "/esqui/esqui_avatar_jirafa_1.webp" },
+  { clave: "esqui_avatar_jirafa_2", url: "/esqui/esqui_avatar_jirafa_2.webp" },
+  { clave: "esqui_avatar_jirafa_3", url: "/esqui/esqui_avatar_jirafa_3.webp" },
+  { clave: "esqui_avatar_jirafa_4", url: "/esqui/esqui_avatar_jirafa_4.webp" },
+  { clave: "esqui_avatar_leon_1", url: "/esqui/esqui_avatar_leon_1.webp" },
+  { clave: "esqui_avatar_leon_2", url: "/esqui/esqui_avatar_leon_2.webp" },
+  { clave: "esqui_avatar_leon_3", url: "/esqui/esqui_avatar_leon_3.webp" },
+  { clave: "esqui_avatar_leon_4", url: "/esqui/esqui_avatar_leon_4.webp" },
+  { clave: "esqui_avatar_mono_1", url: "/esqui/esqui_avatar_mono_1.webp" },
+  { clave: "esqui_avatar_mono_2", url: "/esqui/esqui_avatar_mono_2.webp" },
+  { clave: "esqui_avatar_mono_3", url: "/esqui/esqui_avatar_mono_3.webp" },
+  { clave: "esqui_avatar_mono_4", url: "/esqui/esqui_avatar_mono_4.webp" },
+  { clave: "esqui_avatar_suricata_1", url: "/esqui/esqui_avatar_suricata_1.webp" },
+  { clave: "esqui_avatar_suricata_2", url: "/esqui/esqui_avatar_suricata_2.webp" },
+  { clave: "esqui_avatar_suricata_3", url: "/esqui/esqui_avatar_suricata_3.webp" },
+  { clave: "esqui_avatar_suricata_4", url: "/esqui/esqui_avatar_suricata_4.webp" },
+];
+
+/**
  * Audio de "¿Quién juega?" — solo lo que ESTA pantalla puede llegar a
  * reproducir. `musica-energia`/`sfx-acierto`/`sfx-error` son del RETO
  * (Modo Historia) y pesan ~700 KB la pista de música — cargarlos aquí
@@ -289,6 +382,24 @@ export const AUDIOS_MODO_HISTORIA: Activo[] = [
   { clave: "musica-costa-energia", url: "/juego/musica-costa-energia.mp3" },
 ];
 
+/** Audio del modo Esquí/Deslizada — ver el comentario de `IMAGENES_ESQUI` arriba. */
+export const AUDIOS_ESQUI: Activo[] = [
+  // Música por bioma, dos ánimos (esquí, D-201/plan 2026-08-10) — mismo criterio de D-198 aplicado al modo.
+  { clave: "musica-esqui-sabana-calma", url: "/esqui/musica-esqui-sabana-calma.mp3" },
+  { clave: "musica-esqui-sabana-energia", url: "/esqui/musica-esqui-sabana-energia.mp3" },
+  { clave: "musica-esqui-desierto-calma", url: "/esqui/musica-esqui-desierto-calma.mp3" },
+  { clave: "musica-esqui-desierto-energia", url: "/esqui/musica-esqui-desierto-energia.mp3" },
+  { clave: "musica-esqui-nieve-calma", url: "/esqui/musica-esqui-nieve-calma.mp3" },
+  { clave: "musica-esqui-nieve-energia", url: "/esqui/musica-esqui-nieve-energia.mp3" },
+  { clave: "musica-esqui-costa-calma", url: "/esqui/musica-esqui-costa-calma.mp3" },
+  { clave: "musica-esqui-costa-energia", url: "/esqui/musica-esqui-costa-energia.mp3" },
+  // SFX propios del modo (D-201/plan 2026-08-10) — no reuso de sfx-acierto/sfx-error de siempre.
+  { clave: "sfx-esqui-acierto", url: "/esqui/sfx-esqui-acierto.mp3" },
+  { clave: "sfx-esqui-choque", url: "/esqui/sfx-esqui-choque.mp3" },
+  { clave: "sfx-esqui-publico", url: "/esqui/sfx-esqui-publico.mp3" },
+  { clave: "sfx-esqui-victoria", url: "/esqui/sfx-esqui-victoria.mp3" },
+];
+
 function dedupeAudios(lista: Activo[]): Activo[] {
   const vistos = new Map<string, Activo>();
   for (const activo of lista) vistos.set(activo.clave, activo);
@@ -296,7 +407,11 @@ function dedupeAudios(lista: Activo[]): Activo[] {
 }
 
 /** La unión completa de audio — lo que `CargaGlobalScene` precarga de una sola vez. */
-export const TODOS_LOS_AUDIOS: Activo[] = dedupeAudios([...AUDIOS_QUIEN_JUEGA, ...AUDIOS_MODO_HISTORIA]);
+export const TODOS_LOS_AUDIOS: Activo[] = dedupeAudios([
+  ...AUDIOS_QUIEN_JUEGA,
+  ...AUDIOS_MODO_HISTORIA,
+  ...AUDIOS_ESQUI,
+]);
 
 function dedupePorClave(lista: Activo[]): Activo[] {
   const vistos = new Map<string, Activo>();
@@ -305,4 +420,8 @@ function dedupePorClave(lista: Activo[]): Activo[] {
 }
 
 /** La unión completa — lo que `CargaGlobalScene` precarga de una sola vez. */
-export const TODAS_LAS_IMAGENES: Activo[] = dedupePorClave([...IMAGENES_QUIEN_JUEGA, ...IMAGENES_MODO_HISTORIA]);
+export const TODAS_LAS_IMAGENES: Activo[] = dedupePorClave([
+  ...IMAGENES_QUIEN_JUEGA,
+  ...IMAGENES_MODO_HISTORIA,
+  ...IMAGENES_ESQUI,
+]);

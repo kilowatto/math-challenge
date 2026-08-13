@@ -1,0 +1,13 @@
+{
+  "_nota": "Borrador adaptado de es-MX, pendiente de revisión nativa.",
+  "esqui": {
+    "nombreModo": "Skifahren / Rutschen",
+    "resultado": {
+      "victoria": "Kette komplett!",
+      "descalificado": "Kette unterbrochen"
+    },
+    "tablero": {
+      "etiqueta": "Skifahren / Rutschen"
+    }
+  }
+}

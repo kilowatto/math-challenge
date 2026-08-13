@@ -59,7 +59,11 @@ function redireccionesD049() {
  * o regenerar el mismo nombre con arte distinto.
  */
 function activosVersionD200() {
-  const CARPETAS = ["juego", "mapa", "avatares"];
+  // "esqui" agregado 2026-08-12: el modo Esquí/Deslizada precarga su arte
+  // igual que el resto (decisión del dueño) — sin esta carpeta aquí, un
+  // cambio futuro a esos archivos nunca subiría la versión y un dispositivo
+  // ya precargado se quedaría con bytes viejos para siempre.
+  const CARPETAS = ["juego", "mapa", "avatares", "esqui"];
 
   function archivosOrdenados(base) {
     const resultado = [];
@@ -138,7 +142,12 @@ function activosVersionD200() {
  * roto.
  */
 function manifiestoDeAssets() {
-  const CARPETAS = ["juego", "mapa", "avatares", "cosmeticos"];
+  // "esqui" agregado 2026-08-12, mismo motivo que en `activosVersionD200()`
+  // arriba: es la carpeta que `CargaAssetsScene` de verdad descarga (lee
+  // este `manifest-assets.json`, no las listas de `assets-manifest.ts`), así
+  // que sin esto aquí el modo Esquí nunca se habría precargado pese a estar
+  // declarado ahí.
+  const CARPETAS = ["juego", "mapa", "avatares", "cosmeticos", "esqui"];
   return {
     name: "mc-manifiesto-assets",
     hooks: {

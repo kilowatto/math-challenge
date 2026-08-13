@@ -8364,3 +8364,67 @@ ese checkout no se tocó ni se incluyó.
 
 **Investigación relacionada:** D-201, D-198, D-200, mc-47 §5,
 `docs/planes/2026-08-10-esqui-cadena-operaciones.md`.
+
+---
+
+## `audits/run.mjs` corre por alcance del diff — de 62s a segundos, sin apagar ninguno · 2026-08-12
+
+El dueño cuestionó el sistema de auditores de frente: *"veo que bloquean
+mucho y no estan mejorando nada"*. Se auditó con evidencia, no con
+defensa (ver el reporte que se le dio en el chat, no repetido aquí en
+extenso): el dato central es que el gancho de pre-commit **nunca estuvo
+activo hasta hace unas horas** (72c2d55, misma sesión) — de 302 commits
+del repo, solo 3 pasaron por él de verdad. Lo que sí se confirmó real:
+`node audits/run.mjs` completo tarda **~62s**, cada uno de los 114
+auditores un proceso Node separado (`spawnSync`), y eso SÍ se va a pagar
+en cada commit de ahora en adelante.
+
+**El arreglo, no una promesa nueva:** `docs/decisions.md` ya declaraba
+esta intención para la flota ADVERSARIAL de D-032 ("solo despiertan los
+auditores cuyo alcance toca el diff") pero nunca se implementó para los
+114 deterministas — `run.mjs` los corría todos, siempre, tocara o no el
+diff su archivo.
+
+**Diseño, con la regla de oro "en la duda, corre siempre":** `audits/
+lib/alcance.mjs` (nuevo) determina el alcance de cada auditor de dos
+formas, nunca una tercera que "adivine":
+
+1. **Extracción automática, no una lista aparte.** 66 de 114 auditores
+   usan `archivos(patrón)` de `lib/repo.mjs` para su escaneo — el patrón
+   se LEE del propio código fuente del auditor en cada corrida (inline o
+   vía una constante `const X = /.../` en el mismo archivo). Si el
+   patrón de un auditor cambia, su alcance cambia solo: no hay una
+   segunda lista que se pueda desincronizar de la primera — el mismo
+   modo de falla que ya costó tres correcciones este mismo día
+   (`manifiesto-assets.mjs`, `pruebas-auditores.mjs`, el propio
+   `run.mjs` con el gancho apagado).
+2. **`ALCANCE_MANUAL`, para los ~33 sin `archivos()`** — leen archivos
+   específicos a mano (una migración, un endpoint, `wrangler.jsonc`). Se
+   pobló leyendo cada uno, no adivinando; **7 de esos 33 leen `apps/web/
+   dist`** (el sitio ya construido: `axe-a11y`, `bundle-budget`,
+   `contrast`, `jsonld-valid`, `sitemap-completo`, `brand-image`,
+   `precache-budget`) y se les dio alcance amplio (`apps/web/` entero) a
+   propósito — `axe-a11y` solo **tarda 40s de los 62s totales**, así que
+   acertarle a éste es lo que de verdad mueve el número.
+3. **Todo lo demás corre SIEMPRE** — sin entrada en `ALCANCE_MANUAL` y
+   sin patrón extraíble (`secrets`, `child-free-text`, `telemetria-
+   infantil`, y ~15 más que escanean el repo entero o dependen de red) es
+   el valor por omisión, no una omisión.
+
+**Verificado, no asumido:** con el diff de este mismo cambio (solo
+`audits/`), 50-58 de 114 auditores se saltaron y la corrida bajó de 62s a
+14-20s. Con un cambio simulado en `apps/web/src/game/scenes/RetosScene.ts`
+(revertido después), los 7 que leen `dist/` SÍ corrieron y el tiempo
+volvió a ~62s — confirma que el alcance amplio de esa categoría no deja
+un hueco. `node audits/pruebas-auditores.mjs` (204 casos, sin tocar) y
+`node audits/run.mjs` sin `--diff` (barrido completo, para verificación
+manual o CI) se probaron sin la bandera y dieron exactamente el mismo
+resultado que antes del cambio.
+
+**Lo que NO se tocó:** `pruebas-auditores.mjs` (23s, el auto-chequeo de
+que cada auditor SÍ atrapa su violación) sigue corriendo completo
+siempre — es la pieza que existe específicamente para atrapar un
+alcance que se quedó viejo, así que acortarla por el mismo mecanismo que
+acaba de crear sería debilitar la única red que vigila a esta red.
+
+**Investigación relacionada:** D-032, D-201.

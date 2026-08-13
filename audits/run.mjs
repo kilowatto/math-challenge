@@ -10,6 +10,26 @@
 // listado como "pendiente" no está olvidado — está esperando su fase.
 
 import { spawnSync } from "node:child_process";
+import { RAIZ } from "./lib/repo.mjs";
+import { alcanceDe, tocaAlcance } from "./lib/alcance.mjs";
+
+/**
+ * `--diff`: solo corre los auditores cuyo alcance (ver `lib/alcance.mjs`)
+ * toca algo de lo que ya está en el índice de git — lo que el commit va a
+ * llevarse. Sin la bandera, corre las 114 siempre, igual que hoy: el modo
+ * por omisión sigue siendo el barrido completo, para una verificación manual
+ * o para CI, donde 62s no le cuestan nada a nadie esperando en la terminal.
+ *
+ * `.githooks/pre-commit` es el único llamador pensado para pasar `--diff` —
+ * ahí SÍ importa la fricción de cada commit.
+ */
+const SOLO_DIFF = process.argv.includes("--diff");
+const ARCHIVOS_CAMBIADOS = SOLO_DIFF
+  ? spawnSync("git", ["diff", "--cached", "--name-only"], { cwd: RAIZ, encoding: "utf8" })
+      .stdout.split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  : [];
 
 // --- Deterministas: implementados y bloqueando ---------------------------
 const ACTIVE = [
@@ -578,17 +598,29 @@ const ADVERSARIAL_COUNT = 28;
 console.log("Flota de auditores — D-032\n");
 
 let failed = 0;
+const omitidos = [];
 // `--experimental-strip-types` para todos: `tabla-bandas` importa el motor, que
 // es TypeScript, para cruzarlo contra las tablas de decisions.md. Se le pasa a
 // todos en vez de mantener una lista de cuáles lo necesitan — una lista así se
 // desincroniza el día que un auditor nuevo importe código de producto.
 for (const [name, what, enforces] of ACTIVE) {
+  if (SOLO_DIFF && !tocaAlcance(alcanceDe(name), ARCHIVOS_CAMBIADOS)) {
+    omitidos.push(name);
+    continue;
+  }
   const r = spawnSync(
     "node",
     ["--experimental-strip-types", "--no-warnings", `audits/${name}.mjs`],
     { stdio: "inherit" },
   );
   if (r.status !== 0) failed++;
+}
+
+if (SOLO_DIFF && omitidos.length > 0) {
+  console.log(
+    `\n· ${omitidos.length} auditor(es) omitidos — el diff no toca su alcance: ${omitidos.join(", ")}`,
+  );
+  console.log(`  Barrido completo:  node audits/run.mjs`);
 }
 
 // --- Casos del motor de puntuación (F3) ----------------------------------
@@ -988,4 +1020,8 @@ if (failed > 0) {
   console.error(`  Anular exige escribir por qué, y queda en el historial (D-032).`);
   process.exit(1);
 }
-console.log("\n✓ todos los auditores activos pasaron");
+console.log(
+  SOLO_DIFF
+    ? `\n✓ ${ACTIVE.length - omitidos.length}/${ACTIVE.length} auditores corridos (alcance del diff) pasaron`
+    : "\n✓ todos los auditores activos pasaron",
+);

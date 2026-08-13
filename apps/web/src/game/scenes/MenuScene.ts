@@ -13,12 +13,13 @@
  * ─── Los dos botones ─────────────────────────────────────────────────────
  *
  *   · "Modo Historia" → `scene.start("MapScene", ...)`. Sigue en Phaser.
- *   · "Retos"         → navegación real de página a `rutaRetos`
- *                       (`rutaJugar()`, ya existente — el mismo "toca una
- *                       habilidad y practica" que ya sirve `/api/jugar` con
- *                       su propio programador cuando no se le fija una
- *                       habilidad). No es una pantalla nueva: es la puerta
- *                       de entrada nueva a una que ya existe.
+ *   · "Retos"         → `scene.start("RetosScene")` (D-201, cierre de deuda
+ *                       de `audits/spa-phaser.mjs`: hasta hoy era una
+ *                       navegación real de página a `kids/retos.astro`, un
+ *                       placeholder en HTML plano — "Retos" es un selector
+ *                       MANUAL por materia/dificultad que el dueño pidió y
+ *                       todavía no existe, no el programador adaptativo de
+ *                       siempre).
  */
 import Phaser from "phaser";
 import { ProgressManager } from "../managers/ProgressManager";
@@ -72,7 +73,7 @@ export class MenuScene extends Phaser.Scene {
     this.registrarIdle(larry);
 
     this.construirBoton(width / 2, letrero.y - 34, progreso.rotulos.menuHistoria, () => this.irAModoHistoria());
-    this.construirBoton(width / 2, letrero.y + 34, progreso.rotulos.menuRetos, () => this.irARetos(progreso));
+    this.construirBoton(width / 2, letrero.y + 34, progreso.rotulos.menuRetos, () => this.irARetos());
 
     // El ícono de bocina (D-190): control de experiencia, no de cuenta — es
     // lo único del lado adulto que SÍ le corresponde al niño (D-065 sigue
@@ -173,11 +174,10 @@ export class MenuScene extends Phaser.Scene {
     this.scene.start("MapScene", { chapterId: progreso.chapterId });
   }
 
-  private irARetos(progreso: ProgressManager): void {
-    // Navegación real de página, no otra escena — Retos ya vive en
-    // `/app/kids/jugar/` (mismo patrón de salida que `volverAlMapa()` en
-    // GameplayScene.ts).
-    const destino = progreso.rutaRetos;
-    if (destino) window.location.href = destino;
+  private irARetos(): void {
+    // Escena propia, dentro de la misma sesión de Phaser — D-201 cerró la
+    // deuda que dejaba esto como una navegación de página real a
+    // `kids/retos.astro`. Ver `RetosScene.ts`.
+    this.scene.start("RetosScene");
   }
 }

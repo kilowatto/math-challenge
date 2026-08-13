@@ -39,6 +39,7 @@ import Phaser from "phaser";
 import { BootScene } from "./scenes/BootScene";
 import { PreloadScene } from "./scenes/PreloadScene";
 import { MenuScene } from "./scenes/MenuScene";
+import { RetosScene } from "./scenes/RetosScene";
 import { MapScene } from "./scenes/MapScene";
 import { ChallengeScene } from "./scenes/ChallengeScene";
 import { DialogueScene } from "./scenes/DialogueScene";
@@ -71,6 +72,7 @@ const ESCENAS: ReadonlyArray<[string, new (...args: never[]) => Phaser.Scene]> =
   ["BootScene", BootScene],
   ["PreloadScene", PreloadScene],
   ["MenuScene", MenuScene],
+  ["RetosScene", RetosScene],
   ["MapScene", MapScene],
   ["ChallengeScene", ChallengeScene],
   ["DialogueScene", DialogueScene],

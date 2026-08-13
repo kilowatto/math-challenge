@@ -1,98 +1,38 @@
 ---
 /**
- * `/app/kids/retos` — el selector de retos por materia y dificultad, TODAVÍA
- * sin construir. Placeholder, a propósito.
+ * `/{locale}/app/kids/retos` — ya no es una pantalla: es una redirección
+ * (D-201, cierre de deuda de `audits/spa-phaser.mjs`).
  *
- * @banda KINDER
+ * ─── Qué había aquí ────────────────────────────────────────────────────────
  *
- * `MenuScene.ts` (D-190) ya tiene un botón "Retos" en el menú de dos modos de
- * Modo Historia — hoy apunta aquí en vez de al reto adaptativo de siempre
- * (`rutaJugar`, servido por `jugar.astro`) porque el dueño pidió, explícito,
- * que "Retos" sea un selector MANUAL por materia y dificultad — una pantalla
- * nueva que no existe todavía — y no el programador adaptativo que ya elige
- * por el niño. Construirlo de a de veras es trabajo aparte, después de que
- * Modo Historia (el mapa) quede terminado; mientras tanto, esta pantalla dice
- * la verdad en vez de fingir con el flujo de siempre.
+ * El selector de retos por materia/dificultad, TODAVÍA sin construir, servido
+ * en HTML plano: título, cuerpo y un enlace "Volver al mapa". Vive ahora en
+ * `game/scenes/RetosScene.ts` — mismo mensaje ("esto no existe todavía"),
+ * mismo fondo del capítulo activo y letrero de madera que el resto de Modo
+ * Historia, en vez de un `<h1>` sobre blanco.
  *
- * Cero JavaScript, cero telemetría, cero Turnstile — mismas reglas que el
- * resto de `/app/kids/**` (ver el encabezado de `kids/index.astro`): esta
- * pantalla no enseña ni recibe ningún dato de un niño, así que ni siquiera
- * hace falta leer sesión — es el mismo mensaje para cualquiera que llegue.
+ * ─── Por qué la RUTA sobrevive ─────────────────────────────────────────────
+ *
+ * Igual que `kids/pin.astro`: borrar el archivo entero daría 404 a un
+ * marcador guardado o a un botón viejo cacheado en un dispositivo — un 303,
+ * no un 301, porque la pantalla dejó de existir aquí, no se movió para
+ * siempre.
  */
-import { DEFAULT_LOCALE, t, isLocale, type Locale } from "../../../../i18n";
 import { rutaMapaKids } from "../../../../lib/mapa-kids";
-import "../../../../styles/fonts.css";
-import "../../../../styles/tokens.css";
-import "../../../../styles/bandas.css";
+import { isLocale, DEFAULT_LOCALE } from "../../../../i18n";
 
 export const prerender = false;
 
-const { locale: raw } = Astro.params;
-const locale: Locale = isLocale(raw) ? raw : DEFAULT_LOCALE;
-const m = t(locale);
+const { locale: crudo } = Astro.params;
+const locale = isLocale(crudo) ? crudo : DEFAULT_LOCALE;
 
-const BANDA_DE_LA_PANTALLA = "KINDER";
-const volver = rutaMapaKids(locale);
+return new Response(null, {
+  status: 303,
+  headers: {
+    location: rutaMapaKids(locale),
+    "cache-control": "no-store, private",
+    vary: "cookie",
+    "x-robots-tag": "noindex, nofollow",
+  },
+});
 ---
-
-<!doctype html>
-<html lang={m.htmlLang} data-band={BANDA_DE_LA_PANTALLA}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>{m.kidsRetosTitle}</title>
-    <meta name="theme-color" content="#F36B1C" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
-  </head>
-  <body>
-    <main class="pantalla">
-      <h1 class="titulo">{m.kidsRetosTitle}</h1>
-      <p class="cuerpo">{m.kidsRetosBody}</p>
-      <a class="volver" href={volver}>{m.kidsRetosBack}</a>
-    </main>
-
-    <style>
-      .pantalla {
-        min-block-size: 100svb;
-        max-inline-size: 40rem;
-        margin-inline: auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space);
-        padding: calc(var(--space) * 2);
-        text-align: center;
-      }
-      .titulo {
-        font-family: var(--font-display, inherit);
-        color: var(--ignia-naranja-900, #ce4912);
-        font-size: var(--text-xl, 2rem);
-      }
-      .cuerpo {
-        font-size: var(--text-md, 1.125rem);
-        color: var(--gris-700, #434547);
-      }
-      /* `--tap-kinder` literal, no `--tap-min`: esta pantalla la puede abrir
-         cualquier banda de niño (el botón "Retos" vive en `MenuScene`, común a
-         PRIMARIA/SECUNDARIA), pero manda el piso más alto — mismo criterio que
-         `kids/index.astro`. `tokens.css` solo reparte `--tap-min` a `button`/
-         `a[role="button"]`; un `<a>` plano necesita el token puesto a mano. */
-      .volver {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-block-size: var(--tap-kinder);
-        min-inline-size: var(--tap-kinder);
-        padding-inline: calc(var(--space) * 1.5);
-        border-radius: var(--radius, 0.5rem);
-        background: var(--ignia-naranja-500, #f36b1c);
-        color: #fff;
-        font-weight: 600;
-        text-decoration: none;
-      }
-    </style>
-  </body>
-</html>

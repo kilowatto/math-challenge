@@ -148,6 +148,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
         jugar: s("historiaJugar"),
         menuHistoria: s("menuHistoria"),
         menuRetos: s("menuRetos"),
+        retosTitulo: s("kidsRetosTitle"),
+        retosCuerpo: s("kidsRetosBody"),
       },
       rotulosReto: {
         bien: t("juego.bien", "That's it!"),

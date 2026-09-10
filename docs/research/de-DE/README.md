@@ -72,6 +72,10 @@
 | 23 | [Adulto / universidad / experto](2026-07-31-mc-23-ui-adult-expert.md) | ⭐ KaTeX vs MathJax vs MathLive mit Lizenzen und Barrierefreiheit; mathematischer Input nach Gerät |
 | 38 | [Accesibilidad y diferencias de aprendizaje](2026-07-31-mc-38-accessibility-learning-differences.md) | ⭐ Wie ein getimtes Spiel WCAG 2.2 erfüllen kann (die textuelle Ausnahme); Dyskalkulie‑Modus |
 | 34 | [i18n de la notación matemática](2026-07-31-mc-34-i18n-math-notation.md) | ⭐⭐ Mexiko verwendet **Punkt** als Dezimaltrennzeichen und der Rest der spanischsprachigen Welt **Komma**; die schriftliche Division wird in 4 verschiedenen Arten dargestellt |
+| 49 | [Patrones de navegación PWA](2026-08-01-mc-49-navigation-patterns-pwa-mobile-desktop.md) | Nur eine primäre Navigation gleichzeitig; die untere Leiste nur installiert |
+| 50 | [Navegación del área privada](2026-08-02-mc-50-private-app-navigation.md) | Der authentifizierte Bereich erbt niemals das öffentliche Layout; Tabs, abgeleitet von dem, was der Account wirklich hat |
+| 51 | [Clasificación de las ramas y sus prerrequisitos](2026-08-03-mc-51-clasificacion-ramas-matematicas.md) | ⭐⭐ MSC 2020 (63 Bereiche), arXiv und ICM; das universelle schulische Rückgrat und die an 10 Institutionen verifizierten universitären Ketten; die Landkarte der 26 Zweige mit Toren |
+| 52 | [Lógica para niños: booleana, tablas de verdad y acertijos](2026-08-03-mc-52-logica-para-ninos.md) | ⭐ Bebras und seine verifizierten Altersbänder; Smullyan als Brücke zum Beweis (MAA); die LOGI-Leiter N4-N12: Attribute → Rätsel → Tabellen → Prädikate |
 
 ## Plattform, Sicherheit und Geschäft
 
